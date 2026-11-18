@@ -13,10 +13,16 @@ export default function Home() {
         </p>
         <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/uji-preview"
+            href="/pesan"
             className="px-6 py-2.5 rounded-full font-semibold bg-rose-600 hover:bg-rose-500 text-white transition text-sm shadow-sm"
           >
-            Uji Preview Kue (Tahap 4)
+            Pesan Kue Sekarang
+          </Link>
+          <Link
+            href="/uji-preview"
+            className="px-6 py-2.5 rounded-full font-semibold bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 transition text-sm"
+          >
+            Uji Preview Kue
           </Link>
           <Link
             href="/masuk"
