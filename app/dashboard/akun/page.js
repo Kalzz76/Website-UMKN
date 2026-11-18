@@ -221,15 +221,7 @@ export default function AkunDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-stone-900">
-            Kelola Akun Staf & Admin
-          </h1>
-          <p className="text-sm text-stone-500 mt-1">
-            Atur hak akses staf produksi dan administrator toko kue.
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={bukaModalTambah}

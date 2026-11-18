@@ -337,15 +337,7 @@ export default function HargaOpsiPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-stone-900">
-            Harga & Opsi Kustomisasi
-          </h1>
-          <p className="text-sm text-stone-500 mt-1">
-            Kelola grup opsi kue (ukuran, rasa, krim, topping) beserta daftar pilihan dan harganya.
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={bukaModalTambahGrup}

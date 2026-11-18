@@ -442,15 +442,6 @@ export default function PengaturanPage() {
 
   return (
     <div className="space-y-10">
-      <div>
-        <h1 className="text-2xl font-extrabold text-stone-900">
-          Pengaturan Toko & Operasional
-        </h1>
-        <p className="text-sm text-stone-500 mt-1">
-          Atur informasi toko, jam kerja, kebijakan pembayaran, tarif zona ongkir, dan jadwal libur.
-        </p>
-      </div>
-
       <form onSubmit={simpanPengaturanToko} className="space-y-8">
         <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 sm:p-8 space-y-6">
           <div className="flex items-center space-x-3 pb-4 border-b border-stone-100">

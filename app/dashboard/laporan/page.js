@@ -162,34 +162,23 @@ export default function LaporanDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
-        <div>
-          <h1 className="text-2xl font-extrabold text-stone-900">
-            Laporan Bisnis & Penjualan
-          </h1>
-          <p className="text-sm text-stone-500 mt-1">
-            Analisis omzet kas masuk, statistik pesanan, opsi terlaris, dan piutang pelanggan.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            type="button"
-            onClick={exportCsv}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 text-xs font-semibold shadow-sm transition cursor-pointer"
-          >
-            <i className="fa-solid fa-file-csv text-emerald-600"></i>
-            <span>Export CSV</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full font-semibold bg-rose-600 hover:bg-rose-500 text-white text-xs transition shadow-sm cursor-pointer"
-          >
-            <i className="fa-solid fa-print"></i>
-            <span>Cetak Laporan</span>
-          </button>
-        </div>
+      <div className="flex items-center justify-end space-x-2 print:hidden">
+        <button
+          type="button"
+          onClick={exportCsv}
+          className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 text-xs font-semibold shadow-sm transition cursor-pointer"
+        >
+          <i className="fa-solid fa-file-csv text-emerald-600"></i>
+          <span>Export CSV</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full font-semibold bg-rose-600 hover:bg-rose-500 text-white text-xs transition shadow-sm cursor-pointer"
+        >
+          <i className="fa-solid fa-print"></i>
+          <span>Cetak Laporan</span>
+        </button>
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 print:border-none print:shadow-none space-y-6">

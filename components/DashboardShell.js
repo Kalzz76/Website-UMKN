@@ -195,19 +195,45 @@ export default function DashboardShell({
 
   const listMenu = role === "admin" ? menuAdmin : menuStaf;
 
-  let judulHalaman = "Dashboard";
+  let infoHalaman = {
+    judul: "Dashboard",
+    subjudul: "Ringkasan performa penjualan Cravely Bakery.",
+  };
   if (pathname.startsWith("/dashboard/harga-opsi")) {
-    judulHalaman = "Harga & Opsi";
+    infoHalaman = {
+      judul: "Harga & Opsi",
+      subjudul: "Kelola grup opsi kue dan daftar harga kustomisasi.",
+    };
+  } else if (pathname.startsWith("/dashboard/pesanan/")) {
+    infoHalaman = {
+      judul: "Detail Pesanan",
+      subjudul: "Informasi lengkap rincian dan progres pesanan pelanggan.",
+    };
   } else if (pathname.startsWith("/dashboard/pesanan")) {
-    judulHalaman = "Pesanan";
+    infoHalaman = {
+      judul: "Daftar Pesanan",
+      subjudul: "Kelola semua pesanan pelanggan dan status pembayaran.",
+    };
   } else if (pathname.startsWith("/dashboard/stok")) {
-    judulHalaman = "Stok";
+    infoHalaman = {
+      judul: "Stok Bahan",
+      subjudul: "Pantau ketersediaan bahan pembuatan kue dan fisik dapur.",
+    };
   } else if (pathname.startsWith("/dashboard/laporan")) {
-    judulHalaman = "Laporan";
+    infoHalaman = {
+      judul: "Laporan Penjualan",
+      subjudul: "Analisis omzet kas masuk, statistik pesanan, dan pembukuan.",
+    };
   } else if (pathname.startsWith("/dashboard/pengaturan")) {
-    judulHalaman = "Pengaturan";
+    infoHalaman = {
+      judul: "Pengaturan Toko",
+      subjudul: "Atur informasi toko, jam kerja, dan kebijakan pembayaran.",
+    };
   } else if (pathname.startsWith("/dashboard/akun")) {
-    judulHalaman = "Akun";
+    infoHalaman = {
+      judul: "Kelola Akun",
+      subjudul: "Atur hak akses staf produksi dan administrator toko.",
+    };
   }
 
   const totalNotif = notifPesananCount + notifStokCount;
@@ -315,28 +341,10 @@ export default function DashboardShell({
       >
         <header className="topbar">
           <div className="topbar-left">
-            <button
-              type="button"
-              className="btn-toggle-sidebar"
-              id="toggleSidebarBtn"
-              title="Buka/Tutup Sidebar"
-              onClick={handleToggleSidebar}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                style={{
-                  width: "18px",
-                  height: "18px",
-                  stroke: "currentColor",
-                  strokeWidth: "2",
-                  fill: "none",
-                  strokeLinecap: "round",
-                }}
-              >
-                <path d="M4 7h16M4 12h10M4 17h16" />
-              </svg>
-            </button>
-            <h1 className="header-page-title">{judulHalaman}</h1>
+            <div className="topbar-title-wrap">
+              <h1 className="header-page-title">{infoHalaman.judul}</h1>
+              <p className="header-page-subtitle">{infoHalaman.subjudul}</p>
+            </div>
           </div>
 
           <div className="topbar-user-area">

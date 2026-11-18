@@ -231,16 +231,8 @@ export default function StokDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-stone-900">
-            Inventori Stok Bahan Dapur
-          </h1>
-          <p className="text-sm text-stone-500 mt-1">
-            Pantau ketersediaan bahan pembuatan kue dan perbarui jumlah stok fisik dapur.
-          </p>
-        </div>
-        {isAdmin && (
+      {isAdmin && (
+        <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={bukaModalTambahBahan}
@@ -249,8 +241,8 @@ export default function StokDashboardPage() {
             <i className="fa-solid fa-plus"></i>
             <span>Tambah Bahan</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
         {sedangMemuat ? (

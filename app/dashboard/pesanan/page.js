@@ -110,19 +110,6 @@ export default function DaftarPesananDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-stone-900">
-            Daftar Pesanan
-          </h1>
-          <p className="text-sm text-stone-500 mt-1">
-            {isAdmin
-              ? "Kelola semua pesanan pelanggan, status pembayaran, dan progres pembuatan kue."
-              : "Daftar pesanan kue yang perlu diproduksi di dapur."}
-          </p>
-        </div>
-      </div>
-
       <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
         <form onSubmit={handleCari} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
