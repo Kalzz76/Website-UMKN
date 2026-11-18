@@ -61,8 +61,16 @@ export default function DaftarPage() {
     if (error) {
       setMemuat(false);
       let pesanError = "Terjadi kesalahan saat pendaftaran.";
-      if (error.message.includes("User already registered")) {
+      if (error.message && error.message.includes("User already registered")) {
         pesanError = "Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.";
+      } else if (
+        !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+        process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder") ||
+        error.message.includes("Failed to fetch")
+      ) {
+        pesanError = "Koneksi ke Supabase belum terhubung. Pastikan kredensial di file .env.local sudah diisi dengan URL dan Anon Key proyek Supabase Anda.";
+      } else if (error.message) {
+        pesanError = `Terjadi kesalahan saat pendaftaran: ${error.message}`;
       }
       setDaftarError([pesanError]);
       return;
