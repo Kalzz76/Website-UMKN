@@ -36,7 +36,8 @@ async function jalankanSeeder() {
 
   await supabase.from("pengaturan_toko").upsert({
     id: 1,
-    nama_toko: "Dapur Manis Custom Cake",
+    nama_toko: "Cravely Bakery",
+    slogan: "Buat hari lebih manis dengan kue terbaik kami ♡",
     alamat: "Jl. Melati No. 12, Jakarta Selatan",
     no_wa: "081234567890",
     jam_operasional: "Senin - Minggu: 08.00 - 20.00",
@@ -49,14 +50,15 @@ async function jalankanSeeder() {
     batas_bayar_jam: 24,
     nama_bank: "BCA",
     no_rekening: "1234567890",
-    atas_nama: "Dapur Manis",
+    atas_nama: "Cravely Bakery",
   });
 
   const daftarGrup = [
-    { nama: "Ukuran", urutan: 1, wajib: true, jenis_pilihan: "satu", peran_visual: "ukuran" },
-    { nama: "Rasa", urutan: 2, wajib: true, jenis_pilihan: "satu", peran_visual: "badan" },
-    { nama: "Krim", urutan: 3, wajib: true, jenis_pilihan: "satu", peran_visual: "krim" },
-    { nama: "Topping", urutan: 4, wajib: false, jenis_pilihan: "banyak", peran_visual: "topping" },
+    { nama: "Jenis Kue", urutan: 1, wajib: true, jenis_pilihan: "satu", peran_visual: "badan", peran_dashboard: "jenis" },
+    { nama: "Ukuran", urutan: 2, wajib: true, jenis_pilihan: "satu", peran_visual: "ukuran", peran_dashboard: null },
+    { nama: "Rasa", urutan: 3, wajib: true, jenis_pilihan: "satu", peran_visual: "badan", peran_dashboard: "terlaris" },
+    { nama: "Krim", urutan: 4, wajib: true, jenis_pilihan: "satu", peran_visual: "krim", peran_dashboard: null },
+    { nama: "Topping", urutan: 5, wajib: false, jenis_pilihan: "banyak", peran_visual: "topping", peran_dashboard: null },
   ];
 
   for (let i = 0; i < daftarGrup.length; i++) {
@@ -75,12 +77,20 @@ async function jalankanSeeder() {
         .select("id")
         .single();
       grupId = grupBaru ? grupBaru.id : null;
+    } else {
+      await supabase.from("grup_opsi").update({ peran_dashboard: g.peran_dashboard }).eq("id", grupId);
     }
 
     if (!grupId) continue;
 
     let items = [];
-    if (g.nama === "Ukuran") {
+    if (g.nama === "Jenis Kue") {
+      items = [
+        { nama: "Custom Cake", harga: 0, aktif: true, urutan: 1, warna: "#1e4b3c", kode_visual: "custom" },
+        { nama: "Regular Cake", harga: 0, aktif: true, urutan: 2, warna: "#608d7c", kode_visual: "regular" },
+        { nama: "Cupcake", harga: 0, aktif: true, urutan: 3, warna: "#b2cfbe", kode_visual: "cupcake" },
+      ];
+    } else if (g.nama === "Ukuran") {
       items = [
         { nama: "Kecil (15 cm)", harga: 80000, aktif: true, urutan: 1, kode_visual: "kecil" },
         { nama: "Sedang (20 cm)", harga: 150000, aktif: true, urutan: 2, kode_visual: "sedang" },

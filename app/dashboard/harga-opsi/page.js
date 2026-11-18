@@ -19,6 +19,7 @@ export default function HargaOpsiPage() {
     wajib: false,
     jenis_pilihan: "satu",
     peran_visual: "",
+    peran_dashboard: "",
   });
 
   const [modalItemBuka, setModalItemBuka] = useState(false);
@@ -77,6 +78,7 @@ export default function HargaOpsiPage() {
       wajib: false,
       jenis_pilihan: "satu",
       peran_visual: "",
+      peran_dashboard: "",
     });
     setPesanErrorForm([]);
     setModalGrupBuka(true);
@@ -90,6 +92,7 @@ export default function HargaOpsiPage() {
       wajib: grup.wajib,
       jenis_pilihan: grup.jenis_pilihan,
       peran_visual: grup.peran_visual || "",
+      peran_dashboard: grup.peran_dashboard || "",
     });
     setPesanErrorForm([]);
     setModalGrupBuka(true);
@@ -121,6 +124,7 @@ export default function HargaOpsiPage() {
         wajib: formGrup.wajib,
         jenis_pilihan: formGrup.jenis_pilihan,
         peran_visual: formGrup.peran_visual,
+        peran_dashboard: formGrup.peran_dashboard,
       }),
     });
 
@@ -627,6 +631,26 @@ export default function HargaOpsiPage() {
                   <option value="krim">Krim (mengatur warna lapisan krim)</option>
                   <option value="topping">Topping (menempelkan hiasan di atas kue)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                  Tampil di dashboard sebagai
+                </label>
+                <select
+                  value={formGrup.peran_dashboard || ""}
+                  onChange={(e) =>
+                    setFormGrup({ ...formGrup, peran_dashboard: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-sm bg-white"
+                >
+                  <option value="">Tidak ditampilkan</option>
+                  <option value="jenis">Grafik jenis kue (donut)</option>
+                  <option value="terlaris">Daftar terlaris</option>
+                </select>
+                <p className="text-[11px] text-stone-500 mt-1">
+                  Item di grup ini yang dihitung di dashboard
+                </p>
               </div>
 
               <div className="pt-2">

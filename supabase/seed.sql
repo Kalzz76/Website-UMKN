@@ -1,6 +1,7 @@
 insert into public.pengaturan_toko (
   id,
   nama_toko,
+  slogan,
   alamat,
   no_wa,
   jam_operasional,
@@ -17,7 +18,8 @@ insert into public.pengaturan_toko (
   gambar_qris
 ) values (
   1,
-  'Dapur Manis Custom Cake',
+  'Cravely Bakery',
+  'Buat hari lebih manis dengan kue terbaik kami ♡',
   'Jl. Melati No. 12, Jakarta Selatan',
   '081234567890',
   'Senin - Minggu: 08.00 - 20.00',
@@ -30,16 +32,35 @@ insert into public.pengaturan_toko (
   24,
   'BCA',
   '1234567890',
-  'Dapur Manis',
+  'Cravely Bakery',
   null
-) on conflict (id) do nothing;
+) on conflict (id) do update set
+  nama_toko = excluded.nama_toko,
+  slogan = excluded.slogan;
 
-insert into public.grup_opsi (nama, urutan, wajib, jenis_pilihan, peran_visual)
+insert into public.grup_opsi (nama, urutan, wajib, jenis_pilihan, peran_visual, peran_dashboard)
 values
-  ('Ukuran', 1, true, 'satu', 'ukuran'),
-  ('Rasa', 2, true, 'satu', 'badan'),
-  ('Krim', 3, true, 'satu', 'krim'),
-  ('Topping', 4, false, 'banyak', 'topping');
+  ('Jenis Kue', 1, true, 'satu', 'badan', 'jenis'),
+  ('Ukuran', 2, true, 'satu', 'ukuran', null),
+  ('Rasa', 3, true, 'satu', 'badan', 'terlaris'),
+  ('Krim', 4, true, 'satu', 'krim', null),
+  ('Topping', 5, false, 'banyak', 'topping', null)
+on conflict do nothing;
+
+update public.grup_opsi set peran_dashboard = 'jenis' where nama = 'Jenis Kue';
+update public.grup_opsi set peran_dashboard = 'terlaris' where nama = 'Rasa';
+
+insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
+select id, 'Custom Cake', 0, true, 1, '#1e4b3c', 'custom'
+from public.grup_opsi where nama = 'Jenis Kue';
+
+insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
+select id, 'Regular Cake', 0, true, 2, '#608d7c', 'regular'
+from public.grup_opsi where nama = 'Jenis Kue';
+
+insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
+select id, 'Cupcake', 0, true, 3, '#b2cfbe', 'cupcake'
+from public.grup_opsi where nama = 'Jenis Kue';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
 select id, 'Kecil (15 cm)', 80000, true, 1, null, 'kecil'

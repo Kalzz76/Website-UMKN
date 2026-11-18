@@ -339,6 +339,7 @@ export async function POST(request) {
     const gr = grupLookup.get(it.id_grup);
     pilihanRows.push({
       id_pesanan: newPesanan.id,
+      id_grup: it.id_grup || (gr ? gr.id : null),
       nama_grup: gr ? gr.nama : "Opsi",
       nama_item: it.nama,
       harga: it.harga,

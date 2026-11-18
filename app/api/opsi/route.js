@@ -16,7 +16,7 @@ export async function POST(request) {
   const { aksi } = body;
 
   if (aksi === "tambah_grup") {
-    const { nama, urutan, wajib, jenis_pilihan, peran_visual } = body;
+    const { nama, urutan, wajib, jenis_pilihan, peran_visual, peran_dashboard } = body;
 
     if (!nama || nama.trim() === "") {
       return NextResponse.json(
@@ -43,12 +43,31 @@ export async function POST(request) {
       );
     }
 
+    let peranDash = peran_dashboard;
+    if (peranDash === "") {
+      peranDash = null;
+    }
+    if (peranDash && !["jenis", "terlaris"].includes(peranDash)) {
+      return NextResponse.json(
+        { pesan: "Peran dashboard tidak valid." },
+        { status: 400 }
+      );
+    }
+
+    if (peranDash) {
+      await supabase
+        .from("grup_opsi")
+        .update({ peran_dashboard: null })
+        .eq("peran_dashboard", peranDash);
+    }
+
     const { error } = await supabase.from("grup_opsi").insert({
       nama: nama.trim(),
       urutan: Number(urutan) || 0,
       wajib: Boolean(wajib),
       jenis_pilihan,
       peran_visual: peran,
+      peran_dashboard: peranDash,
     });
 
     if (error) {
@@ -62,7 +81,7 @@ export async function POST(request) {
   }
 
   if (aksi === "edit_grup") {
-    const { id, nama, urutan, wajib, jenis_pilihan, peran_visual } = body;
+    const { id, nama, urutan, wajib, jenis_pilihan, peran_visual, peran_dashboard } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -96,6 +115,24 @@ export async function POST(request) {
       );
     }
 
+    let peranDash = peran_dashboard;
+    if (peranDash === "") {
+      peranDash = null;
+    }
+    if (peranDash && !["jenis", "terlaris"].includes(peranDash)) {
+      return NextResponse.json(
+        { pesan: "Peran dashboard tidak valid." },
+        { status: 400 }
+      );
+    }
+
+    if (peranDash) {
+      await supabase
+        .from("grup_opsi")
+        .update({ peran_dashboard: null })
+        .eq("peran_dashboard", peranDash);
+    }
+
     const { error } = await supabase
       .from("grup_opsi")
       .update({
@@ -104,6 +141,7 @@ export async function POST(request) {
         wajib: Boolean(wajib),
         jenis_pilihan,
         peran_visual: peran,
+        peran_dashboard: peranDash,
       })
       .eq("id", id);
 

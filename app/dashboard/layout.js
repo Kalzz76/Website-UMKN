@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseServer } from "@/lib/supabaseServer";
-import SidebarDashboard from "@/components/SidebarDashboard";
+import DashboardShell from "@/components/DashboardShell";
+import "./dashboard.css";
 
 export const metadata = {
-  title: "Dashboard - Toko Kue Custom",
+  title: "Dashboard - Cravely Bakery",
 };
 
 export default async function DashboardLayout({ children }) {
@@ -21,22 +22,38 @@ export default async function DashboardLayout({ children }) {
   }
 
   const supabase = await getSupabaseServer();
-  const { data: pengaturan } = await supabase
+
+  const { data: toko } = await supabase
     .from("pengaturan_toko")
     .select("nama_toko")
     .eq("id", 1)
-    .single();
+    .maybeSingle();
 
-  const namaToko = pengaturan?.nama_toko || "Toko Kue";
+  let notifPesananCount = 0;
+  if (profil.role === "admin") {
+    const { count } = await supabase
+      .from("pembayaran")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "Menunggu Konfirmasi");
+    notifPesananCount = count || 0;
+  }
+
+  const { data: listBahan } = await supabase
+    .from("bahan")
+    .select("id, jumlah, batas_minimum");
+
+  const notifStokCount = (listBahan || []).filter(
+    (b) => Number(b.jumlah) <= Number(b.batas_minimum)
+  ).length;
 
   return (
-    <div className="min-h-screen bg-amber-50 flex flex-col md:flex-row">
-      <SidebarDashboard profil={profil} namaToko={namaToko} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <DashboardShell
+      profil={profil}
+      namaToko={toko?.nama_toko || "Cravely Bakery"}
+      notifPesananCount={notifPesananCount}
+      notifStokCount={notifStokCount}
+    >
+      {children}
+    </DashboardShell>
   );
 }
