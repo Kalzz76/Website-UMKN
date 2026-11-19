@@ -11,10 +11,10 @@ const presetWarna = [
   { label: "Vanilla", hex: "#fbf0d9" },
   { label: "Pink", hex: "#f472b6" },
   { label: "Red Velvet", hex: "#991b1b" },
-  { label: "Matcha", hex: "#4d7c0f" },
   { label: "Putih", hex: "#ffffff" },
-  { label: "Mocca", hex: "#78350f" },
-  { label: "Krim Keju", hex: "#fef3c7" },
+  { label: "Mint", hex: "#6ee7b7" },
+  { label: "Kuning", hex: "#fde047" },
+  { label: "Lavender", hex: "#c084fc" },
 ];
 
 const KODE_STUDIO_PER_PERAN = {
@@ -616,14 +616,20 @@ export default function HargaOpsiPage() {
                           <tr>
                             <th className="py-3 px-3.5 rounded-l-xl w-14">No.</th>
                             <th className="py-3 px-3.5">Nama Opsi</th>
-                            <th className="py-3 px-3.5">Harga Tambahan</th>
+                            <th className="py-3 px-3.5">
+                              {grup.peran_visual === "stiker" ? "Harga (per buah)" : "Harga Tambahan"}
+                            </th>
                             <th className="py-3 px-3.5">
                               {grup.peran_visual === "ukuran"
                                 ? "Ukuran Visual"
+                                : grup.peran_visual === "bentuk"
+                                ? "Bentuk Visual"
                                 : grup.peran_visual === "badan" || grup.peran_visual === "krim"
                                 ? "Warna Visual"
                                 : grup.peran_visual === "topping"
-                                ? "Ikon Visual"
+                                ? "Ikon Dekorasi"
+                                : grup.peran_visual === "stiker"
+                                ? "Stiker / Ikon"
                                 : "Format"}
                             </th>
                             <th className="py-3 px-3.5">Status</th>
@@ -901,12 +907,16 @@ export default function HargaOpsiPage() {
                     required
                     placeholder={
                       grupAktifForItem?.peran_visual === "ukuran"
-                        ? "Contoh: Kecil (15 cm), Sedang (20 cm), Besar (25 cm)"
+                        ? "Contoh: Mini Ø10, Small Ø14, Medium Ø18, Large Ø22"
+                        : grupAktifForItem?.peran_visual === "bentuk"
+                        ? "Contoh: Lingkaran, Kotak, Hati, Bintang, Hexagon"
                         : grupAktifForItem?.peran_visual === "badan" || grupAktifForItem?.peran_visual === "krim"
-                        ? "Contoh: Coklat, Vanilla, Red Velvet, Matcha"
+                        ? "Contoh: Vanilla, Cokelat, Red Velvet, Stroberi, Lavender, Mint"
                         : grupAktifForItem?.peran_visual === "topping"
-                        ? "Contoh: Strawberry Segar, Lilin Ultah, Choco Chip"
-                        : "Contoh: Tulisan di Kue, Kartu Ucapan, Lilin Angka"
+                        ? "Contoh: Lelehan Krim, Stroberi, Mixed Berry, Bunga Gula, Taburan, Lilin"
+                        : grupAktifForItem?.peran_visual === "stiker"
+                        ? "Contoh: Stiker, Topper, Bunga, Buah, Cokelat"
+                        : "Contoh: Gambar Kustom, Tulisan di Kue"
                     }
                     value={formItem.nama}
                     onChange={(e) =>

@@ -144,16 +144,15 @@ async function jalankanSeeder() {
       ];
     } else if (g.nama === "Elemen Hiasan") {
       items = [
-        { nama: "Stiker", harga: 3000, aktif: true, urutan: 1, kode_visual: "stiker" },
-        { nama: "Topper", harga: 8000, aktif: true, urutan: 2, kode_visual: "topper" },
-        { nama: "Bunga", harga: 2000, aktif: true, urutan: 3, kode_visual: "bunga" },
-        { nama: "Buah", harga: 2500, aktif: true, urutan: 4, kode_visual: "buah" },
-        { nama: "Cokelat", harga: 3000, aktif: true, urutan: 5, kode_visual: "cokelat" },
-        { nama: "Lainnya", harga: 2000, aktif: true, urutan: 6, kode_visual: "lainnya" },
+        { nama: "Stiker", harga: 5000, aktif: true, urutan: 1, kode_visual: "stiker" },
+        { nama: "Topper", harga: 5000, aktif: true, urutan: 2, kode_visual: "topper" },
+        { nama: "Bunga", harga: 5000, aktif: true, urutan: 3, kode_visual: "bunga" },
+        { nama: "Buah", harga: 5000, aktif: true, urutan: 4, kode_visual: "buah" },
+        { nama: "Cokelat", harga: 5000, aktif: true, urutan: 5, kode_visual: "cokelat" },
       ];
     } else if (g.nama === "Desain Kustom") {
       items = [
-        { nama: "Gambar Kustom", harga: 15000, aktif: true, urutan: 1, kode_visual: "gambar_kustom" },
+        { nama: "Gambar Kustom", harga: 20000, aktif: true, urutan: 1, kode_visual: "gambar_kustom" },
       ];
     }
 
@@ -238,4 +237,9 @@ async function jalankanSeeder() {
   console.log("Seeding data berhasil diselesaikan!");
 }
 
-jalankanSeeder();
+if (process.argv.includes("--confirm")) {
+  jalankanSeeder();
+} else {
+  console.log("Peringatan: Seeder database diblokir untuk mencegah penulisan data yang tidak disengaja. Jalankan dengan argumen --confirm jika memang ingin mengeksekusi.");
+  process.exit(0);
+}

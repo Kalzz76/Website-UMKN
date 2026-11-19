@@ -216,31 +216,27 @@ select id, 'Lilin', 3000, true, 6, '#fbbf24', 'candle'
 from public.grup_opsi where nama = 'Dekorasi';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Stiker', 3000, true, 1, null, 'stiker'
+select id, 'Stiker', 5000, true, 1, null, 'stiker'
 from public.grup_opsi where nama = 'Elemen Hiasan';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Topper', 8000, true, 2, null, 'topper'
+select id, 'Topper', 5000, true, 2, null, 'topper'
 from public.grup_opsi where nama = 'Elemen Hiasan';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Bunga', 2000, true, 3, null, 'bunga'
+select id, 'Bunga', 5000, true, 3, null, 'bunga'
 from public.grup_opsi where nama = 'Elemen Hiasan';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Buah', 2500, true, 4, null, 'buah'
+select id, 'Buah', 5000, true, 4, null, 'buah'
 from public.grup_opsi where nama = 'Elemen Hiasan';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Cokelat', 3000, true, 5, null, 'cokelat'
+select id, 'Cokelat', 5000, true, 5, null, 'cokelat'
 from public.grup_opsi where nama = 'Elemen Hiasan';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Lainnya', 2000, true, 6, null, 'lainnya'
-from public.grup_opsi where nama = 'Elemen Hiasan';
-
-insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Gambar Kustom', 15000, true, 1, null, 'gambar_kustom'
+select id, 'Gambar Kustom', 20000, true, 1, null, 'gambar_kustom'
 from public.grup_opsi where nama = 'Desain Kustom';
 
 insert into public.zona_ongkir (nama, tarif, aktif)

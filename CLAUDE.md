@@ -359,10 +359,11 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 Satu halaman, isinya **grup opsi**, dan tiap grup punya daftar item beserta harganya. Tidak ada menu terpisah untuk rasa, ukuran, dan lainnya.
 
 ```
-Rasa      : Strawberry 40.000 | Coklat 40.000 | Vanilla 35.000   [+ item]
-Ukuran    : Kecil 80.000 | Medium 150.000 | Besar 250.000        [+ item]
-Krim      : ...
-Topping   : ...
+Rasa      : Vanilla 0 | Cokelat 10.000 | Red Velvet 15.000       [+ item]
+Ukuran    : Mini Ø10 85.000 | Small Ø14 125.000 | Medium 165.000 [+ item]
+Bentuk    : Lingkaran 0 | Kotak 0 | Hati 10.000                  [+ item]
+Warna Krim: Pink 0 | Putih 0 | Cokelat 0                         [+ item]
+Dekorasi  : Lelehan Krim 12.000 | Lilin 3.000                    [+ item]
                                                                  [+ grup]
 ```
 
@@ -504,7 +505,7 @@ Dibuat lewat **file SQL di `supabase/migrations/`** dan data awal lewat `seed.sq
 Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
 
 ### grup_opsi
-`id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
+`id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / `bentuk` / `stiker` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
 
 ### opsi_item
 `id`, `id_grup` (FK), `nama`, `harga` (integer, rupiah), `aktif` (boolean, default true), `urutan`, `warna` (hex, boleh kosong), `kode_visual` (boleh kosong).
@@ -516,10 +517,10 @@ Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alama
 `id`, `tanggal` (date, unik), `alasan`.
 
 ### pesanan
-`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `dibuat_pada`.
+`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `dibuat_pada`.
 
 ### pesanan_pilihan
-Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `warna`, `kode_visual`, `peran_visual`.
+Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
 
 ### pembayaran
 `id`, `id_pesanan` (FK), `jenis` (`DP` / `Pelunasan` / `Lunas`), `jumlah`, `metode` (`Transfer Bank` / `QRIS` / `Tunai di Tempat`), `bukti` (path di Storage, boleh kosong untuk tunai), `status` (`Menunggu Konfirmasi` / `Dikonfirmasi` / `Ditolak`), `id_pengonfirmasi` (FK `profil`, boleh kosong), `dikonfirmasi_pada` (timestamptz, diisi saat admin mengonfirmasi pembayaran, zona waktu `Asia/Jakarta`/UTC), `dibuat_pada`.

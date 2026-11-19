@@ -36,7 +36,7 @@ export async function POST(request) {
     if (peran === "") {
       peran = null;
     }
-    if (peran && !["badan", "ukuran", "krim", "topping"].includes(peran)) {
+    if (peran && !["badan", "ukuran", "krim", "topping", "bentuk", "stiker"].includes(peran)) {
       return NextResponse.json(
         { pesan: "Peran visual tidak valid." },
         { status: 400 }
@@ -108,7 +108,7 @@ export async function POST(request) {
     if (peran === "") {
       peran = null;
     }
-    if (peran && !["badan", "ukuran", "krim", "topping"].includes(peran)) {
+    if (peran && !["badan", "ukuran", "krim", "topping", "bentuk", "stiker"].includes(peran)) {
       return NextResponse.json(
         { pesan: "Peran visual tidak valid." },
         { status: 400 }

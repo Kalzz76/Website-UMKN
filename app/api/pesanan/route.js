@@ -264,14 +264,11 @@ export async function POST(request) {
       );
     }
 
-    if (itemData.kode_visual === "gambar_kustom" || itemData.nama.toLowerCase().includes("gambar kustom")) {
+    if (itemData.kode_visual === "gambar_kustom") {
       adaGambarKustom = true;
     }
 
-    if (
-      (grupData?.peran_visual === "bentuk" || grupData?.nama?.toLowerCase().includes("bentuk")) &&
-      (itemData.kode_visual === "custom" || itemData.nama.toLowerCase().includes("buat sendiri"))
-    ) {
+    if (grupData?.peran_visual === "bentuk" && itemData.kode_visual === "custom") {
       adaBuatSendiri = true;
     }
 
