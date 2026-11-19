@@ -12,7 +12,7 @@
 
   --card-bg: #fbf6e9;
   --card-radius: 20px;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --card-shadow: none;
   --card-border: 1px solid #e2d9c7;
 
   --color-primary: #17382d;
@@ -837,7 +837,7 @@
   align-items: center;
   gap: 12px;
   position: relative;
-  box-shadow: var(--card-shadow);
+  box-shadow: none;
   border: var(--card-border);
   overflow: hidden;
   min-width: 0;
@@ -976,7 +976,7 @@
   background: var(--card-bg);
   border-radius: var(--card-radius);
   padding: 16px 18px;
-  box-shadow: var(--card-shadow);
+  box-shadow: none !important;
   border: var(--card-border);
   position: relative;
   min-width: 0;
@@ -1573,7 +1573,7 @@
   background-color: #fbf6e9 !important;
   border: 1px solid #e2d9c7 !important;
   border-radius: 20px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: none !important;
   color: #1d3b2e;
 }
 

@@ -17,6 +17,15 @@ const presetWarna = [
   { label: "Krim Keju", hex: "#fef3c7" },
 ];
 
+const KODE_STUDIO_PER_PERAN = {
+  ukuran: ["mini", "small", "medium", "large"],
+  bentuk: ["round", "square", "heart", "star", "hex", "custom"],
+  badan: ["vanilla", "choco", "velvet", "straw"],
+  krim: ["pink", "putih", "coklat", "mint", "kuning", "lavender"],
+  topping: ["drip", "straw", "berry", "flower", "spr", "candle"],
+  stiker: ["stiker", "topper", "bunga", "buah", "cokelat", "lainnya"],
+};
+
 export default function HargaOpsiPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [daftarGrup, setDaftarGrup] = useState([]);
@@ -241,15 +250,19 @@ export default function HargaOpsiPage() {
     let defaultKodeVisual = "";
     let defaultWarna = "";
     if (grup.peran_visual === "ukuran") {
-      defaultKodeVisual = "kecil";
+      defaultKodeVisual = "mini";
+    } else if (grup.peran_visual === "bentuk") {
+      defaultKodeVisual = "round";
     } else if (grup.peran_visual === "badan") {
       defaultWarna = "#5c3a21";
-      defaultKodeVisual = "coklat";
+      defaultKodeVisual = "vanilla";
     } else if (grup.peran_visual === "krim") {
       defaultWarna = "#ffffff";
       defaultKodeVisual = "putih";
     } else if (grup.peran_visual === "topping") {
-      defaultKodeVisual = "strawberry";
+      defaultKodeVisual = "drip";
+    } else if (grup.peran_visual === "stiker") {
+      defaultKodeVisual = "stiker";
     }
 
     setFormItem({
@@ -269,25 +282,14 @@ export default function HargaOpsiPage() {
     setEditItemId(item.id);
     setGrupAktifForItem(grup);
 
-    let defaultKodeVisual = item.kode_visual || "";
-    if (!defaultKodeVisual) {
-      if (grup.peran_visual === "ukuran") defaultKodeVisual = "kecil";
-      else if (grup.peran_visual === "topping") defaultKodeVisual = "strawberry";
-    }
-
-    let defaultWarna = item.warna || "";
-    if (!defaultWarna && (grup.peran_visual === "badan" || grup.peran_visual === "krim")) {
-      defaultWarna = grup.peran_visual === "badan" ? "#5c3a21" : "#ffffff";
-    }
-
     setFormItem({
       id_grup: item.id_grup,
       nama: item.nama,
       harga: item.harga,
       aktif: item.aktif,
       urutan: item.urutan,
-      warna: defaultWarna,
-      kode_visual: defaultKodeVisual,
+      warna: item.warna || "",
+      kode_visual: item.kode_visual || "",
     });
     setPesanErrorForm([]);
     setModalItemBuka(true);
@@ -309,27 +311,8 @@ export default function HargaOpsiPage() {
       return;
     }
 
-    let finalWarna = formItem.warna || "";
-    let finalKodeVisual = formItem.kode_visual || "";
-
-    const peran = grupAktifForItem?.peran_visual;
-    if (peran === "ukuran") {
-      finalWarna = "";
-      if (!finalKodeVisual) finalKodeVisual = "kecil";
-    } else if (peran === "badan" || peran === "krim") {
-      if (!finalWarna) {
-        finalWarna = peran === "badan" ? "#5c3a21" : "#ffffff";
-      }
-      if (!finalKodeVisual) {
-        finalKodeVisual = formItem.nama.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
-      }
-    } else if (peran === "topping") {
-      finalWarna = "";
-      if (!finalKodeVisual) finalKodeVisual = "strawberry";
-    } else {
-      finalWarna = "";
-      finalKodeVisual = "";
-    }
+    const finalWarna = formItem.warna?.trim() || null;
+    const finalKodeVisual = formItem.kode_visual?.trim() || null;
 
     setSedangProses(true);
     const aksi = editItemId ? "edit_item" : "tambah_item";
@@ -438,61 +421,35 @@ export default function HargaOpsiPage() {
 
   function renderLabelPeranVisual(peran) {
     if (peran === "ukuran") return "Ukuran Kue";
-    if (peran === "badan") return "Warna Kue";
+    if (peran === "bentuk") return "Bentuk Kue";
+    if (peran === "badan") return "Rasa / Warna Kue";
     if (peran === "krim") return "Warna Krim";
-    if (peran === "topping") return "Topping";
+    if (peran === "topping") return "Dekorasi / Topping";
+    if (peran === "stiker") return "Elemen Hiasan / Stiker";
     return "Tanpa Efek Visual";
   }
 
   function renderVisualItem(item, peranGrup) {
-    if (peranGrup === "ukuran") {
-      let label = "Kecil (15 cm)";
-      if (item.kode_visual === "sedang") label = "Sedang (20 cm)";
-      else if (item.kode_visual === "besar") label = "Besar (25 cm)";
-      else if (item.kode_visual) label = item.kode_visual;
-
-      return (
-        <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#e8f0fe] text-[#1e40af] border border-[#bfdbfe]">
-          {label}
-        </span>
-      );
-    }
-
     if (peranGrup === "badan" || peranGrup === "krim") {
       return (
         <div className="flex items-center space-x-2">
-          <span
-            className="w-5 h-5 rounded-full border border-stone-300 shadow-xs inline-block flex-shrink-0"
-            style={{ backgroundColor: item.warna || "#5c3a21" }}
-          />
+          {item.warna && (
+            <span
+              className="w-5 h-5 rounded-full border border-stone-300 shadow-xs inline-block flex-shrink-0"
+              style={{ backgroundColor: item.warna }}
+            />
+          )}
           <span className="text-xs font-mono font-bold text-stone-700">
-            {item.warna || "-"}
+            {item.kode_visual || item.warna || "-"}
           </span>
         </div>
       );
     }
 
-    if (peranGrup === "topping") {
-      let icon = "✨";
-      let label = item.nama;
-      if (item.kode_visual === "strawberry") {
-        icon = "🍓";
-        label = "Strawberry";
-      } else if (item.kode_visual === "lilin") {
-        icon = "🕯️";
-        label = "Lilin Ultah";
-      } else if (item.kode_visual === "coklat_chip") {
-        icon = "🍫";
-        label = "Choco Chip";
-      } else if (item.kode_visual === "buah") {
-        icon = "🍒";
-        label = "Aneka Buah";
-      }
-
+    if (item.kode_visual) {
       return (
-        <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#fef3c7] text-[#92400e] border border-[#fde68a]">
-          <span>{icon}</span>
-          <span>{label}</span>
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#e8f0fe] text-[#1e40af] border border-[#bfdbfe]">
+          {item.kode_visual}
         </span>
       );
     }
@@ -832,9 +789,11 @@ export default function HargaOpsiPage() {
                   >
                     <option value="">Non-Visual (Hanya harga & teks catatan)</option>
                     <option value="ukuran">Ukuran (Mengatur tingkat & ukuran kue)</option>
+                    <option value="bentuk">Bentuk (Bentuk dasar kue 3D)</option>
                     <option value="badan">Warna Kue (Mengatur warna dasar bolu)</option>
                     <option value="krim">Warna Krim (Mengatur warna lelehan krim)</option>
-                    <option value="topping">Topping (Menampilkan lilin, buah, choco chip)</option>
+                    <option value="topping">Dekorasi / Topping (Lelehan, lilin, buah)</option>
+                    <option value="stiker">Elemen Hiasan / Stiker (Topper, bunga, stiker)</option>
                   </select>
                 </div>
 
@@ -961,6 +920,11 @@ export default function HargaOpsiPage() {
                   <div>
                     <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
                       Harga Tambahan (Rp) <span className="text-rose-500">*</span>
+                      {grupAktifForItem?.jenis_pilihan === "banyak" && (
+                        <span className="block text-[11px] font-medium text-amber-700 mt-0.5">
+                          Harga dihitung per buah
+                        </span>
+                      )}
                     </label>
                     <input
                       type="number"
@@ -991,104 +955,118 @@ export default function HargaOpsiPage() {
                   </div>
                 </div>
 
-                {grupAktifForItem?.peran_visual === "ukuran" && (
-                  <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-2">
-                    <label className="block text-xs font-bold text-[#1d3b2e]">
-                      Pilihan Ukuran di Visual Preview <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={formItem.kode_visual || "kecil"}
-                      onChange={(e) =>
-                        setFormItem({ ...formItem, kode_visual: e.target.value })
-                      }
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
-                    >
-                      <option value="kecil">Kecil (1 Tingkat / 15 cm)</option>
-                      <option value="sedang">Sedang (2 Tingkat / 20 cm)</option>
-                      <option value="besar">Besar (3 Tingkat / 25 cm)</option>
-                    </select>
-                    <p className="text-[11px] text-stone-600">
-                      Opsi ini akan mengubah skala dan jumlah tingkat kue pada visual preview 3D pelanggan.
-                    </p>
-                  </div>
-                )}
-
-                {(grupAktifForItem?.peran_visual === "badan" || grupAktifForItem?.peran_visual === "krim") && (
+                {grupAktifForItem?.peran_visual && (
                   <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-3">
                     <div>
-                      <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                        Pilih Warna {grupAktifForItem?.peran_visual === "badan" ? "Kue" : "Krim"} <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                        Kode Visual Studio 3D
                       </label>
-                      <div className="flex items-center space-x-2.5">
-                        <input
-                          type="color"
-                          value={formItem.warna || (grupAktifForItem?.peran_visual === "badan" ? "#5c3a21" : "#ffffff")}
-                          onChange={(e) =>
-                            setFormItem({ ...formItem, warna: e.target.value })
-                          }
-                          className="w-11 h-11 p-1 rounded-xl border border-[#dcd3c1] bg-white cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          placeholder="#5c3a21"
-                          value={formItem.warna}
-                          onChange={(e) =>
-                            setFormItem({ ...formItem, warna: e.target.value })
-                          }
-                          className="flex-1 px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-mono font-bold text-[#1d3b2e]"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        placeholder="Contoh kode visual..."
+                        value={formItem.kode_visual}
+                        onChange={(e) =>
+                          setFormItem({ ...formItem, kode_visual: e.target.value })
+                        }
+                        className="w-full px-3 py-2 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm font-mono text-[#1d3b2e]"
+                      />
+                      {(() => {
+                        const peran = grupAktifForItem.peran_visual;
+                        const kodeList = KODE_STUDIO_PER_PERAN[peran] || [];
+                        const val = formItem.kode_visual?.trim().toLowerCase();
+                        const tidakDikenal = Boolean(val && kodeList.length > 0 && !kodeList.includes(val));
+
+                        return (
+                          <div className="mt-2 space-y-2">
+                            {kodeList.length > 0 && (
+                              <div>
+                                <span className="block text-[11px] font-semibold text-stone-600 mb-1">
+                                  Kode yang dikenal studio untuk peran &ldquo;{peran}&rdquo;:
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {kodeList.map((kd) => (
+                                    <button
+                                      key={kd}
+                                      type="button"
+                                      onClick={() => setFormItem({ ...formItem, kode_visual: kd })}
+                                      className={`px-2 py-0.5 rounded text-[11px] font-mono transition border cursor-pointer ${
+                                        val === kd
+                                          ? "bg-[#ba2b2b] text-white border-[#ba2b2b]"
+                                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                                      }`}
+                                    >
+                                      {kd}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {tidakDikenal && (
+                              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2">
+                                <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5"></i>
+                                <span>
+                                  Peringatan: Kode <strong>&ldquo;{formItem.kode_visual}&rdquo;</strong> tidak dikenal oleh studio 3D untuk peran ini. Studio akan menggunakan tampilan bawaan.
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
-                    <div>
-                      <span className="block text-[11px] font-bold text-stone-600 mb-1.5">
-                        Pilihan Cepat Warna Populer:
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {presetWarna.map((pw) => (
-                          <button
-                            key={pw.hex}
-                            type="button"
-                            onClick={() => setFormItem({ ...formItem, warna: pw.hex })}
-                            className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
-                              formItem.warna?.toLowerCase() === pw.hex.toLowerCase()
-                                ? "bg-white border-[#ba2b2b] shadow-xs"
-                                : "bg-white/80 border-[#e0d5b8] hover:bg-white"
-                            }`}
-                          >
-                            <span
-                              className="w-3.5 h-3.5 rounded-full border border-stone-300"
-                              style={{ backgroundColor: pw.hex }}
-                            />
-                            <span className="text-[#1d3b2e]">{pw.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    {(grupAktifForItem.peran_visual === "badan" || grupAktifForItem.peran_visual === "krim") && (
+                      <div className="pt-2 border-t border-[#dfd4bd] space-y-2">
+                        <label className="block text-xs font-bold text-[#1d3b2e]">
+                          Warna Hex ({grupAktifForItem.peran_visual === "badan" ? "Kue" : "Krim"})
+                        </label>
+                        <div className="flex items-center space-x-2.5">
+                          <input
+                            type="color"
+                            value={formItem.warna || (grupAktifForItem.peran_visual === "badan" ? "#5c3a21" : "#ffffff")}
+                            onChange={(e) =>
+                              setFormItem({ ...formItem, warna: e.target.value })
+                            }
+                            className="w-11 h-11 p-1 rounded-xl border border-[#dcd3c1] bg-white cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            placeholder="#ffffff"
+                            value={formItem.warna}
+                            onChange={(e) =>
+                              setFormItem({ ...formItem, warna: e.target.value })
+                            }
+                            className="flex-1 px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-mono font-bold text-[#1d3b2e]"
+                          />
+                        </div>
 
-                {grupAktifForItem?.peran_visual === "topping" && (
-                  <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-2">
-                    <label className="block text-xs font-bold text-[#1d3b2e]">
-                      Ikon Topping di Visual Preview <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={formItem.kode_visual || "strawberry"}
-                      onChange={(e) =>
-                        setFormItem({ ...formItem, kode_visual: e.target.value })
-                      }
-                      className="w-full px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
-                    >
-                      <option value="strawberry">🍓 Strawberry Segar</option>
-                      <option value="lilin">🕯️ Lilin Ulang Tahun</option>
-                      <option value="coklat_chip">🍫 Choco Chip</option>
-                      <option value="buah">🍒 Aneka Potongan Buah</option>
-                      <option value="lainnya">✨ Topping Lainnya (Tanpa Ikon Khusus)</option>
-                    </select>
-                    <p className="text-[11px] text-stone-600">
-                      Topping yang dipilih akan ditampilkan secara otomatis pada permukaan kue di visual preview pelanggan.
-                    </p>
+                        <div>
+                          <span className="block text-[11px] font-bold text-stone-600 mb-1.5">
+                            Pilihan Cepat Warna Populer:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {presetWarna.map((pw) => (
+                              <button
+                                key={pw.hex}
+                                type="button"
+                                onClick={() => setFormItem({ ...formItem, warna: pw.hex })}
+                                className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                                  formItem.warna?.toLowerCase() === pw.hex.toLowerCase()
+                                    ? "bg-white border-[#ba2b2b] shadow-xs"
+                                    : "bg-white/80 border-[#e0d5b8] hover:bg-white"
+                                }`}
+                              >
+                                <span
+                                  className="w-3.5 h-3.5 rounded-full border border-stone-300"
+                                  style={{ backgroundColor: pw.hex }}
+                                />
+                                <span className="text-[#1d3b2e]">{pw.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

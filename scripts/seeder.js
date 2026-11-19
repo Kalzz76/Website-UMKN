@@ -32,8 +32,6 @@ async function jalankanSeeder() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  console.log("Memulai proses seeding database Supabase...");
-
   await supabase.from("pengaturan_toko").upsert({
     id: 1,
     nama_toko: "Cravely Bakery",
@@ -54,12 +52,19 @@ async function jalankanSeeder() {
   });
 
   const daftarGrup = [
-    { nama: "Jenis Kue", urutan: 1, wajib: true, jenis_pilihan: "satu", peran_visual: "badan", peran_dashboard: "jenis" },
+    { nama: "Jenis Kue", urutan: 1, wajib: true, jenis_pilihan: "satu", peran_visual: null, peran_dashboard: "jenis" },
     { nama: "Ukuran", urutan: 2, wajib: true, jenis_pilihan: "satu", peran_visual: "ukuran", peran_dashboard: null },
-    { nama: "Rasa", urutan: 3, wajib: true, jenis_pilihan: "satu", peran_visual: "badan", peran_dashboard: "terlaris" },
-    { nama: "Krim", urutan: 4, wajib: true, jenis_pilihan: "satu", peran_visual: "krim", peran_dashboard: null },
-    { nama: "Topping", urutan: 5, wajib: false, jenis_pilihan: "banyak", peran_visual: "topping", peran_dashboard: null },
+    { nama: "Bentuk", urutan: 3, wajib: true, jenis_pilihan: "satu", peran_visual: "bentuk", peran_dashboard: null },
+    { nama: "Rasa", urutan: 4, wajib: true, jenis_pilihan: "satu", peran_visual: "badan", peran_dashboard: "terlaris" },
+    { nama: "Isian", urutan: 5, wajib: true, jenis_pilihan: "satu", peran_visual: null, peran_dashboard: null },
+    { nama: "Warna Krim", urutan: 6, wajib: true, jenis_pilihan: "satu", peran_visual: "krim", peran_dashboard: null },
+    { nama: "Dekorasi", urutan: 7, wajib: false, jenis_pilihan: "banyak", peran_visual: "topping", peran_dashboard: null },
+    { nama: "Elemen Hiasan", urutan: 8, wajib: false, jenis_pilihan: "banyak", peran_visual: "stiker", peran_dashboard: null },
+    { nama: "Desain Kustom", urutan: 9, wajib: false, jenis_pilihan: "banyak", peran_visual: null, peran_dashboard: null },
   ];
+
+  await supabase.from("grup_opsi").update({ nama: "Warna Krim" }).eq("nama", "Krim");
+  await supabase.from("grup_opsi").update({ nama: "Elemen Hiasan" }).eq("nama", "Stiker & Topper");
 
   for (let i = 0; i < daftarGrup.length; i++) {
     const g = daftarGrup[i];
@@ -78,7 +83,7 @@ async function jalankanSeeder() {
         .single();
       grupId = grupBaru ? grupBaru.id : null;
     } else {
-      await supabase.from("grup_opsi").update({ peran_dashboard: g.peran_dashboard }).eq("id", grupId);
+      await supabase.from("grup_opsi").update(g).eq("id", grupId);
     }
 
     if (!grupId) continue;
@@ -87,36 +92,68 @@ async function jalankanSeeder() {
     if (g.nama === "Jenis Kue") {
       items = [
         { nama: "Custom Cake", harga: 0, aktif: true, urutan: 1, warna: "#1e4b3c", kode_visual: "custom" },
-        { nama: "Regular Cake", harga: 0, aktif: true, urutan: 2, warna: "#608d7c", kode_visual: "regular" },
-        { nama: "Cupcake", harga: 0, aktif: true, urutan: 3, warna: "#b2cfbe", kode_visual: "cupcake" },
+        { nama: "Template Siap Pakai", harga: 0, aktif: true, urutan: 2, warna: "#608d7c", kode_visual: "template" },
       ];
     } else if (g.nama === "Ukuran") {
       items = [
-        { nama: "Kecil (15 cm)", harga: 80000, aktif: true, urutan: 1, kode_visual: "kecil" },
-        { nama: "Sedang (20 cm)", harga: 150000, aktif: true, urutan: 2, kode_visual: "sedang" },
-        { nama: "Besar (25 cm)", harga: 250000, aktif: true, urutan: 3, kode_visual: "besar" },
+        { nama: "Mini Ø10", harga: 85000, aktif: true, urutan: 1, kode_visual: "mini" },
+        { nama: "Small Ø14", harga: 125000, aktif: true, urutan: 2, kode_visual: "small" },
+        { nama: "Medium Ø18", harga: 165000, aktif: true, urutan: 3, kode_visual: "medium" },
+        { nama: "Large Ø22", harga: 210000, aktif: true, urutan: 4, kode_visual: "large" },
+      ];
+    } else if (g.nama === "Bentuk") {
+      items = [
+        { nama: "Lingkaran", harga: 0, aktif: true, urutan: 1, kode_visual: "round" },
+        { nama: "Kotak", harga: 0, aktif: true, urutan: 2, kode_visual: "square" },
+        { nama: "Hati", harga: 10000, aktif: true, urutan: 3, kode_visual: "heart" },
+        { nama: "Bintang", harga: 15000, aktif: true, urutan: 4, kode_visual: "star" },
+        { nama: "Hexagon", harga: 10000, aktif: true, urutan: 5, kode_visual: "hex" },
+        { nama: "Buat Sendiri", harga: 25000, aktif: true, urutan: 6, kode_visual: "custom" },
       ];
     } else if (g.nama === "Rasa") {
       items = [
-        { nama: "Coklat", harga: 40000, aktif: true, urutan: 1, warna: "#5c3a21", kode_visual: "coklat" },
-        { nama: "Vanilla", harga: 35000, aktif: true, urutan: 2, warna: "#fbf0d9", kode_visual: "vanilla" },
-        { nama: "Strawberry", harga: 40000, aktif: true, urutan: 3, warna: "#f472b6", kode_visual: "strawberry" },
-        { nama: "Red Velvet", harga: 45000, aktif: true, urutan: 4, warna: "#991b1b", kode_visual: "red_velvet" },
-        { nama: "Matcha", harga: 45000, aktif: true, urutan: 5, warna: "#4d7c0f", kode_visual: "matcha" },
+        { nama: "Vanilla", harga: 0, aktif: true, urutan: 1, warna: "#fbefd5", kode_visual: "vanilla" },
+        { nama: "Cokelat", harga: 10000, aktif: true, urutan: 2, warna: "#8a5a3c", kode_visual: "choco" },
+        { nama: "Red Velvet", harga: 15000, aktif: true, urutan: 3, warna: "#c0404e", kode_visual: "velvet" },
+        { nama: "Stroberi", harga: 10000, aktif: true, urutan: 4, warna: "#f9cdd6", kode_visual: "straw" },
       ];
-    } else if (g.nama === "Krim") {
+    } else if (g.nama === "Isian") {
       items = [
-        { nama: "Buttercream Putih", harga: 20000, aktif: true, urutan: 1, warna: "#ffffff", kode_visual: "putih" },
-        { nama: "Buttercream Pink", harga: 25000, aktif: true, urutan: 2, warna: "#fbcfe8", kode_visual: "pink" },
-        { nama: "Buttercream Coklat", harga: 25000, aktif: true, urutan: 3, warna: "#78350f", kode_visual: "coklat" },
-        { nama: "Cream Cheese", harga: 30000, aktif: true, urutan: 4, warna: "#fef3c7", kode_visual: "cream_cheese" },
+        { nama: "Krim Vanilla", harga: 0, aktif: true, urutan: 1, warna: "#fffaf0", kode_visual: "cream" },
+        { nama: "Ganache Cokelat", harga: 8000, aktif: true, urutan: 2, warna: "#5b3322", kode_visual: "ganache" },
+        { nama: "Selai Stroberi", harga: 5000, aktif: true, urutan: 3, warna: "#d6304a", kode_visual: "jam" },
+        { nama: "Cream Cheese", harga: 12000, aktif: true, urutan: 4, warna: "#fff0c9", kode_visual: "cheese" },
       ];
-    } else if (g.nama === "Topping") {
+    } else if (g.nama === "Warna Krim") {
       items = [
-        { nama: "Strawberry Segar", harga: 20000, aktif: true, urutan: 1, warna: "#ef4444", kode_visual: "strawberry" },
-        { nama: "Coklat Chip", harga: 15000, aktif: true, urutan: 2, warna: "#451a03", kode_visual: "coklat_chip" },
-        { nama: "Aneka Buah", harga: 25000, aktif: true, urutan: 3, warna: "#f59e0b", kode_visual: "buah" },
-        { nama: "Lilin Ulang Tahun", harga: 10000, aktif: true, urutan: 4, warna: "#fbbf24", kode_visual: "lilin" },
+        { nama: "Pink", harga: 0, aktif: true, urutan: 1, warna: "#f6b4c2", kode_visual: "pink" },
+        { nama: "Putih", harga: 0, aktif: true, urutan: 2, warna: "#FFF8F0", kode_visual: "putih" },
+        { nama: "Cokelat", harga: 0, aktif: true, urutan: 3, warna: "#6b3d2a", kode_visual: "coklat" },
+        { nama: "Mint", harga: 0, aktif: true, urutan: 4, warna: "#bfe8d8", kode_visual: "mint" },
+        { nama: "Kuning", harga: 0, aktif: true, urutan: 5, warna: "#fbe39a", kode_visual: "kuning" },
+        { nama: "Lavender", harga: 0, aktif: true, urutan: 6, warna: "#d8c7f0", kode_visual: "lavender" },
+      ];
+    } else if (g.nama === "Dekorasi") {
+      items = [
+        { nama: "Lelehan Krim", harga: 12000, aktif: true, urutan: 1, warna: "#451a03", kode_visual: "drip" },
+        { nama: "Stroberi", harga: 10000, aktif: true, urutan: 2, warna: "#ef4444", kode_visual: "straw" },
+        { nama: "Mixed Berry", harga: 15000, aktif: true, urutan: 3, warna: "#4338ca", kode_visual: "berry" },
+        { nama: "Bunga Gula", harga: 8000, aktif: true, urutan: 4, warna: "#f472b6", kode_visual: "flower" },
+        { nama: "Taburan", harga: 5000, aktif: true, urutan: 5, warna: "#f59e0b", kode_visual: "spr" },
+        { nama: "Lilin", harga: 3000, aktif: true, urutan: 6, warna: "#fbbf24", kode_visual: "candle" },
+      ];
+    } else if (g.nama === "Elemen Hiasan") {
+      items = [
+        { nama: "Stiker", harga: 3000, aktif: true, urutan: 1, kode_visual: "stiker" },
+        { nama: "Topper", harga: 8000, aktif: true, urutan: 2, kode_visual: "topper" },
+        { nama: "Bunga", harga: 2000, aktif: true, urutan: 3, kode_visual: "bunga" },
+        { nama: "Buah", harga: 2500, aktif: true, urutan: 4, kode_visual: "buah" },
+        { nama: "Cokelat", harga: 3000, aktif: true, urutan: 5, kode_visual: "cokelat" },
+        { nama: "Lainnya", harga: 2000, aktif: true, urutan: 6, kode_visual: "lainnya" },
+      ];
+    } else if (g.nama === "Desain Kustom") {
+      items = [
+        { nama: "Gambar Kustom", harga: 15000, aktif: true, urutan: 1, kode_visual: "gambar_kustom" },
       ];
     }
 
@@ -134,8 +171,26 @@ async function jalankanSeeder() {
           id_grup: grupId,
           ...it,
         });
+      } else {
+        await supabase.from("opsi_item").update({
+          ...it,
+        }).eq("id", itemDb.id);
       }
     }
+  }
+
+  const itemNonaktif = [
+    "Regular Cake", "Cupcake",
+    "Kecil (15 cm)", "Sedang (20 cm)", "Besar (25 cm)",
+    "Mini (10 cm, 1-2 orang)", "Kecil (14 cm, 3-5 orang)", "Sedang (18 cm, 6-10 orang)", "Besar (22 cm, 10-15 orang)",
+    "Kucing Custom",
+    "Matcha",
+    "Buttercream Putih", "Buttercream Pink", "Buttercream Coklat",
+    "Stroberi Segar", "Taburan Sprinkles", "Lilin Ulang Tahun", "Coklat Chip", "Aneka Buah",
+    "Stiker Karakter", "Topper Kue", "Hiasan Bunga", "Buah Mini", "Cokelat Mini", "Aksesoris Lainnya",
+  ];
+  for (let k = 0; k < itemNonaktif.length; k++) {
+    await supabase.from("opsi_item").update({ aktif: false }).eq("nama", itemNonaktif[k]);
   }
 
   const daftarZona = [
@@ -177,202 +232,6 @@ async function jalankanSeeder() {
 
     if (!bahanDb) {
       await supabase.from("bahan").insert(b);
-    }
-  }
-
-  const formatIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" });
-  const tglHariIni = formatIso.format(new Date());
-
-  const akunDaftar = [
-    {
-      email: "petugas@cravely.com",
-      password: "password123",
-      nama: "Petugas Dapur Cravely",
-      no_wa: "081234567899",
-      role: "staf",
-    },
-    {
-      email: "admin@cravely.com",
-      password: "password123",
-      nama: "Admin Cravely",
-      no_wa: "081234567890",
-      role: "admin",
-    },
-  ];
-
-  for (let i = 0; i < akunDaftar.length; i++) {
-    const akun = akunDaftar[i];
-    const { data: listData } = await supabase.auth.admin.listUsers();
-    const existing = (listData?.users || []).find((u) => u.email === akun.email);
-
-    let userId = existing ? existing.id : null;
-
-    if (!existing) {
-      const { data: userBaru } = await supabase.auth.admin.createUser({
-        email: akun.email,
-        password: akun.password,
-        email_confirm: true,
-        user_metadata: {
-          nama: akun.nama,
-          no_wa: akun.no_wa,
-        },
-      });
-
-      if (userBaru?.user) {
-        userId = userBaru.user.id;
-      }
-    } else {
-      await supabase.auth.admin.updateUserById(userId, {
-        password: akun.password,
-        email_confirm: true,
-      });
-    }
-
-    if (userId) {
-      await supabase.from("profil").upsert({
-        id: userId,
-        nama: akun.nama,
-        no_wa: akun.no_wa,
-        role: akun.role,
-        aktif: true,
-      });
-    }
-  }
-
-  const { count: pesananAda } = await supabase
-    .from("pesanan")
-    .select("*", { count: "exact", head: true });
-
-  if (!pesananAda || pesananAda === 0) {
-    const { data: pesananDb1 } = await supabase
-      .from("pesanan")
-      .insert({
-        nama_penerima: "Siti Rahma",
-        no_wa: "081298765432",
-        tulisan_kue: "Happy Birthday Sarah 21st!",
-        catatan: "Krim jangan terlalu manis, lilin tolong dipisah.",
-        tanggal_ambil: tglHariIni,
-        jam_ambil: "14:00:00",
-        metode_pengiriman: "Ambil",
-        status_pesanan: "Diterima",
-        status_bayar: "Lunas",
-        total_kue: 230000,
-        total_bayar: 230000,
-        jumlah_terbayar: 230000,
-      })
-      .select("id")
-      .single();
-
-    if (pesananDb1?.id) {
-      await supabase.from("pesanan_pilihan").insert([
-        {
-          id_pesanan: pesananDb1.id,
-          nama_grup: "Ukuran",
-          nama_item: "Sedang (20 cm)",
-          harga: 150000,
-          kode_visual: "sedang",
-          peran_visual: "ukuran",
-        },
-        {
-          id_pesanan: pesananDb1.id,
-          nama_grup: "Rasa",
-          nama_item: "Vanilla",
-          harga: 35000,
-          warna: "#fbf0d9",
-          kode_visual: "vanilla",
-          peran_visual: "badan",
-        },
-        {
-          id_pesanan: pesananDb1.id,
-          nama_grup: "Krim",
-          nama_item: "Buttercream Pink",
-          harga: 25000,
-          warna: "#fbcfe8",
-          kode_visual: "pink",
-          peran_visual: "krim",
-        },
-        {
-          id_pesanan: pesananDb1.id,
-          nama_grup: "Topping",
-          nama_item: "Strawberry Segar",
-          harga: 20000,
-          warna: "#ef4444",
-          kode_visual: "strawberry",
-          peran_visual: "topping",
-        },
-      ]);
-
-      await supabase.from("riwayat_pesanan").insert({
-        id_pesanan: pesananDb1.id,
-        keterangan: "Pesanan masuk dan diterima dapur produksi.",
-      });
-    }
-
-    const { data: pesananDb2 } = await supabase
-      .from("pesanan")
-      .insert({
-        nama_penerima: "Budi Santoso",
-        no_wa: "081311223344",
-        tulisan_kue: "Anniversary 5th Budi & Linda",
-        catatan: "Antar hati-hati, jangan sampai miring.",
-        tanggal_ambil: tglHariIni,
-        jam_ambil: "16:30:00",
-        metode_pengiriman: "Kirim",
-        alamat: "Jl. Kemang Raya No. 45, Jakarta Selatan",
-        ongkir: 15000,
-        status_pesanan: "Sedang Dibuat",
-        status_bayar: "DP Dibayar",
-        total_kue: 230000,
-        total_bayar: 245000,
-        jumlah_dp: 122500,
-        jumlah_terbayar: 122500,
-      })
-      .select("id")
-      .single();
-
-    if (pesananDb2?.id) {
-      await supabase.from("pesanan_pilihan").insert([
-        {
-          id_pesanan: pesananDb2.id,
-          nama_grup: "Ukuran",
-          nama_item: "Sedang (20 cm)",
-          harga: 150000,
-          kode_visual: "sedang",
-          peran_visual: "ukuran",
-        },
-        {
-          id_pesanan: pesananDb2.id,
-          nama_grup: "Rasa",
-          nama_item: "Coklat",
-          harga: 40000,
-          warna: "#5c3a21",
-          kode_visual: "coklat",
-          peran_visual: "badan",
-        },
-        {
-          id_pesanan: pesananDb2.id,
-          nama_grup: "Krim",
-          nama_item: "Buttercream Coklat",
-          harga: 25000,
-          warna: "#78350f",
-          kode_visual: "coklat",
-          peran_visual: "krim",
-        },
-        {
-          id_pesanan: pesananDb2.id,
-          nama_grup: "Topping",
-          nama_item: "Coklat Chip",
-          harga: 15000,
-          warna: "#451a03",
-          kode_visual: "coklat_chip",
-          peran_visual: "topping",
-        },
-      ]);
-
-      await supabase.from("riwayat_pesanan").insert({
-        id_pesanan: pesananDb2.id,
-        keterangan: "Pesanan mulai dibuat di dapur produksi.",
-      });
     }
   }
 

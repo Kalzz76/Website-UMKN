@@ -642,7 +642,15 @@ export default function DashboardAdminView({
                     >
                       <div className="order-thumb-meta">
                         <div className="order-preview-box">
-                          <PreviewKue pilihan={p.pilihan || []} />
+                          {p.fotoPreviewUrl ? (
+                            <img
+                              src={p.fotoPreviewUrl}
+                              alt="Thumbnail"
+                              style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "8px" }}
+                            />
+                          ) : (
+                            <PreviewKue pilihan={p.pilihan || []} />
+                          )}
                         </div>
                         <div className="order-code-time">
                           <span className="order-code-title">

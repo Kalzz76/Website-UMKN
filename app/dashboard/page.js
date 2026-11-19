@@ -459,7 +459,7 @@ export default async function DashboardPage() {
 
   const { data: pesananTerbaruRaw } = await supabase
     .from("pesanan")
-    .select("id, kode_pesanan, dibuat_pada, status_pesanan, total_bayar")
+    .select("id, kode_pesanan, dibuat_pada, status_pesanan, total_bayar, foto_preview")
     .order("dibuat_pada", { ascending: false })
     .limit(3);
 
@@ -467,6 +467,8 @@ export default async function DashboardPage() {
   const idTerbaruList = daftarTerbaru.map((p) => p.id);
 
   let pilihanTerbaruMap = {};
+  let fotoPreviewMap = {};
+
   if (idTerbaruList.length > 0) {
     const { data: pilihanTerbaruData } = await supabase
       .from("pesanan_pilihan")
@@ -482,11 +484,22 @@ export default async function DashboardPage() {
         pilihanTerbaruMap[item.id_pesanan].push(item);
       }
     }
+
+    for (let i = 0; i < daftarTerbaru.length; i++) {
+      const p = daftarTerbaru[i];
+      if (p.foto_preview) {
+        const { data: signed } = await supabase.storage
+          .from("referensi-kue")
+          .createSignedUrl(p.foto_preview, 3600);
+        if (signed) fotoPreviewMap[p.id] = signed.signedUrl;
+      }
+    }
   }
 
   const pesananTerbaru = daftarTerbaru.map((p) => ({
     ...p,
     pilihan: pilihanTerbaruMap[p.id] || [],
+    fotoPreviewUrl: fotoPreviewMap[p.id] || null,
   }));
 
   return (

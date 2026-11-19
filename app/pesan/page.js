@@ -4,73 +4,35 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as THREE from "three";
+import PreviewKue from "@/components/PreviewKue";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { hitungTotal } from "@/lib/hitungHarga";
+import { formatRupiah, formatTanggalIndonesia } from "@/lib/format";
 import "./cakecraft.css";
 
-const SZ = {
-  mini: { d: 10, p: 85000, s: "1–2 orang" },
-  small: { d: 14, p: 125000, s: "3–5 orang" },
-  medium: { d: 18, p: 165000, s: "6–10 orang" },
-  large: { d: 22, p: 210000, s: "10–15 orang" },
+const VISUAL_SIZE = {
+  mini: { d: 10, s: "1–2 orang" },
+  small: { d: 14, s: "3–5 orang" },
+  medium: { d: 18, s: "6–10 orang" },
+  large: { d: 22, s: "10–15 orang" },
 };
 
-const SHP = {
-  round: ["Lingkaran", 0],
-  square: ["Kotak", 0],
-  heart: ["Hati", 10000],
-  star: ["Bintang", 15000],
-  hex: ["Hexagon", 10000],
-  custom: ["Buat Sendiri", 25000],
+const VISUAL_DECO_ICON = {
+  drip: "🍫",
+  straw: "🍓",
+  berry: "🫐",
+  flower: "🌸",
+  spr: "✨",
+  candle: "🕯️",
 };
 
-const FLAV = {
-  vanilla: ["Vanilla", 0, "#fbefd5"],
-  choco: ["Cokelat", 10000, "#8a5a3c"],
-  velvet: ["Red Velvet", 15000, "#c0404e"],
-  straw: ["Stroberi", 10000, "#f9cdd6"],
-};
-
-const FILL = {
-  cream: ["Krim Vanilla", 0, "#fffaf0"],
-  ganache: ["Ganache Cokelat", 8000, "#5b3322"],
-  jam: ["Selai Stroberi", 5000, "#d6304a"],
-  cheese: ["Cream Cheese", 12000, "#fff0c9"],
-};
-
-const ICE = [
-  ["Pink", "#f6b4c2"],
-  ["Putih", "#FFF8F0"],
-  ["Cokelat", "#6b3d2a"],
-  ["Mint", "#bfe8d8"],
-  ["Kuning", "#fbe39a"],
-  ["Lavender", "#d8c7f0"],
-];
-
-const DECO = {
-  drip: ["🍫", "Lelehan krim", 12000],
-  straw: ["🍓", "Stroberi", 10000],
-  berry: ["🫐", "Mixed berry", 15000],
-  flower: ["🌸", "Bunga gula", 8000],
-  spr: ["✨", "Taburan", 5000],
-  candle: ["🕯️", "Lilin", 3000],
-};
-
-const ELS = [
-  ["Stiker", "😊", ["❤️", "💗", "⭐", "🌈", "😊"], 3000],
-  ["Topper", "⭐", ["🐰", "🐻", "🦄", "🎀", "👑"], 8000],
-  ["Bunga", "🌸", ["🌸", "🌼", "🌷", "🌹"], 2000],
-  ["Buah", "🍎", ["🍓", "🍒", "🍑", "🫐", "🍋"], 2500],
-  ["Cokelat", "🍫", ["🍫", "🍪", "🍩", "🍬", "🍭"], 3000],
-  ["Lainnya", "•••", ["🎈", "✨", "🎉", "🧁"], 2000],
-];
-
-const ELP = {
-  Stiker: 3000,
-  Topper: 8000,
-  Bunga: 2000,
-  Buah: 2500,
-  Cokelat: 3000,
-  Lainnya: 2000,
+const VISUAL_ELS = {
+  stiker: { icon: "😊", emos: ["❤️", "💗", "⭐", "🌈", "😊"] },
+  topper: { icon: "⭐", emos: ["🐰", "🐻", "🦄", "🎀", "👑"] },
+  bunga: { icon: "🌸", emos: ["🌸", "🌼", "🌷", "🌹"] },
+  buah: { icon: "🍎", emos: ["🍓", "🍒", "🍑", "🫐", "🍋"] },
+  cokelat: { icon: "🍫", emos: ["🍫", "🍪", "🍩", "🍬", "🍭"] },
+  lainnya: { icon: "•••", emos: ["🎈", "✨", "🎉", "🧁"] },
 };
 
 const FONTS = ["Baloo 2", "Pacifico", "Fredoka", "Dancing Script", "Nunito"];
@@ -153,20 +115,9 @@ function getDefState() {
     flavor: "vanilla",
     fill: "cream",
     icing: "#f6b4c2",
-    deco: { drip: true, straw: true },
-    items: [
-      {
-        id: 1,
-        t: "text",
-        text: "Happy Birthday!",
-        font: "Baloo 2",
-        px: 32,
-        color: "#5b2a1b",
-        align: "center",
-        fx: "normal",
-      },
-    ],
-    sel: 1,
+    deco: {},
+    items: [],
+    sel: null,
     cpts: null,
     pick: "pickup",
     pay: "bank",
@@ -174,44 +125,17 @@ function getDefState() {
   };
 }
 
-function formatRp(n) {
-  return "Rp " + Number(n || 0).toLocaleString("id-ID");
-}
-
-function calcBase(s) {
-  const szPrice = SZ[s.size] ? SZ[s.size].p : 85000;
-  const shpPrice = SHP[s.shape] ? SHP[s.shape][1] : 0;
-  const flavPrice = FLAV[s.flavor] ? FLAV[s.flavor][1] : 0;
-  const fillPrice = FILL[s.fill] ? FILL[s.fill][1] : 0;
-  const decoPrice = Object.keys(s.deco || {})
-    .filter((k) => s.deco[k])
-    .reduce((a, k) => a + (DECO[k] ? DECO[k][2] : 0), 0);
-  const itemsPrice = (s.items || []).reduce(
-    (a, i) =>
-      a +
-      (i.t === "text"
-        ? 0
-        : i.t === "img"
-        ? 15000
-        : ELP[i.k] || 2000),
-    0
-  );
-  return szPrice + shpPrice + flavPrice + fillPrice + decoPrice + itemsPrice;
-}
-
-function calcTotal(s, daftarZona = []) {
-  let ongkir = 0;
-  if (s.pick === "delivery") {
-    if (s.zonaId && daftarZona.length > 0) {
-      const z = daftarZona.find((item) => item.id === s.zonaId);
-      ongkir = z ? z.tarif : 15000;
-    } else if (daftarZona.length > 0) {
-      ongkir = daftarZona[0].tarif;
-    } else {
-      ongkir = 15000;
-    }
+function cekAdaWebGL() {
+  if (typeof window === "undefined") return false;
+  try {
+    const cv = document.createElement("canvas");
+    return !!(
+      window.WebGLRenderingContext &&
+      (cv.getContext("webgl") || cv.getContext("experimental-webgl"))
+    );
+  } catch {
+    return false;
   }
-  return calcBase(s) + ongkir;
 }
 
 export default function PesanPage() {
@@ -225,9 +149,9 @@ export default function PesanPage() {
   const [cartCount, setCartCount] = useState(1);
   const [openC, setOpenC] = useState(-1);
   const [tool, setTool] = useState("draw");
-  const [fav, setFav] = useState(false);
   const [autoSpin, setAutoSpin] = useState(true);
   const [view2D, setView2D] = useState(false);
+  const [hasWebGL, setHasWebGL] = useState(true);
 
   const [user, setUser] = useState(null);
   const [profil, setProfil] = useState(null);
@@ -235,25 +159,18 @@ export default function PesanPage() {
   const [daftarGrup, setDaftarGrup] = useState([]);
   const [daftarItem, setDaftarItem] = useState([]);
   const [daftarZona, setDaftarZona] = useState([]);
+  const [ketersediaan, setKetersediaan] = useState(null);
 
   const [toastMsg, setToastMsg] = useState("");
   const [toastShow, setToastShow] = useState(false);
   const [sedangKirim, setSedangKirim] = useState(false);
-
-  const [orderCode] = useState(() => {
-    return (
-      "CC-" +
-      new Date().toISOString().slice(2, 10).replace(/-/g, "") +
-      "-" +
-      Math.floor(1000 + Math.random() * 9000)
-    );
-  });
 
   const canvasRef = useRef(null);
   const vboxRef = useRef(null);
   const drawCanvasRef = useRef(null);
   const drawingRef = useRef(false);
   const drawStrokeRef = useRef([]);
+  const uploadedImageFileRef = useRef(null);
 
   const threeStateRef = useRef({
     renderer: null,
@@ -283,18 +200,21 @@ export default function PesanPage() {
     }, 2500);
   }, []);
 
-  const snap = useCallback((stateToSnap) => {
-    const st = stateToSnap || S;
-    const j = JSON.stringify({ ...st, f: 0 });
-    const hist = histRef.current;
-    const hi = hiRef.current;
-    if (hist[hi] === j) return;
-    const nextHist = hist.slice(0, hi + 1);
-    nextHist.push(j);
-    if (nextHist.length > 60) nextHist.shift();
-    histRef.current = nextHist;
-    hiRef.current = nextHist.length - 1;
-  }, [S]);
+  const snap = useCallback(
+    (stateToSnap) => {
+      const st = stateToSnap || S;
+      const j = JSON.stringify({ ...st, f: 0 });
+      const hist = histRef.current;
+      const hi = hiRef.current;
+      if (hist[hi] === j) return;
+      const nextHist = hist.slice(0, hi + 1);
+      nextHist.push(j);
+      if (nextHist.length > 60) nextHist.shift();
+      histRef.current = nextHist;
+      hiRef.current = nextHist.length - 1;
+    },
+    [S]
+  );
 
   const handleUndo = useCallback(() => {
     if (hiRef.current > 0) {
@@ -313,7 +233,9 @@ export default function PesanPage() {
   }, []);
 
   useEffect(() => {
-    async function loadInitial() {
+    setHasWebGL(cekAdaWebGL());
+
+    async function muatData() {
       const supabase = getSupabaseBrowser();
       const {
         data: { user: u },
@@ -366,6 +288,14 @@ export default function PesanPage() {
         .order("id", { ascending: true });
       if (zonaList) setDaftarZona(zonaList);
 
+      try {
+        const resAvail = await fetch("/api/ketersediaan");
+        if (resAvail.ok) {
+          const dAvail = await resAvail.json();
+          setKetersediaan(dAvail);
+        }
+      } catch {}
+
       const saved = sessionStorage.getItem("cravely_custom_draft");
       if (saved) {
         try {
@@ -382,7 +312,7 @@ export default function PesanPage() {
         } catch {}
       }
     }
-    loadInitial();
+    muatData();
   }, []);
 
   useEffect(() => {
@@ -398,15 +328,23 @@ export default function PesanPage() {
   const selItem = (S.items || []).find((i) => i.id === S.sel);
 
   useEffect(() => {
+    if (!hasWebGL) return;
     const cv = canvasRef.current;
     const box = vboxRef.current;
     if (!cv || !box) return;
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas: cv,
-      antialias: true,
-      alpha: true,
-    });
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas: cv,
+        antialias: true,
+        alpha: true,
+        preserveDrawingBuffer: true,
+      });
+    } catch {
+      setHasWebGL(false);
+      return;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
     const scene = new THREE.Scene();
@@ -526,9 +464,10 @@ export default function PesanPage() {
       cv.removeEventListener("wheel", onWheel);
       renderer.dispose();
     };
-  }, []);
+  }, [hasWebGL]);
 
   const buildCake = useCallback(() => {
+    if (!hasWebGL) return;
     const ts = threeStateRef.current;
     const cake = ts.cake;
     if (!cake) return;
@@ -546,7 +485,8 @@ export default function PesanPage() {
     }
 
     ts.flame = null;
-    const R = (SZ[S.size] ? SZ[S.size].d : 10) / 12;
+    const szData = VISUAL_SIZE[S.size] || { d: 14, s: "3–5 orang" };
+    const R = (szData.d || 14) / 12;
     const H = 1.04;
     const ice = S.icing || "#f6b4c2";
 
@@ -640,8 +580,15 @@ export default function PesanPage() {
       )
     );
 
-    const flavColor = FLAV[S.flavor] ? FLAV[S.flavor][2] : "#fbefd5";
-    const fillColor = FILL[S.fill] ? FILL[S.fill][2] : "#fffaf0";
+    const itemFlav = daftarItem.find(
+      (it) => it.kode_visual === S.flavor || it.id === S.flavorId
+    );
+    const flavColor = itemFlav && itemFlav.warna ? itemFlav.warna : "#fbefd5";
+
+    const itemFill = daftarItem.find(
+      (it) => it.kode_visual === S.fill || it.id === S.fillId
+    );
+    const fillColor = itemFill && itemFill.warna ? itemFill.warna : "#fffaf0";
 
     cake.add(solid(R, H, 0, mat(flavColor, 0.65)));
     cake.add(solid(R * 1.01, 0.07, H * 0.46, mat(fillColor, 0.5)));
@@ -900,7 +847,7 @@ export default function PesanPage() {
       }
       cake.add(sp);
     });
-  }, [S]);
+  }, [S, daftarItem, hasWebGL]);
 
   useEffect(() => {
     buildCake();
@@ -1042,20 +989,20 @@ export default function PesanPage() {
     });
   }
 
-  function handleAddEmoji(catIdx, emojiChar) {
+  function handleAddEmoji(catCode, catName, emojiChar) {
     const nextId =
       (S.items || []).reduce((max, it) => Math.max(max, it.id || 0), 0) + 1;
-    const categoryName = ELS[catIdx][0];
     const nonTextCount = (S.items || []).filter((i) => i.t !== "text").length;
     const g = (2 * Math.PI * nonTextCount) / 5;
     const newItem = {
       id: nextId,
       t: "emoji",
       e: emojiChar,
-      k: categoryName,
+      k: catName,
+      kode_visual: catCode,
       sz: 1,
-      x: categoryName === "Topper" ? 0 : 0.55 * Math.sin(g),
-      z: categoryName === "Topper" ? -0.1 : -0.55 * Math.cos(g),
+      x: catCode === "topper" ? 0 : 0.55 * Math.sin(g),
+      z: catCode === "topper" ? -0.1 : -0.55 * Math.cos(g),
     };
     setS((prev) => {
       const next = {
@@ -1118,6 +1065,7 @@ export default function PesanPage() {
       showToast("Ukuran gambar maksimal 2 MB");
       return;
     }
+    uploadedImageFileRef.current = f;
     const reader = new FileReader();
     reader.onload = () => {
       const nextId =
@@ -1149,6 +1097,259 @@ export default function PesanPage() {
       ...prev,
       f: { ...prev.f, [k]: v },
     }));
+  }
+
+  function handleDateChange(e) {
+    const val = e.target.value;
+    if (!val) {
+      handleFieldChange("dt", "");
+      return;
+    }
+    if (ketersediaan?.tanggal_minimal && val < ketersediaan.tanggal_minimal) {
+      showToast(`Pemesanan minimal mulai tanggal ${ketersediaan.tanggal_minimal}`);
+      return;
+    }
+    const tutup = (ketersediaan?.tanggal_tutup || []).find(
+      (t) => (t.tanggal || t) === val
+    );
+    if (tutup) {
+      showToast(`Tanggal ${val} toko sedang tutup: ${tutup.alasan || "Libur"}`);
+      return;
+    }
+    if ((ketersediaan?.tanggal_penuh || []).includes(val)) {
+      showToast(`Kuota pesanan pada tanggal ${val} sudah penuh.`);
+      return;
+    }
+    handleFieldChange("dt", val);
+  }
+
+  const grupJenis = daftarGrup.find(
+    (g) => g.peran_dashboard === "jenis" || g.nama === "Jenis Kue"
+  );
+  const grupUkuran = daftarGrup.find(
+    (g) => g.peran_visual === "ukuran" || g.nama === "Ukuran"
+  );
+  const grupBentuk = daftarGrup.find(
+    (g) => g.peran_visual === "bentuk" || g.nama === "Bentuk"
+  );
+  const grupRasa = daftarGrup.find(
+    (g) =>
+      g.peran_dashboard === "terlaris" ||
+      g.nama === "Rasa" ||
+      g.peran_visual === "badan"
+  );
+  const grupIsian = daftarGrup.find((g) => g.nama === "Isian");
+  const grupWarnaKrim = daftarGrup.find(
+    (g) =>
+      g.peran_visual === "krim" ||
+      g.nama === "Warna Krim" ||
+      g.nama === "Krim"
+  );
+  const grupDekorasi = daftarGrup.find(
+    (g) => g.peran_visual === "topping" || g.nama === "Dekorasi"
+  );
+  const grupStiker = daftarGrup.find(
+    (g) =>
+      g.peran_visual === "stiker" ||
+      g.nama === "Elemen Hiasan" ||
+      g.nama === "Stiker & Topper"
+  );
+  const grupDesainKustom = daftarGrup.find(
+    (g) => g.nama === "Desain Kustom"
+  );
+
+  const itemsUkuran = daftarItem.filter((it) => it.id_grup === grupUkuran?.id);
+  const itemsBentuk = daftarItem.filter((it) => it.id_grup === grupBentuk?.id);
+  const itemsRasa = daftarItem.filter((it) => it.id_grup === grupRasa?.id);
+  const itemsIsian = daftarItem.filter((it) => it.id_grup === grupIsian?.id);
+  const itemsWarnaKrim = daftarItem.filter(
+    (it) => it.id_grup === grupWarnaKrim?.id
+  );
+  const itemsDekorasi = daftarItem.filter(
+    (it) => it.id_grup === grupDekorasi?.id
+  );
+  const itemsStiker = daftarItem.filter((it) => it.id_grup === grupStiker?.id);
+  const itemsDesainKustom = daftarItem.filter(
+    (it) => it.id_grup === grupDesainKustom?.id
+  );
+
+  function getPilihanItemsList() {
+    const res = [];
+    if (!daftarItem.length) return res;
+
+    if (grupJenis) {
+      const it =
+        mode === "tpl"
+          ? daftarItem.find(
+              (x) =>
+                x.id_grup === grupJenis.id &&
+                (x.kode_visual === "template" ||
+                  x.nama.toLowerCase().includes("template"))
+            )
+          : daftarItem.find(
+              (x) =>
+                x.id_grup === grupJenis.id &&
+                (x.kode_visual === "custom" ||
+                  x.nama.toLowerCase().includes("custom"))
+            ) || daftarItem.find((x) => x.id_grup === grupJenis.id);
+      if (it) res.push({ id_item: it.id, jumlah: 1 });
+    }
+
+    if (grupUkuran) {
+      const it =
+        daftarItem.find(
+          (x) => x.id_grup === grupUkuran.id && x.kode_visual === S.size
+        ) || itemsUkuran[0];
+      if (it) res.push({ id_item: it.id, jumlah: 1 });
+    }
+
+    if (grupBentuk) {
+      const it =
+        daftarItem.find(
+          (x) => x.id_grup === grupBentuk.id && x.kode_visual === S.shape
+        ) || itemsBentuk[0];
+      if (it) res.push({ id_item: it.id, jumlah: 1 });
+    }
+
+    if (grupRasa) {
+      const it =
+        daftarItem.find(
+          (x) => x.id_grup === grupRasa.id && x.kode_visual === S.flavor
+        ) || itemsRasa[0];
+      if (it) res.push({ id_item: it.id, jumlah: 1 });
+    }
+
+    if (grupIsian) {
+      const it =
+        daftarItem.find(
+          (x) => x.id_grup === grupIsian.id && x.kode_visual === S.fill
+        ) || itemsIsian[0];
+      if (it) res.push({ id_item: it.id, jumlah: 1 });
+    }
+
+    if (grupWarnaKrim) {
+      const it =
+        daftarItem.find(
+          (x) =>
+            x.id_grup === grupWarnaKrim.id &&
+            x.warna &&
+            x.warna.toLowerCase() === (S.icing || "").toLowerCase()
+        ) || itemsWarnaKrim[0];
+      if (it) res.push({ id_item: it.id, jumlah: 1 });
+    }
+
+    if (grupDekorasi && S.deco) {
+      for (let i = 0; i < itemsDekorasi.length; i++) {
+        const it = itemsDekorasi[i];
+        if (S.deco[it.kode_visual]) {
+          res.push({ id_item: it.id, jumlah: 1 });
+        }
+      }
+    }
+
+    if (grupStiker && S.items) {
+      const hitungKategori = {};
+      for (let i = 0; i < S.items.length; i++) {
+        const el = S.items[i];
+        if (el.t === "emoji") {
+          const key = (el.kode_visual || el.k || "").toLowerCase();
+          hitungKategori[key] = (hitungKategori[key] || 0) + 1;
+        }
+      }
+      for (let i = 0; i < itemsStiker.length; i++) {
+        const it = itemsStiker[i];
+        const kode = (it.kode_visual || "").toLowerCase();
+        const nama = (it.nama || "").toLowerCase();
+        const qty = hitungKategori[kode] || hitungKategori[nama] || 0;
+        if (qty > 0) {
+          res.push({ id_item: it.id, jumlah: Math.min(20, qty) });
+        }
+      }
+    }
+
+    if (grupDesainKustom && S.items) {
+      const imgCount = S.items.filter((x) => x.t === "img").length;
+      if (imgCount > 0) {
+        const it = itemsDesainKustom[0];
+        if (it) {
+          res.push({ id_item: it.id, jumlah: Math.min(20, imgCount) });
+        }
+      }
+    }
+
+    return res;
+  }
+
+  function getOngkir() {
+    if (S.pick !== "delivery") return 0;
+    if (S.zonaId && daftarZona.length > 0) {
+      const z = daftarZona.find((x) => x.id === S.zonaId);
+      if (z) return z.tarif || 0;
+    }
+    if (daftarZona.length > 0) {
+      return daftarZona[0].tarif || 0;
+    }
+    return 0;
+  }
+
+  const rincianHarga = hitungTotal({
+    pilihan: getPilihanItemsList(),
+    daftarItem,
+    ongkir: getOngkir(),
+    pengaturanDP: pengaturan,
+  });
+
+  function getLineItems() {
+    const items = getPilihanItemsList();
+    const rows = [];
+    const mapItem = new Map();
+    for (let i = 0; i < daftarItem.length; i++) {
+      mapItem.set(daftarItem[i].id, daftarItem[i]);
+    }
+    const mapGrup = new Map();
+    for (let i = 0; i < daftarGrup.length; i++) {
+      mapGrup.set(daftarGrup[i].id, daftarGrup[i]);
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      const { id_item, jumlah } = items[i];
+      const it = mapItem.get(id_item);
+      if (!it) continue;
+      const gr = mapGrup.get(it.id_grup);
+      const subtotal = Number(it.harga || 0) * (jumlah || 1);
+      const stepTarget =
+        gr?.peran_visual === "ukuran"
+          ? 1
+          : gr?.peran_visual === "bentuk"
+          ? 2
+          : gr?.peran_visual === "badan" ||
+            gr?.peran_visual === "krim" ||
+            gr?.nama === "Isian"
+          ? 3
+          : gr?.peran_visual === "topping"
+          ? 4
+          : gr?.peran_visual === "stiker" || gr?.nama === "Desain Kustom"
+          ? 5
+          : 0;
+
+      const labelName = `${gr ? gr.nama : "Opsi"}: ${it.nama}${
+        jumlah > 1 ? ` x ${jumlah}` : ""
+      }`;
+      rows.push([labelName, subtotal, stepTarget, it.harga === 0]);
+    }
+
+    (S.items || []).forEach((it) => {
+      if (it.t === "text" && it.text && it.text.trim()) {
+        rows.push([
+          `tulisan "${it.text.replace(/\n/g, " ").slice(0, 22)}"`,
+          0,
+          5,
+          true,
+        ]);
+      }
+    });
+
+    return rows;
   }
 
   function validateStep(sIdx) {
@@ -1223,14 +1424,61 @@ export default function PesanPage() {
   }
 
   function checkValidation() {
-    if (!S.f.nm) return "Isi nama dulu ya";
-    if (!/.+@.+/.test(S.f.em || "")) return "Isi email yang valid dulu ya";
-    if (!S.f.dt) return "Pilih tanggal dibutuhkan";
-    if (S.pick === "delivery" && !S.f.addr) return "Isi alamat pengantaran";
-    if (!S.pay) return "Pilih metode pembayaran dulu ya";
-    if (S.pay === "other" && !S.f.payOther)
-      return "Tulis metode pembayaran lainnya";
+    if (!S.f.nm || !S.f.nm.trim()) return "Isi nama pemesan terlebih dahulu ya";
+    if (!S.f.ph || !S.f.ph.trim()) return "Isi nomor WhatsApp terlebih dahulu ya";
+    if (!S.f.dt) return "Pilih tanggal pengambilan/pengantaran terlebih dahulu ya";
+    if (!S.f.tm) return "Pilih jam pengambilan/pengantaran terlebih dahulu ya";
+    if (S.pick === "delivery" && (!S.f.addr || !S.f.addr.trim())) {
+      return "Isi alamat pengantaran terlebih dahulu ya";
+    }
+    if (!S.pay) return "Pilih metode pembayaran terlebih dahulu ya";
     return "";
+  }
+
+  async function getCanvasSnapshot() {
+    const cv = canvasRef.current;
+    if (!cv) return null;
+    const ts = threeStateRef.current;
+    if (ts.renderer && ts.scene && ts.camera) {
+      ts.renderer.render(ts.scene, ts.camera);
+    }
+    const maxDim = 1000;
+    let w = cv.width;
+    let h = cv.height;
+    if (w <= 0 || h <= 0) return null;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) {
+        h = Math.round((h * maxDim) / w);
+        w = maxDim;
+      } else {
+        w = Math.round((w * maxDim) / h);
+        h = maxDim;
+      }
+    }
+    const tempCv = document.createElement("canvas");
+    tempCv.width = w;
+    tempCv.height = h;
+    const ctx = tempCv.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(cv, 0, 0, w, h);
+    return new Promise((resolve) => {
+      tempCv.toBlob(
+        (blob) => {
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.85
+      );
+    });
+  }
+
+  async function getShapeCanvasBlob() {
+    const dc = drawCanvasRef.current;
+    if (!dc) return null;
+    return new Promise((resolve) => {
+      dc.toBlob((b) => resolve(b), "image/png");
+    });
   }
 
   async function handleOrderSubmit() {
@@ -1248,132 +1496,90 @@ export default function PesanPage() {
       return;
     }
 
+    if (S.shape === "custom" && !S.cpts) {
+      showToast("Silakan gambar bentuk kue kustom terlebih dahulu ya.");
+      return;
+    }
+
+    const imgItem = (S.items || []).find((i) => i.t === "img");
+    if (imgItem && !uploadedImageFileRef.current) {
+      showToast("Silakan unggah gambar desain kustom terlebih dahulu.");
+      return;
+    }
+
     setSedangKirim(true);
 
-    const txtNote = (S.items || [])
-      .filter((i) => i.t === "text")
-      .map((i) => i.text)
+    const txtTulisan = (S.items || [])
+      .filter((i) => i.t === "text" && i.text)
+      .map((i) => i.text.trim())
       .join(" / ");
-    const decoSummary = Object.keys(S.deco || {})
-      .filter((k) => S.deco[k])
-      .map((k) => (DECO[k] ? DECO[k][1] : k))
-      .join(", ");
-    const itemsSummary = (S.items || [])
-      .filter((i) => i.t !== "text")
-      .map((i) => i.e || "Gambar kustom")
-      .join(", ");
 
-    const catatanFull = [
-      `Bentuk: ${SHP[S.shape] ? SHP[S.shape][0] : S.shape}`,
-      `Isian: ${FILL[S.fill] ? FILL[S.fill][0] : S.fill}`,
-      `Krim: ${ICE.find((c) => c[1] === S.icing)?.[0] || S.icing}`,
-      decoSummary ? `Dekorasi: ${decoSummary}` : "",
-      itemsSummary ? `Elemen: ${itemsSummary}` : "",
-      S.pay ? `Metode Bayar: ${S.pay}` : "",
-      S.f.notes || "",
-    ]
-      .filter(Boolean)
-      .join(" | ");
-
-    const mappedPilihanIds = [];
-
-    const grupJenis = (daftarGrup || []).find(
-      (g) => g.peran_dashboard === "jenis" || g.nama.toLowerCase().includes("jenis")
-    );
-    if (grupJenis) {
-      const dbJenis =
-        (daftarItem || []).find((it) => it.id_grup === grupJenis.id && it.kode_visual === "custom") ||
-        (daftarItem || []).find((it) => it.id_grup === grupJenis.id);
-      if (dbJenis && !mappedPilihanIds.includes(dbJenis.id)) mappedPilihanIds.push(dbJenis.id);
-    }
-
-    const sizeName = S.size;
-    const dbSize =
-      daftarItem.find(
-        (it) =>
-          it.kode_visual === sizeName ||
-          it.nama.toLowerCase().includes(sizeName) ||
-          (sizeName === "mini" && it.nama.toLowerCase().includes("kecil")) ||
-          (sizeName === "small" && it.nama.toLowerCase().includes("kecil")) ||
-          (sizeName === "medium" && it.nama.toLowerCase().includes("sedang")) ||
-          (sizeName === "large" && it.nama.toLowerCase().includes("besar"))
-      ) ||
-      daftarItem.find((it) => {
-        const g = (daftarGrup || []).find((grp) => grp.id === it.id_grup);
-        return g && (g.peran_visual === "ukuran" || g.nama.toLowerCase().includes("ukuran"));
-      });
-    if (dbSize && !mappedPilihanIds.includes(dbSize.id)) mappedPilihanIds.push(dbSize.id);
-
-    const dbFlav =
-      daftarItem.find(
-        (it) =>
-          it.kode_visual === S.flavor ||
-          it.nama.toLowerCase().includes(FLAV[S.flavor]?.[0]?.toLowerCase() || "")
-      ) ||
-      daftarItem.find((it) => {
-        const g = (daftarGrup || []).find((grp) => grp.id === it.id_grup);
-        return g && (g.nama.toLowerCase().includes("rasa") || g.peran_dashboard === "terlaris");
-      });
-    if (dbFlav && !mappedPilihanIds.includes(dbFlav.id)) mappedPilihanIds.push(dbFlav.id);
-
-    const dbIcing =
-      daftarItem.find(
-        (it) =>
-          it.warna === S.icing ||
-          it.nama.toLowerCase().includes(
-            (ICE.find((c) => c[1] === S.icing)?.[0] || "").toLowerCase()
-          )
-      ) ||
-      daftarItem.find((it) => {
-        const g = (daftarGrup || []).find((grp) => grp.id === it.id_grup);
-        return g && (g.nama.toLowerCase().includes("krim") || g.peran_visual === "krim");
-      });
-    if (dbIcing && !mappedPilihanIds.includes(dbIcing.id)) mappedPilihanIds.push(dbIcing.id);
-
-    if (S.deco) {
-      Object.keys(S.deco).forEach((dk) => {
-        if (!S.deco[dk]) return;
-        const itm = daftarItem.find(
-          (it) =>
-            it.kode_visual === dk ||
-            it.nama.toLowerCase().includes((DECO[dk]?.[1] || "").toLowerCase())
-        );
-        if (itm && !mappedPilihanIds.includes(itm.id)) mappedPilihanIds.push(itm.id);
-      });
-    }
-
-    (daftarGrup || []).forEach((grp) => {
-      if (!grp.wajib) return;
-      const alreadyHas = mappedPilihanIds.some((pId) => {
-        const it = (daftarItem || []).find((x) => x.id === pId);
-        return it && it.id_grup === grp.id;
-      });
-      if (!alreadyHas) {
-        const fallback = (daftarItem || []).find((it) => it.id_grup === grp.id);
-        if (fallback) mappedPilihanIds.push(fallback.id);
-      }
-    });
+    const desainJson = {
+      nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
+      shape: S.shape,
+      size: S.size,
+      flavor: S.flavor,
+      fill: S.fill,
+      icing: S.icing,
+      deco: S.deco || {},
+      cpts: S.cpts || null,
+      items: (S.items || []).map((it) => ({
+        id: it.id,
+        t: it.t,
+        text: it.text || null,
+        font: it.font || null,
+        px: it.px || null,
+        color: it.color || null,
+        align: it.align || null,
+        fx: it.fx || null,
+        k: it.k || null,
+        kode_visual: it.kode_visual || null,
+        e: it.e || null,
+        x: it.x || 0,
+        z: it.z || 0,
+        sz: it.sz || 1,
+      })),
+    };
 
     const formData = new FormData();
-    formData.append("nama_penerima", S.f.nm || profil?.nama || "Pelanggan");
-    formData.append("no_wa", S.f.ph || profil?.no_wa || "081234567890");
-    formData.append("tulisan_kue", txtNote || "Happy Birthday");
-    formData.append("catatan", catatanFull);
-    formData.append("tanggal_ambil", S.f.dt);
-    formData.append("jam_ambil", S.f.tm || "10:00:00");
+    formData.append("nama_penerima", (S.f.nm || "").trim());
+    formData.append("no_wa", (S.f.ph || "").trim());
+    formData.append("tulisan_kue", txtTulisan || "");
+    formData.append("catatan", (S.f.notes || "").trim());
+    formData.append("tanggal_ambil", S.f.dt || "");
+    formData.append("jam_ambil", S.f.tm || "10:00");
     formData.append("metode_pengiriman", S.pick === "delivery" ? "Kirim" : "Ambil");
-    formData.append("alamat", S.pick === "delivery" ? S.f.addr || "-" : "-");
     if (S.pick === "delivery") {
-      const selectedZonaId = S.zonaId || (daftarZona.length > 0 ? daftarZona[0].id : null);
-      if (selectedZonaId) {
-        formData.append("id_zona", String(selectedZonaId));
+      formData.append("alamat", (S.f.addr || "").trim());
+      if (S.zonaId) {
+        formData.append("id_zona", String(S.zonaId));
+      } else if (daftarZona.length > 0) {
+        formData.append("id_zona", String(daftarZona[0].id));
       }
     }
-    formData.append("pilihan_ids", JSON.stringify(mappedPilihanIds));
 
-    const imgItem = (S.items || []).find((i) => i.t === "img" && i.file);
-    if (imgItem && imgItem.file) {
-      formData.append("foto_referensi", imgItem.file);
+    const itemsPilihan = getPilihanItemsList();
+    formData.append("pilihan", JSON.stringify(itemsPilihan));
+    formData.append("desain_json", JSON.stringify(desainJson));
+
+    try {
+      const snapBlob = await getCanvasSnapshot();
+      if (snapBlob) {
+        formData.append("foto_preview", snapBlob, "preview.jpg");
+      }
+    } catch {}
+
+    if (S.shape === "custom") {
+      try {
+        const shapeBlob = await getShapeCanvasBlob();
+        if (shapeBlob) {
+          formData.append("foto_bentuk_kustom", shapeBlob, "bentuk.png");
+        }
+      } catch {}
+    }
+
+    if (uploadedImageFileRef.current) {
+      formData.append("foto_gambar_kustom", uploadedImageFileRef.current);
     }
 
     try {
@@ -1435,7 +1641,8 @@ export default function PesanPage() {
   }
 
   function renderCakeSVG(sz, body, ice) {
-    const rx = 20 + (SZ[sz] ? SZ[sz].d : 10) * 1.75;
+    const szData = VISUAL_SIZE[sz] || { d: 14 };
+    const rx = 20 + szData.d * 1.75;
     const t = 36;
     const b = 64;
     const d = [8, 15, 6, 13, 9];
@@ -1483,123 +1690,120 @@ export default function PesanPage() {
   }
 
   function renderShapeSVG(k) {
-    const st = {
-      fill: "#fbefd5",
-      stroke: "#D96B91",
-      strokeWidth: "4",
-      strokeLinejoin: "round",
-    };
+    const f = "#fce8ec";
+    const s = "#d96b91";
     if (k === "round") {
       return (
-        <svg viewBox="0 0 120 92">
-          <ellipse cx="60" cy="46" rx="42" ry="30" {...st} />
+        <svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="22" fill={f} stroke={s} strokeWidth="3" />
         </svg>
       );
     }
     if (k === "square") {
       return (
-        <svg viewBox="0 0 120 92">
-          <rect x="22" y="14" width="76" height="64" rx="10" {...st} />
+        <svg viewBox="0 0 60 60">
+          <rect
+            x="11"
+            y="11"
+            width="38"
+            height="38"
+            rx="6"
+            fill={f}
+            stroke={s}
+            strokeWidth="3"
+          />
         </svg>
       );
     }
     if (k === "heart") {
       return (
-        <svg viewBox="0 0 120 92">
+        <svg viewBox="0 0 60 60">
           <path
-            d="M60 84C50 70 14 56 14 34 14 16 42 10 60 30 78 10 106 16 106 34 106 56 70 70 60 84Z"
-            {...st}
+            d="M30 48s-17-10.5-17-21a10 10 0 0 1 17-6 10 10 0 0 1 17 6c0 10.5-17 21-17 21z"
+            fill={f}
+            stroke={s}
+            strokeWidth="3"
           />
         </svg>
       );
     }
-    const n = k === "star" ? 10 : 6;
-    const P = [];
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-      const r = k === "star" ? (i % 2 ? 20 : 44) : 42;
-      P.push(
-        (60 + r * Math.cos(a)).toFixed(1) +
-          "," +
-          (46 + r * Math.sin(a)).toFixed(1)
+    if (k === "star") {
+      return (
+        <svg viewBox="0 0 60 60">
+          <path
+            d="M30 8l6 14 15 2-11 10 3 15-13-8-13 8 3-15-11-10 15-2z"
+            fill={f}
+            stroke={s}
+            strokeWidth="3"
+          />
+        </svg>
+      );
+    }
+    if (k === "hex") {
+      return (
+        <svg viewBox="0 0 60 60">
+          <polygon
+            points="30,8 48,19 48,41 30,52 12,41 12,19"
+            fill={f}
+            stroke={s}
+            strokeWidth="3"
+          />
+        </svg>
       );
     }
     return (
-      <svg viewBox="0 0 120 92">
-        <polygon points={P.join(" ")} {...st} />
+      <svg viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="22" fill={f} stroke={s} strokeWidth="3" />
       </svg>
     );
   }
 
   function renderBarcodeSVG(seed) {
-    let h = 0;
-    let x = 0;
-    const rects = [];
-    for (const c of seed) {
-      h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
-    }
-    for (let i = 0; i < 64; i++) {
-      h = (Math.imul(h, 1103515245) + 12345) >>> 0;
-      const w = 1 + ((h >>> 16) % 4);
-      const g = 1 + ((h >>> 20) % 3);
-      rects.push(<rect key={i} x={x} y="0" width={w} height="64" />);
-      x += w + g;
+    const bars = [];
+    let curX = 10;
+    const str = String(seed || "KUE-BARU");
+    for (let i = 0; i < str.length; i++) {
+      const charCode = str.charCodeAt(i);
+      const w1 = (charCode % 3) + 1;
+      const w2 = ((charCode >> 1) % 2) + 1;
+      bars.push(
+        <rect
+          key={i * 2}
+          x={curX}
+          y="0"
+          width={w1}
+          height="32"
+          fill="#182b23"
+        />
+      );
+      curX += w1 + w2;
+      if (curX > 180) break;
     }
     return (
       <svg
-        className="bc"
-        viewBox={`0 0 ${x} 64`}
-        preserveAspectRatio="none"
-        fill="#713D50"
-        aria-hidden="true"
+        viewBox="0 0 200 32"
+        style={{
+          width: "100%",
+          maxHeight: "32px",
+          display: "block",
+          margin: "8px 0 4px",
+        }}
       >
-        {rects}
+        {bars}
       </svg>
     );
   }
 
-  function getLineItems() {
-    const z = SZ[S.size] || SZ.mini;
-    const L = [
-      [`ukuran ${S.size} (Ø${z.d} cm)`, z.p, 1],
-      [`bentuk ${SHP[S.shape] ? SHP[S.shape][0].toLowerCase() : S.shape}`, SHP[S.shape] ? SHP[S.shape][1] : 0, 2],
-      [`rasa ${FLAV[S.flavor] ? FLAV[S.flavor][0].toLowerCase() : S.flavor}`, FLAV[S.flavor] ? FLAV[S.flavor][1] : 0, 3],
-      [`isian ${FILL[S.fill] ? FILL[S.fill][0].toLowerCase() : S.fill}`, FILL[S.fill] ? FILL[S.fill][1] : 0, 3],
-      [`krim ${(ICE.find((x) => x[1] === S.icing) || ["Kustom"])[0].toLowerCase()}`, 0, 3],
-    ];
-
-    Object.keys(S.deco || {})
-      .filter((k) => S.deco[k])
-      .forEach((k) => {
-        L.push([
-          `dekorasi ${DECO[k] ? DECO[k][1].toLowerCase() : k}`,
-          DECO[k] ? DECO[k][2] : 0,
-          4,
-        ]);
-      });
-
-    (S.items || []).forEach((i) => {
-      if (i.t === "text") {
-        L.push([`tulisan "${(i.text || "").replace(/\n/g, " ").slice(0, 22)}"`, 0, 5]);
-      } else if (i.t === "img") {
-        L.push(["gambar kustom", 15000, 5]);
-      } else {
-        L.push([`${(i.k || "").toLowerCase()} ${i.e || ""}`, ELP[i.k] || 2000, 5]);
-      }
-    });
-
-    return L;
+  const startHour =
+    parseInt((ketersediaan?.jam_buka || "08:00").slice(0, 2), 10) || 8;
+  const endHour =
+    parseInt((ketersediaan?.jam_tutup || "20:00").slice(0, 2), 10) || 20;
+  const daftarJam = [];
+  for (let h = startHour; h <= endHour; h++) {
+    daftarJam.push(String(h).padStart(2, "0") + ":00");
   }
 
-  const todayFormatted = new Date().toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const minHari = pengaturan?.minimal_hari_pesan ?? 2;
-  const minDeliveryDate = new Date(Date.now() + minHari * 86400000)
-    .toISOString()
-    .slice(0, 10);
+  const todayFormatted = formatTanggalIndonesia(new Date());
 
   return (
     <div className="cakecraft-studio">
@@ -1618,7 +1822,9 @@ export default function PesanPage() {
               Custom Cake
             </Link>
             <Link href="/pesanan-saya">Pesanan</Link>
-            <Link href="/dashboard">Dashboard</Link>
+            {(profil?.role === "admin" || profil?.role === "staf") && (
+              <Link href="/dashboard">Dashboard</Link>
+            )}
           </nav>
           <div className="hr">
             <span className="cart">
@@ -1642,7 +1848,9 @@ export default function PesanPage() {
               return (
                 <button
                   key={idx}
-                  className={`st ${isDone ? "done" : ""} ${isCur ? "cur" : ""} ${!isUnlocked ? "locked" : ""}`}
+                  className={`st ${isDone ? "done" : ""} ${isCur ? "cur" : ""} ${
+                    !isUnlocked ? "locked" : ""
+                  }`}
                   onClick={() => {
                     if (!isUnlocked) {
                       showToast("Selesaikan langkah sebelumnya terlebih dahulu ya");
@@ -1726,14 +1934,11 @@ export default function PesanPage() {
                               ? renderShapeSVG("heart")
                               : renderCakeSVG(
                                   t.s.size || "small",
-                                  FLAV[t.s.flavor || "vanilla"][2],
+                                  "#fbefd5",
                                   t.s.icing || "#f6b4c2"
                                 )}
                             <b>{t.n}</b>
                             <small>{t.d}</small>
-                            <em>
-                              {formatRp(calcBase({ ...getDefState(), ...t.s }))}
-                            </em>
                           </button>
                         );
                       })}
@@ -1762,27 +1967,33 @@ export default function PesanPage() {
                   </div>
                 </div>
                 <div className="grid">
-                  {Object.entries(SZ).map(([k, v]) => (
-                    <button
-                      key={k}
-                      className={`opt ${S.size === k ? "on" : ""}`}
-                      onClick={() => handleSet("size", k)}
-                    >
-                      {renderCakeSVG(
-                        k,
-                        FLAV[S.flavor] ? FLAV[S.flavor][2] : "#fbefd5",
-                        S.icing
-                      )}
-                      <b>{k.charAt(0).toUpperCase() + k.slice(1)}</b>
-                      <small>Ø {v.d} cm</small>
-                      <em>{formatRp(v.p)}</em>
-                    </button>
-                  ))}
+                  {itemsUkuran.map((item) => {
+                    const visual = VISUAL_SIZE[item.kode_visual] || {
+                      d: 14,
+                      s: "3–5 orang",
+                    };
+                    const isSelected = S.size === item.kode_visual;
+                    return (
+                      <button
+                        key={item.id}
+                        className={`opt ${isSelected ? "on" : ""}`}
+                        onClick={() => handleSet("size", item.kode_visual)}
+                      >
+                        {renderCakeSVG(
+                          item.kode_visual,
+                          "#fbefd5",
+                          S.icing || "#f6b4c2"
+                        )}
+                        <b>{item.nama}</b>
+                        <small>Ø {visual.d} cm</small>
+                        <em>{item.harga ? formatRupiah(item.harga) : "Termasuk"}</em>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="tip">
                   Ukuran {S.size.charAt(0).toUpperCase() + S.size.slice(1)} cocok
-                  untuk {SZ[S.size]?.s}
-                  {S.size === "mini" ? ", pas untuk kejutan spesial!" : "."}
+                  untuk {VISUAL_SIZE[S.size]?.s || "keluarga"}.
                 </div>
               </div>
             )}
@@ -1797,31 +2008,35 @@ export default function PesanPage() {
                   </div>
                 </div>
                 <div className="grid">
-                  {Object.keys(SHP).map((k) =>
-                    k === "custom" ? (
+                  {itemsBentuk.map((item) => {
+                    const isCustom = item.kode_visual === "custom";
+                    const isSelected = S.shape === item.kode_visual;
+                    return isCustom ? (
                       <button
-                        key={k}
-                        className={`opt dash ${S.shape === "custom" ? "on" : ""}`}
+                        key={item.id}
+                        className={`opt dash ${isSelected ? "on" : ""}`}
                         onClick={() => handleSet("shape", "custom")}
                       >
                         <span className="big">+</span>
-                        <b>Buat Sendiri</b>
-                        <small>+{formatRp(SHP.custom[1])}</small>
+                        <b>{item.nama}</b>
+                        <small>
+                          {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
+                        </small>
                       </button>
                     ) : (
                       <button
-                        key={k}
-                        className={`opt ${S.shape === k ? "on" : ""}`}
-                        onClick={() => handleSet("shape", k)}
+                        key={item.id}
+                        className={`opt ${isSelected ? "on" : ""}`}
+                        onClick={() => handleSet("shape", item.kode_visual)}
                       >
-                        {renderShapeSVG(k)}
-                        <b>{SHP[k][0]}</b>
-                        {SHP[k][1] ? (
-                          <small>+{formatRp(SHP[k][1])}</small>
-                        ) : null}
+                        {renderShapeSVG(item.kode_visual)}
+                        <b>{item.nama}</b>
+                        <small>
+                          {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
+                        </small>
                       </button>
-                    )
-                  )}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1837,44 +2052,61 @@ export default function PesanPage() {
                 </div>
                 <div className="lb">Rasa sponge</div>
                 <div className="grid">
-                  {Object.entries(FLAV).map(([k, v]) => (
+                  {itemsRasa.map((item) => (
                     <button
-                      key={k}
-                      className={`opt ${S.flavor === k ? "on" : ""}`}
-                      onClick={() => handleSet("flavor", k)}
+                      key={item.id}
+                      className={`opt ${S.flavor === item.kode_visual ? "on" : ""}`}
+                      onClick={() => handleSet("flavor", item.kode_visual)}
                     >
-                      <i className="sw" style={{ background: v[2] }}></i>
-                      <b>{v[0]}</b>
-                      <small>{v[1] ? "+" + formatRp(v[1]) : "Termasuk"}</small>
+                      <i
+                        className="sw"
+                        style={{ background: item.warna || "#fbefd5" }}
+                      ></i>
+                      <b>{item.nama}</b>
+                      <small>
+                        {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
+                      </small>
                     </button>
                   ))}
                 </div>
+
                 <div className="lb">Isian</div>
                 <div className="grid">
-                  {Object.entries(FILL).map(([k, v]) => (
+                  {itemsIsian.map((item) => (
                     <button
-                      key={k}
-                      className={`opt ${S.fill === k ? "on" : ""}`}
-                      onClick={() => handleSet("fill", k)}
+                      key={item.id}
+                      className={`opt ${S.fill === item.kode_visual ? "on" : ""}`}
+                      onClick={() => handleSet("fill", item.kode_visual)}
                     >
-                      <i className="sw" style={{ background: v[2] }}></i>
-                      <b>{v[0]}</b>
-                      <small>{v[1] ? "+" + formatRp(v[1]) : "Termasuk"}</small>
+                      <i
+                        className="sw"
+                        style={{ background: item.warna || "#fffaf0" }}
+                      ></i>
+                      <b>{item.nama}</b>
+                      <small>
+                        {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
+                      </small>
                     </button>
                   ))}
                 </div>
+
                 <div className="lb">Warna krim</div>
                 <div className="sc">
-                  {ICE.map((c) => (
-                    <button
-                      key={c[1]}
-                      className={`ch ${S.icing === c[1] ? "on" : ""}`}
-                      onClick={() => handleSet("icing", c[1])}
-                    >
-                      <i style={{ background: c[1] }}></i>
-                      {c[0]}
-                    </button>
-                  ))}
+                  {itemsWarnaKrim.map((item) => {
+                    const isSelected =
+                      (S.icing || "").toLowerCase() ===
+                      (item.warna || "").toLowerCase();
+                    return (
+                      <button
+                        key={item.id}
+                        className={`ch ${isSelected ? "on" : ""}`}
+                        onClick={() => handleSet("icing", item.warna)}
+                      >
+                        <i style={{ background: item.warna }}></i>
+                        {item.nama}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1889,17 +2121,23 @@ export default function PesanPage() {
                   </div>
                 </div>
                 <div className="grid">
-                  {Object.entries(DECO).map(([k, v]) => (
-                    <button
-                      key={k}
-                      className={`opt ${S.deco && S.deco[k] ? "on" : ""}`}
-                      onClick={() => handleDecoToggle(k)}
-                    >
-                      <span className="big">{v[0]}</span>
-                      <b>{v[1]}</b>
-                      <small>+{formatRp(v[2])}</small>
-                    </button>
-                  ))}
+                  {itemsDekorasi.map((item) => {
+                    const isSelected = !!(S.deco && S.deco[item.kode_visual]);
+                    const icon = VISUAL_DECO_ICON[item.kode_visual] || "✨";
+                    return (
+                      <button
+                        key={item.id}
+                        className={`opt ${isSelected ? "on" : ""}`}
+                        onClick={() => handleDecoToggle(item.kode_visual)}
+                      >
+                        <span className="big">{icon}</span>
+                        <b>{item.nama}</b>
+                        <small>
+                          {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
+                        </small>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="tip">
                   Di langkah berikutnya kamu bisa menambah stiker, topper, dan
@@ -1916,30 +2154,45 @@ export default function PesanPage() {
                   <span>T</span>
                   <span>Teks</span>
                 </button>
-                {ELS.map((c, idx) => (
-                  <div key={idx}>
-                    <button
-                      className={`el ${openC === idx ? "on" : ""}`}
-                      onClick={() => setOpenC(openC === idx ? -1 : idx)}
-                    >
-                      <span>{c[1]}</span>
-                      <span>{c[0]}</span>
-                    </button>
-                    {openC === idx && (
-                      <div className="ep">
-                        {c[2].map((emo, eIdx) => (
-                          <button
-                            key={eIdx}
-                            onClick={() => handleAddEmoji(idx, emo)}
-                            aria-label={`Tambah ${emo}`}
-                          >
-                            {emo}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+
+                {itemsStiker.map((item, idx) => {
+                  const visual =
+                    VISUAL_ELS[item.kode_visual] ||
+                    VISUAL_ELS[item.nama.toLowerCase()] || {
+                      icon: "✨",
+                      emos: ["✨", "⭐", "🎉"],
+                    };
+                  return (
+                    <div key={item.id}>
+                      <button
+                        className={`el ${openC === idx ? "on" : ""}`}
+                        onClick={() => setOpenC(openC === idx ? -1 : idx)}
+                      >
+                        <span>{visual.icon}</span>
+                        <span>{item.nama}</span>
+                        <small style={{ marginLeft: "auto", fontSize: "12px", opacity: 0.8 }}>
+                          {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
+                        </small>
+                      </button>
+                      {openC === idx && (
+                        <div className="ep">
+                          {visual.emos.map((emo, eIdx) => (
+                            <button
+                              key={eIdx}
+                              onClick={() =>
+                                handleAddEmoji(item.kode_visual, item.nama, emo)
+                              }
+                              aria-label={`Tambah ${emo}`}
+                            >
+                              {emo}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
                 <div className="hd2" style={{ marginTop: "12px" }}>
                   Warna
                 </div>
@@ -1971,6 +2224,7 @@ export default function PesanPage() {
                     );
                   })}
                 </div>
+
                 <label
                   className="el"
                   style={{ margin: "14px 0 0", justifyContent: "center" }}
@@ -1988,7 +2242,7 @@ export default function PesanPage() {
                   className="sub2"
                   style={{ textAlign: "center", marginTop: "6px" }}
                 >
-                  Format: PNG, JPG
+                  Format: PNG, JPG (maks 2 MB)
                 </p>
               </div>
             )}
@@ -2044,7 +2298,9 @@ export default function PesanPage() {
                       mode === "tpl" ? (
                         <div key={lIdx} className="rl">
                           <span>{line[0]}</span>
-                          <span>{line[1] ? formatRp(line[1]) : "termasuk"}</span>
+                          <span>
+                            {line[3] ? "Termasuk" : formatRupiah(line[1])}
+                          </span>
                         </div>
                       ) : (
                         <button
@@ -2053,31 +2309,23 @@ export default function PesanPage() {
                           onClick={() => go(line[2])}
                         >
                           <span>{line[0]}</span>
-                          <span>{line[1] ? formatRp(line[1]) : "termasuk"}</span>
+                          <span>
+                            {line[3] ? "Termasuk" : formatRupiah(line[1])}
+                          </span>
                         </button>
                       )
                     )}
 
                     <div className="dbl"></div>
                     <div className="tt">
-                      <span>TOTAL:</span>
-                      <span>{formatRp(calcBase(S))}</span>
+                      <span>TOTAL KUE:</span>
+                      <span>{formatRupiah(rincianHarga.total_kue)}</span>
                     </div>
                     <div className="s" style={{ marginTop: "6px" }}>
                       *belum termasuk ongkir
                     </div>
-                    <div className="bars">
-                      <div>
-                        <i style={{ flex: 5 }}></i>
-                        <i style={{ flex: 2 }}></i>
-                      </div>
-                      <div>
-                        <i style={{ flex: 3 }}></i>
-                        <i style={{ flex: 2 }}></i>
-                      </div>
-                    </div>
-                    {renderBarcodeSVG(orderCode + calcBase(S))}
-                    <div className="s">{orderCode}</div>
+                    {renderBarcodeSVG("KUE-REVIEW")}
+                    <div className="s">KUE-BARU</div>
                   </div>
                 </div>
                 <p className="hint2">
@@ -2115,19 +2363,35 @@ export default function PesanPage() {
                   >
                     <span className="mi">🚚</span>
                     <b>Diantar</b>
-                    <span>+Rp 15.000 · diantar sampai rumah</span>
+                    <span>
+                      {daftarZona.length > 0
+                        ? `+${formatRupiah(getOngkir())} · diantar sampai rumah`
+                        : "Diantar sampai rumah"}
+                    </span>
                   </button>
                 </div>
 
                 <div className="g2">
                   <label className="fl">
-                    Nama
+                    Nama Pemesan *
                     <input
                       placeholder="Nama lengkap"
                       value={S.f.nm || ""}
                       onChange={(e) => handleFieldChange("nm", e.target.value)}
                     />
                   </label>
+                  <label className="fl">
+                    No. WhatsApp *
+                    <input
+                      type="tel"
+                      placeholder="08xxxxxxxxxx"
+                      value={S.f.ph || ""}
+                      onChange={(e) => handleFieldChange("ph", e.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <div className="g2">
                   <label className="fl">
                     Email
                     <input
@@ -2137,58 +2401,77 @@ export default function PesanPage() {
                       onChange={(e) => handleFieldChange("em", e.target.value)}
                     />
                   </label>
-                </div>
-                <div className="g2">
                   <label className="fl">
-                    No. WhatsApp (opsional)
-                    <input
-                      type="tel"
-                      placeholder="08xxxxxxxxxx"
-                      value={S.f.ph || ""}
-                      onChange={(e) => handleFieldChange("ph", e.target.value)}
-                    />
-                  </label>
-                  <label className="fl">
-                    Tanggal dibutuhkan
+                    Tanggal Pengambilan/Pengantaran *
                     <input
                       type="date"
-                      min={minDeliveryDate}
+                      min={ketersediaan?.tanggal_minimal || ""}
                       value={S.f.dt || ""}
-                      onChange={(e) => handleFieldChange("dt", e.target.value)}
+                      onChange={handleDateChange}
                     />
                   </label>
                 </div>
 
-                {S.pick === "delivery" && (
-                  <div style={{ marginTop: "10px" }} className={daftarZona.length > 0 ? "g2" : ""}>
-                    {daftarZona.length > 0 && (
-                      <label className="fl">
-                        Area Pengantaran
-                        <select
-                          value={S.zonaId || (daftarZona[0] ? daftarZona[0].id : "")}
-                          onChange={(e) => handleSet("zonaId", Number(e.target.value))}
-                          style={{
-                            padding: "10px 14px",
-                            borderRadius: "12px",
-                            border: "1.5px solid #f0d5db",
-                            background: "#fff",
-                            fontSize: "13px",
-                            fontWeight: 600,
-                            color: "#4a2d36",
-                          }}
-                        >
-                          {daftarZona.map((z) => (
-                            <option key={z.id} value={z.id}>
-                              {z.nama} (+Rp {Number(z.tarif || 0).toLocaleString("id-ID")})
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
+                <div className="g2">
+                  <label className="fl">
+                    Jam Pengambilan/Pengantaran *
+                    <select
+                      value={S.f.tm || ""}
+                      onChange={(e) => handleFieldChange("tm", e.target.value)}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "12px",
+                        border: "1.5px solid #f0d5db",
+                        background: "#fff",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#4a2d36",
+                      }}
+                    >
+                      <option value="">-- Pilih Jam Pengambilan --</option>
+                      {daftarJam.map((jam) => (
+                        <option key={jam} value={jam}>
+                          {jam} WIB
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {S.pick === "delivery" && daftarZona.length > 0 && (
                     <label className="fl">
-                      Alamat pengantaran
+                      Area Pengantaran (Zona) *
+                      <select
+                        value={
+                          S.zonaId || (daftarZona[0] ? daftarZona[0].id : "")
+                        }
+                        onChange={(e) =>
+                          handleSet("zonaId", Number(e.target.value))
+                        }
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: "12px",
+                          border: "1.5px solid #f0d5db",
+                          background: "#fff",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: "#4a2d36",
+                        }}
+                      >
+                        {daftarZona.map((z) => (
+                          <option key={z.id} value={z.id}>
+                            {z.nama} (+{formatRupiah(z.tarif)})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+
+                {S.pick === "delivery" && (
+                  <div style={{ marginTop: "10px" }}>
+                    <label className="fl">
+                      Alamat Lengkap Pengantaran *
                       <input
-                        placeholder="Nama jalan, nomor rumah, kota"
+                        placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan"
                         value={S.f.addr || ""}
                         onChange={(e) =>
                           handleFieldChange("addr", e.target.value)
@@ -2201,10 +2484,8 @@ export default function PesanPage() {
                 <div className="lb">Metode pembayaran</div>
                 <div className="grid">
                   {[
-                    ["cash", "💵", "Tunai"],
                     ["bank", "🏦", "Transfer Bank"],
-                    ["ewallet", "📱", "E-Wallet"],
-                    ["other", "✨", "Lainnya"],
+                    ["qris", "📱", "QRIS"],
                   ].map(([val, icon, lbl]) => (
                     <button
                       key={val}
@@ -2217,25 +2498,10 @@ export default function PesanPage() {
                   ))}
                 </div>
 
-                {S.pay === "other" && (
-                  <div style={{ marginTop: "10px" }}>
-                    <label className="fl">
-                      Metode pembayaran lainnya
-                      <input
-                        placeholder="Contoh: QRIS, kartu kredit"
-                        value={S.f.payOther || ""}
-                        onChange={(e) =>
-                          handleFieldChange("payOther", e.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                )}
-
                 <label className="fl" style={{ marginTop: "14px" }}>
-                  Catatan tambahan
+                  Catatan tambahan (opsional)
                   <textarea
-                    placeholder="Alergi, tema, atau pesan khusus"
+                    placeholder="Pesan khusus untuk dapur kami"
                     value={S.f.notes || ""}
                     onChange={(e) =>
                       handleFieldChange("notes", e.target.value)
@@ -2243,8 +2509,9 @@ export default function PesanPage() {
                   ></textarea>
                 </label>
                 <div className="tip">
-                  Pesanan custom butuh waktu pembuatan minimal 2 hari, silakan
-                  pilih tanggal sesuai kebutuhan.
+                  Pesanan custom butuh waktu pembuatan minimal{" "}
+                  {pengaturan?.minimal_hari_pesan || 2} hari. Silakan pilih
+                  tanggal sesuai ketersediaan.
                 </div>
               </div>
             )}
@@ -2263,7 +2530,7 @@ export default function PesanPage() {
 
                 <div className="pr">
                   <div className="pf">
-                    No. Pesanan : <span className="dots">{orderCode}</span>
+                    No. Pesanan : <span className="dots">(Otomatis saat dikirim)</span>
                   </div>
                   <div className="pf">
                     Tanggal : <span className="dots">{todayFormatted}</span>
@@ -2274,8 +2541,25 @@ export default function PesanPage() {
                   ♡ Nama Pelanggan :{" "}
                   <span className="dots">{S.f.nm || "-"}</span>
                 </div>
-                <div className="pf" style={{ marginTop: "12px" }}>
-                  ♡ Kontak : <span className="dots">{S.f.em || "-"}</span>
+                <div className="pf" style={{ marginTop: "6px" }}>
+                  ♡ Kontak WhatsApp :{" "}
+                  <span className="dots">{S.f.ph || "-"}</span>
+                </div>
+                <div className="pf" style={{ marginTop: "6px" }}>
+                  ♡ Pengambilan :{" "}
+                  <span className="dots">
+                    {S.pick === "delivery"
+                      ? `Diantar ke: ${S.f.addr || "-"}`
+                      : "Ambil di Toko"}
+                  </span>
+                </div>
+                <div className="pf" style={{ marginTop: "6px" }}>
+                  ♡ Waktu Diambil :{" "}
+                  <span className="dots">
+                    {S.f.dt
+                      ? `${formatTanggalIndonesia(S.f.dt)}, jam ${S.f.tm || "-"}`
+                      : "-"}
+                  </span>
                 </div>
 
                 <div className="tb">
@@ -2287,11 +2571,15 @@ export default function PesanPage() {
                     <span>Jumlah (Rp)</span>
                   </div>
                   {(() => {
-                    const rows = getLineItems().map((l) => [l[0], l[1]]);
+                    const rows = getLineItems().map((l) => [l[0], l[1], l[3]]);
                     if (S.pick === "delivery") {
-                      rows.push(["ongkir antar", 15000]);
+                      rows.push([
+                        "Ongkir Antar",
+                        rincianHarga.ongkir,
+                        rincianHarga.ongkir === 0,
+                      ]);
                     }
-                    const count = Math.max(8, rows.length);
+                    const count = Math.max(6, rows.length);
                     return Array.from({ length: count }, (_, i) => {
                       const r = rows[i];
                       return (
@@ -2300,10 +2588,18 @@ export default function PesanPage() {
                           <span className="ds">{r ? r[0] : ""}</span>
                           <span>{r ? 1 : ""}</span>
                           <span className="rt">
-                            {r ? (r[1] ? formatRp(r[1]) : "0") : ""}
+                            {r
+                              ? r[2]
+                                ? "Termasuk"
+                                : formatRupiah(r[1])
+                              : ""}
                           </span>
                           <span className="rt">
-                            {r ? (r[1] ? formatRp(r[1]) : "0") : ""}
+                            {r
+                              ? r[2]
+                                ? "Termasuk"
+                                : formatRupiah(r[1])
+                              : ""}
                           </span>
                         </div>
                       );
@@ -2313,47 +2609,82 @@ export default function PesanPage() {
                     <span></span>
                     <span></span>
                     <span></span>
-                    <span className="tot2">Total</span>
+                    <span className="tot2">Total Kue</span>
                     <span className="rt">
-                      <b>{formatRp(calcTotal(S))}</b>
+                      <b>{formatRupiah(rincianHarga.total_kue)}</b>
+                    </span>
+                  </div>
+                  {S.pick === "delivery" && (
+                    <div className="tr tl">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span className="tot2">Ongkir</span>
+                      <span className="rt">
+                        <b>{formatRupiah(rincianHarga.ongkir)}</b>
+                      </span>
+                    </div>
+                  )}
+                  <div className="tr tl">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span className="tot2">Total Bayar</span>
+                    <span className="rt">
+                      <b>{formatRupiah(rincianHarga.total_bayar)}</b>
                     </span>
                   </div>
                 </div>
 
                 <div className="pn">
                   <div className="bx">
-                    <i className="tag">Metode Pembayaran</i>
-                    <div className="cb">
-                      {S.pay === "cash" ? "☑" : "☐"} Tunai 💵
-                    </div>
-                    <div className="cb">
-                      {S.pay === "bank" ? "☑" : "☐"} Transfer Bank 🏦
-                    </div>
-                    <div className="cb">
-                      {S.pay === "ewallet" ? "☑" : "☐"} E-Wallet 📱
-                    </div>
-                    <div className="cb">
-                      {S.pay === "other" ? "☑" : "☐"} Lainnya :{" "}
-                      {S.pay === "other" ? S.f.payOther || "" : ""}
-                    </div>
-                  </div>
-                  <div className="bx">
-                    <i className="tag">Catatan</i>
-                    {[
-                      S.pick === "delivery"
-                        ? "Diantar ke: " + (S.f.addr || "-")
-                        : "Ambil di toko",
-                      S.f.dt ? "Dibutuhkan: " + S.f.dt : "Dibutuhkan: -",
-                      S.f.ph ? "WhatsApp: " + S.f.ph : "",
-                      S.f.notes || "",
-                    ]
-                      .filter(Boolean)
-                      .map((t, idx) => (
-                        <div key={idx} className="nt">
-                          {t}
+                    <i className="tag">Rincian Pembayaran Sekarang</i>
+                    {pengaturan?.mode_pembayaran === "DP" ? (
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: "bold", color: "#182b23" }}>
+                          Tagihan DP ({pengaturan.persen_dp || 50}%): {formatRupiah(rincianHarga.jumlah_dp)}
                         </div>
-                      ))}
-                    <div className="nt"></div>
+                        <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                          Sisa Pelunasan: {formatRupiah(rincianHarga.total_bayar - rincianHarga.jumlah_dp)} (dilunasi saat kue diambil / dikirim)
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: "14px", fontWeight: "bold", color: "#182b23" }}>
+                        Tagihan Pembayaran Penuh: {formatRupiah(rincianHarga.total_bayar)}
+                      </div>
+                    )}
+                    <div style={{ marginTop: "10px", fontSize: "13px" }}>
+                      <b>Metode Terpilih: </b>
+                      {S.pay === "bank" ? "Transfer Bank" : "QRIS"}
+                    </div>
+                    {S.pay === "bank" ? (
+                      <div style={{ marginTop: "8px", fontSize: "12px", background: "#f8f9f8", padding: "8px 12px", borderRadius: "10px" }}>
+                        <div><b>Bank:</b> {pengaturan?.nama_bank || "BCA"}</div>
+                        <div><b>No. Rekening:</b> {pengaturan?.no_rekening || "1234567890"}</div>
+                        <div><b>Atas Nama:</b> {pengaturan?.atas_nama || "Cravely Bakery"}</div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: "8px", textAlign: "center" }}>
+                        {pengaturan?.gambar_qris ? (
+                          <img
+                            src={pengaturan.gambar_qris}
+                            alt="QRIS Toko"
+                            style={{ maxWidth: "160px", margin: "0 auto", borderRadius: "8px", border: "1px solid #ddd" }}
+                          />
+                        ) : (
+                          <div style={{ fontSize: "12px", color: "#555" }}>
+                            Scan QRIS saat melakukan pembayaran.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bx">
+                    <i className="tag">Catatan Tambahan</i>
+                    <div className="nt">
+                      {S.f.notes && S.f.notes.trim() ? S.f.notes : "Tidak ada catatan khusus"}
+                    </div>
                   </div>
                 </div>
 
@@ -2367,7 +2698,42 @@ export default function PesanPage() {
 
           <section id="V">
             <div className="vbox" ref={vboxRef} id="vbox">
-              <canvas ref={canvasRef} id="cv" aria-label="Pratinjau kue 3D"></canvas>
+              {hasWebGL ? (
+                <canvas
+                  ref={canvasRef}
+                  id="cv"
+                  aria-label="Pratinjau kue 3D"
+                ></canvas>
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "20px",
+                  }}
+                >
+                  <PreviewKue
+                    pilihan={getPilihanItemsList().map((p) => {
+                      const it = daftarItem.find((x) => x.id === p.id_item);
+                      const gr = daftarGrup.find((g) => g.id === it?.id_grup);
+                      return {
+                        peran_visual: gr ? gr.peran_visual : null,
+                        kode_visual: it ? it.kode_visual : "",
+                        warna: it ? it.warna : "",
+                        nama_item: it ? it.nama : "",
+                      };
+                    })}
+                    tulisan={(S.items || [])
+                      .filter((i) => i.t === "text" && i.text)
+                      .map((i) => i.text)
+                      .join(" / ")}
+                  />
+                </div>
+              )}
+
               <div className="vt">
                 {step === 5 ? (
                   <>
@@ -2389,109 +2755,73 @@ export default function PesanPage() {
                         ↷
                       </button>
                     </div>
-                    <div className="seg">
-                      <button
-                        className={view2D ? "" : "on"}
-                        onClick={() => {
-                          setView2D(false);
-                          threeStateRef.current.ph = 0.42;
-                        }}
-                      >
-                        3D
-                      </button>
-                      <button
-                        className={view2D ? "on" : ""}
-                        onClick={() => {
-                          setView2D(true);
-                          threeStateRef.current.ph = 1.5;
-                          threeStateRef.current.th = 0;
-                          setAutoSpin(false);
-                        }}
-                      >
-                        2D
-                      </button>
-                    </div>
+                    {hasWebGL && (
+                      <div className="seg">
+                        <button
+                          className={view2D ? "" : "on"}
+                          onClick={() => {
+                            setView2D(false);
+                            threeStateRef.current.ph = 0.42;
+                          }}
+                        >
+                          3D
+                        </button>
+                        <button
+                          className={view2D ? "on" : ""}
+                          onClick={() => {
+                            setView2D(true);
+                            threeStateRef.current.ph = 1.5;
+                            threeStateRef.current.th = 0;
+                            setAutoSpin(false);
+                          }}
+                        >
+                          2D
+                        </button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
                     <span></span>
-                    <div className="col">
-                      <button
-                        className="ib"
-                        onClick={() => {
-                          threeStateRef.current.th = 0.5;
-                          threeStateRef.current.ph = 0.42;
-                          threeStateRef.current.dist =
-                            ((SZ[S.size] ? SZ[S.size].d : 10) / 12) * 2.6 + 3.6;
-                          setAutoSpin(true);
-                        }}
-                        aria-label="Reset"
-                      >
-                        ⟳
-                      </button>
-                      <button
-                        className="ib"
-                        onClick={() => {
-                          try {
-                            if (document.fullscreenElement) {
-                              document.exitFullscreen();
-                            } else if (vboxRef.current) {
-                              vboxRef.current.requestFullscreen();
-                            }
-                          } catch {}
-                        }}
-                        aria-label="Layar penuh"
-                      >
-                        ⛶
-                      </button>
-                      <button
-                        className="ib"
-                        onClick={() => {
-                          const ts = threeStateRef.current;
-                          ts.dist = ts.dist > 5 ? 4 : ((SZ[S.size] ? SZ[S.size].d : 10) / 12) * 2.6 + 3.6;
-                        }}
-                        aria-label="Zoom"
-                      >
-                        🔍
-                      </button>
-                    </div>
+                    {hasWebGL && (
+                      <div className="col">
+                        <button
+                          className="ib"
+                          onClick={() => {
+                            const szData = VISUAL_SIZE[S.size] || { d: 14 };
+                            threeStateRef.current.th = 0.5;
+                            threeStateRef.current.ph = 0.42;
+                            threeStateRef.current.dist =
+                              (szData.d / 12) * 2.6 + 3.6;
+                            setAutoSpin(true);
+                          }}
+                          aria-label="Reset"
+                        >
+                          ↻
+                        </button>
+                        <button
+                          className="ib"
+                          onClick={() => {
+                            const ts = threeStateRef.current;
+                            const szData = VISUAL_SIZE[S.size] || { d: 14 };
+                            ts.dist =
+                              ts.dist > 5 ? 4 : (szData.d / 12) * 2.6 + 3.6;
+                          }}
+                          aria-label="Zoom"
+                        >
+                          🔍
+                        </button>
+                        <button
+                          className={`ib ${autoSpin ? "on" : ""}`}
+                          onClick={() => setAutoSpin(!autoSpin)}
+                          aria-label="Putar otomatis"
+                        >
+                          ⟳
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
-              </div>
-
-              <button
-                className={`fav ${fav ? "on" : ""}`}
-                onClick={() => setFav(!fav)}
-                aria-label="Favorit"
-              >
-                {fav ? "♥" : "♡"}
-              </button>
-
-              <div className="pill">
-                <button
-                  onClick={() => {
-                    threeStateRef.current.th -= 0.6;
-                    setAutoSpin(false);
-                  }}
-                  aria-label="Putar kiri"
-                >
-                  ‹
-                </button>
-                <button
-                  className={autoSpin ? "on" : ""}
-                  onClick={() => setAutoSpin(!autoSpin)}
-                >
-                  ⟳ Putar
-                </button>
-                <button
-                  onClick={() => {
-                    threeStateRef.current.th += 0.6;
-                    setAutoSpin(false);
-                  }}
-                  aria-label="Putar kanan"
-                >
-                  ›
-                </button>
               </div>
             </div>
 
@@ -2585,20 +2915,22 @@ export default function PesanPage() {
                     {S.shape === "round" || S.shape === "custom"
                       ? renderCakeSVG(
                           S.size,
-                          FLAV[S.flavor] ? FLAV[S.flavor][2] : "#fbefd5",
-                          S.icing
+                          "#fbefd5",
+                          S.icing || "#f6b4c2"
                         )
                       : renderShapeSVG(S.shape)}
                     <div style={{ flex: 1 }}>
-                      <h3>Custom Cake</h3>
+                      <h3>
+                        {mode === "tpl" && tplI !== null
+                          ? TPL[tplI].n
+                          : "Custom Cake"}
+                      </h3>
                       <p>
-                        {SHP[S.shape] ? SHP[S.shape][0] : S.shape} ·{" "}
-                        {S.size.charAt(0).toUpperCase() + S.size.slice(1)} (Ø{" "}
-                        {SZ[S.size] ? SZ[S.size].d : 10} cm)
+                        {S.shape} · {S.size.toUpperCase()} (Ø{" "}
+                        {VISUAL_SIZE[S.size]?.d || 14} cm)
                       </p>
                       <p>
-                        {FLAV[S.flavor] ? FLAV[S.flavor][0] : S.flavor} ·{" "}
-                        {FILL[S.fill] ? FILL[S.fill][0] : S.fill}
+                        {S.flavor} · {S.fill}
                       </p>
                     </div>
                     <button
@@ -2617,7 +2949,7 @@ export default function PesanPage() {
                   </div>
                   <div className="tot">
                     <span>Total Harga</span>
-                    <span>{formatRp(calcTotal(S))}</span>
+                    <span>{formatRupiah(rincianHarga.total_bayar)}</span>
                   </div>
                 </div>
               ) : null}
@@ -2805,7 +3137,7 @@ export default function PesanPage() {
           )}
 
           <div className="fr">
-            <b>{formatRp(calcTotal(S))}</b>
+            <b>{formatRupiah(rincianHarga.total_bayar)}</b>
             <button
               className="btn nxt"
               disabled={sedangKirim}
