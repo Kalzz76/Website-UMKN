@@ -81,6 +81,18 @@ function FormMasuk() {
 
   return (
     <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-stone-100 p-8">
+      <div className="mb-4">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-stone-500 hover:text-stone-900 transition group"
+        >
+          <span className="w-7 h-7 rounded-full bg-stone-100 group-hover:bg-stone-200 flex items-center justify-center text-stone-600 transition">
+            <i className="fa-solid fa-arrow-left text-[11px]"></i>
+          </span>
+          <span>Kembali ke Beranda</span>
+        </Link>
+      </div>
+
       <div className="text-center mb-6">
         <h1 className="text-2xl font-extrabold text-stone-900">Masuk ke Akun</h1>
         <p className="text-sm text-stone-500 mt-1">
