@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as THREE from "three";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import PortalLedge from "@/components/PortalLedge";
 import "./cakecraft.css";
 
 const SZ = {
@@ -1620,19 +1621,21 @@ export default function PesanPage() {
       <div className="hd">
         <div className="in">
           <Link href="/" className="logo">
-            <span style={{ fontSize: "38px" }}>🧁</span>
+            <span style={{ fontSize: "36px" }}>🧁</span>
             <div>
-              <b>{pengaturan?.nama_toko || "CakeCraft"}</b>
-              <small>Make Your Cake, Your Way</small>
+              <b>{pengaturan?.nama_toko || "Cravely Bakery"}</b>
+              <small>Artisan Cake Studio</small>
             </div>
           </Link>
           <nav>
             <Link href="/">Beranda</Link>
             <Link href="/pesan" className="on">
-              Custom Cake
+              Pesan Sekarang
             </Link>
-            <Link href="/pesanan-saya">Pesanan</Link>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/pesanan-saya">Pesanan Saya</Link>
+            {profil?.role && (profil.role === "admin" || profil.role === "staf") ? (
+              <Link href="/dashboard">Dashboard</Link>
+            ) : null}
           </nav>
           <div className="hr">
             <span className="cart">
@@ -2987,6 +2990,8 @@ export default function PesanPage() {
             </button>
           </div>
         </footer>
+
+        <PortalLedge />
       </div>
 
       <div className={`toast ${toastShow ? "show" : ""}`}>{toastMsg}</div>
