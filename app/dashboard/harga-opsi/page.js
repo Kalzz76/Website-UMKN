@@ -54,6 +54,17 @@ export default function HargaOpsiPage() {
     tipe: "info",
   });
 
+  useEffect(() => {
+    if (modalGrupBuka || modalItemBuka || notifikasi.terbuka) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [modalGrupBuka, modalItemBuka, notifikasi.terbuka]);
+
   async function muatData() {
     setSedangMemuat(true);
     const supabase = getSupabaseBrowser();
@@ -662,9 +673,15 @@ export default function HargaOpsiPage() {
       )}
 
       {modalGrupBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-sm">
-          <div className="bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] p-6 sm:p-7 max-w-lg w-full shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-[#e8dfc8] mb-5">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalGrupBuka(false);
+          }}
+          style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-md overflow-hidden"
+        >
+          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
               <h3 className="text-lg font-bold text-[#1d3b2e]">
                 {editGrupId ? "Edit Grup Opsi" : "Tambah Grup Opsi"}
               </h3>
@@ -677,117 +694,119 @@ export default function HargaOpsiPage() {
               </button>
             </div>
 
-            {pesanErrorForm.length > 0 && (
-              <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-                {pesanErrorForm.map((err, idx) => (
-                  <p key={idx}>{err}</p>
-                ))}
-              </div>
-            )}
+            <form onSubmit={simpanGrup} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {pesanErrorForm.length > 0 && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
+                    {pesanErrorForm.map((err, idx) => (
+                      <p key={idx}>{err}</p>
+                    ))}
+                  </div>
+                )}
 
-            <form onSubmit={simpanGrup} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                  Nama Grup <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Ukuran Kue, Rasa Sponge, Warna Krim"
-                  value={formGrup.nama}
-                  onChange={(e) =>
-                    setFormGrup({ ...formGrup, nama: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                    Urutan Tampil
+                    Nama Grup <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="number"
-                    min="1"
-                    value={formGrup.urutan}
+                    type="text"
+                    required
+                    placeholder="Contoh: Ukuran Kue, Rasa Sponge, Warna Krim"
+                    value={formGrup.nama}
                     onChange={(e) =>
-                      setFormGrup({ ...formGrup, urutan: e.target.value })
+                      setFormGrup({ ...formGrup, nama: e.target.value })
                     }
                     className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                      Urutan Tampil
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formGrup.urutan}
+                      onChange={(e) =>
+                        setFormGrup({ ...formGrup, urutan: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                      Jenis Pilihan
+                    </label>
+                    <select
+                      value={formGrup.jenis_pilihan}
+                      onChange={(e) =>
+                        setFormGrup({ ...formGrup, jenis_pilihan: e.target.value })
+                      }
+                      className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    >
+                      <option value="satu">Pilih Satu (Radio)</option>
+                      <option value="banyak">Pilih Banyak (Checkbox)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                    Jenis Pilihan
+                    Peran Visual (Preview Kue)
                   </label>
                   <select
-                    value={formGrup.jenis_pilihan}
+                    value={formGrup.peran_visual}
                     onChange={(e) =>
-                      setFormGrup({ ...formGrup, jenis_pilihan: e.target.value })
+                      setFormGrup({ ...formGrup, peran_visual: e.target.value })
                     }
                     className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   >
-                    <option value="satu">Pilih Satu (Radio)</option>
-                    <option value="banyak">Pilih Banyak (Checkbox)</option>
+                    <option value="">Non-Visual (Hanya harga & teks catatan)</option>
+                    <option value="ukuran">Ukuran (Mengatur tingkat & ukuran kue)</option>
+                    <option value="badan">Warna Kue (Mengatur warna dasar bolu)</option>
+                    <option value="krim">Warna Krim (Mengatur warna lelehan krim)</option>
+                    <option value="topping">Topping (Menampilkan lilin, buah, choco chip)</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                    Tampil di Dashboard Sebagai
+                  </label>
+                  <select
+                    value={formGrup.peran_dashboard || ""}
+                    onChange={(e) =>
+                      setFormGrup({ ...formGrup, peran_dashboard: e.target.value })
+                    }
+                    className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                  >
+                    <option value="">Tidak ditampilkan di ringkasan grafik</option>
+                    <option value="jenis">Grafik jenis kue (donut chart)</option>
+                    <option value="terlaris">Daftar item terlaris</option>
+                  </select>
+                </div>
+
+                <div className="pt-1">
+                  <label className="flex items-center space-x-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formGrup.wajib}
+                      onChange={(e) =>
+                        setFormGrup({ ...formGrup, wajib: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#e0d5b8]"
+                    />
+                    <span className="text-xs font-bold text-[#1d3b2e]">
+                      Wajib Dipilih oleh Pelanggan saat Memesan
+                    </span>
+                  </label>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                  Peran Visual (Preview Kue)
-                </label>
-                <select
-                  value={formGrup.peran_visual}
-                  onChange={(e) =>
-                    setFormGrup({ ...formGrup, peran_visual: e.target.value })
-                  }
-                  className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
-                >
-                  <option value="">Non-Visual (Hanya harga & teks catatan)</option>
-                  <option value="ukuran">Ukuran (Mengatur tingkat & ukuran kue)</option>
-                  <option value="badan">Warna Kue (Mengatur warna dasar bolu)</option>
-                  <option value="krim">Warna Krim (Mengatur warna lelehan krim)</option>
-                  <option value="topping">Topping (Menampilkan lilin, buah, choco chip)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                  Tampil di Dashboard Sebagai
-                </label>
-                <select
-                  value={formGrup.peran_dashboard || ""}
-                  onChange={(e) =>
-                    setFormGrup({ ...formGrup, peran_dashboard: e.target.value })
-                  }
-                  className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
-                >
-                  <option value="">Tidak ditampilkan di ringkasan grafik</option>
-                  <option value="jenis">Grafik jenis kue (donut chart)</option>
-                  <option value="terlaris">Daftar item terlaris</option>
-                </select>
-              </div>
-
-              <div className="pt-1">
-                <label className="flex items-center space-x-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formGrup.wajib}
-                    onChange={(e) =>
-                      setFormGrup({ ...formGrup, wajib: e.target.checked })
-                    }
-                    className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#e0d5b8]"
-                  />
-                  <span className="text-xs font-bold text-[#1d3b2e]">
-                    Wajib Dipilih oleh Pelanggan saat Memesan
-                  </span>
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-[#e8dfc8]">
+              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
                 <button
                   type="button"
                   onClick={() => setModalGrupBuka(false)}
@@ -809,9 +828,15 @@ export default function HargaOpsiPage() {
       )}
 
       {modalItemBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-sm">
-          <div className="bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] p-6 sm:p-7 max-w-lg w-full shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-[#e8dfc8] mb-5">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalItemBuka(false);
+          }}
+          style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-md overflow-hidden"
+        >
+          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
               <div>
                 <h3 className="text-lg font-bold text-[#1d3b2e]">
                   {editItemId ? "Edit Opsi Item" : "Tambah Opsi Item"}
@@ -832,191 +857,193 @@ export default function HargaOpsiPage() {
               </button>
             </div>
 
-            {pesanErrorForm.length > 0 && (
-              <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-                {pesanErrorForm.map((err, idx) => (
-                  <p key={idx}>{err}</p>
-                ))}
-              </div>
-            )}
+            <form onSubmit={simpanItem} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {pesanErrorForm.length > 0 && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
+                    {pesanErrorForm.map((err, idx) => (
+                      <p key={idx}>{err}</p>
+                    ))}
+                  </div>
+                )}
 
-            <form onSubmit={simpanItem} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                  Nama Opsi <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={
-                    grupAktifForItem?.peran_visual === "ukuran"
-                      ? "Contoh: Kecil (15 cm), Sedang (20 cm), Besar (25 cm)"
-                      : grupAktifForItem?.peran_visual === "badan" || grupAktifForItem?.peran_visual === "krim"
-                      ? "Contoh: Coklat, Vanilla, Red Velvet, Matcha"
-                      : grupAktifForItem?.peran_visual === "topping"
-                      ? "Contoh: Strawberry Segar, Lilin Ultah, Choco Chip"
-                      : "Contoh: Tulisan di Kue, Kartu Ucapan, Lilin Angka"
-                  }
-                  value={formItem.nama}
-                  onChange={(e) =>
-                    setFormItem({ ...formItem, nama: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                    Harga Tambahan (Rp) <span className="text-rose-500">*</span>
+                    Nama Opsi <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    step="1000"
+                    type="text"
                     required
-                    value={formItem.harga}
+                    placeholder={
+                      grupAktifForItem?.peran_visual === "ukuran"
+                        ? "Contoh: Kecil (15 cm), Sedang (20 cm), Besar (25 cm)"
+                        : grupAktifForItem?.peran_visual === "badan" || grupAktifForItem?.peran_visual === "krim"
+                        ? "Contoh: Coklat, Vanilla, Red Velvet, Matcha"
+                        : grupAktifForItem?.peran_visual === "topping"
+                        ? "Contoh: Strawberry Segar, Lilin Ultah, Choco Chip"
+                        : "Contoh: Tulisan di Kue, Kartu Ucapan, Lilin Angka"
+                    }
+                    value={formItem.nama}
                     onChange={(e) =>
-                      setFormItem({ ...formItem, harga: e.target.value })
+                      setFormItem({ ...formItem, nama: e.target.value })
                     }
                     className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
-                    Urutan
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formItem.urutan}
-                    onChange={(e) =>
-                      setFormItem({ ...formItem, urutan: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
-                  />
-                </div>
-              </div>
-
-              {grupAktifForItem?.peran_visual === "ukuran" && (
-                <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-2">
-                  <label className="block text-xs font-bold text-[#1d3b2e]">
-                    Pilihan Ukuran di Visual Preview <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={formItem.kode_visual || "kecil"}
-                    onChange={(e) =>
-                      setFormItem({ ...formItem, kode_visual: e.target.value })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
-                  >
-                    <option value="kecil">Kecil (1 Tingkat / 15 cm)</option>
-                    <option value="sedang">Sedang (2 Tingkat / 20 cm)</option>
-                    <option value="besar">Besar (3 Tingkat / 25 cm)</option>
-                  </select>
-                  <p className="text-[11px] text-stone-600">
-                    Opsi ini akan mengubah skala dan jumlah tingkat kue pada visual preview 3D pelanggan.
-                  </p>
-                </div>
-              )}
-
-              {(grupAktifForItem?.peran_visual === "badan" || grupAktifForItem?.peran_visual === "krim") && (
-                <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                      Pilih Warna {grupAktifForItem?.peran_visual === "badan" ? "Kue" : "Krim"} <span className="text-rose-500">*</span>
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                      Harga Tambahan (Rp) <span className="text-rose-500">*</span>
                     </label>
-                    <div className="flex items-center space-x-2.5">
-                      <input
-                        type="color"
-                        value={formItem.warna || (grupAktifForItem?.peran_visual === "badan" ? "#5c3a21" : "#ffffff")}
-                        onChange={(e) =>
-                          setFormItem({ ...formItem, warna: e.target.value })
-                        }
-                        className="w-11 h-11 p-1 rounded-xl border-2 border-[#e0d5b8] bg-white cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        placeholder="#5c3a21"
-                        value={formItem.warna}
-                        onChange={(e) =>
-                          setFormItem({ ...formItem, warna: e.target.value })
-                        }
-                        className="flex-1 px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-xs font-mono font-bold text-[#1d3b2e]"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      required
+                      value={formItem.harga}
+                      onChange={(e) =>
+                        setFormItem({ ...formItem, harga: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    />
                   </div>
 
                   <div>
-                    <span className="block text-[11px] font-bold text-stone-600 mb-1.5">
-                      Pilihan Cepat Warna Populer:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {presetWarna.map((pw) => (
-                        <button
-                          key={pw.hex}
-                          type="button"
-                          onClick={() => setFormItem({ ...formItem, warna: pw.hex })}
-                          className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
-                            formItem.warna?.toLowerCase() === pw.hex.toLowerCase()
-                              ? "bg-white border-[#ba2b2b] shadow-xs"
-                              : "bg-white/80 border-[#e0d5b8] hover:bg-white"
-                          }`}
-                        >
-                          <span
-                            className="w-3.5 h-3.5 rounded-full border border-stone-300"
-                            style={{ backgroundColor: pw.hex }}
-                          />
-                          <span className="text-[#1d3b2e]">{pw.label}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                      Urutan
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formItem.urutan}
+                      onChange={(e) =>
+                        setFormItem({ ...formItem, urutan: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    />
                   </div>
                 </div>
-              )}
 
-              {grupAktifForItem?.peran_visual === "topping" && (
-                <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-2">
-                  <label className="block text-xs font-bold text-[#1d3b2e]">
-                    Ikon Topping di Visual Preview <span className="text-rose-500">*</span>
+                {grupAktifForItem?.peran_visual === "ukuran" && (
+                  <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-2">
+                    <label className="block text-xs font-bold text-[#1d3b2e]">
+                      Pilihan Ukuran di Visual Preview <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formItem.kode_visual || "kecil"}
+                      onChange={(e) =>
+                        setFormItem({ ...formItem, kode_visual: e.target.value })
+                      }
+                      className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
+                    >
+                      <option value="kecil">Kecil (1 Tingkat / 15 cm)</option>
+                      <option value="sedang">Sedang (2 Tingkat / 20 cm)</option>
+                      <option value="besar">Besar (3 Tingkat / 25 cm)</option>
+                    </select>
+                    <p className="text-[11px] text-stone-600">
+                      Opsi ini akan mengubah skala dan jumlah tingkat kue pada visual preview 3D pelanggan.
+                    </p>
+                  </div>
+                )}
+
+                {(grupAktifForItem?.peran_visual === "badan" || grupAktifForItem?.peran_visual === "krim") && (
+                  <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                        Pilih Warna {grupAktifForItem?.peran_visual === "badan" ? "Kue" : "Krim"} <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="flex items-center space-x-2.5">
+                        <input
+                          type="color"
+                          value={formItem.warna || (grupAktifForItem?.peran_visual === "badan" ? "#5c3a21" : "#ffffff")}
+                          onChange={(e) =>
+                            setFormItem({ ...formItem, warna: e.target.value })
+                          }
+                          className="w-11 h-11 p-1 rounded-xl border-2 border-[#e0d5b8] bg-white cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          placeholder="#5c3a21"
+                          value={formItem.warna}
+                          onChange={(e) =>
+                            setFormItem({ ...formItem, warna: e.target.value })
+                          }
+                          className="flex-1 px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-xs font-mono font-bold text-[#1d3b2e]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="block text-[11px] font-bold text-stone-600 mb-1.5">
+                        Pilihan Cepat Warna Populer:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {presetWarna.map((pw) => (
+                          <button
+                            key={pw.hex}
+                            type="button"
+                            onClick={() => setFormItem({ ...formItem, warna: pw.hex })}
+                            className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                              formItem.warna?.toLowerCase() === pw.hex.toLowerCase()
+                                ? "bg-white border-[#ba2b2b] shadow-xs"
+                                : "bg-white/80 border-[#e0d5b8] hover:bg-white"
+                            }`}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-stone-300"
+                              style={{ backgroundColor: pw.hex }}
+                            />
+                            <span className="text-[#1d3b2e]">{pw.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {grupAktifForItem?.peran_visual === "topping" && (
+                  <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] space-y-2">
+                    <label className="block text-xs font-bold text-[#1d3b2e]">
+                      Ikon Topping di Visual Preview <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={formItem.kode_visual || "strawberry"}
+                      onChange={(e) =>
+                        setFormItem({ ...formItem, kode_visual: e.target.value })
+                      }
+                      className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
+                    >
+                      <option value="strawberry">🍓 Strawberry Segar</option>
+                      <option value="lilin">🕯️ Lilin Ulang Tahun</option>
+                      <option value="coklat_chip">🍫 Choco Chip</option>
+                      <option value="buah">🍒 Aneka Potongan Buah</option>
+                      <option value="lainnya">✨ Topping Lainnya (Tanpa Ikon Khusus)</option>
+                    </select>
+                    <p className="text-[11px] text-stone-600">
+                      Topping yang dipilih akan ditampilkan secara otomatis pada permukaan kue di visual preview pelanggan.
+                    </p>
+                  </div>
+                )}
+
+                <div className="pt-1">
+                  <label className="flex items-center space-x-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formItem.aktif}
+                      onChange={(e) =>
+                        setFormItem({ ...formItem, aktif: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#e0d5b8]"
+                    />
+                    <span className="text-xs font-bold text-[#1d3b2e]">
+                      Opsi Aktif (Tampil dan dapat dipilih pelanggan di form pemesanan)
+                    </span>
                   </label>
-                  <select
-                    value={formItem.kode_visual || "strawberry"}
-                    onChange={(e) =>
-                      setFormItem({ ...formItem, kode_visual: e.target.value })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
-                  >
-                    <option value="strawberry">🍓 Strawberry Segar</option>
-                    <option value="lilin">🕯️ Lilin Ulang Tahun</option>
-                    <option value="coklat_chip">🍫 Choco Chip</option>
-                    <option value="buah">🍒 Aneka Potongan Buah</option>
-                    <option value="lainnya">✨ Topping Lainnya (Tanpa Ikon Khusus)</option>
-                  </select>
-                  <p className="text-[11px] text-stone-600">
-                    Topping yang dipilih akan ditampilkan secara otomatis pada permukaan kue di visual preview pelanggan.
-                  </p>
                 </div>
-              )}
-
-              <div className="pt-1">
-                <label className="flex items-center space-x-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formItem.aktif}
-                    onChange={(e) =>
-                      setFormItem({ ...formItem, aktif: e.target.checked })
-                    }
-                    className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#e0d5b8]"
-                  />
-                  <span className="text-xs font-bold text-[#1d3b2e]">
-                    Opsi Aktif (Tampil dan dapat dipilih pelanggan di form pemesanan)
-                  </span>
-                </label>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-[#e8dfc8]">
+              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
                 <button
                   type="button"
                   onClick={() => setModalItemBuka(false)}
