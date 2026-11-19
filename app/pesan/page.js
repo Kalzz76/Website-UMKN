@@ -2990,9 +2990,9 @@ export default function PesanPage() {
             </button>
           </div>
         </footer>
-
-        <PortalLedge />
       </div>
+
+      <PortalLedge />
 
       <div className={`toast ${toastShow ? "show" : ""}`}>{toastMsg}</div>
     </div>
