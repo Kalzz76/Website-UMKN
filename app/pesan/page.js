@@ -1183,7 +1183,7 @@ export default function PesanPage() {
       if (!S.icing) return "Pilih warna krim icing terlebih dahulu ya.";
       return "";
     }
-    if (sIdx === 6 || sIdx === 7) {
+    if (sIdx === 7) {
       return checkValidation();
     }
     return "";
