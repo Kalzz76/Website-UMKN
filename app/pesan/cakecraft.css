@@ -1126,12 +1126,15 @@
 }
 
 .cakecraft-studio .thm {
-  background: #fbf6e9;
-  border: 1.5px solid #e2d9c7;
+  background: var(--card-bg);
+  backdrop-filter: blur(14px);
+  border: var(--card-border);
 }
 
 .cakecraft-studio .thm .ti {
-  background: #ede2cd;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fbf6e9;
 }
 
 .cakecraft-studio .rcpw {
@@ -1369,6 +1372,43 @@
   right: 16px;
   top: 24px;
   font-size: 38px;
+}
+
+.cakecraft-studio .pp .pf {
+  background: #ffffff;
+  border: 1.5px solid #d8cca6;
+  color: #17382d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.cakecraft-studio .pp .dots {
+  color: #17382d;
+  border-bottom: 2px dotted #cca16e;
+}
+
+.cakecraft-studio .pp .tb {
+  background: #ffffff;
+  border: 1.5px solid #d8cca6;
+}
+
+.cakecraft-studio .pp .tb .tr {
+  border-bottom: 1.5px dashed #e0d5b8;
+}
+
+.cakecraft-studio .pp .tb .tr > span {
+  border-left: 1.5px solid #e0d5b8;
+  color: #17382d;
+}
+
+.cakecraft-studio .pp .tb .h > span {
+  background: #ede2cd;
+  color: #17382d;
+  border-left-color: #e0d5b8;
+}
+
+.cakecraft-studio .pp .tb .tot2 {
+  background: #ede2cd;
+  color: #17382d;
 }
 
 .cakecraft-studio .pr {
