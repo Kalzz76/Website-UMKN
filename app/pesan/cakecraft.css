@@ -1503,15 +1503,18 @@
   margin-top: 22px;
 }
 
-.cakecraft-studio .bx {
+.cakecraft-studio .bx,
+.cakecraft-studio .pp .bx {
   position: relative;
-  border: 1.5px solid rgba(255, 255, 255, 0.16);
-  background: rgba(15, 36, 29, 0.7);
+  border: 1.5px solid #d8cca6;
+  background: #ffffff;
   border-radius: 16px;
   padding: 22px 14px 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.cakecraft-studio .tag {
+.cakecraft-studio .tag,
+.cakecraft-studio .pp .tag {
   position: absolute;
   top: -13px;
   left: 16px;
@@ -1521,39 +1524,44 @@
   font: 700 13px 'Plus Jakarta Sans', sans-serif;
   font-style: normal;
   border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(186, 43, 43, 0.25);
 }
 
-.cakecraft-studio .cb {
+.cakecraft-studio .cb,
+.cakecraft-studio .pp .cb {
   display: block;
   text-align: left;
   font-weight: 700;
   padding: 5px 0;
   font-size: 13.5px;
   width: 100%;
-  color: #fbf6e9;
+  color: #17382d;
 }
 
-.cakecraft-studio .nt {
-  border-bottom: 1.5px dashed rgba(255, 255, 255, 0.14);
+.cakecraft-studio .nt,
+.cakecraft-studio .pp .nt {
+  border-bottom: 1.5px dashed #e0d5b8;
   min-height: 30px;
   padding: 5px 2px;
   font-size: 13px;
   font-weight: 700;
-  color: #c2d6ca;
+  color: #17382d;
 }
 
-.cakecraft-studio .ty {
+.cakecraft-studio .ty,
+.cakecraft-studio .pp .ty {
   font: 600 42px/1 'Dancing Script', cursive;
-  color: #ffffff;
+  color: #17382d;
   text-align: center;
   margin-top: 22px;
 }
 
-.cakecraft-studio .ap {
+.cakecraft-studio .ap,
+.cakecraft-studio .pp .ap {
   text-align: center;
   font-weight: 700;
   font-size: 13.5px;
-  color: #c2d6ca;
+  color: #557064;
   margin-bottom: 4px;
 }
 

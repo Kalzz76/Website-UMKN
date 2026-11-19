@@ -1014,7 +1014,10 @@ export default function PesanPage() {
 
   function handleSet(k, v) {
     setS((prev) => {
-      const next = { ...prev, [k]: v };
+      let next = { ...prev, [k]: v };
+      if (k === "pick" && v === "delivery" && prev.pay === "cash") {
+        next.pay = "bank";
+      }
       snap(next);
       return next;
     });
@@ -1245,8 +1248,9 @@ export default function PesanPage() {
     if (!S.f.dt) return "Pilih tanggal dibutuhkan";
     if (S.pick === "delivery" && !S.f.addr) return "Isi alamat pengantaran";
     if (!S.pay) return "Pilih metode pembayaran dulu ya";
-    if (S.pay === "other" && !S.f.payOther)
-      return "Tulis metode pembayaran lainnya";
+    if (S.pick === "delivery" && S.pay === "cash") {
+      return "Metode pembayaran tunai di toko hanya tersedia jika pesanan diambil di toko";
+    }
     return "";
   }
 
@@ -1280,13 +1284,20 @@ export default function PesanPage() {
       .map((i) => i.e || "Gambar kustom")
       .join(", ");
 
+    const namaMetodeBayar =
+      S.pay === "bank"
+        ? `Transfer Bank (${pengaturan?.nama_bank || "BCA"})`
+        : S.pay === "qris"
+        ? "QRIS"
+        : "Tunai di Toko";
+
     const catatanFull = [
       `Bentuk: ${SHP[S.shape] ? SHP[S.shape][0] : S.shape}`,
       `Isian: ${FILL[S.fill] ? FILL[S.fill][0] : S.fill}`,
       `Krim: ${ICE.find((c) => c[1] === S.icing)?.[0] || S.icing}`,
       decoSummary ? `Dekorasi: ${decoSummary}` : "",
       itemsSummary ? `Elemen: ${itemsSummary}` : "",
-      S.pay ? `Metode Bayar: ${S.pay}` : "",
+      `Metode Bayar: ${namaMetodeBayar}`,
       isDpActive
         ? `Skema: DP ${persenDp}% (${formatRp(jumlahDpSekarang)}) | Sisa: ${formatRp(sisaPelunasan)}`
         : "Skema: Bayar Penuh (Lunas 100%)",
@@ -2256,10 +2267,11 @@ export default function PesanPage() {
                 <div className="lb">Metode pembayaran</div>
                 <div className="grid">
                   {[
-                    ["cash", "💵", "Tunai"],
                     ["bank", "🏦", "Transfer Bank"],
-                    ["ewallet", "📱", "E-Wallet"],
-                    ["other", "✨", "Lainnya"],
+                    ["qris", "📱", "QRIS"],
+                    ...(S.pick === "pickup"
+                      ? [["cash", "💵", "Tunai di Toko"]]
+                      : []),
                   ].map(([val, icon, lbl]) => (
                     <button
                       key={val}
@@ -2271,21 +2283,6 @@ export default function PesanPage() {
                     </button>
                   ))}
                 </div>
-
-                {S.pay === "other" && (
-                  <div style={{ marginTop: "10px" }}>
-                    <label className="fl">
-                      Metode pembayaran lainnya
-                      <input
-                        placeholder="Contoh: QRIS, kartu kredit"
-                        value={S.f.payOther || ""}
-                        onChange={(e) =>
-                          handleFieldChange("payOther", e.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                )}
 
                 <div
                   style={{
@@ -2305,34 +2302,83 @@ export default function PesanPage() {
                     }}
                   >
                     <b style={{ fontSize: "13px", color: "#ff7b7b" }}>
-                      📌 Rekening Pembayaran Toko
+                      {S.pay === "qris"
+                        ? "📌 QRIS Resmi Cravely Bakery"
+                        : S.pay === "cash"
+                        ? "📌 Pembayaran Tunai di Kasir Toko"
+                        : "📌 Rekening Bank Resmi Toko"}
                     </b>
-                    <span
+                    {S.pay !== "cash" && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          padding: "3px 10px",
+                          borderRadius: "10px",
+                          background: "rgba(255, 255, 255, 0.12)",
+                          border: "1px solid rgba(255, 255, 255, 0.2)",
+                          color: "#f2c230",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                        }}
+                      >
+                        Batas: {pengaturan?.batas_bayar_jam || 24} Jam
+                      </span>
+                    )}
+                  </div>
+                  {S.pay === "bank" && (
+                    <div
                       style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        padding: "3px 10px",
-                        borderRadius: "10px",
-                        background: "rgba(255, 255, 255, 0.12)",
-                        border: "1px solid rgba(255, 255, 255, 0.2)",
-                        color: "#f2c230",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                        fontSize: "13px",
+                        color: "#ffffff",
+                        lineHeight: "1.6",
                       }}
                     >
-                      Batas: {pengaturan?.batas_bayar_jam || 24} Jam
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "#ffffff",
-                      lineHeight: "1.6",
-                    }}
-                  >
-                    <div>Bank: <b>{pengaturan?.nama_bank || "BCA"}</b></div>
-                    <div>No. Rekening: <b style={{ letterSpacing: "1px", color: "#f2c230" }}>{pengaturan?.no_rekening || "1234567890"}</b></div>
-                    <div>Atas Nama: <b>{pengaturan?.atas_nama || "Cravely Bakery"}</b></div>
-                  </div>
+                      <div>Bank: <b>{pengaturan?.nama_bank || "BCA"}</b></div>
+                      <div>No. Rekening: <b style={{ letterSpacing: "1px", color: "#f2c230" }}>{pengaturan?.no_rekening || "1234567890"}</b></div>
+                      <div>Atas Nama: <b>{pengaturan?.atas_nama || "Cravely Bakery"}</b></div>
+                    </div>
+                  )}
+                  {S.pay === "qris" && (
+                    <div style={{ textAlign: "center", margin: "8px 0" }}>
+                      {pengaturan?.gambar_qris ? (
+                        <>
+                          <img
+                            src={pengaturan.gambar_qris}
+                            alt="QRIS Toko"
+                            style={{
+                              width: "150px",
+                              height: "150px",
+                              objectFit: "contain",
+                              background: "#ffffff",
+                              padding: "6px",
+                              borderRadius: "12px",
+                              display: "inline-block",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                            }}
+                          />
+                          <div style={{ fontSize: "11px", color: "#e0d5b8", marginTop: "4px" }}>
+                            Scan QRIS dari BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: "12.5px", color: "#ffffff", padding: "4px 0", textAlign: "left" }}>
+                          Mendukung semua aplikasi e-wallet & m-banking. Barcode QRIS resmi akan tampil di tiket rincian pesanan Anda.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {S.pay === "cash" && (
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#ffffff",
+                        lineHeight: "1.6",
+                      }}
+                    >
+                      <div>Lokasi Kasir: <b>{pengaturan?.alamat || "Toko Cravely Bakery"}</b></div>
+                      <div>Metode: <b>Bayar tunai di kasir saat mengambil kue</b></div>
+                    </div>
+                  )}
                   <div
                     style={{
                       fontSize: "11.5px",
@@ -2473,32 +2519,34 @@ export default function PesanPage() {
                 <div className="pn">
                   <div className="bx">
                     <i className="tag">Skema & Pembayaran</i>
-                    <div style={{ fontWeight: 800, color: "var(--pk, #D96B91)", marginBottom: "6px" }}>
+                    <div style={{ fontWeight: 800, color: "#ba2b2b", marginBottom: "8px", fontSize: "14px" }}>
                       {isDpActive ? `Uang Muka (DP ${persenDp}%)` : "Bayar Penuh (Lunas 100%)"}
                     </div>
-                    <div className="cb">
-                      {S.pay === "cash" ? "☑" : "☐"} Tunai 💵
-                    </div>
-                    <div className="cb">
+                    <div className="cb" style={{ color: S.pay === "bank" ? "#ba2b2b" : "#6f7d75", fontWeight: S.pay === "bank" ? 800 : 600 }}>
                       {S.pay === "bank" ? "☑" : "☐"} Transfer Bank 🏦 ({pengaturan?.nama_bank || "BCA"})
                     </div>
-                    <div className="cb">
-                      {S.pay === "ewallet" ? "☑" : "☐"} E-Wallet 📱
+                    <div className="cb" style={{ color: S.pay === "qris" ? "#ba2b2b" : "#6f7d75", fontWeight: S.pay === "qris" ? 800 : 600 }}>
+                      {S.pay === "qris" ? "☑" : "☐"} QRIS 📱 (Semua E-Wallet & Bank)
                     </div>
-                    <div className="cb">
-                      {S.pay === "other" ? "☑" : "☐"} Lainnya :{" "}
-                      {S.pay === "other" ? S.f.payOther || "" : ""}
-                    </div>
+                    {S.pick === "pickup" && (
+                      <div className="cb" style={{ color: S.pay === "cash" ? "#ba2b2b" : "#6f7d75", fontWeight: S.pay === "cash" ? 800 : 600 }}>
+                        {S.pay === "cash" ? "☑" : "☐"} Tunai di Toko 💵
+                      </div>
+                    )}
                     <div
                       style={{
-                        marginTop: "8px",
-                        paddingTop: "6px",
-                        borderTop: "1px dashed #E8D6D0",
-                        fontSize: "11px",
-                        color: "var(--ink, #4A2D36)",
+                        marginTop: "10px",
+                        paddingTop: "8px",
+                        borderTop: "1.5px dashed #d8cca6",
+                        fontSize: "12px",
+                        color: "#17382d",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                       }}
                     >
-                      Bayar Sekarang: <b>{formatRp(jumlahDpSekarang)}</b>
+                      <span>Bayar Sekarang:</span>
+                      <b style={{ fontSize: "14px", color: "#ba2b2b" }}>{formatRp(jumlahDpSekarang)}</b>
                     </div>
                   </div>
                   <div className="bx">
