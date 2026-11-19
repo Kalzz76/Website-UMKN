@@ -2757,7 +2757,7 @@ export default function PesanPage() {
                       style={{
                         border: 0,
                         padding: 0,
-                        color: "var(--ink)",
+                        color: "#f2c230",
                         fontWeight: "800",
                         textDecoration: "underline",
                       }}
