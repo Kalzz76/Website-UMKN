@@ -199,8 +199,19 @@ function calcBase(s) {
   return szPrice + shpPrice + flavPrice + fillPrice + decoPrice + itemsPrice;
 }
 
-function calcTotal(s) {
-  return calcBase(s) + (s.pick === "delivery" ? 15000 : 0);
+function calcTotal(s, daftarZona = []) {
+  let ongkir = 0;
+  if (s.pick === "delivery") {
+    if (s.zonaId && daftarZona.length > 0) {
+      const z = daftarZona.find((item) => item.id === s.zonaId);
+      ongkir = z ? z.tarif : 15000;
+    } else if (daftarZona.length > 0) {
+      ongkir = daftarZona[0].tarif;
+    } else {
+      ongkir = 15000;
+    }
+  }
+  return calcBase(s) + ongkir;
 }
 
 export default function PesanPage() {
@@ -1202,33 +1213,59 @@ export default function PesanPage() {
       .join(" | ");
 
     const mappedPilihanIds = [];
+
+    const grupJenis = (daftarGrup || []).find(
+      (g) => g.peran_dashboard === "jenis" || g.nama.toLowerCase().includes("jenis")
+    );
+    if (grupJenis) {
+      const dbJenis =
+        (daftarItem || []).find((it) => it.id_grup === grupJenis.id && it.kode_visual === "custom") ||
+        (daftarItem || []).find((it) => it.id_grup === grupJenis.id);
+      if (dbJenis && !mappedPilihanIds.includes(dbJenis.id)) mappedPilihanIds.push(dbJenis.id);
+    }
+
     const sizeName = S.size;
-    const dbSize = daftarItem.find(
-      (it) =>
-        it.kode_visual === sizeName ||
-        it.nama.toLowerCase().includes(sizeName) ||
-        (sizeName === "mini" && it.nama.toLowerCase().includes("kecil")) ||
-        (sizeName === "small" && it.nama.toLowerCase().includes("kecil")) ||
-        (sizeName === "medium" && it.nama.toLowerCase().includes("sedang")) ||
-        (sizeName === "large" && it.nama.toLowerCase().includes("besar"))
-    );
-    if (dbSize) mappedPilihanIds.push(dbSize.id);
+    const dbSize =
+      daftarItem.find(
+        (it) =>
+          it.kode_visual === sizeName ||
+          it.nama.toLowerCase().includes(sizeName) ||
+          (sizeName === "mini" && it.nama.toLowerCase().includes("kecil")) ||
+          (sizeName === "small" && it.nama.toLowerCase().includes("kecil")) ||
+          (sizeName === "medium" && it.nama.toLowerCase().includes("sedang")) ||
+          (sizeName === "large" && it.nama.toLowerCase().includes("besar"))
+      ) ||
+      daftarItem.find((it) => {
+        const g = (daftarGrup || []).find((grp) => grp.id === it.id_grup);
+        return g && (g.peran_visual === "ukuran" || g.nama.toLowerCase().includes("ukuran"));
+      });
+    if (dbSize && !mappedPilihanIds.includes(dbSize.id)) mappedPilihanIds.push(dbSize.id);
 
-    const dbFlav = daftarItem.find(
-      (it) =>
-        it.kode_visual === S.flavor ||
-        it.nama.toLowerCase().includes(FLAV[S.flavor]?.[0]?.toLowerCase() || "")
-    );
-    if (dbFlav) mappedPilihanIds.push(dbFlav.id);
+    const dbFlav =
+      daftarItem.find(
+        (it) =>
+          it.kode_visual === S.flavor ||
+          it.nama.toLowerCase().includes(FLAV[S.flavor]?.[0]?.toLowerCase() || "")
+      ) ||
+      daftarItem.find((it) => {
+        const g = (daftarGrup || []).find((grp) => grp.id === it.id_grup);
+        return g && (g.nama.toLowerCase().includes("rasa") || g.peran_dashboard === "terlaris");
+      });
+    if (dbFlav && !mappedPilihanIds.includes(dbFlav.id)) mappedPilihanIds.push(dbFlav.id);
 
-    const dbIcing = daftarItem.find(
-      (it) =>
-        it.warna === S.icing ||
-        it.nama.toLowerCase().includes(
-          (ICE.find((c) => c[1] === S.icing)?.[0] || "").toLowerCase()
-        )
-    );
-    if (dbIcing) mappedPilihanIds.push(dbIcing.id);
+    const dbIcing =
+      daftarItem.find(
+        (it) =>
+          it.warna === S.icing ||
+          it.nama.toLowerCase().includes(
+            (ICE.find((c) => c[1] === S.icing)?.[0] || "").toLowerCase()
+          )
+      ) ||
+      daftarItem.find((it) => {
+        const g = (daftarGrup || []).find((grp) => grp.id === it.id_grup);
+        return g && (g.nama.toLowerCase().includes("krim") || g.peran_visual === "krim");
+      });
+    if (dbIcing && !mappedPilihanIds.includes(dbIcing.id)) mappedPilihanIds.push(dbIcing.id);
 
     if (S.deco) {
       Object.keys(S.deco).forEach((dk) => {
@@ -1238,9 +1275,21 @@ export default function PesanPage() {
             it.kode_visual === dk ||
             it.nama.toLowerCase().includes((DECO[dk]?.[1] || "").toLowerCase())
         );
-        if (itm) mappedPilihanIds.push(itm.id);
+        if (itm && !mappedPilihanIds.includes(itm.id)) mappedPilihanIds.push(itm.id);
       });
     }
+
+    (daftarGrup || []).forEach((grp) => {
+      if (!grp.wajib) return;
+      const alreadyHas = mappedPilihanIds.some((pId) => {
+        const it = (daftarItem || []).find((x) => x.id === pId);
+        return it && it.id_grup === grp.id;
+      });
+      if (!alreadyHas) {
+        const fallback = (daftarItem || []).find((it) => it.id_grup === grp.id);
+        if (fallback) mappedPilihanIds.push(fallback.id);
+      }
+    });
 
     const formData = new FormData();
     formData.append("nama_penerima", S.f.nm || profil?.nama || "Pelanggan");
@@ -1248,11 +1297,14 @@ export default function PesanPage() {
     formData.append("tulisan_kue", txtNote || "Happy Birthday");
     formData.append("catatan", catatanFull);
     formData.append("tanggal_ambil", S.f.dt);
-    formData.append("jam_ambil", "10:00:00");
+    formData.append("jam_ambil", S.f.tm || "10:00:00");
     formData.append("metode_pengiriman", S.pick === "delivery" ? "Kirim" : "Ambil");
     formData.append("alamat", S.pick === "delivery" ? S.f.addr || "-" : "-");
-    if (daftarZona.length > 0) {
-      formData.append("id_zona", String(daftarZona[0].id));
+    if (S.pick === "delivery") {
+      const selectedZonaId = S.zonaId || (daftarZona.length > 0 ? daftarZona[0].id : null);
+      if (selectedZonaId) {
+        formData.append("id_zona", String(selectedZonaId));
+      }
     }
     formData.append("pilihan_ids", JSON.stringify(mappedPilihanIds));
 
@@ -1475,7 +1527,8 @@ export default function PesanPage() {
     month: "long",
     year: "numeric",
   });
-  const minDeliveryDate = new Date(Date.now() + 2 * 86400000)
+  const minHari = pengaturan?.minimal_hari_pesan ?? 2;
+  const minDeliveryDate = new Date(Date.now() + minHari * 86400000)
     .toISOString()
     .slice(0, 10);
 
@@ -2026,11 +2079,35 @@ export default function PesanPage() {
                 </div>
 
                 {S.pick === "delivery" && (
-                  <div style={{ marginTop: "10px" }}>
+                  <div style={{ marginTop: "10px" }} className={daftarZona.length > 0 ? "g2" : ""}>
+                    {daftarZona.length > 0 && (
+                      <label className="fl">
+                        Area Pengantaran
+                        <select
+                          value={S.zonaId || (daftarZona[0] ? daftarZona[0].id : "")}
+                          onChange={(e) => handleSet("zonaId", Number(e.target.value))}
+                          style={{
+                            padding: "10px 14px",
+                            borderRadius: "12px",
+                            border: "1.5px solid #f0d5db",
+                            background: "#fff",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            color: "#4a2d36",
+                          }}
+                        >
+                          {daftarZona.map((z) => (
+                            <option key={z.id} value={z.id}>
+                              {z.nama} (+Rp {Number(z.tarif || 0).toLocaleString("id-ID")})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <label className="fl">
                       Alamat pengantaran
                       <input
-                        placeholder="Jalan, nomor, kota"
+                        placeholder="Nama jalan, nomor rumah, kota"
                         value={S.f.addr || ""}
                         onChange={(e) =>
                           handleFieldChange("addr", e.target.value)
