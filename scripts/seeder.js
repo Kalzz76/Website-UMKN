@@ -180,6 +180,202 @@ async function jalankanSeeder() {
     }
   }
 
+  const formatIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" });
+  const tglHariIni = formatIso.format(new Date());
+
+  const akunDaftar = [
+    {
+      email: "petugas@cravely.com",
+      password: "password123",
+      nama: "Petugas Dapur Cravely",
+      no_wa: "081234567899",
+      role: "staf",
+    },
+    {
+      email: "admin@cravely.com",
+      password: "password123",
+      nama: "Admin Cravely",
+      no_wa: "081234567890",
+      role: "admin",
+    },
+  ];
+
+  for (let i = 0; i < akunDaftar.length; i++) {
+    const akun = akunDaftar[i];
+    const { data: listData } = await supabase.auth.admin.listUsers();
+    const existing = (listData?.users || []).find((u) => u.email === akun.email);
+
+    let userId = existing ? existing.id : null;
+
+    if (!existing) {
+      const { data: userBaru } = await supabase.auth.admin.createUser({
+        email: akun.email,
+        password: akun.password,
+        email_confirm: true,
+        user_metadata: {
+          nama: akun.nama,
+          no_wa: akun.no_wa,
+        },
+      });
+
+      if (userBaru?.user) {
+        userId = userBaru.user.id;
+      }
+    } else {
+      await supabase.auth.admin.updateUserById(userId, {
+        password: akun.password,
+        email_confirm: true,
+      });
+    }
+
+    if (userId) {
+      await supabase.from("profil").upsert({
+        id: userId,
+        nama: akun.nama,
+        no_wa: akun.no_wa,
+        role: akun.role,
+        aktif: true,
+      });
+    }
+  }
+
+  const { count: pesananAda } = await supabase
+    .from("pesanan")
+    .select("*", { count: "exact", head: true });
+
+  if (!pesananAda || pesananAda === 0) {
+    const { data: pesananDb1 } = await supabase
+      .from("pesanan")
+      .insert({
+        nama_penerima: "Siti Rahma",
+        no_wa: "081298765432",
+        tulisan_kue: "Happy Birthday Sarah 21st!",
+        catatan: "Krim jangan terlalu manis, lilin tolong dipisah.",
+        tanggal_ambil: tglHariIni,
+        jam_ambil: "14:00:00",
+        metode_pengiriman: "Ambil",
+        status_pesanan: "Diterima",
+        status_bayar: "Lunas",
+        total_kue: 230000,
+        total_bayar: 230000,
+        jumlah_terbayar: 230000,
+      })
+      .select("id")
+      .single();
+
+    if (pesananDb1?.id) {
+      await supabase.from("pesanan_pilihan").insert([
+        {
+          id_pesanan: pesananDb1.id,
+          nama_grup: "Ukuran",
+          nama_item: "Sedang (20 cm)",
+          harga: 150000,
+          kode_visual: "sedang",
+          peran_visual: "ukuran",
+        },
+        {
+          id_pesanan: pesananDb1.id,
+          nama_grup: "Rasa",
+          nama_item: "Vanilla",
+          harga: 35000,
+          warna: "#fbf0d9",
+          kode_visual: "vanilla",
+          peran_visual: "badan",
+        },
+        {
+          id_pesanan: pesananDb1.id,
+          nama_grup: "Krim",
+          nama_item: "Buttercream Pink",
+          harga: 25000,
+          warna: "#fbcfe8",
+          kode_visual: "pink",
+          peran_visual: "krim",
+        },
+        {
+          id_pesanan: pesananDb1.id,
+          nama_grup: "Topping",
+          nama_item: "Strawberry Segar",
+          harga: 20000,
+          warna: "#ef4444",
+          kode_visual: "strawberry",
+          peran_visual: "topping",
+        },
+      ]);
+
+      await supabase.from("riwayat_pesanan").insert({
+        id_pesanan: pesananDb1.id,
+        keterangan: "Pesanan masuk dan diterima dapur produksi.",
+      });
+    }
+
+    const { data: pesananDb2 } = await supabase
+      .from("pesanan")
+      .insert({
+        nama_penerima: "Budi Santoso",
+        no_wa: "081311223344",
+        tulisan_kue: "Anniversary 5th Budi & Linda",
+        catatan: "Antar hati-hati, jangan sampai miring.",
+        tanggal_ambil: tglHariIni,
+        jam_ambil: "16:30:00",
+        metode_pengiriman: "Kirim",
+        alamat: "Jl. Kemang Raya No. 45, Jakarta Selatan",
+        ongkir: 15000,
+        status_pesanan: "Sedang Dibuat",
+        status_bayar: "DP Dibayar",
+        total_kue: 230000,
+        total_bayar: 245000,
+        jumlah_dp: 122500,
+        jumlah_terbayar: 122500,
+      })
+      .select("id")
+      .single();
+
+    if (pesananDb2?.id) {
+      await supabase.from("pesanan_pilihan").insert([
+        {
+          id_pesanan: pesananDb2.id,
+          nama_grup: "Ukuran",
+          nama_item: "Sedang (20 cm)",
+          harga: 150000,
+          kode_visual: "sedang",
+          peran_visual: "ukuran",
+        },
+        {
+          id_pesanan: pesananDb2.id,
+          nama_grup: "Rasa",
+          nama_item: "Coklat",
+          harga: 40000,
+          warna: "#5c3a21",
+          kode_visual: "coklat",
+          peran_visual: "badan",
+        },
+        {
+          id_pesanan: pesananDb2.id,
+          nama_grup: "Krim",
+          nama_item: "Buttercream Coklat",
+          harga: 25000,
+          warna: "#78350f",
+          kode_visual: "coklat",
+          peran_visual: "krim",
+        },
+        {
+          id_pesanan: pesananDb2.id,
+          nama_grup: "Topping",
+          nama_item: "Coklat Chip",
+          harga: 15000,
+          warna: "#451a03",
+          kode_visual: "coklat_chip",
+          peran_visual: "topping",
+        },
+      ]);
+
+      await supabase.from("riwayat_pesanan").insert({
+        id_pesanan: pesananDb2.id,
+        keterangan: "Pesanan mulai dibuat di dapur produksi.",
+      });
+    }
+  }
+
   console.log("Seeding data berhasil diselesaikan!");
 }
 
