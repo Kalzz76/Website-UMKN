@@ -1499,6 +1499,7 @@
   text-transform: uppercase !important;
   border-bottom: 2px dashed #e0d5b8 !important;
   background-color: #f2e9d4 !important;
+  white-space: nowrap !important;
 }
 
 .dashboard-container table tbody tr,
@@ -1521,6 +1522,15 @@
 .dashboard-container table tbody td,
 .dashboard-layout-root table tbody td {
   color: #1d3b2e !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-container table td span,
+.dashboard-layout-root table td span {
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
 }
 
 .dashboard-container .text-stone-900,

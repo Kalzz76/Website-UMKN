@@ -160,170 +160,259 @@ export default function LaporanDashboardPage() {
     document.body.removeChild(link);
   }
 
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-end space-x-2 print:hidden">
-        <button
-          type="button"
-          onClick={exportCsv}
-          className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full border border-stone-200 bg-white text-stone-700 hover:bg-stone-50 text-xs font-semibold shadow-sm transition cursor-pointer"
-        >
-          <i className="fa-solid fa-file-csv text-emerald-600"></i>
-          <span>Export CSV</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-full font-semibold bg-rose-600 hover:bg-rose-500 text-white text-xs transition shadow-sm cursor-pointer"
-        >
-          <i className="fa-solid fa-print"></i>
-          <span>Cetak Laporan</span>
-        </button>
-      </div>
+  const totalPengambilan = (dataLaporan.hitungPengambilan.Ambil || 0) + (dataLaporan.hitungPengambilan.Kirim || 0);
+  const persenAmbil = totalPengambilan > 0 ? Math.round(((dataLaporan.hitungPengambilan.Ambil || 0) / totalPengambilan) * 100) : 0;
+  const persenKirim = totalPengambilan > 0 ? 100 - persenAmbil : 0;
 
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 print:border-none print:shadow-none space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100 print:hidden">
-          <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
-            Periode Laporan
-          </span>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center space-x-2 text-xs">
-              <span className="text-stone-500">Dari:</span>
+  function getBadgeStatusBayar(status) {
+    if (status === "Lunas") return "bg-emerald-100 text-emerald-800";
+    if (status === "DP Dibayar") return "bg-amber-100 text-amber-800";
+    return "bg-rose-100 text-rose-800";
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="content-card p-6 print:hidden space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+          <div>
+            <h2 className="text-lg font-bold text-stone-900">
+              Laporan Keuangan & Penjualan
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Pantau arus kas masuk, piutang, dan statistik pesanan toko Anda
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={exportCsv}
+              className="h-[42px] px-4 rounded-xl border-2 border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] text-xs font-bold transition cursor-pointer inline-flex items-center space-x-1.5"
+            >
+              <i className="fa-solid fa-file-csv text-emerald-700 text-sm"></i>
+              <span>Export CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="h-[42px] px-4 rounded-xl font-bold bg-rose-600 hover:bg-rose-500 text-white text-xs transition cursor-pointer inline-flex items-center space-x-1.5"
+            >
+              <i className="fa-solid fa-print"></i>
+              <span>Cetak Laporan</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div className="flex items-center space-x-2 text-xs font-semibold text-stone-700">
+            <i className="fa-regular fa-calendar-days text-stone-500 text-sm"></i>
+            <span>Rentang Tanggal Laporan:</span>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-semibold text-stone-500">Dari:</span>
               <input
                 type="date"
                 value={dariTanggal}
                 onChange={(e) => setDariTanggal(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 bg-white"
+                className="text-xs outline-none"
               />
             </div>
-            <div className="flex items-center space-x-2 text-xs">
-              <span className="text-stone-500">Sampai:</span>
+            <span className="text-stone-400 text-xs hidden sm:inline">-</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-semibold text-stone-500">Sampai:</span>
               <input
                 type="date"
                 value={sampaiTanggal}
                 onChange={(e) => setSampaiTanggal(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 bg-white"
+                className="text-xs outline-none"
               />
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="hidden print:block pb-4 border-b border-stone-200">
-          <h2 className="text-xl font-bold text-stone-900">Laporan Penjualan Toko Kue</h2>
-          <p className="text-xs text-stone-500">
-            Periode: {formatTanggalSingkat(dariTanggal)} s/d {formatTanggalSingkat(sampaiTanggal)}
-          </p>
+      <div className="hidden print:block p-4 border-b border-stone-200">
+        <h2 className="text-xl font-bold text-stone-900">Laporan Penjualan Toko Kue</h2>
+        <p className="text-xs text-stone-500">
+          Periode: {formatTanggalSingkat(dariTanggal)} s/d {formatTanggalSingkat(sampaiTanggal)}
+        </p>
+      </div>
+
+      {sedangMemuat ? (
+        <div className="content-card py-16 text-center text-stone-400">
+          <i className="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-rose-500"></i>
+          <p className="text-sm font-medium">Memuat data laporan...</p>
         </div>
-
-        {sedangMemuat ? (
-          <div className="py-12 text-center text-stone-400">
-            <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-rose-500"></i>
-            <p className="text-xs">Memuat laporan...</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-100">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="content-card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
                   Omzet Kas Masuk
                 </span>
-                <p className="text-2xl font-black text-emerald-950 mt-2 truncate">
-                  {formatRupiah(dataLaporan.omzet)}
-                </p>
-                <span className="text-[11px] text-emerald-700 mt-1 block">
-                  Pembayaran berstatus dikonfirmasi
+                <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold">
+                  <i className="fa-solid fa-coins"></i>
                 </span>
               </div>
+              <p className="text-2xl font-black text-stone-900 truncate">
+                {formatRupiah(dataLaporan.omzet)}
+              </p>
+              <p className="text-[11px] text-stone-500 mt-1">
+                Pembayaran status dikonfirmasi
+              </p>
+            </div>
 
-              <div className="p-5 rounded-2xl bg-rose-50/60 border border-rose-100">
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-800">
+            <div className="content-card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
                   Total Piutang
                 </span>
-                <p className="text-2xl font-black text-rose-950 mt-2 truncate">
-                  {formatRupiah(dataLaporan.piutang)}
-                </p>
-                <span className="text-[11px] text-rose-700 mt-1 block">
-                  Sisa tagihan pesanan aktif
+                <span className="w-8 h-8 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center text-sm font-bold">
+                  <i className="fa-solid fa-receipt"></i>
                 </span>
               </div>
+              <p className="text-2xl font-black text-stone-900 truncate">
+                {formatRupiah(dataLaporan.piutang)}
+              </p>
+              <p className="text-[11px] text-stone-500 mt-1">
+                Sisa tagihan pesanan aktif
+              </p>
+            </div>
 
-              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200">
-                <span className="text-xs font-bold uppercase tracking-wider text-stone-600">
+            <div className="content-card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
                   Total Pesanan
                 </span>
-                <p className="text-2xl font-black text-stone-900 mt-2">
-                  {dataLaporan.daftarPesanan.length}
-                </p>
-                <span className="text-[11px] text-stone-500 mt-1 block">
-                  Jadwal pada rentang periode ini
+                <span className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-sm font-bold">
+                  <i className="fa-solid fa-bag-shopping"></i>
                 </span>
               </div>
+              <p className="text-2xl font-black text-stone-900">
+                {dataLaporan.daftarPesanan.length}
+              </p>
+              <p className="text-[11px] text-stone-500 mt-1">
+                Jadwal pesanan pada periode ini
+              </p>
+            </div>
 
-              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200">
-                <span className="text-xs font-bold uppercase tracking-wider text-stone-600">
-                  Ringkasan DP & Lunas
+            <div className="content-card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Rincian Penerimaan
                 </span>
-                <div className="mt-2 text-xs space-y-0.5 text-stone-700 font-medium">
-                  <p>DP Masuk: <strong>{formatRupiah(dataLaporan.totalDp)}</strong></p>
-                  <p>Pelunasan: <strong>{formatRupiah(dataLaporan.totalPelunasan)}</strong></p>
+                <span className="w-8 h-8 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center text-sm font-bold">
+                  <i className="fa-solid fa-scale-balanced"></i>
+                </span>
+              </div>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between items-center text-stone-600">
+                  <span>DP Masuk:</span>
+                  <strong className="text-stone-900 font-bold">{formatRupiah(dataLaporan.totalDp)}</strong>
+                </div>
+                <div className="flex justify-between items-center text-stone-600">
+                  <span>Pelunasan:</span>
+                  <strong className="text-stone-900 font-bold">{formatRupiah(dataLaporan.totalPelunasan)}</strong>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-100 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700">
-                  Jumlah Pesanan Berdasarkan Status
-                </h4>
-                <div className="divide-y divide-stone-200/60 text-xs">
-                  {Object.keys(dataLaporan.hitungStatus).length === 0 ? (
-                    <p className="py-2 text-stone-400">Tidak ada pesanan pada periode ini.</p>
-                  ) : (
-                    Object.entries(dataLaporan.hitungStatus).map(([st, jml]) => (
-                      <div key={st} className="py-2 flex justify-between items-center">
-                        <span className="text-stone-700">{st}</span>
-                        <strong className="text-stone-900 font-bold">{jml} pesanan</strong>
-                      </div>
-                    ))
-                  )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="content-card p-6">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                <div className="flex items-center space-x-2">
+                  <i className="fa-solid fa-list-check text-stone-700 text-sm"></i>
+                  <h3 className="text-sm font-bold text-stone-900">
+                    Status Pesanan
+                  </h3>
                 </div>
+                <span className="text-xs font-semibold text-stone-500">
+                  Total {dataLaporan.daftarPesanan.length}
+                </span>
               </div>
+              <div className="divide-y divide-stone-100 text-xs">
+                {Object.keys(dataLaporan.hitungStatus).length === 0 ? (
+                  <p className="py-6 text-center text-stone-400">Tidak ada pesanan pada periode ini.</p>
+                ) : (
+                  Object.entries(dataLaporan.hitungStatus).map(([st, jml]) => (
+                    <div key={st} className="py-3 flex justify-between items-center">
+                      <span className="font-medium text-stone-700">{st}</span>
+                      <span className="font-bold text-stone-900 bg-stone-100 px-2.5 py-0.5 rounded-full">
+                        {jml} pesanan
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
-              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-100 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700">
-                  Metode Pengambilan
-                </h4>
-                <div className="divide-y divide-stone-200/60 text-xs">
-                  <div className="py-2.5 flex justify-between items-center">
-                    <span className="text-stone-700">Ambil di Toko</span>
-                    <strong className="text-stone-900 font-bold">{dataLaporan.hitungPengambilan.Ambil || 0} pesanan</strong>
+            <div className="content-card p-6">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                <div className="flex items-center space-x-2">
+                  <i className="fa-solid fa-truck-ramp-box text-stone-700 text-sm"></i>
+                  <h3 className="text-sm font-bold text-stone-900">
+                    Metode Pengambilan
+                  </h3>
+                </div>
+                <span className="text-xs font-semibold text-stone-500">
+                  Total {totalPengambilan}
+                </span>
+              </div>
+              <div className="py-4 space-y-4 text-xs">
+                <div>
+                  <div className="flex justify-between items-center mb-1.5 font-medium">
+                    <span className="text-stone-700">Ambil Sendiri di Toko</span>
+                    <span className="font-bold text-stone-900">{dataLaporan.hitungPengambilan.Ambil || 0} pesanan ({persenAmbil}%)</span>
                   </div>
-                  <div className="py-2.5 flex justify-between items-center">
-                    <span className="text-stone-700">Kirim ke Alamat</span>
-                    <strong className="text-stone-900 font-bold">{dataLaporan.hitungPengambilan.Kirim || 0} pesanan</strong>
+                  <div className="w-full h-2 rounded-full bg-stone-100 overflow-hidden">
+                    <div className="h-full bg-emerald-600 rounded-full transition-all" style={{ width: `${persenAmbil}%` }}></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5 font-medium">
+                    <span className="text-stone-700">Kirim ke Alamat Pemesan</span>
+                    <span className="font-bold text-stone-900">{dataLaporan.hitungPengambilan.Kirim || 0} pesanan ({persenKirim}%)</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-stone-100 overflow-hidden">
+                    <div className="h-full bg-sky-600 rounded-full transition-all" style={{ width: `${persenKirim}%` }}></div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-4">
-              <h4 className="text-sm font-bold text-stone-900">
-                Pilihan & Opsi Terlaris per Grup
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Object.keys(dataLaporan.opsiTerlaris).length > 0 && (
+            <div className="content-card p-6">
+              <div className="flex items-center space-x-2 pb-3 border-b border-stone-200 mb-4">
+                <i className="fa-solid fa-fire text-amber-500 text-sm"></i>
+                <h3 className="text-sm font-bold text-stone-900">
+                  Pilihan & Opsi Terlaris per Kategori
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {Object.entries(dataLaporan.opsiTerlaris).map(([namaGrup, items]) => (
-                  <div key={namaGrup} className="p-4 rounded-2xl border border-stone-100 bg-stone-50/50 space-y-2 text-xs">
-                    <span className="font-bold text-stone-800 block pb-1 border-b border-stone-200/60">
+                  <div key={namaGrup} className="space-y-2 text-xs">
+                    <h4 className="font-bold text-stone-800 pb-1.5 border-b border-stone-200">
                       {namaGrup}
-                    </span>
-                    <div className="space-y-1">
+                    </h4>
+                    <div className="divide-y divide-stone-100">
                       {Object.entries(items)
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 5)
-                        .map(([namaItem, count]) => (
-                          <div key={namaItem} className="flex justify-between items-center text-stone-600">
-                            <span className="truncate pr-2">{namaItem}</span>
-                            <span className="font-bold text-stone-900">{count}x</span>
+                        .map(([namaItem, count], idx) => (
+                          <div key={namaItem} className="py-1.5 flex justify-between items-center text-stone-600">
+                            <span className="truncate pr-2">
+                              <strong className="text-stone-400 font-semibold mr-1.5">#{idx + 1}</strong>
+                              {namaItem}
+                            </span>
+                            <span className="font-bold text-stone-900 bg-stone-100 px-2 py-0.5 rounded-md flex-none">
+                              {count}x
+                            </span>
                           </div>
                         ))}
                     </div>
@@ -331,59 +420,78 @@ export default function LaporanDashboardPage() {
                 ))}
               </div>
             </div>
+          )}
 
-            {dataLaporan.stokMenipis.length > 0 && (
-              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs space-y-2">
-                <h4 className="font-bold text-rose-800 flex items-center space-x-1.5">
-                  <i className="fa-solid fa-triangle-exclamation"></i>
-                  <span>Perhatian: Bahan Dapur Menipis Saat Ini</span>
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {dataLaporan.stokMenipis.map((b) => (
-                    <span key={b.id} className="px-2.5 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 font-medium">
-                      {b.nama}: {b.jumlah} {b.satuan} (Min: {b.batas_minimum} {b.satuan})
-                    </span>
-                  ))}
-                </div>
+          {dataLaporan.stokMenipis.length > 0 && (
+            <div className="content-card p-4 border border-amber-200">
+              <div className="flex items-center space-x-2 text-amber-800 text-xs font-bold mb-2">
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                <span>Perhatian Stok: Bahan Dapur Menipis</span>
               </div>
-            )}
+              <div className="flex flex-wrap gap-2">
+                {dataLaporan.stokMenipis.map((b) => (
+                  <span key={b.id} className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 text-xs font-medium">
+                    {b.nama}: {b.jumlah} {b.satuan} (Min: {b.batas_minimum} {b.satuan})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
-            <div className="space-y-3 pt-2">
-              <h4 className="text-sm font-bold text-stone-900">
-                Daftar Pesanan dalam Periode ({dataLaporan.daftarPesanan.length})
-              </h4>
+          <div className="content-card p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200 mb-4">
+              <div className="flex items-center space-x-2">
+                <i className="fa-solid fa-table-list text-stone-700 text-sm"></i>
+                <h3 className="text-sm font-bold text-stone-900">
+                  Daftar Pesanan dalam Periode ({dataLaporan.daftarPesanan.length})
+                </h3>
+              </div>
+            </div>
+            {dataLaporan.daftarPesanan.length === 0 ? (
+              <p className="py-8 text-center text-stone-400 text-xs font-medium">
+                Belum ada transaksi pesanan pada rentang tanggal ini.
+              </p>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-100 text-stone-700 uppercase">
+                  <thead>
                     <tr>
-                      <th className="py-2.5 px-3 rounded-l-lg">Kode</th>
+                      <th className="py-2.5 px-3">Kode</th>
                       <th className="py-2.5 px-3">Nama Pelanggan</th>
-                      <th className="py-2.5 px-3">Jadwal</th>
+                      <th className="py-2.5 px-3">Jadwal Ambil</th>
                       <th className="py-2.5 px-3">Pengiriman</th>
-                      <th className="py-2.5 px-3">Status</th>
-                      <th className="py-2.5 px-3">Bayar</th>
-                      <th className="py-2.5 px-3 text-right rounded-r-lg">Total</th>
+                      <th className="py-2.5 px-3">Status Pesanan</th>
+                      <th className="py-2.5 px-3">Status Bayar</th>
+                      <th className="py-2.5 px-3 text-right">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-stone-100">
+                  <tbody>
                     {dataLaporan.daftarPesanan.map((p) => (
                       <tr key={p.id}>
-                        <td className="py-2.5 px-3 font-bold text-stone-900">{p.kode_pesanan}</td>
-                        <td className="py-2.5 px-3 font-medium text-stone-800">{p.nama_penerima}</td>
-                        <td className="py-2.5 px-3 text-stone-600">{p.tanggal_ambil} {p.jam_ambil?.slice(0, 5)}</td>
-                        <td className="py-2.5 px-3">{p.metode_pengiriman}</td>
-                        <td className="py-2.5 px-3">{p.status_pesanan}</td>
-                        <td className="py-2.5 px-3 font-semibold text-stone-800">{p.status_bayar}</td>
-                        <td className="py-2.5 px-3 text-right font-bold text-stone-900">{formatRupiah(p.total_bayar)}</td>
+                        <td className="py-3 px-3 font-bold text-stone-900">{p.kode_pesanan}</td>
+                        <td className="py-3 px-3 font-medium text-stone-800">{p.nama_penerima}</td>
+                        <td className="py-3 px-3 text-stone-600">{p.tanggal_ambil} {p.jam_ambil?.slice(0, 5)}</td>
+                        <td className="py-3 px-3">{p.metode_pengiriman}</td>
+                        <td className="py-3 px-3">
+                          <span className="px-2.5 py-0.5 rounded-full font-semibold text-[11px] bg-stone-100 text-stone-700">
+                            {p.status_pesanan}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${getBadgeStatusBayar(p.status_bayar)}`}>
+                            {p.status_bayar}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right font-bold text-stone-900">{formatRupiah(p.total_bayar)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

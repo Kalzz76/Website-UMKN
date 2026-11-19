@@ -202,42 +202,42 @@ export default function DaftarPesananDashboardPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm min-w-[860px]">
               <thead className="bg-stone-100 text-stone-700 uppercase text-xs">
                 <tr>
-                  <th className="py-3 px-4 rounded-l-xl">Kode</th>
-                  <th className="py-3 px-4">Nama Pelanggan</th>
-                  <th className="py-3 px-4">Jadwal Ambil / Kirim</th>
-                  <th className="py-3 px-4">Pengambilan</th>
-                  <th className="py-3 px-4">Status Pesanan</th>
-                  {isAdmin && <th className="py-3 px-4">Status Bayar</th>}
-                  {isAdmin && <th className="py-3 px-4">Total</th>}
-                  <th className="py-3 px-4 text-right rounded-r-xl">Aksi</th>
+                  <th className="py-3 px-4 rounded-l-xl whitespace-nowrap">Kode</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Nama Pelanggan</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Jadwal Ambil / Kirim</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Pengambilan</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Status Pesanan</th>
+                  {isAdmin && <th className="py-3 px-4 whitespace-nowrap">Status Bayar</th>}
+                  {isAdmin && <th className="py-3 px-4 whitespace-nowrap">Total</th>}
+                  <th className="py-3 px-4 text-right rounded-r-xl whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {daftarPesanan.map((p) => (
                   <tr key={p.id} className="hover:bg-stone-50/60 transition">
-                    <td className="py-3.5 px-4 font-bold text-stone-900">
+                    <td className="py-3.5 px-4 font-bold text-stone-900 whitespace-nowrap">
                       {p.kode_pesanan}
                     </td>
-                    <td className="py-3.5 px-4 font-medium text-stone-800">
+                    <td className="py-3.5 px-4 font-medium text-stone-800 whitespace-nowrap">
                       <div>
-                        <span>{p.nama_penerima}</span>
-                        <span className="text-[11px] text-stone-400 block">{p.no_wa}</span>
+                        <span className="font-semibold block">{p.nama_penerima}</span>
+                        <span className="text-[11px] text-stone-400 block font-normal">{p.no_wa}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-stone-600 text-xs">
+                    <td className="py-3.5 px-4 text-stone-600 text-xs whitespace-nowrap">
                       {formatTanggalSingkat(p.tanggal_ambil)} pukul {p.jam_ambil?.slice(0, 5)}
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-stone-100 text-stone-700">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg bg-stone-100 text-stone-700 whitespace-nowrap">
                         {p.metode_pengiriman === "Ambil" ? "Ambil di Tempat" : "Kirim"}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getBadgeStatusPesanan(
+                        className={`inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ${getBadgeStatusPesanan(
                           p.status_pesanan
                         )}`}
                       >
@@ -245,9 +245,9 @@ export default function DaftarPesananDashboardPage() {
                       </span>
                     </td>
                     {isAdmin && (
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getBadgeStatusBayar(
+                          className={`inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ${getBadgeStatusBayar(
                             p.status_bayar
                           )}`}
                         >
@@ -256,14 +256,14 @@ export default function DaftarPesananDashboardPage() {
                       </td>
                     )}
                     {isAdmin && (
-                      <td className="py-3.5 px-4 font-semibold text-stone-900 text-xs">
+                      <td className="py-3.5 px-4 font-bold text-stone-900 text-xs whitespace-nowrap">
                         {formatRupiah(p.total_bayar)}
                       </td>
                     )}
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <Link
                         href={`/dashboard/pesanan/${p.kode_pesanan}`}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-500 py-1 px-3 rounded-full hover:bg-rose-50 transition"
+                        className="inline-flex items-center text-xs font-semibold text-rose-600 hover:text-rose-500 py-1 px-3 rounded-full hover:bg-rose-50 transition whitespace-nowrap"
                       >
                         Detail
                       </Link>
