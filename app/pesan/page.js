@@ -1593,7 +1593,7 @@ export default function PesanPage() {
   function getLineItems() {
     const z = SZ[S.size] || SZ.mini;
     const L = [
-      [`ukuran ${S.size} (Ø${z.d} cm)`, z.p, 1],
+      [`ukuran ${S.size} (diameter ${z.d} cm)`, z.p, 1],
       [`bentuk ${SHP[S.shape] ? SHP[S.shape][0].toLowerCase() : S.shape}`, SHP[S.shape] ? SHP[S.shape][1] : 0, 2],
       [`rasa ${FLAV[S.flavor] ? FLAV[S.flavor][0].toLowerCase() : S.flavor}`, FLAV[S.flavor] ? FLAV[S.flavor][1] : 0, 3],
       [`isian ${FILL[S.fill] ? FILL[S.fill][0].toLowerCase() : S.fill}`, FILL[S.fill] ? FILL[S.fill][1] : 0, 3],
@@ -1808,7 +1808,7 @@ export default function PesanPage() {
                         S.icing
                       )}
                       <b>{k.charAt(0).toUpperCase() + k.slice(1)}</b>
-                      <small>Ø {v.d} cm</small>
+                      <small>Diameter {v.d} cm</small>
                       <em>{formatRp(v.p)}</em>
                     </button>
                   ))}
@@ -2452,63 +2452,49 @@ export default function PesanPage() {
                     if (S.pick === "delivery") {
                       rows.push(["ongkir antar", 15000]);
                     }
-                    const count = Math.max(8, rows.length);
-                    return Array.from({ length: count }, (_, i) => {
-                      const r = rows[i];
-                      return (
-                        <div key={i} className="tr">
-                          <span>{r ? i + 1 : ""}</span>
-                          <span className="ds">{r ? r[0] : ""}</span>
-                          <span>{r ? 1 : ""}</span>
-                          <span className="rt">
-                            {r ? (r[1] ? formatRp(r[1]) : "0") : ""}
-                          </span>
-                          <span className="rt">
-                            {r ? (r[1] ? formatRp(r[1]) : "0") : ""}
-                          </span>
-                        </div>
-                      );
-                    });
+                    return rows.map((r, i) => (
+                      <div key={i} className="tr">
+                        <span>{i + 1}</span>
+                        <span className="ds">{r[0]}</span>
+                        <span>1</span>
+                        <span className="rt">
+                          {r[1] > 0 ? (
+                            formatRp(r[1])
+                          ) : (
+                            <span style={{ color: "#557064", fontWeight: 600 }}>
+                              Termasuk
+                            </span>
+                          )}
+                        </span>
+                        <span className="rt">
+                          {r[1] > 0 ? (
+                            formatRp(r[1])
+                          ) : (
+                            <span style={{ color: "#557064", fontWeight: 600 }}>
+                              Termasuk
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ));
                   })()}
-                  <div className="tr tl">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span className="tot2">Total Pesanan</span>
-                    <span className="rt">
+                  <div className="tr tot-row tl">
+                    <span className="tot-lbl">Total Pesanan</span>
+                    <span className="tot-val rt">
                       <b>{formatRp(totalBiayaPesanan)}</b>
                     </span>
                   </div>
                   {isDpActive && (
                     <>
-                      <div
-                        className="tr"
-                        style={{
-                          background: "#FFF0F4",
-                          fontWeight: "800",
-                          color: "var(--pk, #D96B91)",
-                        }}
-                      >
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                        <span>Wajib DP ({persenDp}%)</span>
-                        <span className="rt">
+                      <div className="tr dp-row">
+                        <span className="dp-lbl">Wajib DP ({persenDp}%)</span>
+                        <span className="dp-val rt">
                           <b>{formatRp(jumlahDpSekarang)}</b>
                         </span>
                       </div>
-                      <div
-                        className="tr"
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7d6c",
-                        }}
-                      >
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                        <span>Sisa Pelunasan</span>
-                        <span className="rt">
+                      <div className="tr sisa-row">
+                        <span className="sisa-lbl">Sisa Pelunasan (saat siap)</span>
+                        <span className="sisa-val rt">
                           <span>{formatRp(sisaPelunasan)}</span>
                         </span>
                       </div>
@@ -2805,7 +2791,7 @@ export default function PesanPage() {
                       <h3>Custom Cake</h3>
                       <p>
                         {SHP[S.shape] ? SHP[S.shape][0] : S.shape} ·{" "}
-                        {S.size.charAt(0).toUpperCase() + S.size.slice(1)} (Ø{" "}
+                        {S.size.charAt(0).toUpperCase() + S.size.slice(1)} (diameter{" "}
                         {SZ[S.size] ? SZ[S.size].d : 10} cm)
                       </p>
                       <p>
