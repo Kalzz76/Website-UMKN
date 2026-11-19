@@ -11,9 +11,9 @@
   --w-open: 236px;
 
   --card-bg: #fbf6e9;
-  --card-radius: 24px;
-  --card-shadow: 0 5px 0 rgba(0, 0, 0, 0.22), 0 12px 28px rgba(0, 0, 0, 0.12);
-  --card-border: 2px solid #e8dfc8;
+  --card-radius: 20px;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --card-border: 1px solid #e2d9c7;
 
   --color-primary: #17382d;
   --color-text-main: #1d3b2e;
@@ -471,47 +471,164 @@
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 8px;
-  background: #fbf6e9;
-  border: 2px solid #e8dfc8;
-  border-radius: 16px;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.22), 0 12px 28px rgba(0, 0, 0, 0.12);
-  min-width: 240px;
+  margin-top: 10px;
+  background: #ffffff;
+  border: 1px solid #dcd3c1;
+  border-radius: 20px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  width: 320px;
+  max-width: 90vw;
   z-index: 1000;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 6px;
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #ede5d3;
+  background: #fbf8f0;
+}
+
+.notif-header-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1d3b2e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-header-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #ba2b2b;
+  color: #ffffff;
+}
+
+.notif-btn-mark {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7d6c;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.notif-btn-mark:hover {
+  color: #ba2b2b;
+}
+
+.notif-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
 }
 
 .notif-dropdown-item {
-  padding: 9px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-primary);
+  padding: 12px 14px;
   text-decoration: none;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #f0e9dc;
+  transition: all 0.15s ease;
 }
 
 .notif-dropdown-item:hover {
-  background: #eff4ee;
+  background: #f7f2e4;
+  border-color: #dfd4bd;
 }
 
-.notif-dropdown-item i {
-  font-size: 13px;
-  color: #265a48;
+.notif-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.notif-icon-box.pesanan {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.notif-icon-box.stok {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.notif-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-item-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1d3b2e;
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.notif-item-desc {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7d6c;
+  line-height: 1.35;
+}
+
+.notif-item-action {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ba2b2b;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .notif-empty-state {
-  padding: 14px 12px;
-  font-size: 11.5px;
-  color: var(--color-text-muted);
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  font-weight: 500;
+  color: #6b7d6c;
+}
+
+.notif-empty-state i {
+  font-size: 26px;
+  color: #d1c7b2;
+  margin-bottom: 8px;
+}
+
+.notif-empty-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1d3b2e;
+}
+
+.notif-empty-desc {
+  font-size: 11px;
+  color: #8c9c8e;
+  margin-top: 2px;
 }
 
 .profile-dropdown-wrapper {
@@ -581,43 +698,42 @@
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 8px;
-  background: #fbf6e9;
-  border: 2px solid #e8dfc8;
+  margin-top: 10px;
+  background: #ffffff;
+  border: 1px solid #dcd3c1;
   border-radius: 16px;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.22), 0 12px 28px rgba(0, 0, 0, 0.12);
-  min-width: 160px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  min-width: 170px;
   z-index: 1000;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 4px;
+  padding: 6px;
 }
 
 .profile-dropdown-item {
-  padding: 9px 14px;
+  padding: 10px 14px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: #1d3b2e;
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 10px;
   background: transparent;
   border: none;
+  border-radius: 10px;
   width: 100%;
-  text-align: left;
   cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .profile-dropdown-item:hover {
-  background: #eff4ee;
+  background: #f7f2e4;
 }
 
 .profile-dropdown-item.danger {
-  color: #b91c1c;
+  color: #ba2b2b;
 }
 
 .profile-dropdown-item.danger:hover {
@@ -1455,9 +1571,9 @@
 .dashboard-layout-root .bg-white.rounded-3xl,
 .dashboard-layout-root .bg-white.rounded-2xl {
   background-color: #fbf6e9 !important;
-  border: 2px solid #e8dfc8 !important;
-  border-radius: 24px !important;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.22), 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid #e2d9c7 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
   color: #1d3b2e;
 }
 
@@ -1744,4 +1860,22 @@
 .dashboard-layout-root .bg-stone-50\/50 {
   background-color: rgba(224, 213, 184, 0.25) !important;
   border: 1.5px dashed #e0d5b8 !important;
+}
+
+.portal-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  z-index: 99999 !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  margin: 0 !important;
 }

@@ -1167,19 +1167,7 @@ export default function PengaturanPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalZonaBuka(false);
           }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 99999,
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
         >
           <div className="relative bg-[#fbf6e9] border border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
@@ -1284,19 +1272,7 @@ export default function PengaturanPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalTanggalBuka(false);
           }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 99999,
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
         >
           <div className="relative bg-[#fbf6e9] border border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">

@@ -363,14 +363,14 @@ export default function StokDashboardPage() {
                 placeholder="Cari nama bahan..."
                 value={kataKunciCari}
                 onChange={(e) => setKataKunciCari(e.target.value)}
-                className="h-[38px] pl-9 pr-3.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e] w-48 sm:w-56"
+                className="h-[38px] pl-9 pr-3.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e] w-48 sm:w-56 shadow-none"
               />
             </div>
 
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-[38px] px-3 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e] cursor-pointer"
+              className="h-[38px] px-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e] cursor-pointer shadow-none"
             >
               <option value="semua">Semua Status</option>
               <option value="menipis">Stok Menipis Saja</option>
@@ -514,21 +514,9 @@ export default function StokDashboardPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalSesuaikanBuka(false);
           }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 99999,
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
         >
-          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-sm w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+          <div className="relative bg-[#fbf6e9] border border-[#dcd3c1] rounded-[24px] max-w-sm w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
               <div>
                 <h3 className="text-base font-bold text-[#1d3b2e]">
@@ -576,7 +564,7 @@ export default function StokDashboardPage() {
                     placeholder="Contoh: 5"
                     value={nilaiSesuaikan}
                     onChange={(e) => setNilaiSesuaikan(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm font-bold text-[#1d3b2e]"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm font-bold text-[#1d3b2e]"
                     autoFocus
                   />
                 </div>
@@ -631,21 +619,9 @@ export default function StokDashboardPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalBahanBuka(false);
           }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 99999,
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
         >
-          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+          <div className="relative bg-[#fbf6e9] border border-[#dcd3c1] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
               <h3 className="text-lg font-bold text-[#1d3b2e]">
                 {editBahanId ? "Edit Data Bahan" : "Tambah Bahan Baru"}
@@ -681,7 +657,7 @@ export default function StokDashboardPage() {
                     onChange={(e) =>
                       setFormBahan({ ...formBahan, nama: e.target.value })
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   />
                 </div>
 
@@ -698,7 +674,7 @@ export default function StokDashboardPage() {
                       onChange={(e) =>
                         setFormBahan({ ...formBahan, satuan: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                     />
                   </div>
 
@@ -715,7 +691,7 @@ export default function StokDashboardPage() {
                         onChange={(e) =>
                           setFormBahan({ ...formBahan, jumlah: e.target.value })
                         }
-                        className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                        className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                       />
                     </div>
                   )}
@@ -735,7 +711,7 @@ export default function StokDashboardPage() {
                           batas_minimum: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                     />
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
@@ -16,11 +16,43 @@ export default function DashboardShell({
   const [sidebarBuka, setSidebarBuka] = useState(false);
   const [dropdownBuka, setDropdownBuka] = useState(false);
   const [notifDropdownBuka, setNotifDropdownBuka] = useState(false);
+  const [notifDibaca, setNotifDibaca] = useState(false);
+  const notifRef = useRef(null);
+  const profilRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
 
   const role = profil?.role || "staf";
   const userName = profil?.nama || "Admin";
+
+  const totalNotif = notifPesananCount + notifStokCount;
+
+  useEffect(() => {
+    try {
+      const storageKey = `cravely_notif_read_${notifPesananCount}_${notifStokCount}`;
+      const dibaca = sessionStorage.getItem(storageKey);
+      if (dibaca === "1") {
+        setNotifDibaca(true);
+      } else {
+        setNotifDibaca(false);
+      }
+    } catch (e) {}
+  }, [notifPesananCount, notifStokCount]);
+
+  useEffect(() => {
+    function handleClickLuar(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifDropdownBuka(false);
+      }
+      if (profilRef.current && !profilRef.current.contains(e.target)) {
+        setDropdownBuka(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickLuar);
+    return () => {
+      document.removeEventListener("mousedown", handleClickLuar);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -42,6 +74,27 @@ export default function DashboardShell({
       window.dispatchEvent(new Event("resize"));
     }, 360);
   }
+
+  function handleBukaNotif() {
+    const targetStatus = !notifDropdownBuka;
+    setNotifDropdownBuka(targetStatus);
+    setDropdownBuka(false);
+    if (targetStatus) {
+      setNotifDibaca(true);
+      try {
+        sessionStorage.setItem(`cravely_notif_read_${notifPesananCount}_${notifStokCount}`, "1");
+      } catch (e) {}
+    }
+  }
+
+  function handleTandaiSemuaDibaca() {
+    setNotifDibaca(true);
+    try {
+      sessionStorage.setItem(`cravely_notif_read_${notifPesananCount}_${notifStokCount}`, "1");
+    } catch (e) {}
+  }
+
+  const notifAktif = totalNotif > 0 && !notifDibaca;
 
   const menuAdmin = [
     {
@@ -85,7 +138,7 @@ export default function DashboardShell({
     {
       nama: "Pesanan",
       href: "/dashboard/pesanan",
-      badge: notifPesananCount > 0 ? String(notifPesananCount) : null,
+      badge: notifPesananCount > 0 && !notifDibaca ? String(notifPesananCount) : null,
       ikon: (
         <svg viewBox="0 0 24 24">
           <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
@@ -97,7 +150,7 @@ export default function DashboardShell({
     {
       nama: "Stok",
       href: "/dashboard/stok",
-      dot: notifStokCount > 0 ? "orange" : null,
+      dot: notifStokCount > 0 && !notifDibaca ? "orange" : null,
       ikon: (
         <svg viewBox="0 0 24 24">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -184,7 +237,7 @@ export default function DashboardShell({
     {
       nama: "Stok",
       href: "/dashboard/stok",
-      dot: notifStokCount > 0 ? "orange" : null,
+      dot: notifStokCount > 0 && !notifDibaca ? "orange" : null,
       ikon: (
         <svg viewBox="0 0 24 24">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -237,8 +290,6 @@ export default function DashboardShell({
       subjudul: "Atur hak akses staf produksi dan administrator toko.",
     };
   }
-
-  const totalNotif = notifPesananCount + notifStokCount;
 
   async function handleLogout() {
     const supabase = getSupabaseBrowser();
@@ -351,59 +402,96 @@ export default function DashboardShell({
           </div>
 
           <div className="topbar-user-area">
-            <div className="notif-dropdown-wrapper">
+            <div className="notif-dropdown-wrapper" ref={notifRef}>
               <button
                 type="button"
                 className="btn-bell-notif"
                 title="Notifikasi"
-                onClick={() => {
-                  setNotifDropdownBuka(!notifDropdownBuka);
-                  setDropdownBuka(false);
-                }}
+                onClick={handleBukaNotif}
               >
                 <i className="fa-regular fa-bell"></i>
-                {totalNotif > 0 && (
+                {notifAktif && (
                   <span className="badge-notif-num">{totalNotif}</span>
                 )}
               </button>
 
               {notifDropdownBuka && (
                 <div className="notif-dropdown-menu">
-                  {totalNotif === 0 ? (
-                    <div className="notif-empty-state">
-                      Tidak ada notifikasi baru
+                  <div className="notif-header">
+                    <div className="notif-header-title">
+                      <span>Notifikasi</span>
+                      {notifAktif && (
+                        <span className="notif-header-pill">{totalNotif} baru</span>
+                      )}
                     </div>
-                  ) : (
-                    <>
-                      {role === "admin" && notifPesananCount > 0 && (
-                        <Link
-                          href="/dashboard/pesanan"
-                          className="notif-dropdown-item"
-                          onClick={() => setNotifDropdownBuka(false)}
-                        >
-                          <i className="fa-solid fa-receipt"></i>
-                          <span>
-                            {notifPesananCount} pembayaran menunggu konfirmasi
-                          </span>
-                        </Link>
-                      )}
-                      {notifStokCount > 0 && (
-                        <Link
-                          href="/dashboard/stok"
-                          className="notif-dropdown-item"
-                          onClick={() => setNotifDropdownBuka(false)}
-                        >
-                          <i className="fa-solid fa-triangle-exclamation"></i>
-                          <span>{notifStokCount} bahan stok menipis</span>
-                        </Link>
-                      )}
-                    </>
-                  )}
+                    {totalNotif > 0 && (
+                      <button
+                        type="button"
+                        className="notif-btn-mark"
+                        onClick={handleTandaiSemuaDibaca}
+                      >
+                        Tandai dibaca
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="notif-body">
+                    {totalNotif === 0 ? (
+                      <div className="notif-empty-state">
+                        <i className="fa-regular fa-bell-slash"></i>
+                        <div className="notif-empty-title">Semua Beres!</div>
+                        <div className="notif-empty-desc">Tidak ada notifikasi baru untuk saat ini.</div>
+                      </div>
+                    ) : (
+                      <>
+                        {role === "admin" && notifPesananCount > 0 && (
+                          <Link
+                            href="/dashboard/pesanan"
+                            className="notif-dropdown-item"
+                            onClick={() => setNotifDropdownBuka(false)}
+                          >
+                            <div className="notif-icon-box pesanan">
+                              <i className="fa-solid fa-receipt"></i>
+                            </div>
+                            <div className="notif-item-content">
+                              <div className="notif-item-title">Konfirmasi Pembayaran</div>
+                              <div className="notif-item-desc">
+                                {notifPesananCount} pesanan menunggu konfirmasi pembayaran Anda.
+                              </div>
+                              <span className="notif-item-action">
+                                Lihat Pesanan <i className="fa-solid fa-chevron-right text-[9px]"></i>
+                              </span>
+                            </div>
+                          </Link>
+                        )}
+                        {notifStokCount > 0 && (
+                          <Link
+                            href="/dashboard/stok"
+                            className="notif-dropdown-item"
+                            onClick={() => setNotifDropdownBuka(false)}
+                          >
+                            <div className="notif-icon-box stok">
+                              <i className="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div className="notif-item-content">
+                              <div className="notif-item-title">Peringatan Stok Bahan</div>
+                              <div className="notif-item-desc">
+                                {notifStokCount} jenis bahan baku telah mencapai batas minimum.
+                              </div>
+                              <span className="notif-item-action">
+                                Periksa Inventaris <i className="fa-solid fa-chevron-right text-[9px]"></i>
+                              </span>
+                            </div>
+                          </Link>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="profile-dropdown-wrapper">
+            <div className="profile-dropdown-wrapper" ref={profilRef}>
               <button
                 type="button"
                 className="user-profile-btn"

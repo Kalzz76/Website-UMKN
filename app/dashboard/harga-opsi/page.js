@@ -744,21 +744,9 @@ export default function HargaOpsiPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalGrupBuka(false);
           }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 99999,
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
         >
-          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+          <div className="relative bg-[#fbf6e9] border border-[#dcd3c1] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
               <h3 className="text-lg font-bold text-[#1d3b2e]">
                 {editGrupId ? "Edit Grup Opsi" : "Tambah Grup Opsi"}
@@ -794,7 +782,7 @@ export default function HargaOpsiPage() {
                     onChange={(e) =>
                       setFormGrup({ ...formGrup, nama: e.target.value })
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   />
                 </div>
 
@@ -810,7 +798,7 @@ export default function HargaOpsiPage() {
                       onChange={(e) =>
                         setFormGrup({ ...formGrup, urutan: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                     />
                   </div>
 
@@ -823,7 +811,7 @@ export default function HargaOpsiPage() {
                       onChange={(e) =>
                         setFormGrup({ ...formGrup, jenis_pilihan: e.target.value })
                       }
-                      className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                     >
                       <option value="satu">Pilih Satu (Radio)</option>
                       <option value="banyak">Pilih Banyak (Checkbox)</option>
@@ -840,7 +828,7 @@ export default function HargaOpsiPage() {
                     onChange={(e) =>
                       setFormGrup({ ...formGrup, peran_visual: e.target.value })
                     }
-                    className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    className="w-full px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   >
                     <option value="">Non-Visual (Hanya harga & teks catatan)</option>
                     <option value="ukuran">Ukuran (Mengatur tingkat & ukuran kue)</option>
@@ -859,7 +847,7 @@ export default function HargaOpsiPage() {
                     onChange={(e) =>
                       setFormGrup({ ...formGrup, peran_dashboard: e.target.value })
                     }
-                    className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    className="w-full px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   >
                     <option value="">Tidak ditampilkan di ringkasan grafik</option>
                     <option value="jenis">Grafik jenis kue (donut chart)</option>
@@ -911,21 +899,9 @@ export default function HargaOpsiPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalItemBuka(false);
           }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 99999,
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
         >
-          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+          <div className="relative bg-[#fbf6e9] border border-[#dcd3c1] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
               <div>
                 <h3 className="text-lg font-bold text-[#1d3b2e]">
@@ -977,7 +953,7 @@ export default function HargaOpsiPage() {
                     onChange={(e) =>
                       setFormItem({ ...formItem, nama: e.target.value })
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   />
                 </div>
 
@@ -995,7 +971,7 @@ export default function HargaOpsiPage() {
                       onChange={(e) =>
                         setFormItem({ ...formItem, harga: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                     />
                   </div>
 
@@ -1010,7 +986,7 @@ export default function HargaOpsiPage() {
                       onChange={(e) =>
                         setFormItem({ ...formItem, urutan: e.target.value })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                     />
                   </div>
                 </div>
@@ -1025,7 +1001,7 @@ export default function HargaOpsiPage() {
                       onChange={(e) =>
                         setFormItem({ ...formItem, kode_visual: e.target.value })
                       }
-                      className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
                     >
                       <option value="kecil">Kecil (1 Tingkat / 15 cm)</option>
                       <option value="sedang">Sedang (2 Tingkat / 20 cm)</option>
@@ -1050,7 +1026,7 @@ export default function HargaOpsiPage() {
                           onChange={(e) =>
                             setFormItem({ ...formItem, warna: e.target.value })
                           }
-                          className="w-11 h-11 p-1 rounded-xl border-2 border-[#e0d5b8] bg-white cursor-pointer"
+                          className="w-11 h-11 p-1 rounded-xl border border-[#dcd3c1] bg-white cursor-pointer"
                         />
                         <input
                           type="text"
@@ -1059,7 +1035,7 @@ export default function HargaOpsiPage() {
                           onChange={(e) =>
                             setFormItem({ ...formItem, warna: e.target.value })
                           }
-                          className="flex-1 px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-xs font-mono font-bold text-[#1d3b2e]"
+                          className="flex-1 px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-mono font-bold text-[#1d3b2e]"
                         />
                       </div>
                     </div>
@@ -1102,7 +1078,7 @@ export default function HargaOpsiPage() {
                       onChange={(e) =>
                         setFormItem({ ...formItem, kode_visual: e.target.value })
                       }
-                      className="w-full px-3 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e] font-semibold"
                     >
                       <option value="strawberry">🍓 Strawberry Segar</option>
                       <option value="lilin">🕯️ Lilin Ulang Tahun</option>
