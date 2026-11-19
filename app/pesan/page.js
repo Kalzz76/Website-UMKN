@@ -1985,7 +1985,7 @@ export default function PesanPage() {
                           S.icing || "#f6b4c2"
                         )}
                         <b>{item.nama}</b>
-                        <small>Ø {visual.d} cm</small>
+                        <small>Diameter {visual.d} cm</small>
                         <em>{item.harga ? formatRupiah(item.harga) : "Termasuk"}</em>
                       </button>
                     );
@@ -2605,32 +2605,23 @@ export default function PesanPage() {
                       );
                     });
                   })()}
-                  <div className="tr tl">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span className="tot2">Total Kue</span>
-                    <span className="rt">
+                  <div className="tr tot-row tl">
+                    <span className="tot-lbl">Total Kue</span>
+                    <span className="tot-val rt">
                       <b>{formatRupiah(rincianHarga.total_kue)}</b>
                     </span>
                   </div>
                   {S.pick === "delivery" && (
-                    <div className="tr tl">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                      <span className="tot2">Ongkir</span>
-                      <span className="rt">
+                    <div className="tr tot-row tl">
+                      <span className="tot-lbl">Ongkir</span>
+                      <span className="tot-val rt">
                         <b>{formatRupiah(rincianHarga.ongkir)}</b>
                       </span>
                     </div>
                   )}
-                  <div className="tr tl">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span className="tot2">Total Bayar</span>
-                    <span className="rt">
+                  <div className="tr tot-row tl">
+                    <span className="tot-lbl">Total Bayar</span>
+                    <span className="tot-val rt">
                       <b>{formatRupiah(rincianHarga.total_bayar)}</b>
                     </span>
                   </div>
@@ -2926,7 +2917,7 @@ export default function PesanPage() {
                           : "Custom Cake"}
                       </h3>
                       <p>
-                        {S.shape} · {S.size.toUpperCase()} (Ø{" "}
+                        {S.shape} · {S.size.toUpperCase()} (diameter{" "}
                         {VISUAL_SIZE[S.size]?.d || 14} cm)
                       </p>
                       <p>
