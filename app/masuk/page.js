@@ -134,6 +134,39 @@ function FormMasuk() {
         >
           {memuat ? "Memproses..." : "Masuk"}
         </button>
+
+        <div className="pt-4 border-t border-stone-100 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+            <span>Akses Cepat</span>
+            <span>Klik untuk Isi Otomatis</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("admin@cravely.com");
+                setPassword("password123");
+                setDaftarError([]);
+              }}
+              className="py-2 px-3 rounded-xl border border-stone-200 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/60 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+            >
+              <i className="fa-solid fa-crown text-amber-500"></i>
+              <span>Admin</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("petugas@cravely.com");
+                setPassword("password123");
+                setDaftarError([]);
+              }}
+              className="py-2 px-3 rounded-xl border border-stone-200 hover:border-emerald-400 bg-stone-50 hover:bg-emerald-50/60 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+            >
+              <i className="fa-solid fa-kitchen-set text-emerald-600"></i>
+              <span>Petugas</span>
+            </button>
+          </div>
+        </div>
       </form>
 
       <div className="mt-6 text-center text-sm text-stone-600">

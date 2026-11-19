@@ -316,6 +316,7 @@ export default function DashboardShell({
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={true}
                   className={`item ${isActive ? "active" : ""}`}
                   data-tip={item.nama}
                   onClick={() => {

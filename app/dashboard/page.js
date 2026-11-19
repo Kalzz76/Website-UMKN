@@ -13,43 +13,51 @@ export default async function DashboardPage() {
 
   const supabase = await getSupabaseServer();
 
-  const { data: pengaturan } = await supabase
-    .from("pengaturan_toko")
-    .select("nama_toko, slogan")
-    .eq("id", 1)
-    .maybeSingle();
-
-  const namaToko = pengaturan?.nama_toko || "Cravely Bakery";
-  const slogan = pengaturan?.slogan || "Buat hari lebih manis dengan kue terbaik kami ♡";
-
   const sekarang = new Date();
   const formatIsoJakarta = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" });
   const tglHariIni = formatIsoJakarta.format(sekarang);
 
-  const { count: buktiMenungguCount } = await supabase
-    .from("pembayaran")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "Menunggu Konfirmasi");
-
-  const { count: kueHariIniCount } = await supabase
-    .from("pesanan")
-    .select("*", { count: "exact", head: true })
-    .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
-    .eq("tanggal_ambil", tglHariIni);
-
-  const ringkasanHero = {
-    buktiMenunggu: buktiMenungguCount || 0,
-    kueHariIni: kueHariIniCount || 0,
-  };
-
   if (role === "staf") {
-    const { data: antreanRaw } = await supabase
-      .from("pesanan")
-      .select("id, kode_pesanan, nama_penerima, tanggal_ambil, jam_ambil, status_pesanan, metode_pengiriman")
-      .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
-      .order("tanggal_ambil", { ascending: true })
-      .order("jam_ambil", { ascending: true })
-      .limit(10);
+    const [
+      { data: pengaturan },
+      { count: buktiMenungguCount },
+      { count: kueHariIniCount },
+      { data: antreanRaw },
+      { data: bahanData },
+    ] = await Promise.all([
+      supabase
+        .from("pengaturan_toko")
+        .select("nama_toko, slogan")
+        .eq("id", 1)
+        .maybeSingle(),
+      supabase
+        .from("pembayaran")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "Menunggu Konfirmasi"),
+      supabase
+        .from("pesanan")
+        .select("*", { count: "exact", head: true })
+        .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
+        .eq("tanggal_ambil", tglHariIni),
+      supabase
+        .from("pesanan")
+        .select("id, kode_pesanan, nama_penerima, tanggal_ambil, jam_ambil, status_pesanan, metode_pengiriman")
+        .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
+        .order("tanggal_ambil", { ascending: true })
+        .order("jam_ambil", { ascending: true })
+        .limit(10),
+      supabase
+        .from("bahan")
+        .select("id, nama, satuan, jumlah, batas_minimum"),
+    ]);
+
+    const namaToko = pengaturan?.nama_toko || "Cravely Bakery";
+    const slogan = pengaturan?.slogan || "Buat hari lebih manis dengan kue terbaik kami ♡";
+
+    const ringkasanHero = {
+      buktiMenunggu: buktiMenungguCount || 0,
+      kueHariIni: kueHariIniCount || 0,
+    };
 
     const daftarAntrean = antreanRaw || [];
     const idList = daftarAntrean.map((p) => p.id);
@@ -77,10 +85,6 @@ export default async function DashboardPage() {
       pilihan: pilihanMap[p.id] || [],
     }));
 
-    const { data: bahanData } = await supabase
-      .from("bahan")
-      .select("id, nama, satuan, jumlah, batas_minimum");
-
     const stokMenipis = (bahanData || []).filter(
       (b) => Number(b.jumlah) <= Number(b.batas_minimum)
     );
@@ -95,6 +99,35 @@ export default async function DashboardPage() {
       />
     );
   }
+
+  const [
+    { data: pengaturan },
+    { count: buktiMenungguCount },
+    { count: kueHariIniCount },
+  ] = await Promise.all([
+    supabase
+      .from("pengaturan_toko")
+      .select("nama_toko, slogan")
+      .eq("id", 1)
+      .maybeSingle(),
+    supabase
+      .from("pembayaran")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "Menunggu Konfirmasi"),
+    supabase
+      .from("pesanan")
+      .select("*", { count: "exact", head: true })
+      .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
+      .eq("tanggal_ambil", tglHariIni),
+  ]);
+
+  const namaToko = pengaturan?.nama_toko || "Cravely Bakery";
+  const slogan = pengaturan?.slogan || "Buat hari lebih manis dengan kue terbaik kami ♡";
+
+  const ringkasanHero = {
+    buktiMenunggu: buktiMenungguCount || 0,
+    kueHariIni: kueHariIniCount || 0,
+  };
 
   const { data: semuaPesananRaw } = await supabase
     .from("pesanan")
