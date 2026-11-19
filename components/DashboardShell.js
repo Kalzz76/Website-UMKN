@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import PortalLedge from "@/components/PortalLedge";
 
 export default function DashboardShell({
   profil,
@@ -19,6 +20,7 @@ export default function DashboardShell({
   const router = useRouter();
 
   const role = profil?.role || "staf";
+  const userName = profil?.nama || "Admin";
 
   useEffect(() => {
     try {
@@ -197,7 +199,7 @@ export default function DashboardShell({
 
   let infoHalaman = {
     judul: "Dashboard",
-    subjudul: "Ringkasan performa penjualan Cravely Bakery.",
+    subjudul: `Selamat datang, ${userName} • Ringkasan performa penjualan Cravely Bakery.`,
   };
   if (pathname.startsWith("/dashboard/harga-opsi")) {
     infoHalaman = {
@@ -494,6 +496,8 @@ export default function DashboardShell({
 
         {children}
       </main>
+
+      <PortalLedge />
     </div>
   );
 }

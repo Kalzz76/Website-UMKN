@@ -340,7 +340,7 @@ export default function DashboardAdminView({
             </div>
 
             <div className="metric-item-box">
-              <div className="metric-icon-wrap purple">
+              <div className="metric-icon-wrap cherry">
                 <i className="fa-solid fa-clock-rotate-left"></i>
               </div>
               <div className="metric-info-col">
@@ -355,14 +355,14 @@ export default function DashboardAdminView({
               <svg className="metric-wave-svg" viewBox="0 0 100 50" fill="none">
                 <path
                   d="M0 45 C30 25 60 48 100 28"
-                  stroke="#cfb2db"
+                  stroke="#f1a69d"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   fill="none"
                 />
                 <path
                   d="M10 50 C40 35 70 55 100 40"
-                  stroke="#e6d4ed"
+                  stroke="#fad0cb"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   fill="none"
