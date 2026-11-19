@@ -1616,14 +1616,14 @@
 .dashboard-layout-root button.bg-rose-600,
 .dashboard-container form button[type="submit"],
 .dashboard-layout-root form button[type="submit"] {
-  background-color: #c8362f !important;
+  background-color: #ba2b2b !important;
   color: #ffffff !important;
-  border: 2px solid #b32a24 !important;
-  border-radius: 14px !important;
+  border: 1px solid #a62525 !important;
+  border-radius: 12px !important;
   height: 42px !important;
   font-weight: 700 !important;
   font-size: 13px !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.14) !important;
+  box-shadow: none !important;
   transition: all 0.15s ease !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -1635,31 +1635,30 @@
 .dashboard-layout-root button.bg-rose-600:hover,
 .dashboard-container form button[type="submit"]:hover,
 .dashboard-layout-root form button[type="submit"]:hover {
-  background-color: #d9544c !important;
-  border-color: #c8362f !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18) !important;
+  background-color: #a62525 !important;
+  border-color: #911f1f !important;
+  box-shadow: none !important;
 }
 
 .dashboard-container button.bg-rose-600:active,
 .dashboard-layout-root button.bg-rose-600:active,
 .dashboard-container form button[type="submit"]:active,
 .dashboard-layout-root form button[type="submit"]:active {
-  transform: translateY(1px) !important;
+  background-color: #911f1f !important;
   box-shadow: none !important;
 }
 
 .dashboard-container form button[type="button"],
 .dashboard-layout-root form button[type="button"] {
-  background-color: #ede2cd !important;
-  border: 2px solid #e0d5b8 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #dcd3c1 !important;
   color: #1d3b2e !important;
-  border-radius: 14px !important;
+  border-radius: 12px !important;
   height: 42px !important;
   min-width: 42px !important;
   font-weight: 700 !important;
   font-size: 13px !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08) !important;
+  box-shadow: none !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1670,15 +1669,15 @@
 
 .dashboard-container form button[type="button"]:hover,
 .dashboard-layout-root form button[type="button"]:hover {
-  background-color: #e2d4bc !important;
-  border-color: #d4c5a3 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12) !important;
+  background-color: #f7f2e4 !important;
+  border-color: #cec1aa !important;
+  color: #1d3b2e !important;
+  box-shadow: none !important;
 }
 
 .dashboard-container form button[type="button"]:active,
 .dashboard-layout-root form button[type="button"]:active {
-  transform: translateY(1px) !important;
+  background-color: #ede2cd !important;
   box-shadow: none !important;
 }
 
@@ -1688,14 +1687,14 @@
 .dashboard-layout-root input:not([type="checkbox"]):not([type="radio"]),
 .dashboard-layout-root select,
 .dashboard-layout-root textarea {
-  background-color: #fffdf6 !important;
-  border: 2px solid #e0d5b8 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #dcd3c1 !important;
   color: #1d3b2e !important;
-  border-radius: 14px !important;
+  border-radius: 12px !important;
   height: 42px !important;
   box-sizing: border-box !important;
   font-size: 13px !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.04) !important;
+  box-shadow: none !important;
 }
 
 .dashboard-container textarea,
@@ -1708,16 +1707,17 @@
   appearance: none !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
-  background-color: #fffdf6 !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http:%2F%2Fwww.w3.org%2F2000%2Fsvg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231d3b2e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-color: #ffffff !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http:%2F%2Fwww.w3.org%2F2000%2Fsvg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231d3b2e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: right 14px center !important;
-  background-size: 14px 14px !important;
+  background-size: 12px 12px !important;
   padding-left: 14px !important;
-  padding-right: 38px !important;
+  padding-right: 36px !important;
   cursor: pointer !important;
   color-scheme: light !important;
   line-height: normal !important;
+  box-shadow: none !important;
 }
 
 .dashboard-container input[type="date"],
@@ -1725,6 +1725,7 @@
   padding-left: 14px !important;
   padding-right: 14px !important;
   line-height: normal !important;
+  box-shadow: none !important;
 }
 
 .dashboard-container input:not([type="checkbox"]):not([type="radio"]):focus,
@@ -1733,8 +1734,9 @@
 .dashboard-layout-root input:not([type="checkbox"]):not([type="radio"]):focus,
 .dashboard-layout-root select:focus,
 .dashboard-layout-root textarea:focus {
-  outline: 2px solid #f2c230 !important;
-  border-color: #245039 !important;
+  outline: none !important;
+  border-color: #ba2b2b !important;
+  box-shadow: none !important;
   background-color: #ffffff !important;
 }
 

@@ -323,7 +323,7 @@ export default function StokDashboardPage() {
         <div className={`content-card p-5 flex items-center space-x-4 ${totalMenipis > 0 ? "border-rose-300 bg-[#fff5f5]" : ""}`}>
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 shadow-xs ${
             totalMenipis > 0
-              ? "bg-rose-100 border border-rose-200 text-rose-700 animate-pulse"
+              ? "bg-rose-100 border border-rose-200 text-rose-700"
               : "bg-[#ede2cd] border border-[#dfd4bd] text-stone-600"
           }`}>
             <i className="fa-solid fa-triangle-exclamation"></i>
@@ -444,7 +444,7 @@ export default function StokDashboardPage() {
                       <td className="py-3.5 px-4">
                         {menipis ? (
                           <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                            <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                            <span className="w-2 h-2 rounded-full bg-rose-600"></span>
                             <span>Menipis</span>
                           </span>
                         ) : (
