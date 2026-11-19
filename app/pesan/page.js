@@ -1236,6 +1236,12 @@ export default function PesanPage() {
   function checkValidation() {
     if (!S.f.nm) return "Isi nama dulu ya";
     if (!/.+@.+/.test(S.f.em || "")) return "Isi email yang valid dulu ya";
+    if (S.f.ph) {
+      const cleanPhone = S.f.ph.replace(/\D/g, "");
+      if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+        return "Nomor WhatsApp harus berupa 10 sampai 15 digit angka ya";
+      }
+    }
     if (!S.f.dt) return "Pilih tanggal dibutuhkan";
     if (S.pick === "delivery" && !S.f.addr) return "Isi alamat pengantaran";
     if (!S.pay) return "Pilih metode pembayaran dulu ya";
@@ -2160,9 +2166,15 @@ export default function PesanPage() {
                     No. WhatsApp (opsional)
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={15}
                       placeholder="08xxxxxxxxxx"
                       value={S.f.ph || ""}
-                      onChange={(e) => handleFieldChange("ph", e.target.value)}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, "");
+                        handleFieldChange("ph", digitsOnly);
+                      }}
                     />
                   </label>
                   <label className="fl">
@@ -2280,8 +2292,8 @@ export default function PesanPage() {
                     marginTop: "16px",
                     padding: "16px 18px",
                     borderRadius: "18px",
-                    background: "var(--pk3, #FFF0F4)",
-                    border: "1.5px dashed var(--pk2, #F8B5C6)",
+                    background: "rgba(186, 43, 43, 0.12)",
+                    border: "1.5px dashed rgba(255, 255, 255, 0.25)",
                   }}
                 >
                   <div
@@ -2292,7 +2304,7 @@ export default function PesanPage() {
                       marginBottom: "8px",
                     }}
                   >
-                    <b style={{ fontSize: "13px", color: "var(--pk, #D96B91)" }}>
+                    <b style={{ fontSize: "13px", color: "#ff7b7b" }}>
                       📌 Rekening Pembayaran Toko
                     </b>
                     <span
@@ -2301,9 +2313,10 @@ export default function PesanPage() {
                         fontWeight: 700,
                         padding: "3px 10px",
                         borderRadius: "10px",
-                        background: "#fff",
-                        color: "var(--ink, #4A2D36)",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                        background: "rgba(255, 255, 255, 0.12)",
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                        color: "#f2c230",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
                       }}
                     >
                       Batas: {pengaturan?.batas_bayar_jam || 24} Jam
@@ -2312,18 +2325,18 @@ export default function PesanPage() {
                   <div
                     style={{
                       fontSize: "13px",
-                      color: "var(--ink, #4A2D36)",
+                      color: "#ffffff",
                       lineHeight: "1.6",
                     }}
                   >
                     <div>Bank: <b>{pengaturan?.nama_bank || "BCA"}</b></div>
-                    <div>No. Rekening: <b style={{ letterSpacing: "1px" }}>{pengaturan?.no_rekening || "1234567890"}</b></div>
+                    <div>No. Rekening: <b style={{ letterSpacing: "1px", color: "#f2c230" }}>{pengaturan?.no_rekening || "1234567890"}</b></div>
                     <div>Atas Nama: <b>{pengaturan?.atas_nama || "Cravely Bakery"}</b></div>
                   </div>
                   <div
                     style={{
                       fontSize: "11.5px",
-                      color: "var(--mut, #8E6573)",
+                      color: "#c2d6ca",
                       marginTop: "8px",
                       fontWeight: 600,
                     }}
@@ -2442,7 +2455,7 @@ export default function PesanPage() {
                         className="tr"
                         style={{
                           fontSize: "12px",
-                          color: "var(--mut, #8E6573)",
+                          color: "#6b7d6c",
                         }}
                       >
                         <span></span>
