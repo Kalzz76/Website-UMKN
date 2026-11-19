@@ -111,19 +111,19 @@ export default function DaftarPesananDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
-        <form onSubmit={handleCari} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <form onSubmit={handleCari} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <div>
             <label className="block text-xs font-semibold text-stone-700 mb-1">
               Cari Pesanan
             </label>
             <div className="relative">
-              <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-stone-400 text-xs"></i>
+              <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-xs pointer-events-none"></i>
               <input
                 type="text"
                 placeholder="Kode atau nama pelanggan..."
                 value={kataKunci}
                 onChange={(e) => setKataKunci(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-xs"
+                className="w-full pl-9 pr-4 text-xs outline-none"
               />
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function DaftarPesananDashboardPage() {
                 setFilterStatus(e.target.value);
                 setHalaman(1);
               }}
-              className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-xs bg-white"
+              className="w-full text-xs outline-none"
             >
               <option value="">Semua Status</option>
               <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
@@ -162,25 +162,30 @@ export default function DaftarPesananDashboardPage() {
                 setFilterTanggal(e.target.value);
                 setHalaman(1);
               }}
-              className="w-full px-3 py-2 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-xs bg-white"
+              className="w-full text-xs outline-none"
             />
           </div>
 
-          <div className="flex items-end space-x-2">
-            <button
-              type="submit"
-              className="flex-1 py-2 px-4 rounded-xl font-semibold bg-rose-600 hover:bg-rose-500 text-white text-xs transition cursor-pointer"
-            >
-              Cari
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="py-2 px-3 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-medium transition cursor-pointer"
-              title="Reset Filter"
-            >
-              <i className="fa-solid fa-rotate-left"></i>
-            </button>
+          <div>
+            <span className="invisible block text-xs font-semibold mb-1 select-none pointer-events-none">
+              Aksi
+            </span>
+            <div className="flex items-center space-x-2">
+              <button
+                type="submit"
+                className="flex-1 font-semibold text-white text-xs transition cursor-pointer"
+              >
+                Cari
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-stone-600 text-xs font-medium transition cursor-pointer flex-none"
+                title="Reset Filter"
+              >
+                <i className="fa-solid fa-rotate-left"></i>
+              </button>
+            </div>
           </div>
         </form>
 
