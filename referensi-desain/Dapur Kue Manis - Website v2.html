@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <title>Dapur Kue Manis - Etalase dan Custom Kue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ivory: "#FDF5E7",
+            blush: "#F1DBD0",
+            dusty: "#D3A29D",
+            burgundy: "#A36361",
+            khaki: "#CDBFAA",
+            slate: "#ADB697",
+            ink: "#3D2B28",
+            kayu: "#5A3B33",
+            kayuGelap: "#3E2721",
+            kuningan: "#B8925A"
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    :root {
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #FDF5E7;
+      color: #3D2B28;
+      overflow-x: hidden;
+    }
+
+    /* Navbar Papan Menu Gantung */
+    .papan-menu {
+      transform: translate(-50%, -185%);
+      transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+    .papan-menu.terlihat {
+      transform: translate(-50%, 0);
+      pointer-events: auto;
+    }
+    .rantai-kuningan {
+      width: 4px;
+      height: 18px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #D9B37C 0px,
+        #D9B37C 4px,
+        #8C6936 4px,
+        #8C6936 6px
+      );
+      border-radius: 99px;
+      box-shadow: 0 2px 4px rgba(61, 43, 40, 0.3);
+    }
+    .bingkai-papan-menu {
+      background: linear-gradient(180deg, #68443A 0%, #4E322A 100%);
+      border: 4px solid #C59B62;
+      box-shadow:
+        0 14px 28px -6px rgba(61, 43, 40, 0.45),
+        inset 0 1px 0 rgba(255, 244, 214, 0.25),
+        inset 0 -2px 6px rgba(30, 18, 15, 0.5);
+    }
+
+    /* Hotspot Interaktif di Dalam Toko */
+    .hotspot {
+      transform: translate(-50%, -100%);
+      transition: transform 0.25s ease, opacity 0.3s ease, filter 0.3s ease;
+    }
+    .hotspot:hover, .hotspot:focus-visible {
+      transform: translate(-50%, -106%) scale(1.06);
+      filter: drop-shadow(0 10px 14px rgba(61, 43, 40, 0.32));
+      z-index: 20;
+    }
+    .hotspot.redup {
+      opacity: 0.22;
+      pointer-events: none;
+    }
+    .hotspot .label-kue {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .hotspot:hover .label-kue, .hotspot:focus-visible .label-kue {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Zona Interaktif Interior (Lampu, Rak, Papan, Meja) */
+    .zona-interaktif {
+      transition: filter 0.25s ease, transform 0.25s ease;
+    }
+    .zona-interaktif:hover {
+      filter: drop-shadow(0 0 12px rgba(255, 232, 175, 0.85));
+    }
+    .zona-interaktif .pin-info {
+      transition: transform 0.25s ease, background-color 0.25s ease;
+    }
+    .zona-interaktif:hover .pin-info {
+      transform: scale(1.06);
+      background-color: #A36361;
+      color: #FFFFFF;
+    }
+
+    .tombol-filter.aktif {
+      background: #A36361;
+      color: #FFFFFF;
+      border-color: #A36361;
+      box-shadow: 0 4px 12px rgba(163, 99, 97, 0.28);
+    }
+
+    /* Kursor Semi-Realistis Kue */
+    .kursor-kue, .kursor-kue * {
+      cursor: none !important;
+    }
+    #kursor-kue {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 44px;
+      height: 44px;
+      pointer-events: none;
+      z-index: 100;
+      transform: translate(-35%, -35%);
+      transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+      display: none;
+      filter: drop-shadow(0 6px 8px rgba(61, 43, 40, 0.28));
+    }
+    #kursor-kue.aktif {
+      transform: translate(-35%, -35%) scale(1.26) rotate(-10deg);
+    }
+    .kursor-aktif #kursor-kue {
+      display: block;
+    }
+
+    /* Suasana Lampu Hangat Toggle */
+    .ruangan-hangat {
+      filter: sepia(0.14) brightness(0.95) contrast(1.03);
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- DEFINISI GRADASI, TEKSTUR, EFEK CAHAYA & SIMBOL ARSITEKTUR SEMI-REALISTIS -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <!-- Bayangan Lembut Semi-Realistis -->
+      <filter id="fBayanganLembut" x="-15%" y="-15%" width="130%" height="135%">
+        <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3D2B28" flood-opacity="0.18" />
+      </filter>
+      <filter id="fBayanganKecil" x="-15%" y="-15%" width="130%" height="135%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#3D2B28" flood-opacity="0.22" />
+      </filter>
+      <filter id="fPendarLampu" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="18" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+
+      <!-- Gradasi Dinding & Kayu -->
+      <linearGradient id="gDindingDalam" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#F7EBDC" />
+        <stop offset="65%" stop-color="#FDF6EC" />
+        <stop offset="100%" stop-color="#EFE0D1" />
+      </linearGradient>
+      <linearGradient id="gFasadTembok" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#F5E7D6" />
+        <stop offset="55%" stop-color="#FBF3E8" />
+        <stop offset="100%" stop-color="#E7D4C0" />
+      </linearGradient>
+      <linearGradient id="gWainscot" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#E8CBC0" />
+        <stop offset="100%" stop-color="#D9B6A8" />
+      </linearGradient>
+      <linearGradient id="gKayuWalnut" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#4B3028" />
+        <stop offset="30%" stop-color="#6B473C" />
+        <stop offset="70%" stop-color="#5B3B31" />
+        <stop offset="100%" stop-color="#3F2720" />
+      </linearGradient>
+      <linearGradient id="gKayuRak" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#7A5245" />
+        <stop offset="100%" stop-color="#4E3229" />
+      </linearGradient>
+      <linearGradient id="gKuningan" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#E3C38E" />
+        <stop offset="50%" stop-color="#B8925A" />
+        <stop offset="100%" stop-color="#876636" />
+      </linearGradient>
+      <linearGradient id="gMarmer" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#FFFFFF" />
+        <stop offset="50%" stop-color="#F6EFE6" />
+        <stop offset="100%" stop-color="#EAE0D5" />
+      </linearGradient>
+      <linearGradient id="gKacaEtalase" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.52" />
+        <stop offset="45%" stop-color="#FFF9F2" stop-opacity="0.18" />
+        <stop offset="100%" stop-color="#EBD3C8" stop-opacity="0.38" />
+      </linearGradient>
+      <linearGradient id="gTrotoar" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#DFCBB8" />
+        <stop offset="40%" stop-color="#D2BC9E" />
+        <stop offset="100%" stop-color="#B9A389" />
+      </linearGradient>
+      <linearGradient id="gInteriorHangat" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FFE7BA" stop-opacity="0.9" />
+        <stop offset="100%" stop-color="#E6B89C" stop-opacity="0.95" />
+      </linearGradient>
+
+      <!-- Cahaya Lampu Gantung -->
+      <radialGradient id="gSorotLampu" cx="0.5" cy="0.15" r="0.85">
+        <stop offset="0%" stop-color="#FFF2CC" stop-opacity="0.65" />
+        <stop offset="55%" stop-color="#FFE6A8" stop-opacity="0.2" />
+        <stop offset="100%" stop-color="#FFE6A8" stop-opacity="0" />
+      </radialGradient>
+
+      <!-- Pola Lantai Keramik Dalam Toko -->
+      <pattern id="pLantaiDalam" width="96" height="48" patternUnits="userSpaceOnUse">
+        <rect width="96" height="48" fill="#F8EFE2" />
+        <polygon points="0,0 48,0 38,24 -10,24" fill="#E6D2BE" />
+        <polygon points="48,24 96,24 86,48 38,48" fill="#E6D2BE" />
+        <line x1="0" y1="24" x2="96" y2="24" stroke="#D7C1AC" stroke-width="1" />
+      </pattern>
+
+      <!-- Pola Garis Kanopi Kain -->
+      <pattern id="pKanopiGaris" width="64" height="20" patternUnits="userSpaceOnUse">
+        <rect width="32" height="20" fill="#9F5A58" />
+        <rect x="32" width="32" height="20" fill="#FDF6EC" />
+        <rect x="30" width="2" height="20" fill="#000000" fill-opacity="0.06" />
+      </pattern>
+
+      <!-- ==================== SIMBOL 1: FASAD DEPAN TOKO (SEMI-REALISTIS) ==================== -->
+      <symbol id="sFasad" viewBox="0 0 1600 900">
+        <!-- Dinding Fasad Utama -->
+        <rect width="1600" height="725" fill="url(#gFasadTembok)" />
+        <!-- Lis Arsitektur Atas -->
+        <rect x="0" y="0" width="1600" height="42" fill="#E5D1BC" />
+        <rect x="0" y="42" width="1600" height="10" fill="#CDB8A2" />
+        <rect x="0" y="52" width="1600" height="6" fill="#FFFDF9" opacity="0.7" />
+
+        <!-- Panel Dinding Berbingkai Kiri & Kanan -->
+        <rect x="55" y="130" width="200" height="530" rx="6" fill="none" stroke="#D5C0AA" stroke-width="4" />
+        <rect x="67" y="142" width="176" height="506" rx="3" fill="none" stroke="#FFFDF9" stroke-width="2" />
+        <rect x="1345" y="130" width="200" height="530" rx="6" fill="none" stroke="#D5C0AA" stroke-width="4" />
+        <rect x="1357" y="142" width="176" height="506" rx="3" fill="none" stroke="#FFFDF9" stroke-width="2" />
+
+        <!-- Papan Nama Toko Utama di Atas Kanopi -->
+        <g filter="url(#fBayanganLembut)">
+          <rect x="470" y="78" width="660" height="114" rx="14" fill="url(#gKayuWalnut)" stroke="url(#gKuningan)" stroke-width="6" />
+          <rect x="484" y="90" width="632" height="90" rx="8" fill="#FDF6EC" stroke="#D5B48A" stroke-width="2" />
+          <text x="800" y="142" text-anchor="middle" font-size="42" font-weight="800" letter-spacing="3" fill="#8C4A48" font-family="Plus Jakarta Sans, sans-serif">DAPUR KUE MANIS</text>
+          <text x="800" y="167" text-anchor="middle" font-size="13" font-weight="700" letter-spacing="4" fill="#8C6936" font-family="Plus Jakarta Sans, sans-serif">ARTISAN PATISSERIE &amp; CUSTOM CAKE</text>
+        </g>
+
+        <!-- Lampu Dinding Kuningan Fasad -->
+        <g filter="url(#fBayanganKecil)">
+          <rect x="256" y="340" width="14" height="36" rx="4" fill="url(#gKuningan)" />
+          <circle cx="263" cy="332" r="16" fill="#FFF3D1" stroke="#B8925A" stroke-width="3" />
+          <circle cx="263" cy="332" r="34" fill="#FFE6A3" opacity="0.35" />
+
+          <rect x="1330" y="340" width="14" height="36" rx="4" fill="url(#gKuningan)" />
+          <circle cx="1337" cy="332" r="16" fill="#FFF3D1" stroke="#B8925A" stroke-width="3" />
+          <circle cx="1337" cy="332" r="34" fill="#FFE6A3" opacity="0.35" />
+        </g>
+
+        <!-- Jendela Etalase Kiri (Dengan Kedalaman & Pajangan Kue) -->
+        <g filter="url(#fBayanganLembut)">
+          <rect x="290" y="395" width="350" height="275" rx="8" fill="url(#gKayuWalnut)" />
+          <rect x="308" y="413" width="314" height="232" rx="4" fill="url(#gInteriorHangat)" />
+          <!-- Rak Pajangan Dalam Jendela Kiri -->
+          <rect x="308" y="582" width="314" height="12" fill="#E8D5C3" />
+          <!-- Stand Kue 1 -->
+          <rect x="382" y="564" width="12" height="18" fill="#B8925A" />
+          <ellipse cx="388" cy="564" rx="44" ry="8" fill="#FFFFFF" />
+          <path d="M354 532 L354 560 A34 7 0 0 0 422 560 L422 532 Z" fill="#C97B78" />
+          <ellipse cx="388" cy="532" rx="34" ry="7" fill="#FDF5E7" />
+          <circle cx="388" cy="524" r="7" fill="#A33B46" />
+          <!-- Stand Kue 2 -->
+          <rect x="524" y="556" width="12" height="26" fill="#B8925A" />
+          <ellipse cx="530" cy="556" rx="46" ry="9" fill="#FFFFFF" />
+          <path d="M492 516 L492 552 A38 8 0 0 0 568 552 L568 516 Z" fill="#6B473C" />
+          <ellipse cx="530" cy="516" rx="38" ry="8" fill="#E8C7B8" />
+          <!-- Pantulan Kaca Jendela Kiri -->
+          <polygon points="318,413 385,413 330,645 308,645" fill="#FFFFFF" opacity="0.28" />
+          <polygon points="405,413 430,413 375,645 350,645" fill="#FFFFFF" opacity="0.16" />
+          <!-- Ambang Bawah Jendela -->
+          <rect x="280" y="662" width="370" height="18" rx="4" fill="#EFE2D3" stroke="#CDB8A2" stroke-width="2" />
+        </g>
+
+        <!-- Jendela Etalase Kanan -->
+        <g filter="url(#fBayanganLembut)">
+          <rect x="960" y="395" width="350" height="275" rx="8" fill="url(#gKayuWalnut)" />
+          <rect x="978" y="413" width="314" height="232" rx="4" fill="url(#gInteriorHangat)" />
+          <rect x="978" y="582" width="314" height="12" fill="#E8D5C3" />
+          <!-- Stand Kue 3 -->
+          <rect x="1062" y="560" width="12" height="22" fill="#B8925A" />
+          <ellipse cx="1068" cy="560" rx="44" ry="8" fill="#FFFFFF" />
+          <path d="M1032 524 L1032 556 A36 8 0 0 0 1104 556 L1104 524 Z" fill="#E5B9B3" />
+          <ellipse cx="1068" cy="524" rx="36" ry="8" fill="#FFFDF8" />
+          <!-- Stand Kue 4 -->
+          <rect x="1198" y="566" width="12" height="16" fill="#B8925A" />
+          <ellipse cx="1204" cy="566" rx="42" ry="8" fill="#FFFFFF" />
+          <path d="M1170 536 L1170 562 A34 7 0 0 0 1238 562 L1238 536 Z" fill="#9AA583" />
+          <ellipse cx="1204" cy="536" rx="34" ry="7" fill="#FDF5E7" />
+          <!-- Pantulan Kaca Jendela Kanan -->
+          <polygon points="988,413 1055,413 1000,645 978,645" fill="#FFFFFF" opacity="0.28" />
+          <polygon points="1075,413 1100,413 1045,645 1020,645" fill="#FFFFFF" opacity="0.16" />
+          <rect x="950" y="662" width="370" height="18" rx="4" fill="#EFE2D3" stroke="#CDB8A2" stroke-width="2" />
+        </g>
+
+        <!-- Kusen Pintu Utama & Jendela Lengkung Atas (Transom) -->
+        <g filter="url(#fBayanganLembut)">
+          <path d="M675 720 V360 A125 95 0 0 1 925 360 V720 Z" fill="url(#gKayuWalnut)" />
+          <!-- Kaca Lengkung Atas Pintu -->
+          <path d="M695 365 A105 78 0 0 1 905 365 Z" fill="#FFE7BA" stroke="#C59B62" stroke-width="3" />
+          <text x="800" y="348" text-anchor="middle" font-size="16" font-weight="800" letter-spacing="2" fill="#6B473C">SEJAK 2018</text>
+          <!-- Cahaya Lantai di Dalam Ambang Pintu -->
+          <rect x="695" y="382" width="210" height="338" fill="#FFF1D6" />
+        </g>
+
+        <!-- Daun Pintu Kiri (Akan Berayun Terbuka saat Scroll) -->
+        <g id="pintu-kiri">
+          <rect x="695" y="382" width="104" height="338" fill="url(#gKayuWalnut)" stroke="#3E2721" stroke-width="2" />
+          <rect x="711" y="400" width="72" height="175" rx="4" fill="url(#gInteriorHangat)" stroke="#C59B62" stroke-width="2.5" />
+          <polygon points="715,400 742,400 720,575 711,575" fill="#FFFFFF" opacity="0.3" />
+          <rect x="711" y="594" width="72" height="96" rx="3" fill="#4B3028" stroke="#6E4A3E" stroke-width="2" />
+          <!-- Gagang Pintu Kuningan Kiri -->
+          <rect x="786" y="535" width="6" height="44" rx="3" fill="url(#gKuningan)" />
+        </g>
+
+        <!-- Daun Pintu Kanan (Akan Berayun Terbuka saat Scroll) -->
+        <g id="pintu-kanan">
+          <rect x="801" y="382" width="104" height="338" fill="url(#gKayuWalnut)" stroke="#3E2721" stroke-width="2" />
+          <rect x="817" y="400" width="72" height="175" rx="4" fill="url(#gInteriorHangat)" stroke="#C59B62" stroke-width="2.5" />
+          <polygon points="821,400 848,400 826,575 817,575" fill="#FFFFFF" opacity="0.3" />
+          <rect x="817" y="594" width="72" height="96" rx="3" fill="#4B3028" stroke="#6E4A3E" stroke-width="2" />
+          <!-- Gagang Pintu Kuningan Kanan -->
+          <rect x="808" y="535" width="6" height="44" rx="3" fill="url(#gKuningan)" />
+          <!-- Papan Kecil "BUKA" -->
+          <rect x="826" y="468" width="54" height="24" rx="6" fill="#FDF6EC" stroke="#A36361" stroke-width="2" />
+          <text x="853" y="484" text-anchor="middle" font-size="11" font-weight="800" fill="#A36361">BUKA</text>
+        </g>
+
+        <!-- Kanopi Kain Bergaris Perspektif (Rapi & Bersih Tanpa Lingkaran Bertumpuk) -->
+        <g filter="url(#fBayanganLembut)">
+          <!-- Bayangan Kanopi ke Tembok -->
+          <polygon points="265,335 1335,335 1315,365 285,365" fill="#3D2B28" opacity="0.18" />
+          <!-- Atap Miring Kanopi -->
+          <polygon points="310,218 1290,218 1345,322 255,322" fill="url(#pKanopiGaris)" />
+          <!-- Gradasi Kedalaman Lipatan Kanopi -->
+          <polygon points="310,218 1290,218 1345,322 255,322" fill="#000000" opacity="0.06" />
+          <!-- Rumbai Bergelombang Rapi di Bagian Bawah Kanopi -->
+          <path d="M255 322 H1345 V338 Q1317 354 1290 338 Q1262 354 1235 338 Q1207 354 1180 338 Q1152 354 1125 338 Q1097 354 1070 338 Q1042 354 1015 338 Q987 354 960 338 Q932 354 905 338 Q877 354 850 338 Q822 354 795 338 Q767 354 740 338 Q712 354 685 338 Q657 354 630 338 Q602 354 575 338 Q547 354 520 338 Q492 354 465 338 Q437 354 410 338 Q382 354 355 338 Q327 354 300 338 Q277 354 255 338 Z" fill="url(#pKanopiGaris)" />
+          <line x1="255" y1="322" x2="1345" y2="322" stroke="#7A4240" stroke-width="2" />
+        </g>
+
+        <!-- Trotoar & Tangga Masuk Batu Alam -->
+        <rect x="0" y="720" width="1600" height="180" fill="url(#gTrotoar)" />
+        <line x1="0" y1="720" x2="1600" y2="720" stroke="#A69076" stroke-width="3" />
+        <!-- Garis Nat Batu Trotoar Perspektif -->
+        <line x1="0" y1="765" x2="1600" y2="765" stroke="#B59F86" stroke-width="2" />
+        <line x1="0" y1="825" x2="1600" y2="825" stroke="#B59F86" stroke-width="2" />
+        <!-- Anak Tangga Batu di Depan Pintu -->
+        <polygon points="665,720 935,720 955,748 645,748" fill="#EFE4D6" stroke="#B8A38B" stroke-width="2" />
+        <rect x="645" y="748" width="310" height="10" fill="#C4B098" />
+
+        <!-- Pot Tanaman Hias Kiri & Kanan Pintu -->
+        <g filter="url(#fBayanganKecil)">
+          <!-- Pot Kiri -->
+          <circle cx="595" cy="656" r="28" fill="#7D8F69" />
+          <circle cx="578" cy="666" r="22" fill="#94A67E" />
+          <circle cx="612" cy="666" r="22" fill="#8A9C75" />
+          <polygon points="568,678 622,678 614,734 576,734" fill="url(#gKayuWalnut)" stroke="#C59B62" stroke-width="2" />
+          <!-- Pot Kanan -->
+          <circle cx="1005" cy="656" r="28" fill="#7D8F69" />
+          <circle cx="988" cy="666" r="22" fill="#94A67E" />
+          <circle cx="1022" cy="666" r="22" fill="#8A9C75" />
+          <polygon points="978,678 1032,678 1024,734 986,734" fill="url(#gKayuWalnut)" stroke="#C59B62" stroke-width="2" />
+        </g>
+      </symbol>
+
+      <!-- ==================== SIMBOL 2: SUASANA DALAM TOKO (SEMI-REALISTIS) ==================== -->
+      <symbol id="sIsi" viewBox="0 0 1600 900">
+        <!-- Dinding Interior & Panel Wainscoting -->
+        <rect width="1600" height="555" fill="url(#gDindingDalam)" />
+        <rect y="555" width="1600" height="235" fill="url(#gWainscot)" />
+        <rect y="550" width="1600" height="12" fill="#FFFDF9" stroke="#CDB8A2" stroke-width="1.5" />
+
+        <!-- Balok Kayu Langit-Langit -->
+        <rect x="0" y="0" width="1600" height="26" fill="url(#gKayuWalnut)" />
+        <rect x="0" y="26" width="1600" height="5" fill="#C59B62" opacity="0.6" />
+
+        <!-- Lantai Keramik Dalam Toko -->
+        <rect y="785" width="1600" height="115" fill="url(#pLantaiDalam)" />
+        <rect y="782" width="1600" height="6" fill="#B59B84" />
+
+        <!-- ===== SISI KIRI: RAK DINDING LENGKUNG & TOPLES KUE KERING ===== -->
+        <g filter="url(#fBayanganLembut)">
+          <!-- Bingkai Rak Lengkung -->
+          <path d="M135 550 V255 A155 135 0 0 1 445 255 V550 Z" fill="#E3C3B5" stroke="url(#gKayuRak)" stroke-width="10" />
+          <!-- Kedalaman Bagian Dalam Rak -->
+          <path d="M148 545 V260 A142 122 0 0 1 432 260 V545 Z" fill="#CFA898" />
+          <!-- Papan Rak Kayu 1, 2, 3 -->
+          <rect x="148" y="330" width="284" height="12" fill="url(#gKayuRak)" />
+          <rect x="148" y="420" width="284" height="12" fill="url(#gKayuRak)" />
+          <rect x="148" y="510" width="284" height="12" fill="url(#gKayuRak)" />
+
+          <!-- Toples Kaca Kue Kering & Kotak Hampers di Rak Atas -->
+          <rect x="185" y="276" width="42" height="54" rx="10" fill="#FFFDF9" fill-opacity="0.85" stroke="#B8925A" stroke-width="2" />
+          <circle cx="206" cy="308" r="12" fill="#B67B5B" />
+          <rect x="193" y="268" width="26" height="8" rx="3" fill="#B8925A" />
+
+          <rect x="242" y="276" width="42" height="54" rx="10" fill="#FFFDF9" fill-opacity="0.85" stroke="#B8925A" stroke-width="2" />
+          <circle cx="263" cy="308" r="12" fill="#D3A29D" />
+          <rect x="250" y="268" width="26" height="8" rx="3" fill="#B8925A" />
+
+          <!-- Tanaman Gantung Mini di Rak Atas -->
+          <circle cx="355" cy="296" r="24" fill="#8A9E74" />
+          <circle cx="378" cy="304" r="18" fill="#A2B58B" />
+          <rect x="348" y="306" width="34" height="24" rx="4" fill="#A36361" />
+
+          <!-- Kotak Hampers Pita di Rak Tengah -->
+          <rect x="175" y="366" width="76" height="54" rx="6" fill="#FDF5E7" stroke="#A36361" stroke-width="2" />
+          <rect x="208" y="366" width="10" height="54" fill="#A36361" />
+          <rect x="268" y="372" width="68" height="48" rx="6" fill="#F1DBD0" stroke="#B8925A" stroke-width="2" />
+          <rect x="297" y="372" width="10" height="48" fill="#B8925A" />
+          <!-- Toples Rak Tengah -->
+          <rect x="354" y="368" width="42" height="52" rx="10" fill="#FFFDF9" fill-opacity="0.85" stroke="#B8925A" stroke-width="2" />
+          <circle cx="375" cy="398" r="12" fill="#6B4A3E" />
+          <rect x="362" y="360" width="26" height="8" rx="3" fill="#B8925A" />
+
+          <!-- Keranjang Roti & Croissant di Rak Bawah -->
+          <path d="M180 482 H290 L280 510 H190 Z" fill="#C59B62" stroke="#8C6936" stroke-width="2" />
+          <ellipse cx="215" cy="480" rx="22" ry="11" fill="#D4955A" />
+          <ellipse cx="255" cy="480" rx="22" ry="11" fill="#C48246" />
+          <rect x="315" y="462" width="84" height="48" rx="6" fill="#FDF5E7" stroke="#CDBFAA" stroke-width="2" />
+        </g>
+
+        <!-- ===== SISI KANAN: PAPAN CHALKBOARD CUSTOM & SUDUT SANTAI ===== -->
+        <g filter="url(#fBayanganLembut)">
+          <!-- Bingkai Papan Custom Cake -->
+          <rect x="1220" y="195" width="275" height="355" rx="14" fill="url(#gKayuWalnut)" stroke="url(#gKuningan)" stroke-width="5" />
+          <rect x="1238" y="213" width="239" height="319" rx="8" fill="#3D2B28" />
+          <rect x="1248" y="223" width="219" height="299" rx="4" fill="none" stroke="#B8925A" stroke-width="1.5" stroke-dasharray="6 4" />
+          <text x="1357" y="264" text-anchor="middle" font-size="16" font-weight="800" letter-spacing="2" fill="#F1DBD0">MEJA RACIK</text>
+          <text x="1357" y="288" text-anchor="middle" font-size="22" font-weight="800" fill="#E3C38E">CUSTOM CAKE</text>
+          <line x1="1280" y1="304" x2="1434" y2="304" stroke="#B8925A" stroke-width="1.5" />
+          <text x="1357" y="334" text-anchor="middle" font-size="13" fill="#FDF5E7">1. Pilih Rasa Sponge</text>
+          <text x="1357" y="362" text-anchor="middle" font-size="13" fill="#FDF5E7">2. Tentukan Ukuran</text>
+          <text x="1357" y="390" text-anchor="middle" font-size="13" fill="#FDF5E7">3. Warna Krim &amp; Topping</text>
+          <text x="1357" y="418" text-anchor="middle" font-size="13" fill="#FDF5E7">4. Tulis Ucapan Spesial</text>
+          <rect x="1282" y="446" width="150" height="34" rx="17" fill="#A36361" />
+          <text x="1357" y="468" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">Mulai Racik Kue →</text>
+        </g>
+
+        <!-- ===== TENGAH: ETALASE KACA UTAMA (SEMI-REALISTIS) ===== -->
+        <g filter="url(#fBayanganLembut)">
+          <!-- Plakat Selamat Datang di Atas Etalase -->
+          <rect x="575" y="205" width="450" height="72" rx="36" fill="#FFFFFF" stroke="#A36361" stroke-width="3.5" />
+          <rect x="585" y="213" width="430" height="56" rx="28" fill="none" stroke="#E3C38E" stroke-width="1.5" />
+
+          <!-- Kabinet Kaca Atas -->
+          <rect x="485" y="340" width="630" height="235" rx="14" fill="#FFFDF9" fill-opacity="0.72" stroke="url(#gKuningan)" stroke-width="5" />
+          <!-- Dinding Belakang Etalase Kaca -->
+          <rect x="492" y="347" width="616" height="221" rx="10" fill="#F9ECE4" fill-opacity="0.65" />
+
+          <!-- Rak Kaca 1 (Atas) & Strip Lampu LED -->
+          <rect x="492" y="466" width="616" height="8" fill="#D8E2E6" stroke="#B8925A" stroke-width="1.5" />
+          <line x1="505" y1="354" x2="1095" y2="354" stroke="#FFF2CC" stroke-width="4" />
+
+          <!-- Rak Kaca 2 (Bawah) & Strip Lampu LED -->
+          <rect x="492" y="556" width="616" height="10" fill="#D8E2E6" stroke="#B8925A" stroke-width="1.5" />
+          <line x1="505" y1="478" x2="1095" y2="478" stroke="#FFF2CC" stroke-width="3" />
+
+          <!-- Kilau Pantulan Kaca Etalase -->
+          <polygon points="510,347 595,347 535,568 492,568" fill="url(#gKacaEtalase)" pointer-events="none" />
+          <polygon points="620,347 655,347 595,568 560,568" fill="url(#gKacaEtalase)" pointer-events="none" />
+
+          <!-- Meja Marmer & Bodi Kayu Bawah Etalase -->
+          <rect x="455" y="572" width="690" height="22" rx="6" fill="url(#gMarmer)" stroke="#CDBFAA" stroke-width="2" />
+          <rect x="472" y="594" width="656" height="176" rx="8" fill="#E3BFB1" stroke="#C49A8B" stroke-width="2" />
+          <!-- Panel Vertikal Dekoratif Kabinet -->
+          <rect x="502" y="616" width="180" height="128" rx="6" fill="none" stroke="#C99E8E" stroke-width="3" />
+          <rect x="710" y="616" width="180" height="128" rx="6" fill="none" stroke="#C99E8E" stroke-width="3" />
+          <rect x="918" y="616" width="180" height="128" rx="6" fill="none" stroke="#C99E8E" stroke-width="3" />
+          <!-- Lis Kaki Kuningan -->
+          <rect x="466" y="768" width="668" height="16" rx="3" fill="url(#gKuningan)" />
+        </g>
+
+        <!-- ===== FURNITUR DEPAN KIRI & KANAN UNTUK KEDALAMAN RUANG ===== -->
+        <!-- Meja Bistro Bulat & Kursi Kiri Depan -->
+        <g filter="url(#fBayanganLembut)">
+          <ellipse cx="245" cy="832" rx="52" ry="12" fill="#3D2B28" opacity="0.22" />
+          <rect x="239" y="742" width="12" height="90" fill="url(#gKayuWalnut)" />
+          <ellipse cx="245" cy="830" rx="36" ry="9" fill="url(#gKuningan)" />
+          <ellipse cx="245" cy="740" rx="108" ry="22" fill="url(#gMarmer)" stroke="#CDBFAA" stroke-width="2.5" />
+          <!-- Cangkir Kopi & Piring Kue Mini di Meja Bistro -->
+          <ellipse cx="222" cy="736" rx="22" ry="6" fill="#FFFFFF" stroke="#CDBFAA" stroke-width="1.5" />
+          <path d="M210 726 L212 735 A10 3 0 0 0 232 735 L234 726 Z" fill="#A36361" />
+          <!-- Kursi Kiri & Kanan -->
+          <rect x="135" y="688" width="44" height="52" rx="12" fill="#D3A29D" stroke="#A36361" stroke-width="2" />
+          <rect x="132" y="736" width="50" height="14" rx="6" fill="#F1DBD0" stroke="#A36361" stroke-width="2" />
+          <line x1="142" y1="750" x2="138" y2="824" stroke="#5A3B33" stroke-width="5" stroke-linecap="round" />
+          <line x1="172" y1="750" x2="176" y2="824" stroke="#5A3B33" stroke-width="5" stroke-linecap="round" />
+
+          <rect x="310" y="688" width="44" height="52" rx="12" fill="#D3A29D" stroke="#A36361" stroke-width="2" />
+          <rect x="307" y="736" width="50" height="14" rx="6" fill="#F1DBD0" stroke="#A36361" stroke-width="2" />
+          <line x1="317" y1="750" x2="313" y2="824" stroke="#5A3B33" stroke-width="5" stroke-linecap="round" />
+          <line x1="347" y1="750" x2="351" y2="824" stroke="#5A3B33" stroke-width="5" stroke-linecap="round" />
+        </g>
+
+        <!-- Pot Tanaman Besar di Sudut Kanan -->
+        <g filter="url(#fBayanganLembut)">
+          <ellipse cx="1435" cy="826" rx="58" ry="13" fill="#3D2B28" opacity="0.2" />
+          <path d="M1420 715 Q1380 625 1355 665 Q1395 685 1425 715 Z" fill="#7D8F69" />
+          <path d="M1435 715 Q1435 595 1415 645 Q1425 685 1435 715 Z" fill="#94A67E" />
+          <path d="M1448 715 Q1490 615 1510 660 Q1475 685 1445 715 Z" fill="#8A9C75" />
+          <polygon points="1392,712 1478,712 1466,824 1404,824" fill="#D3A29D" stroke="#A36361" stroke-width="2.5" />
+          <rect x="1386" y="704" width="98" height="12" rx="4" fill="#F1DBD0" stroke="#A36361" stroke-width="2" />
+        </g>
+
+        <!-- ===== 3 LAMPU GANTUNG KUNINGAN & SOROT CAHAYA ===== -->
+        <g pointer-events="none">
+          <polygon points="340,155 180,560 500,560" fill="url(#gSorotLampu)" />
+          <polygon points="800,135 580,560 1020,560" fill="url(#gSorotLampu)" />
+          <polygon points="1260,155 1100,560 1420,560" fill="url(#gSorotLampu)" />
+        </g>
+        <g filter="url(#fBayanganKecil)">
+          <!-- Lampu 1 -->
+          <line x1="340" y1="26" x2="340" y2="132" stroke="#8C6936" stroke-width="3.5" />
+          <path d="M312 152 A28 22 0 0 1 368 152 Z" fill="url(#gKuningan)" />
+          <circle cx="340" cy="156" r="11" fill="#FFF7DC" />
+          <!-- Lampu 2 -->
+          <line x1="800" y1="26" x2="800" y2="112" stroke="#8C6936" stroke-width="3.5" />
+          <path d="M770 134 A30 24 0 0 1 830 134 Z" fill="url(#gKuningan)" />
+          <circle cx="800" cy="138" r="12" fill="#FFF7DC" />
+          <!-- Lampu 3 -->
+          <line x1="1260" y1="26" x2="1260" y2="132" stroke="#8C6936" stroke-width="3.5" />
+          <path d="M1232 152 A28 22 0 0 1 1288 152 Z" fill="url(#gKuningan)" />
+          <circle cx="1260" cy="156" r="11" fill="#FFF7DC" />
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- ==================== NAVBAR PAPAN MENU GANTUNG (MUNCUL SAAT MASUK TOKO) ==================== -->
+  <nav id="papan-menu" aria-label="Navigasi Utama Papan Menu" class="papan-menu fixed left-1/2 z-50 w-[calc(100%-1.25rem)] max-w-4xl" style="top: calc(env(safe-area-inset-top, 0px) + 0.5rem)">
+    <div class="flex justify-around max-w-md mx-auto px-8">
+      <span class="rantai-kuningan"></span>
+      <span class="rantai-kuningan"></span>
+    </div>
+    <div class="bingkai-papan-menu text-ivory rounded-2xl px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
+      <a href="#ruang-toko" class="flex items-center gap-2 font-extrabold text-xs sm:text-base tracking-wider whitespace-nowrap text-ivory hover:text-blush transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-kuningan inline-block"></span>
+        <span>DAPUR KUE MANIS</span>
+      </a>
+      <div class="flex items-center gap-2.5 sm:gap-5 text-xs sm:text-sm font-semibold">
+        <a href="#ruang-toko" class="hover:text-blush transition">Etalase</a>
+        <a href="#meja-racik" class="hover:text-blush transition">Custom</a>
+        <a href="#cara-pesan" class="hover:text-blush transition hidden md:inline">Cara Pesan</a>
+        <a href="#info-toko" class="hover:text-blush transition hidden md:inline">Info Toko</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="toggleLampuToko()" title="Ubah Pencahayaan Toko" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-kayuGelap/80 border border-kuningan/60 text-blush hover:text-white text-xs font-semibold transition">
+          <span id="ikon-lampu">☀️</span>
+          <span id="teks-lampu" class="hidden lg:inline">Pagi</span>
+        </button>
+        <button type="button" onclick="bukaFormPesan()" class="px-3.5 sm:px-4 py-1.5 bg-burgundy hover:bg-burgundy/90 text-white rounded-full text-xs font-bold whitespace-nowrap shadow-sm border border-blush/30 transition">
+          Pesan Kue
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== SECTION 1: PINTU MASUK TOKO (LANDING PAGE) ==================== -->
+  <section id="pintu-masuk" class="relative h-[100dvh] w-full overflow-hidden bg-ivory">
+    <!-- Lapisan Interior di Balik Kaca & Pintu -->
+    <div id="layer-interior" class="absolute inset-0 opacity-45 scale-95">
+      <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" class="w-full h-full block">
+        <use href="#sIsi" />
+      </svg>
+    </div>
+
+    <!-- Lapisan Fasad Depan Toko -->
+    <div id="layer-fasad" class="absolute inset-0">
+      <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" class="w-full h-full block">
+        <use href="#sFasad" />
+      </svg>
+      <!-- Area Klik Pintu Masuk (User-Friendly untuk Klik Langsung) -->
+      <button type="button" onclick="masukKeToko()" aria-label="Ketuk pintu untuk masuk ke toko" class="group absolute left-1/2 top-[62%] -translate-x-1/2 -translate-y-1/2 w-44 sm:w-56 h-64 sm:h-80 rounded-t-full bg-transparent hover:bg-amber-100/10 transition flex items-center justify-center">
+        <span class="opacity-0 group-hover:opacity-100 transition bg-kayu/90 text-ivory text-xs font-bold px-3.5 py-1.5 rounded-full border border-kuningan shadow-lg">
+          Ketuk Pintu Masuk
+        </span>
+      </button>
+    </div>
+
+    <!-- Petunjuk Masuk di Bagian Bawah -->
+    <div id="hint-masuk" class="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col sm:flex-row items-center gap-2.5 bg-white/95 backdrop-blur-md border border-kuningan/70 shadow-xl rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold text-ink whitespace-nowrap">
+      <span>Gulir ke bawah untuk masuk ke dalam toko</span>
+      <button type="button" onclick="masukKeToko()" class="px-3 py-1 rounded-full bg-burgundy text-white text-xs font-bold hover:bg-burgundy/90 transition">
+        Masuk Sekarang ↓
+      </button>
+    </div>
+  </section>
+
+  <!-- ==================== SECTION 2: SUASANA DALAM TOKO INTERAKTIF ==================== -->
+  <main>
+    <section id="ruang-toko" class="relative px-3 sm:px-8 pt-10 sm:pt-14 pb-16 bg-ivory">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-6 max-w-2xl mx-auto">
+          <span class="inline-block px-3.5 py-1 rounded-full bg-blush/80 text-burgundy text-xs font-bold tracking-wide mb-2">
+            SUASANA DALAM TOKO • KLIK ELEMEN UNTUK INTERAKSI
+          </span>
+          <h1 class="text-2xl sm:text-4xl font-extrabold text-ink leading-tight">
+            Selamat Datang di Dapur Kue Manis
+          </h1>
+          <p class="text-sm sm:text-base text-ink/70 mt-2">
+            Ketuk kue di etalase kaca, rak kue kering, lampu gantung, atau papan custom untuk menjelajahi toko.
+          </p>
+        </div>
+
+        <!-- Filter Kategori Etalase -->
+        <div id="filter-kategori" class="flex flex-wrap justify-center gap-2 mb-6">
+          <button type="button" data-kategori="semua" onclick="filterEtalase('semua')" class="tombol-filter aktif px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-burgundy text-white border border-burgundy transition">Semua Kue</button>
+          <button type="button" data-kategori="ulang-tahun" onclick="filterEtalase('ulang-tahun')" class="tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-white border border-khaki text-ink hover:border-dusty transition">Ulang Tahun</button>
+          <button type="button" data-kategori="mini" onclick="filterEtalase('mini')" class="tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-white border border-khaki text-ink hover:border-dusty transition">Bento &amp; Mini</button>
+          <button type="button" data-kategori="tart" onclick="filterEtalase('tart')" class="tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-white border border-khaki text-ink hover:border-dusty transition">Tart &amp; Chiffon</button>
+        </div>
+
+        <!-- Kanvas Interior Toko Semi-Realistis -->
+        <div class="overflow-x-auto rounded-3xl shadow-2xl border-[6px] border-kuningan/80 bg-blush/30">
+          <div id="kanvas-interior" class="relative min-w-[820px] md:min-w-0 aspect-[16/9] transition-all duration-500">
+            <svg viewBox="0 0 1600 900" class="absolute inset-0 w-full h-full block">
+              <use href="#sIsi" />
+            </svg>
+
+            <!-- Teks Plakat Selamat Datang di Atas Etalase -->
+            <div class="absolute left-[36%] top-[24.2%] w-[28%] text-center pointer-events-none">
+              <span class="block text-[10px] sm:text-xs font-extrabold text-burgundy tracking-widest">ETALASE HARIAN SEGAR</span>
+              <span class="block text-[9px] sm:text-[11px] font-semibold text-ink/70">Dipanggang Setiap Pagi</span>
+            </div>
+
+            <!-- ELEMEN INTERAKTIF 1: Lampu Gantung Kuningan -->
+            <button type="button" onclick="toggleLampuToko()" aria-label="Klik untuk mengatur pencahayaan lampu toko" class="zona-interaktif absolute left-[50%] top-[13%] -translate-x-1/2 -translate-y-1/2 px-3 py-1 rounded-full">
+              <span class="pin-info inline-flex items-center gap-1 bg-white/95 border border-kuningan text-ink text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-md whitespace-nowrap">
+                💡 <span id="badge-suasana-lampu">Lampu Pagi</span>
+              </span>
+            </button>
+
+            <!-- ELEMEN INTERAKTIF 2: Rak Dinding Kue Kering & Hampers -->
+            <button type="button" onclick="bukaModalHampers()" aria-label="Lihat koleksi kue kering dan hampers di rak" class="zona-interaktif absolute left-[18%] top-[23%] -translate-x-1/2 -translate-y-1/2">
+              <span class="pin-info inline-flex items-center gap-1 bg-white/95 border border-kuningan text-ink text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-md whitespace-nowrap">
+                🍪 Rak Kue Kering
+              </span>
+            </button>
+
+            <!-- ELEMEN INTERAKTIF 3: Papan Custom Cake di Kanan -->
+            <button type="button" onclick="document.getElementById('meja-racik').scrollIntoView({ behavior: 'smooth' })" aria-label="Menuju meja racik kue custom" class="zona-interaktif absolute left-[84.8%] top-[52%] -translate-x-1/2 -translate-y-1/2 w-[15%] h-[36%] rounded-xl flex items-end justify-center pb-2">
+              <span class="pin-info bg-white/95 border border-kuningan text-ink text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-md whitespace-nowrap">
+                🎨 Racik Custom
+              </span>
+            </button>
+
+            <!-- ELEMEN INTERAKTIF 4: Sudut Meja Bistro & Info Toko -->
+            <button type="button" onclick="document.getElementById('info-toko').scrollIntoView({ behavior: 'smooth' })" aria-label="Lihat jam buka dan lokasi toko" class="zona-interaktif absolute left-[15.5%] top-[81%] -translate-x-1/2 -translate-y-1/2">
+              <span class="pin-info bg-white/95 border border-kuningan text-ink text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-md whitespace-nowrap">
+                📍 Info &amp; Jam Buka
+              </span>
+            </button>
+
+            <!-- ELEMEN INTERAKTIF 5: 6 Kue di Dalam Etalase Kaca -->
+            <div id="etalase-kaca" class="absolute inset-0"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 3: MEJA RACIK CUSTOM CAKE ==================== -->
+    <section id="meja-racik" class="max-w-6xl mx-auto px-4 py-14 sm:py-16">
+      <div class="bg-white rounded-3xl shadow-md border border-khaki/60 p-6 sm:p-10">
+        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-khaki/40 pb-6 mb-8">
+          <div>
+            <span class="text-xs font-extrabold tracking-wider text-burgundy uppercase">Meja Racik Interaktif</span>
+            <h2 class="text-2xl sm:text-4xl font-extrabold text-ink mt-1">
+              Ingin Desain Sendiri?
+              <span class="block text-burgundy">Racik di Meja Kami</span>
+            </h2>
+          </div>
+          <p class="text-sm text-ink/70 max-w-md">Pilih rasa sponge, ukuran, warna krim, topping, dan tulisan ucapan. Pratinjau kue serta estimasi harga langsung diperbarui.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <!-- Pratinjau Kue Custom Semi-Realistis -->
+          <div class="lg:col-span-5 bg-ivory rounded-3xl border border-khaki/60 p-6 flex flex-col items-center">
+            <div class="w-full flex items-center justify-between text-xs font-bold text-ink/70 mb-2">
+              <span>Pratinjau Kue Custom</span>
+              <span id="label-ringkasan-custom" class="text-burgundy font-extrabold">Strawberry - Sedang (20 cm)</span>
+            </div>
+            <svg id="svg-preview-kue" viewBox="0 0 320 275" class="w-full max-w-xs h-auto my-2"></svg>
+            <div class="w-full bg-white rounded-2xl border border-khaki/50 p-4 mt-3 flex items-center justify-between gap-3 shadow-sm">
+              <div>
+                <p class="text-xs text-ink/60">Estimasi Harga</p>
+                <p id="harga-custom" class="text-xl font-extrabold text-burgundy">Rp 190.000</p>
+              </div>
+              <button type="button" onclick="pesanDariCustom()" class="px-5 py-2.5 bg-burgundy hover:bg-burgundy/90 text-white rounded-full text-xs sm:text-sm font-bold transition whitespace-nowrap shadow-sm">
+                Lanjut Pesan
+              </button>
+            </div>
+          </div>
+
+          <!-- Kontrol Kustomisasi -->
+          <div class="lg:col-span-7 space-y-6">
+            <div>
+              <p class="text-xs font-extrabold text-ink/70 mb-2.5">1. Pilih Rasa Sponge</p>
+              <div id="grup-rasa" class="grid grid-cols-3 gap-2.5">
+                <button type="button" data-pilihan="Strawberry" onclick="aturCustom('rasa', 'Strawberry', '#D3A29D', 45000)" class="opsi-rasa p-3 rounded-2xl border-2 border-burgundy bg-blush/50 text-left transition">
+                  <span class="block w-5 h-5 rounded-full bg-dusty border border-khaki mb-1.5"></span>
+                  <span class="block text-xs sm:text-sm font-bold text-ink">Strawberry</span>
+                  <span class="text-[11px] text-ink/60">+Rp 45.000</span>
+                </button>
+                <button type="button" data-pilihan="Coklat" onclick="aturCustom('rasa', 'Coklat', '#6B4A3E', 45000)" class="opsi-rasa p-3 rounded-2xl border border-khaki bg-white hover:border-dusty text-left transition">
+                  <span class="block w-5 h-5 rounded-full bg-[#6B4A3E] border border-khaki mb-1.5"></span>
+                  <span class="block text-xs sm:text-sm font-bold text-ink">Coklat</span>
+                  <span class="text-[11px] text-ink/60">+Rp 45.000</span>
+                </button>
+                <button type="button" data-pilihan="Vanilla" onclick="aturCustom('rasa', 'Vanilla', '#E8D9B5', 40000)" class="opsi-rasa p-3 rounded-2xl border border-khaki bg-white hover:border-dusty text-left transition">
+                  <span class="block w-5 h-5 rounded-full bg-[#E8D9B5] border border-khaki mb-1.5"></span>
+                  <span class="block text-xs sm:text-sm font-bold text-ink">Vanilla</span>
+                  <span class="text-[11px] text-ink/60">+Rp 40.000</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-extrabold text-ink/70 mb-2.5">2. Pilih Ukuran</p>
+              <div id="grup-ukuran" class="grid grid-cols-3 gap-2.5">
+                <button type="button" data-pilihan="kecil" onclick="aturCustom('ukuran', 'kecil', 'Kecil (16 cm)', 80000)" class="opsi-ukuran p-3 rounded-2xl border border-khaki bg-white hover:border-dusty text-left transition">
+                  <span class="block text-xs sm:text-sm font-bold text-ink">Kecil (16 cm)</span>
+                  <span class="text-[11px] text-ink/60">Rp 80.000</span>
+                </button>
+                <button type="button" data-pilihan="sedang" onclick="aturCustom('ukuran', 'sedang', 'Sedang (20 cm)', 120000)" class="opsi-ukuran p-3 rounded-2xl border-2 border-burgundy bg-blush/50 text-left transition">
+                  <span class="block text-xs sm:text-sm font-bold text-ink">Sedang (20 cm)</span>
+                  <span class="text-[11px] text-ink/60">Rp 120.000</span>
+                </button>
+                <button type="button" data-pilihan="besar" onclick="aturCustom('ukuran', 'besar', 'Besar 2 Tingkat', 210000)" class="opsi-ukuran p-3 rounded-2xl border border-khaki bg-white hover:border-dusty text-left transition">
+                  <span class="block text-xs sm:text-sm font-bold text-ink">Besar 2 Tingkat</span>
+                  <span class="text-[11px] text-ink/60">Rp 210.000</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs font-extrabold text-ink/70 mb-2.5">3. Warna Krim</p>
+                <div id="grup-krim" class="flex items-center gap-2.5">
+                  <button type="button" data-pilihan="#FDF5E7" onclick="aturCustom('krim', 'Putih Gading', '#FDF5E7', 0)" class="opsi-krim w-9 h-9 rounded-full bg-ivory border-2 border-burgundy shadow-sm transition" title="Putih Gading"></button>
+                  <button type="button" data-pilihan="#F1DBD0" onclick="aturCustom('krim', 'Pink Pastel', '#F1DBD0', 0)" class="opsi-krim w-9 h-9 rounded-full bg-blush border border-khaki shadow-sm transition" title="Pink Pastel"></button>
+                  <button type="button" data-pilihan="#CDBFAA" onclick="aturCustom('krim', 'Khaki', '#CDBFAA', 0)" class="opsi-krim w-9 h-9 rounded-full bg-khaki border border-khaki shadow-sm transition" title="Khaki"></button>
+                  <button type="button" data-pilihan="#A08A78" onclick="aturCustom('krim', 'Coklat Susu', '#A08A78', 5000)" class="opsi-krim w-9 h-9 rounded-full bg-[#A08A78] border border-khaki shadow-sm transition" title="Coklat Susu (+5rb)"></button>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs font-extrabold text-ink/70 mb-2.5">4. Topping</p>
+                <div id="grup-topping" class="flex flex-wrap gap-2">
+                  <button type="button" data-pilihan="strawberry" onclick="aturCustom('topping', 'strawberry', 'Buah Strawberry', 25000)" class="opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border-2 border-burgundy bg-blush/50 text-ink transition">Strawberry (+25rb)</button>
+                  <button type="button" data-pilihan="coklat_chip" onclick="aturCustom('topping', 'coklat_chip', 'Choco Chip', 20000)" class="opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border border-khaki bg-white text-ink transition">Choco Chip (+20rb)</button>
+                  <button type="button" data-pilihan="lilin" onclick="aturCustom('topping', 'lilin', 'Lilin Ulang Tahun', 15000)" class="opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border border-khaki bg-white text-ink transition">Lilin (+15rb)</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="input-tulisan-kue" class="block text-xs font-extrabold text-ink/70 mb-2">5. Tulisan di Atas Kue</label>
+              <input id="input-tulisan-kue" type="text" maxlength="22" oninput="ubahTulisanKue(this.value)" placeholder="Contoh: Selamat Ulang Tahun" value="Happy Birthday" class="w-full px-4 py-2.5 rounded-xl border border-khaki outline-none focus:border-burgundy text-sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 4: CARA PESAN ==================== -->
+    <section id="cara-pesan" class="max-w-5xl mx-auto px-4 py-12 sm:py-16">
+      <h2 class="text-2xl sm:text-4xl font-extrabold text-ink text-center mb-10">
+        Dari Pilihanmu
+        <span class="block text-burgundy">Sampai Siap di Meja Acara</span>
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white rounded-3xl shadow-sm border border-khaki/50 p-6">
+          <span class="w-10 h-10 rounded-full bg-burgundy text-white font-extrabold text-sm flex items-center justify-center">1</span>
+          <h3 class="text-lg font-extrabold text-ink mt-4">Pilih kue</h3>
+          <p class="text-sm text-ink/70 mt-2 leading-relaxed">Pesan langsung dari etalase kaca atau racik sendiri rasa, ukuran, dan tulisannya.</p>
+        </div>
+        <div class="bg-white rounded-3xl shadow-sm border border-khaki/50 p-6">
+          <span class="w-10 h-10 rounded-full bg-burgundy text-white font-extrabold text-sm flex items-center justify-center">2</span>
+          <h3 class="text-lg font-extrabold text-ink mt-4">Tentukan tanggal</h3>
+          <p class="text-sm text-ink/70 mt-2 leading-relaxed">Pilih jadwal pengambilan di toko atau pengantaran kurir khusus kue ke alamatmu.</p>
+        </div>
+        <div class="bg-white rounded-3xl shadow-sm border border-khaki/50 p-6">
+          <span class="w-10 h-10 rounded-full bg-slate text-white font-extrabold text-sm flex items-center justify-center">3</span>
+          <h3 class="text-lg font-extrabold text-ink mt-4">Bayar dan ambil</h3>
+          <p class="text-sm text-ink/70 mt-2 leading-relaxed">Konfirmasi pesanan via WhatsApp, bayar DP atau lunas, dan kue siap diambil.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECTION 5: INFO TOKO ==================== -->
+    <section id="info-toko" class="max-w-5xl mx-auto px-4 pt-4 pb-20">
+      <div class="bg-white rounded-3xl shadow-sm border border-khaki/50 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <p class="text-xs font-bold text-ink/60">Lokasi Toko</p>
+          <p class="text-sm font-bold text-ink mt-1">Jl. Melati Manis No. 18, Bandung</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold text-ink/60">Jam Buka</p>
+          <p class="text-sm font-bold text-ink mt-1">Setiap hari, 08.00 - 20.00 WIB</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold text-ink/60">WhatsApp Pemesanan</p>
+          <p class="text-sm font-bold text-ink mt-1">0812-3456-7890</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-khaki/60 py-8 px-4 bg-ivory">
+    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ink/60">
+      <span class="font-bold text-ink">Dapur Kue Manis</span>
+      <span>Kue Etalase Siap Pesan dan Kustomisasi Kue Acara</span>
+    </div>
+  </footer>
+
+  <!-- Tombol WhatsApp Mengambang -->
+  <a href="https://wa.me/6281234567890" target="_blank" rel="noreferrer" aria-label="Chat WhatsApp" class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-slate hover:bg-slate/90 text-white shadow-lg flex items-center justify-center font-extrabold text-xs transition">WA</a>
+
+  <!-- ==================== KURSOR SEMI-REALISTIS KUE STROBERI ==================== -->
+  <div id="kursor-kue" aria-hidden="true">
+    <svg viewBox="0 0 120 120" class="w-full h-full">
+      <!-- Piring Kecil -->
+      <ellipse cx="60" cy="96" rx="44" ry="10" fill="#CDBFAA" />
+      <ellipse cx="60" cy="93" rx="40" ry="8" fill="#FFFFFF" />
+      <!-- Sponge & Lapisan Selai -->
+      <path d="M28 56 L28 84 A32 9 0 0 0 92 84 L92 56 Z" fill="#E8C29B" />
+      <path d="M28 69 A32 8 0 0 0 92 69 L92 74 A32 8 0 0 1 28 74 Z" fill="#B23A48" />
+      <!-- Krim Atas & Tetesan Lembut -->
+      <ellipse cx="60" cy="56" rx="32" ry="9" fill="#FFFDF8" />
+      <path d="M28 56 Q36 68 44 58 Q52 70 60 58 Q68 70 76 58 Q84 68 92 56" fill="none" stroke="#FFFDF8" stroke-width="5.5" stroke-linecap="round" />
+      <!-- Buah Stroberi Mengilap & Daun Mint -->
+      <path d="M60 32 C50 32 47 45 60 54 C73 45 70 32 60 32 Z" fill="#C43445" />
+      <ellipse cx="56" cy="40" rx="2.5" ry="4" fill="#FF9AA2" opacity="0.7" />
+      <path d="M60 33 L51 28 L57 36 Z" fill="#7D8F69" />
+      <path d="M60 33 L69 28 L63 36 Z" fill="#94A67E" />
+    </svg>
+  </div>
+
+  <!-- ==================== MODAL 1: DETAIL KUE ETALASE ==================== -->
+  <div id="modal-detail" class="hidden fixed inset-0 z-[60] bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 border border-khaki/60">
+      <div class="flex items-center justify-between">
+        <span id="detail-badge" class="px-3 py-1 rounded-full bg-blush text-burgundy text-xs font-bold">Terlaris</span>
+        <button type="button" onclick="tutupDetail()" class="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink flex items-center justify-center text-sm font-bold hover:bg-blush transition">✕</button>
+      </div>
+      <div id="detail-gambar" class="bg-ivory rounded-2xl py-4 border border-khaki/40"></div>
+      <div>
+        <p id="detail-label" class="text-xs font-semibold text-ink/60">Ulang Tahun</p>
+        <h3 id="detail-nama" class="text-xl font-extrabold text-ink mt-1">Nama Kue</h3>
+        <p id="detail-ukuran" class="text-sm text-ink/70 mt-1">Ukuran</p>
+      </div>
+      <div class="bg-ivory rounded-2xl border border-khaki/50 p-4">
+        <p class="text-xs text-ink/60">Harga</p>
+        <p id="detail-harga" class="text-2xl font-extrabold text-burgundy">Rp 0</p>
+        <p class="text-xs text-ink/60 mt-1">Sudah termasuk pisau kue &amp; lilin standar.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" onclick="salinKeCustom(detailId)" class="py-2.5 px-3 bg-white border border-khaki hover:border-burgundy text-ink rounded-full text-xs sm:text-sm font-semibold transition">Kustomisasi</button>
+        <button type="button" onclick="pesanDariEtalase(detailId)" class="py-2.5 px-3 bg-burgundy hover:bg-burgundy/90 text-white rounded-full text-xs sm:text-sm font-semibold text-center transition">Pesan Kue Ini</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: RAK KUE KERING & HAMPERS ==================== -->
+  <div id="modal-hampers" class="hidden fixed inset-0 z-[60] bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 border border-khaki/60">
+      <div class="flex items-center justify-between">
+        <span class="px-3 py-1 rounded-full bg-blush text-burgundy text-xs font-bold">Koleksi Rak Dinding</span>
+        <button type="button" onclick="tutupModalHampers()" class="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink flex items-center justify-center text-sm font-bold hover:bg-blush transition">✕</button>
+      </div>
+      <div>
+        <h3 class="text-xl font-extrabold text-ink">Kue Kering &amp; Paket Hampers</h3>
+        <p class="text-xs sm:text-sm text-ink/70 mt-1">Dipanggang setiap pagi dalam toples kaca kedap udara.</p>
+      </div>
+      <div class="space-y-3">
+        <div class="p-3.5 rounded-2xl bg-ivory border border-khaki/60 flex items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-bold text-ink">Toples Choco Chip Butter</p>
+            <p class="text-xs text-ink/60">Toples kaca 350 gr • Rp 85.000</p>
+          </div>
+          <button type="button" onclick="tutupModalHampers(); bukaFormPesan('Toples Choco Chip Butter (350 gr)', 85000)" class="px-3.5 py-1.5 rounded-full bg-burgundy text-white text-xs font-bold hover:bg-burgundy/90 transition">Pesan</button>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-ivory border border-khaki/60 flex items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-bold text-ink">Paket Hampers Pita Klasik</p>
+            <p class="text-xs text-ink/60">Isi 2 toples + kartu ucapan • Rp 175.000</p>
+          </div>
+          <button type="button" onclick="tutupModalHampers(); bukaFormPesan('Paket Hampers Pita Klasik', 175000)" class="px-3.5 py-1.5 rounded-full bg-burgundy text-white text-xs font-bold hover:bg-burgundy/90 transition">Pesan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: FORMULIR PEMESANAN LANGSUNG ==================== -->
+  <div id="modal-pesan" class="hidden fixed inset-0 z-[70] bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 border border-khaki/60">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg sm:text-xl font-extrabold text-ink">Formulir Pemesanan Kue</h3>
+        <button type="button" onclick="tutupFormPesan()" class="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink flex items-center justify-center text-sm font-bold hover:bg-blush transition">✕</button>
+      </div>
+      <div class="bg-ivory rounded-2xl p-3.5 border border-khaki/60">
+        <p class="text-[11px] font-bold text-ink/60">Pilihan Kue</p>
+        <p id="pesan-item-nama" class="text-sm font-extrabold text-ink mt-0.5">Berry Velvet Classic</p>
+        <p id="pesan-item-harga" class="text-base font-extrabold text-burgundy mt-1">Rp 185.000</p>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label for="pesan-nama-pemesan" class="block text-xs font-bold text-ink/70 mb-1">Nama Pemesan</label>
+          <input id="pesan-nama-pemesan" type="text" placeholder="Masukkan nama lengkap" class="w-full px-3.5 py-2 rounded-xl border border-khaki text-sm outline-none focus:border-burgundy" />
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="pesan-tanggal" class="block text-xs font-bold text-ink/70 mb-1">Tanggal Ambil/Kirim</label>
+            <input id="pesan-tanggal" type="date" class="w-full px-3 py-2 rounded-xl border border-khaki text-xs sm:text-sm outline-none focus:border-burgundy" />
+          </div>
+          <div>
+            <label for="pesan-metode" class="block text-xs font-bold text-ink/70 mb-1">Metode</label>
+            <select id="pesan-metode" class="w-full px-3 py-2 rounded-xl border border-khaki text-xs sm:text-sm outline-none focus:border-burgundy bg-white">
+              <option value="Ambil di Toko">Ambil di Toko</option>
+              <option value="Kirim Kurir Bandung">Kirim Kurir</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button type="button" onclick="kirimKeWhatsApp()" class="w-full py-3 bg-burgundy hover:bg-burgundy/90 text-white rounded-full text-sm font-bold transition shadow-md">
+        Kirim Pesanan via WhatsApp
+      </button>
+    </div>
+  </div>
+
+  <script>
+    var daftarEtalase = [
+      { id: 1, nama: "Berry Velvet Classic", kategori: "ulang-tahun", labelKategori: "Ulang Tahun", badge: "Terlaris", ukuran: "Diameter 20 cm (10-12 porsi)", harga: 185000, warnaBadan: "#A36361", warnaKrim: "#F1DBD0", topping: "strawberry", x: 585, y: 465 },
+      { id: 2, nama: "Choco Ganache Truffle", kategori: "ulang-tahun", labelKategori: "Ulang Tahun", badge: "Siap Hari Ini", ukuran: "Diameter 20 cm (10-12 porsi)", harga: 195000, warnaBadan: "#6B4A3E", warnaKrim: "#CDBFAA", topping: "coklat_chip", x: 800, y: 465 },
+      { id: 3, nama: "Pastel Bento Ribbon", kategori: "mini", labelKategori: "Bento dan Mini", badge: "Favorit", ukuran: "Diameter 12 cm (2-4 porsi)", harga: 95000, warnaBadan: "#D3A29D", warnaKrim: "#FDF5E7", topping: "lilin", x: 1015, y: 465 },
+      { id: 4, nama: "Strawberry Shortcake", kategori: "tart", labelKategori: "Tart dan Chiffon", badge: "Segar", ukuran: "Diameter 18 cm (8-10 porsi)", harga: 165000, warnaBadan: "#F1DBD0", warnaKrim: "#FDF5E7", topping: "strawberry", x: 645, y: 554 },
+      { id: 5, nama: "Mini Choco Berry", kategori: "mini", labelKategori: "Bento dan Mini", badge: "Siap Hari Ini", ukuran: "Diameter 14 cm (4-6 porsi)", harga: 110000, warnaBadan: "#6B4A3E", warnaKrim: "#F1DBD0", topping: "strawberry", x: 875, y: 554 },
+      { id: 6, nama: "Royal Pink Chiffon", kategori: "tart", labelKategori: "Tart dan Chiffon", badge: "Baru", ukuran: "Diameter 22 cm (12-15 porsi)", harga: 210000, warnaBadan: "#D3A29D", warnaKrim: "#E8D9B5", topping: "lilin", x: 1065, y: 554 }
+    ];
+
+    var detailId = 0;
+    var lampuHangatAktif = false;
+    var pesananAktif = { nama: "Berry Velvet Classic", harga: 185000 };
+
+    function formatRupiah(angka) {
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0
+      }).format(angka);
+    }
+
+    function buatKueSvg(warnaBadan, warnaKrim, topping) {
+      var hiasan = "";
+      if (topping === "strawberry") {
+        hiasan =
+          '<circle cx="62" cy="51" r="7" fill="#B23A48" /><circle cx="60" cy="49" r="2" fill="#FF9AA2" />' +
+          '<circle cx="80" cy="47" r="8" fill="#B23A48" /><circle cx="78" cy="45" r="2.2" fill="#FF9AA2" />' +
+          '<circle cx="98" cy="51" r="7" fill="#B23A48" /><circle cx="96" cy="49" r="2" fill="#FF9AA2" />';
+      } else if (topping === "coklat_chip") {
+        hiasan =
+          '<rect x="58" y="47" width="9" height="6" rx="2" fill="#3D2B28" />' +
+          '<rect x="76" y="44" width="9" height="6" rx="2" fill="#3D2B28" />' +
+          '<rect x="94" y="47" width="9" height="6" rx="2" fill="#3D2B28" />';
+      } else {
+        hiasan =
+          '<rect x="78" y="27" width="4" height="19" rx="2" fill="#A36361" />' +
+          '<ellipse cx="80" cy="21" rx="4.5" ry="6.5" fill="#F4A261" />' +
+          '<ellipse cx="80" cy="22" rx="2" ry="3.5" fill="#FFF3B0" />';
+      }
+      return '<svg viewBox="0 0 160 120" class="w-full h-auto">' +
+        '<ellipse cx="80" cy="105" rx="52" ry="9" fill="#3D2B28" opacity="0.16" />' +
+        '<ellipse cx="80" cy="101" rx="56" ry="11" fill="#CDBFAA" />' +
+        '<ellipse cx="80" cy="97" rx="52" ry="10" fill="#FFFFFF" />' +
+        '<path d="M36 58 L36 90 A44 11 0 0 0 124 90 L124 58 Z" fill="' + warnaBadan + '" />' +
+        '<path d="M36 73 A44 10 0 0 0 124 73 L124 77 A44 10 0 0 1 36 77 Z" fill="' + warnaKrim + '" opacity="0.65" />' +
+        '<ellipse cx="80" cy="58" rx="44" ry="11" fill="' + warnaKrim + '" />' +
+        '<path d="M36 58 Q46 72 56 60 Q66 74 76 60 Q86 74 96 60 Q106 72 116 60 L124 58" fill="none" stroke="' + warnaKrim + '" stroke-width="6" stroke-linecap="round" />' +
+        hiasan +
+        "</svg>";
+    }
+
+    function renderEtalaseKaca() {
+      var wadah = document.getElementById("etalase-kaca");
+      var html = "";
+      for (var i = 0; i < daftarEtalase.length; i++) {
+        var item = daftarEtalase[i];
+        var kiri = (item.x / 1600) * 100;
+        var atas = (item.y / 900) * 100;
+        html +=
+          '<button type="button" data-kategori="' + item.kategori + '" onclick="bukaDetail(' + item.id + ')" class="hotspot absolute w-[10.8%] min-w-[68px] text-center" style="left:' + kiri + '%; top:' + atas + '%">' +
+          buatKueSvg(item.warnaBadan, item.warnaKrim, item.topping) +
+          '<span class="label-kue block mt-0.5 text-[10px] sm:text-xs font-bold text-ink bg-white/95 border border-kuningan/70 rounded-full px-2.5 py-0.5 shadow-md whitespace-nowrap">' + item.nama + "</span>" +
+          "</button>";
+      }
+      wadah.innerHTML = html;
+    }
+
+    function filterEtalase(kategori) {
+      var tombol = document.querySelectorAll(".tombol-filter");
+      for (var i = 0; i < tombol.length; i++) {
+        if (tombol[i].getAttribute("data-kategori") === kategori) {
+          tombol[i].classList.add("aktif");
+        } else {
+          tombol[i].classList.remove("aktif");
+        }
+      }
+      var kue = document.querySelectorAll(".hotspot");
+      for (var j = 0; j < kue.length; j++) {
+        var cocok = kategori === "semua" || kue[j].getAttribute("data-kategori") === kategori;
+        if (cocok) {
+          kue[j].classList.remove("redup");
+        } else {
+          kue[j].classList.add("redup");
+        }
+      }
+    }
+
+    function toggleLampuToko() {
+      lampuHangatAktif = !lampuHangatAktif;
+      var kanvas = document.getElementById("kanvas-interior");
+      var ikon = document.getElementById("ikon-lampu");
+      var teks = document.getElementById("teks-lampu");
+      var badge = document.getElementById("badge-suasana-lampu");
+
+      if (lampuHangatAktif) {
+        kanvas.classList.add("ruangan-hangat");
+        if (ikon) ikon.textContent = "🕯️";
+        if (teks) teks.textContent = "Sore";
+        if (badge) badge.textContent = "Lampu Sore Hangat";
+      } else {
+        kanvas.classList.remove("ruangan-hangat");
+        if (ikon) ikon.textContent = "☀️";
+        if (teks) teks.textContent = "Pagi";
+        if (badge) badge.textContent = "Lampu Pagi";
+      }
+    }
+
+    function bukaDetail(id) {
+      for (var i = 0; i < daftarEtalase.length; i++) {
+        var item = daftarEtalase[i];
+        if (item.id === id) {
+          detailId = id;
+          document.getElementById("detail-badge").textContent = item.badge;
+          document.getElementById("detail-label").textContent = item.labelKategori;
+          document.getElementById("detail-nama").textContent = item.nama;
+          document.getElementById("detail-ukuran").textContent = item.ukuran;
+          document.getElementById("detail-harga").textContent = formatRupiah(item.harga);
+          document.getElementById("detail-gambar").innerHTML = buatKueSvg(item.warnaBadan, item.warnaKrim, item.topping);
+          document.getElementById("modal-detail").classList.remove("hidden");
+          return;
+        }
+      }
+    }
+
+    function tutupDetail() {
+      document.getElementById("modal-detail").classList.add("hidden");
+    }
+
+    function bukaModalHampers() {
+      document.getElementById("modal-hampers").classList.remove("hidden");
+    }
+
+    function tutupModalHampers() {
+      document.getElementById("modal-hampers").classList.add("hidden");
+    }
+
+    var stateCustom = {
+      rasa: "Strawberry",
+      warnaBadan: "#D3A29D",
+      hargaRasa: 45000,
+      ukuranKode: "sedang",
+      ukuranLabel: "Sedang (20 cm)",
+      hargaUkuran: 120000,
+      warnaKrim: "#FDF5E7",
+      hargaKrim: 0,
+      topping: "strawberry",
+      hargaTopping: 25000,
+      tulisan: "Happy Birthday"
+    };
+
+    function perbaruiStatusTombolCustom() {
+      document.querySelectorAll(".opsi-rasa").forEach(function (el) {
+        var aktif = el.getAttribute("data-pilihan") === stateCustom.rasa;
+        el.className = aktif
+          ? "opsi-rasa p-3 rounded-2xl border-2 border-burgundy bg-blush/50 text-left transition"
+          : "opsi-rasa p-3 rounded-2xl border border-khaki bg-white hover:border-dusty text-left transition";
+      });
+      document.querySelectorAll(".opsi-ukuran").forEach(function (el) {
+        var aktif = el.getAttribute("data-pilihan") === stateCustom.ukuranKode;
+        el.className = aktif
+          ? "opsi-ukuran p-3 rounded-2xl border-2 border-burgundy bg-blush/50 text-left transition"
+          : "opsi-ukuran p-3 rounded-2xl border border-khaki bg-white hover:border-dusty text-left transition";
+      });
+      document.querySelectorAll(".opsi-krim").forEach(function (el) {
+        var aktif = el.getAttribute("data-pilihan") === stateCustom.warnaKrim;
+        el.style.borderWidth = aktif ? "3px" : "1px";
+        el.style.borderColor = aktif ? "#A36361" : "#CDBFAA";
+      });
+      document.querySelectorAll(".opsi-topping").forEach(function (el) {
+        var aktif = el.getAttribute("data-pilihan") === stateCustom.topping;
+        el.className = aktif
+          ? "opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border-2 border-burgundy bg-blush/50 text-ink transition"
+          : "opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border border-khaki bg-white text-ink transition";
+      });
+    }
+
+    function gambarPreviewCustom() {
+      var svg = document.getElementById("svg-preview-kue");
+      var badan = stateCustom.warnaBadan;
+      var krim = stateCustom.warnaKrim;
+      var u = stateCustom.ukuranKode;
+      var tubuhKue = "";
+      var topY = 120;
+
+      if (u === "kecil") {
+        topY = 135;
+        tubuhKue =
+          '<path d="M95 135 L95 190 A65 18 0 0 0 225 190 L225 135 Z" fill="' + badan + '" />' +
+          '<path d="M95 162 A65 16 0 0 0 225 162 L225 168 A65 16 0 0 1 95 168 Z" fill="' + krim + '" opacity="0.65" />' +
+          '<ellipse cx="160" cy="135" rx="65" ry="18" fill="' + krim + '" />' +
+          '<path d="M95 135 Q110 155 125 138 Q140 158 155 138 Q170 158 185 138 Q200 155 215 138 L225 135" fill="none" stroke="' + krim + '" stroke-width="9" stroke-linecap="round" />';
+      } else if (u === "besar") {
+        topY = 85;
+        tubuhKue =
+          '<path d="M68 135 L68 192 A92 22 0 0 0 252 192 L252 135 Z" fill="' + badan + '" />' +
+          '<ellipse cx="160" cy="135" rx="92" ry="22" fill="' + krim + '" />' +
+          '<path d="M98 85 L98 130 A62 16 0 0 0 222 130 L222 85 Z" fill="' + badan + '" />' +
+          '<ellipse cx="160" cy="85" rx="62" ry="16" fill="' + krim + '" />' +
+          '<path d="M98 85 Q112 104 126 88 Q140 106 154 88 Q168 106 182 88 Q196 104 210 88 L222 85" fill="none" stroke="' + krim + '" stroke-width="8" stroke-linecap="round" />';
+      } else {
+        topY = 120;
+        tubuhKue =
+          '<path d="M78 120 L78 190 A82 20 0 0 0 242 190 L242 120 Z" fill="' + badan + '" />' +
+          '<path d="M78 154 A82 18 0 0 0 242 154 L242 161 A82 18 0 0 1 78 161 Z" fill="' + krim + '" opacity="0.65" />' +
+          '<ellipse cx="160" cy="120" rx="82" ry="20" fill="' + krim + '" />' +
+          '<path d="M78 120 Q94 144 110 124 Q126 148 142 124 Q158 148 174 124 Q190 148 206 124 Q222 144 238 120" fill="none" stroke="' + krim + '" stroke-width="10" stroke-linecap="round" />';
+      }
+
+      var hiasan = "";
+      if (stateCustom.topping === "strawberry") {
+        hiasan =
+          '<circle cx="132" cy="' + (topY - 6) + '" r="9" fill="#B23A48" /><circle cx="129" cy="' + (topY - 9) + '" r="2.5" fill="#FF9AA2" />' +
+          '<circle cx="160" cy="' + (topY - 11) + '" r="10" fill="#B23A48" /><circle cx="157" cy="' + (topY - 14) + '" r="2.8" fill="#FF9AA2" />' +
+          '<circle cx="188" cy="' + (topY - 6) + '" r="9" fill="#B23A48" /><circle cx="185" cy="' + (topY - 9) + '" r="2.5" fill="#FF9AA2" />';
+      } else if (stateCustom.topping === "coklat_chip") {
+        hiasan =
+          '<rect x="125" y="' + (topY - 10) + '" width="12" height="8" rx="2" fill="#3D2B28" />' +
+          '<rect x="154" y="' + (topY - 14) + '" width="12" height="8" rx="2" fill="#3D2B28" />' +
+          '<rect x="183" y="' + (topY - 10) + '" width="12" height="8" rx="2" fill="#3D2B28" />';
+      } else {
+        hiasan =
+          '<rect x="157" y="' + (topY - 34) + '" width="6" height="24" rx="3" fill="#A36361" />' +
+          '<ellipse cx="160" cy="' + (topY - 42) + '" rx="5.5" ry="9" fill="#F4A261" />' +
+          '<ellipse cx="160" cy="' + (topY - 41) + '" rx="2.5" ry="5" fill="#FFF3B0" />';
+      }
+
+      var papanTeks = "";
+      if (stateCustom.tulisan && stateCustom.tulisan.trim() !== "") {
+        var teksAman = stateCustom.tulisan.replace(/</g, "").replace(/>/g, "");
+        papanTeks =
+          '<rect x="90" y="' + (topY + 4) + '" width="140" height="25" rx="12.5" fill="#FFFFFF" stroke="#B8925A" stroke-width="2" />' +
+          '<text x="160" y="' + (topY + 20) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#3D2B28">' + teksAman + "</text>";
+      }
+
+      svg.innerHTML =
+        '<ellipse cx="160" cy="236" rx="102" ry="16" fill="#3D2B28" opacity="0.14" />' +
+        '<rect x="148" y="212" width="24" height="22" rx="4" fill="#B8925A" />' +
+        '<ellipse cx="160" cy="214" rx="112" ry="22" fill="#CDBFAA" />' +
+        '<ellipse cx="160" cy="208" rx="106" ry="19" fill="#FFFFFF" stroke="#CDBFAA" stroke-width="2" />' +
+        tubuhKue + hiasan + papanTeks;
+
+      var total = stateCustom.hargaRasa + stateCustom.hargaUkuran + stateCustom.hargaKrim + stateCustom.hargaTopping;
+      document.getElementById("harga-custom").textContent = formatRupiah(total);
+      document.getElementById("label-ringkasan-custom").textContent = stateCustom.rasa + " - " + stateCustom.ukuranLabel;
+      perbaruiStatusTombolCustom();
+    }
+
+    function aturCustom(jenis, nilai1, nilai2, harga) {
+      if (jenis === "rasa") {
+        stateCustom.rasa = nilai1;
+        stateCustom.warnaBadan = nilai2;
+        stateCustom.hargaRasa = harga;
+      }
+      if (jenis === "ukuran") {
+        stateCustom.ukuranKode = nilai1;
+        stateCustom.ukuranLabel = nilai2;
+        stateCustom.hargaUkuran = harga;
+      }
+      if (jenis === "krim") {
+        stateCustom.warnaKrim = nilai2;
+        stateCustom.hargaKrim = harga;
+      }
+      if (jenis === "topping") {
+        stateCustom.topping = nilai1;
+        stateCustom.hargaTopping = harga;
+      }
+      gambarPreviewCustom();
+    }
+
+    function ubahTulisanKue(teks) {
+      stateCustom.tulisan = teks;
+      gambarPreviewCustom();
+    }
+
+    function salinKeCustom(id) {
+      for (var i = 0; i < daftarEtalase.length; i++) {
+        if (daftarEtalase[i].id === id) {
+          stateCustom.rasa = daftarEtalase[i].nama;
+          stateCustom.warnaBadan = daftarEtalase[i].warnaBadan;
+          stateCustom.warnaKrim = daftarEtalase[i].warnaKrim;
+          stateCustom.topping = daftarEtalase[i].topping;
+          gambarPreviewCustom();
+          tutupDetail();
+          document.getElementById("meja-racik").scrollIntoView({ behavior: "smooth" });
+          return;
+        }
+      }
+    }
+
+    /* Fungsi Pemesanan Terpadu */
+    function bukaFormPesan(nama, harga) {
+      if (nama && typeof harga === "number") {
+        pesananAktif = { nama: nama, harga: harga };
+      }
+      document.getElementById("pesan-item-nama").textContent = pesananAktif.nama;
+      document.getElementById("pesan-item-harga").textContent = formatRupiah(pesananAktif.harga);
+      document.getElementById("modal-pesan").classList.remove("hidden");
+    }
+
+    function tutupFormPesan() {
+      document.getElementById("modal-pesan").classList.add("hidden");
+    }
+
+    function pesanDariEtalase(id) {
+      for (var i = 0; i < daftarEtalase.length; i++) {
+        if (daftarEtalase[i].id === id) {
+          tutupDetail();
+          bukaFormPesan(daftarEtalase[i].nama + " (" + daftarEtalase[i].ukuran + ")", daftarEtalase[i].harga);
+          return;
+        }
+      }
+    }
+
+    function pesanDariCustom() {
+      var total = stateCustom.hargaRasa + stateCustom.hargaUkuran + stateCustom.hargaKrim + stateCustom.hargaTopping;
+      var ringkasan = "Custom Cake: " + stateCustom.rasa + ", " + stateCustom.ukuranLabel + ' (Tulisan: "' + (stateCustom.tulisan || "-") + '")';
+      bukaFormPesan(ringkasan, total);
+    }
+
+    function kirimKeWhatsApp() {
+      var pemesan = document.getElementById("pesan-nama-pemesan").value.trim() || "Pelanggan";
+      var tanggal = document.getElementById("pesan-tanggal").value || "Sesuai konfirmasi";
+      var metode = document.getElementById("pesan-metode").value;
+      var teks =
+        "Halo Dapur Kue Manis, saya ingin memesan:\n" +
+        "- Kue: " + pesananAktif.nama + "\n" +
+        "- Estimasi Harga: " + formatRupiah(pesananAktif.harga) + "\n" +
+        "- Nama: " + pemesan + "\n" +
+        "- Tanggal: " + tanggal + "\n" +
+        "- Metode: " + metode;
+      window.open("https://wa.me/6281234567890?text=" + encodeURIComponent(teks), "_blank");
+      tutupFormPesan();
+    }
+
+    function masukKeToko() {
+      document.getElementById("ruang-toko").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function cekPapanMenu() {
+      var papan = document.getElementById("papan-menu");
+      if (window.scrollY > window.innerHeight * 0.65) {
+        papan.classList.add("terlihat");
+      } else {
+        papan.classList.remove("terlihat");
+      }
+    }
+
+    renderEtalaseKaca();
+    gambarPreviewCustom();
+    cekPapanMenu();
+    window.addEventListener("scroll", cekPapanMenu);
+
+    /* Kursor Semi-Realistis Kue */
+    var kursorHalus = window.matchMedia("(pointer: fine)").matches;
+    if (kursorHalus) {
+      document.body.classList.add("kursor-kue", "kursor-aktif");
+      var kursor = document.getElementById("kursor-kue");
+      window.addEventListener("mousemove", function (e) {
+        kursor.style.left = e.clientX + "px";
+        kursor.style.top = e.clientY + "px";
+      });
+      document.addEventListener("mouseover", function (e) {
+        if (e.target.closest("button, a, input, select")) {
+          kursor.classList.add("aktif");
+        } else {
+          kursor.classList.remove("aktif");
+        }
+      });
+    }
+
+    /* Animasi Membuka Pintu & Masuk ke Toko */
+    var kurangiGerak = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (kurangiGerak || typeof gsap === "undefined") {
+      document.getElementById("pintu-masuk").style.display = "none";
+      document.getElementById("papan-menu").classList.add("terlihat");
+    } else {
+      gsap.registerPlugin(ScrollTrigger);
+      var tlMasuk = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#pintu-masuk",
+          start: "top top",
+          end: "+=165%",
+          scrub: 0.85,
+          pin: true
+        }
+      });
+      tlMasuk
+        .to("#hint-masuk", { opacity: 0, y: 12, duration: 0.2 }, 0)
+        .to("#pintu-kiri", { scaleX: 0.14, svgOrigin: "695 550", duration: 0.5, ease: "power1.inOut" }, 0.08)
+        .to("#pintu-kanan", { scaleX: 0.14, svgOrigin: "905 550", duration: 0.5, ease: "power1.inOut" }, 0.08)
+        .to("#layer-fasad", { scale: 2.75, opacity: 0, transformOrigin: "50% 62%", duration: 0.95, ease: "power2.in" }, 0.45)
+        .to("#layer-interior", { scale: 1, opacity: 1, duration: 0.95, ease: "power2.out" }, 0.45);
+    }
+  </script>
+</body>
+</html>
