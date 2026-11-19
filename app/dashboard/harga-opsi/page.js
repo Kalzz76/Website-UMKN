@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah } from "@/lib/format";
 import ModalPesan from "@/components/ModalPesan";
@@ -17,6 +18,7 @@ const presetWarna = [
 ];
 
 export default function HargaOpsiPage() {
+  const [isMounted, setIsMounted] = useState(false);
   const [daftarGrup, setDaftarGrup] = useState([]);
   const [daftarItem, setDaftarItem] = useState([]);
   const [sedangMemuat, setSedangMemuat] = useState(true);
@@ -53,6 +55,10 @@ export default function HargaOpsiPage() {
     pesan: "",
     tipe: "info",
   });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (modalGrupBuka || modalItemBuka || notifikasi.terbuka) {
@@ -672,13 +678,24 @@ export default function HargaOpsiPage() {
         </div>
       )}
 
-      {modalGrupBuka && (
+      {isMounted && modalGrupBuka && createPortal(
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalGrupBuka(false);
           }}
-          style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-md overflow-hidden"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 99999,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
         >
           <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
@@ -824,16 +841,28 @@ export default function HargaOpsiPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {modalItemBuka && (
+      {isMounted && modalItemBuka && createPortal(
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalItemBuka(false);
           }}
-          style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-md overflow-hidden"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 99999,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
         >
           <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-lg w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
@@ -1061,7 +1090,8 @@ export default function HargaOpsiPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ModalPesan

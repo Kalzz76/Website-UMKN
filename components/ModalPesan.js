@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTutup }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     if (terbuka) {
       document.body.style.overflow = "hidden";
@@ -14,7 +21,7 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
     };
   }, [terbuka]);
 
-  if (!terbuka) return null;
+  if (!terbuka || !isMounted) return null;
 
   let ikonWarna = "text-sky-500 fa-circle-info";
   if (tipe === "sukses") {
@@ -23,13 +30,24 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
     ikonWarna = "text-rose-500 fa-circle-exclamation";
   }
 
-  return (
+  return createPortal(
     <div
       onClick={(e) => {
         if (e.target === e.currentTarget && onTutup) onTutup();
       }}
-      style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 99999,
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }}
+      className="flex items-center justify-center p-4 bg-black/75"
     >
       <div className="bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] p-7 max-w-sm w-full text-center shadow-2xl">
         <div className="mb-4">
@@ -45,6 +63,7 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
           Mengerti
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
