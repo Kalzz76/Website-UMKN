@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <title>Dapur Kue Manis - Interactive Patisserie &amp; Custom Cake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Cormorant Garamond"', 'serif']
+          },
+          colors: {
+            ivory: "#FDF5E7",
+            blush: "#F1DBD0",
+            dusty: "#D3A29D",
+            burgundy: "#A36361",
+            khaki: "#CDBFAA",
+            slate: "#ADB697",
+            ink: "#3D2B28",
+            kayu: "#5A3B33",
+            kayuGelap: "#3E2721",
+            kuningan: "#B8925A"
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    :root {
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #FDF5E7;
+      color: #3D2B28;
+      overflow-x: hidden;
+    }
+
+    /* Navbar Papan Menu Gantung */
+    .papan-menu {
+      transform: translate(-50%, -190%);
+      transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+    .papan-menu.terlihat {
+      transform: translate(-50%, 0);
+      pointer-events: auto;
+    }
+    .rantai-kuningan {
+      width: 4px;
+      height: 16px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #D9B37C 0px,
+        #D9B37C 4px,
+        #8C6936 4px,
+        #8C6936 6px
+      );
+      border-radius: 99px;
+      box-shadow: 0 2px 4px rgba(61, 43, 40, 0.3);
+    }
+    .bingkai-papan-menu {
+      background: linear-gradient(180deg, #68443A 0%, #4E322A 100%);
+      border: 3.5px solid #C59B62;
+      box-shadow:
+        0 14px 28px -6px rgba(61, 43, 40, 0.45),
+        inset 0 1px 0 rgba(255, 244, 214, 0.25);
+    }
+
+    /* Kamera Ruangan Kafe & Efek Zoom Funkyland */
+    #kamera-cafe {
+      transform-origin: 50% 50%;
+      transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s ease;
+      will-change: transform;
+    }
+    #kamera-cafe.zoom-etalase {
+      transform: scale(1.72) translate(0%, -4%);
+    }
+    #kamera-cafe.ruangan-hangat {
+      filter: sepia(0.15) brightness(0.95) contrast(1.04);
+    }
+
+    /* Hotspot Objek Ruangan */
+    .objek-klik {
+      cursor: pointer;
+      transition: transform 0.25s ease, filter 0.25s ease;
+    }
+    .objek-klik:hover {
+      filter: drop-shadow(0 0 14px rgba(255, 232, 175, 0.92));
+    }
+    .objek-klik .label-pin {
+      transition: transform 0.22s ease, background-color 0.22s ease, color 0.22s ease;
+    }
+    .objek-klik:hover .label-pin {
+      transform: scale(1.06);
+      background-color: #A36361;
+      color: #FFFFFF;
+      border-color: #FDF5E7;
+    }
+
+    /* Kue di Dalam Etalase */
+    .kue-etalase {
+      transform: translate(-50%, -100%);
+      transition: transform 0.25s ease, filter 0.25s ease;
+    }
+    .kue-etalase:hover {
+      transform: translate(-50%, -108%) scale(1.08);
+      filter: drop-shadow(0 8px 12px rgba(61, 43, 40, 0.32));
+      z-index: 25;
+    }
+
+    /* Kursor Piping Bag dengan Pita Pink */
+    .kursor-piping, .kursor-piping * {
+      cursor: none !important;
+    }
+    #kursor-piping {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 54px;
+      height: 54px;
+      pointer-events: none;
+      z-index: 9999;
+      /* Ujung spuit berada tepat di (0,0) agar klik sangat akurat */
+      transform: translate(-4px, -4px);
+      transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+      display: none;
+      filter: drop-shadow(0 5px 8px rgba(61, 43, 40, 0.25));
+    }
+    #kursor-piping.aktif {
+      transform: translate(-4px, -4px) scale(1.14) rotate(-8deg);
+    }
+    #kursor-piping .krim-keluar {
+      opacity: 0;
+      transform: scale(0.4);
+      transform-origin: 6px 6px;
+      transition: opacity 0.15s ease, transform 0.18s ease;
+    }
+    #kursor-piping.aktif .krim-keluar {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .kursor-aktif #kursor-piping {
+      display: block;
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- ==================== DEFINISI SVG SEMI-REALISTIS (FASAD & INTERIOR CAFE) ==================== -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="fBayangan" x="-15%" y="-15%" width="130%" height="135%">
+        <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3D2B28" flood-opacity="0.18" />
+      </filter>
+      <filter id="fBayanganKecil" x="-15%" y="-15%" width="130%" height="135%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#3D2B28" flood-opacity="0.22" />
+      </filter>
+
+      <linearGradient id="gFasadTembok" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#F5E7D6" />
+        <stop offset="60%" stop-color="#FBF3E8" />
+        <stop offset="100%" stop-color="#E7D4C0" />
+      </linearGradient>
+      <linearGradient id="gKayuWalnut" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#4B3028" />
+        <stop offset="35%" stop-color="#6B473C" />
+        <stop offset="70%" stop-color="#5B3B31" />
+        <stop offset="100%" stop-color="#3F2720" />
+      </linearGradient>
+      <linearGradient id="gKuningan" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#E5C590" />
+        <stop offset="50%" stop-color="#B8925A" />
+        <stop offset="100%" stop-color="#876636" />
+      </linearGradient>
+      <linearGradient id="gMarmer" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#FFFFFF" />
+        <stop offset="50%" stop-color="#F7F0E8" />
+        <stop offset="100%" stop-color="#EAE0D5" />
+      </linearGradient>
+      <linearGradient id="gKacaEtalase" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.55" />
+        <stop offset="45%" stop-color="#FFF9F2" stop-opacity="0.16" />
+        <stop offset="100%" stop-color="#EBD3C8" stop-opacity="0.36" />
+      </linearGradient>
+      <linearGradient id="gTrotoar" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#DFCBB8" />
+        <stop offset="100%" stop-color="#B9A389" />
+      </linearGradient>
+      <linearGradient id="gInteriorHangat" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FFE7BA" stop-opacity="0.92" />
+        <stop offset="100%" stop-color="#E6B89C" stop-opacity="0.96" />
+      </linearGradient>
+      <linearGradient id="gWainscot" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#E8CBC0" />
+        <stop offset="100%" stop-color="#D6B0A2" />
+      </linearGradient>
+
+      <radialGradient id="gSorotLampu" cx="0.5" cy="0.12" r="0.88">
+        <stop offset="0%" stop-color="#FFF2CC" stop-opacity="0.62" />
+        <stop offset="55%" stop-color="#FFE6A8" stop-opacity="0.18" />
+        <stop offset="100%" stop-color="#FFE6A8" stop-opacity="0" />
+      </radialGradient>
+
+      <!-- Pola Garis Dinding Interior (Terinspirasi Suasana Patisserie) -->
+      <pattern id="pDindingGaris" width="120" height="100" patternUnits="userSpaceOnUse">
+        <rect width="60" height="100" fill="#FDF5E7" />
+        <rect x="60" width="60" height="100" fill="#F4DFD6" />
+      </pattern>
+
+      <!-- Pola Garis Kanopi Depan -->
+      <pattern id="pKanopiGaris" width="64" height="20" patternUnits="userSpaceOnUse">
+        <rect width="32" height="20" fill="#9F5A58" />
+        <rect x="32" width="32" height="20" fill="#FDF6EC" />
+      </pattern>
+
+      <!-- Pola Lantai Keramik Dalam Toko -->
+      <pattern id="pLantaiDalam" width="96" height="48" patternUnits="userSpaceOnUse">
+        <rect width="96" height="48" fill="#F8EFE2" />
+        <polygon points="0,0 48,0 38,24 -10,24" fill="#E6D2BE" />
+        <polygon points="48,24 96,24 86,48 38,48" fill="#E6D2BE" />
+      </pattern>
+
+      <!-- ==================== SIMBOL 1: FASAD DEPAN TOKO ==================== -->
+      <symbol id="sFasad" viewBox="0 0 1600 900">
+        <rect width="1600" height="725" fill="url(#gFasadTembok)" />
+        <rect x="0" y="0" width="1600" height="42" fill="#E5D1BC" />
+        <rect x="0" y="42" width="1600" height="10" fill="#CDB8A2" />
+
+        <rect x="55" y="130" width="200" height="530" rx="6" fill="none" stroke="#D5C0AA" stroke-width="4" />
+        <rect x="1345" y="130" width="200" height="530" rx="6" fill="none" stroke="#D5C0AA" stroke-width="4" />
+
+        <!-- Papan Nama Toko -->
+        <g filter="url(#fBayangan)">
+          <rect x="470" y="78" width="660" height="114" rx="14" fill="url(#gKayuWalnut)" stroke="url(#gKuningan)" stroke-width="6" />
+          <rect x="484" y="90" width="632" height="90" rx="8" fill="#FDF6EC" stroke="#D5B48A" stroke-width="2" />
+          <text x="800" y="142" text-anchor="middle" font-size="42" font-weight="800" letter-spacing="3" fill="#8C4A48">DAPUR KUE MANIS</text>
+          <text x="800" y="167" text-anchor="middle" font-size="13" font-weight="700" letter-spacing="4" fill="#8C6936">ARTISAN PATISSERIE &amp; CUSTOM CAKE</text>
+        </g>
+
+        <!-- Jendela Etalase Kiri -->
+        <g filter="url(#fBayangan)">
+          <rect x="290" y="395" width="350" height="275" rx="8" fill="url(#gKayuWalnut)" />
+          <rect x="308" y="413" width="314" height="232" rx="4" fill="url(#gInteriorHangat)" />
+          <rect x="308" y="582" width="314" height="12" fill="#E8D5C3" />
+          <rect x="382" y="564" width="12" height="18" fill="#B8925A" />
+          <ellipse cx="388" cy="564" rx="44" ry="8" fill="#FFFFFF" />
+          <path d="M354 532 L354 560 A34 7 0 0 0 422 560 L422 532 Z" fill="#C97B78" />
+          <ellipse cx="388" cy="532" rx="34" ry="7" fill="#FDF5E7" />
+          <circle cx="388" cy="524" r="7" fill="#A33B46" />
+          <rect x="524" y="556" width="12" height="26" fill="#B8925A" />
+          <ellipse cx="530" cy="556" rx="46" ry="9" fill="#FFFFFF" />
+          <path d="M492 516 L492 552 A38 8 0 0 0 568 552 L568 516 Z" fill="#6B473C" />
+          <ellipse cx="530" cy="516" rx="38" ry="8" fill="#E8C7B8" />
+          <polygon points="318,413 385,413 330,645 308,645" fill="#FFFFFF" opacity="0.28" />
+          <rect x="280" y="662" width="370" height="18" rx="4" fill="#EFE2D3" stroke="#CDB8A2" stroke-width="2" />
+        </g>
+
+        <!-- Jendela Etalase Kanan -->
+        <g filter="url(#fBayangan)">
+          <rect x="960" y="395" width="350" height="275" rx="8" fill="url(#gKayuWalnut)" />
+          <rect x="978" y="413" width="314" height="232" rx="4" fill="url(#gInteriorHangat)" />
+          <rect x="978" y="582" width="314" height="12" fill="#E8D5C3" />
+          <rect x="1062" y="560" width="12" height="22" fill="#B8925A" />
+          <ellipse cx="1068" cy="560" rx="44" ry="8" fill="#FFFFFF" />
+          <path d="M1032 524 L1032 556 A36 8 0 0 0 1104 556 L1104 524 Z" fill="#E5B9B3" />
+          <ellipse cx="1068" cy="524" rx="36" ry="8" fill="#FFFDF8" />
+          <rect x="1198" y="566" width="12" height="16" fill="#B8925A" />
+          <ellipse cx="1204" cy="566" rx="42" ry="8" fill="#FFFFFF" />
+          <path d="M1170 536 L1170 562 A34 7 0 0 0 1238 562 L1238 536 Z" fill="#9AA583" />
+          <ellipse cx="1204" cy="536" rx="34" ry="7" fill="#FDF5E7" />
+          <polygon points="988,413 1055,413 1000,645 978,645" fill="#FFFFFF" opacity="0.28" />
+          <rect x="950" y="662" width="370" height="18" rx="4" fill="#EFE2D3" stroke="#CDB8A2" stroke-width="2" />
+        </g>
+
+        <!-- Kusen Pintu Utama -->
+        <g filter="url(#fBayangan)">
+          <path d="M675 720 V360 A125 95 0 0 1 925 360 V720 Z" fill="url(#gKayuWalnut)" />
+          <path d="M695 365 A105 78 0 0 1 905 365 Z" fill="#FFE7BA" stroke="#C59B62" stroke-width="3" />
+          <text x="800" y="348" text-anchor="middle" font-size="16" font-weight="800" letter-spacing="2" fill="#6B473C">SEJAK 2018</text>
+          <rect x="695" y="382" width="210" height="338" fill="#FFF1D6" />
+        </g>
+
+        <!-- Daun Pintu Kiri & Kanan -->
+        <g id="pintu-kiri">
+          <rect x="695" y="382" width="104" height="338" fill="url(#gKayuWalnut)" stroke="#3E2721" stroke-width="2" />
+          <rect x="711" y="400" width="72" height="175" rx="4" fill="url(#gInteriorHangat)" stroke="#C59B62" stroke-width="2.5" />
+          <rect x="711" y="594" width="72" height="96" rx="3" fill="#4B3028" stroke="#6E4A3E" stroke-width="2" />
+          <rect x="786" y="535" width="6" height="44" rx="3" fill="url(#gKuningan)" />
+        </g>
+        <g id="pintu-kanan">
+          <rect x="801" y="382" width="104" height="338" fill="url(#gKayuWalnut)" stroke="#3E2721" stroke-width="2" />
+          <rect x="817" y="400" width="72" height="175" rx="4" fill="url(#gInteriorHangat)" stroke="#C59B62" stroke-width="2.5" />
+          <rect x="817" y="594" width="72" height="96" rx="3" fill="#4B3028" stroke="#6E4A3E" stroke-width="2" />
+          <rect x="808" y="535" width="6" height="44" rx="3" fill="url(#gKuningan)" />
+          <rect x="826" y="468" width="54" height="24" rx="6" fill="#FDF6EC" stroke="#A36361" stroke-width="2" />
+          <text x="853" y="484" text-anchor="middle" font-size="11" font-weight="800" fill="#A36361">BUKA</text>
+        </g>
+
+        <!-- Kanopi Bergaris -->
+        <g filter="url(#fBayangan)">
+          <polygon points="310,218 1290,218 1345,322 255,322" fill="url(#pKanopiGaris)" />
+          <path d="M255 322 H1345 V338 Q1317 354 1290 338 Q1262 354 1235 338 Q1207 354 1180 338 Q1152 354 1125 338 Q1097 354 1070 338 Q1042 354 1015 338 Q987 354 960 338 Q932 354 905 338 Q877 354 850 338 Q822 354 795 338 Q767 354 740 338 Q712 354 685 338 Q657 354 630 338 Q602 354 575 338 Q547 354 520 338 Q492 354 465 338 Q437 354 410 338 Q382 354 355 338 Q327 354 300 338 Q277 354 255 338 Z" fill="url(#pKanopiGaris)" />
+          <line x1="255" y1="322" x2="1345" y2="322" stroke="#7A4240" stroke-width="2" />
+        </g>
+
+        <!-- Trotoar & Tangga -->
+        <rect x="0" y="720" width="1600" height="180" fill="url(#gTrotoar)" />
+        <polygon points="665,720 935,720 955,748 645,748" fill="#EFE4D6" stroke="#B8A38B" stroke-width="2" />
+        <rect x="645" y="748" width="310" height="10" fill="#C4B098" />
+
+        <!-- Pot Tanaman Depan -->
+        <g filter="url(#fBayanganKecil)">
+          <circle cx="595" cy="656" r="28" fill="#7D8F69" />
+          <circle cx="578" cy="666" r="22" fill="#94A67E" />
+          <circle cx="612" cy="666" r="22" fill="#8A9C75" />
+          <polygon points="568,678 622,678 614,734 576,734" fill="url(#gKayuWalnut)" stroke="#C59B62" stroke-width="2" />
+          <circle cx="1005" cy="656" r="28" fill="#7D8F69" />
+          <circle cx="988" cy="666" r="22" fill="#94A67E" />
+          <circle cx="1022" cy="666" r="22" fill="#8A9C75" />
+          <polygon points="978,678 1032,678 1024,734 986,734" fill="url(#gKayuWalnut)" stroke="#C59B62" stroke-width="2" />
+        </g>
+      </symbol>
+
+      <!-- ==================== SIMBOL 2: SUASANA DALAM CAFE (FULL-SCREEN SEMI-REALISTIS) ==================== -->
+      <symbol id="sIsi" viewBox="0 0 1600 900">
+        <!-- Dinding Bergaris Vertikal Soft Pastel & Wainscoting -->
+        <rect width="1600" height="560" fill="url(#pDindingGaris)" />
+        <rect y="560" width="1600" height="230" fill="url(#gWainscot)" />
+        <rect y="554" width="1600" height="12" fill="#FFFDF9" stroke="#CDB8A2" stroke-width="1.5" />
+
+        <!-- Lis Plafon & Balok Kayu -->
+        <rect x="0" y="0" width="1600" height="24" fill="url(#gKayuWalnut)" />
+        <rect x="0" y="24" width="1600" height="6" fill="#C59B62" />
+
+        <!-- Lantai Keramik Dalam Toko -->
+        <rect y="785" width="1600" height="115" fill="url(#pLantaiDalam)" />
+        <rect y="782" width="1600" height="6" fill="#B59B84" />
+
+        <!-- ===== PLAKAT OVAL TENGAH & MEDALION CUPCAKE (TERINSPIRASI FOTO INTERIOR PATISSERIE) ===== -->
+        <g filter="url(#fBayangan)">
+          <!-- Medalion Kiri -->
+          <circle cx="515" cy="222" r="46" fill="#FDF5E7" stroke="#A36361" stroke-width="4" />
+          <circle cx="515" cy="222" r="39" fill="none" stroke="#B8925A" stroke-width="1.5" />
+          <path d="M498 228 L503 246 H527 L532 228 Z" fill="#D3A29D" />
+          <path d="M495 228 Q515 206 535 228 Z" fill="#A36361" />
+          <circle cx="515" cy="212" r="5" fill="#B23A48" />
+
+          <!-- Plakat Oval Utama -->
+          <ellipse cx="800" cy="222" rx="195" ry="68" fill="#F1DBD0" stroke="#A36361" stroke-width="5" />
+          <ellipse cx="800" cy="222" rx="184" ry="59" fill="none" stroke="#B8925A" stroke-width="2" />
+          <text x="800" y="226" text-anchor="middle" font-size="30" font-weight="800" letter-spacing="1.5" fill="#A36361" font-family="Cormorant Garamond, serif">Dapur Kue Manis</text>
+          <text x="800" y="250" text-anchor="middle" font-size="11" font-weight="700" letter-spacing="3" fill="#5A3B33">PATISSERIE &amp; CAKE ATELIER</text>
+
+          <!-- Medalion Kanan -->
+          <circle cx="1085" cy="222" r="46" fill="#FDF5E7" stroke="#A36361" stroke-width="4" />
+          <circle cx="1085" cy="222" r="39" fill="none" stroke="#B8925A" stroke-width="1.5" />
+          <path d="M1068 228 L1073 246 H1097 L1102 228 Z" fill="#CDBFAA" />
+          <path d="M1065 228 Q1085 206 1105 228 Z" fill="#6B4A3E" />
+          <circle cx="1085" cy="212" r="5" fill="#D3A29D" />
+        </g>
+
+        <!-- ===== SISI KIRI: MEJA KASIR (CASHIER COUNTER) + RAK TOPLES ===== -->
+        <!-- Rak Dinding Mini di Atas Kasir -->
+        <g filter="url(#fBayanganKecil)">
+          <rect x="115" y="255" width="235" height="12" rx="4" fill="url(#gKayuWalnut)" />
+          <rect x="135" y="205" width="40" height="50" rx="10" fill="#FFFDF9" fill-opacity="0.9" stroke="#B8925A" stroke-width="2" />
+          <circle cx="155" cy="233" r="11" fill="#B67B5B" />
+          <rect x="143" y="197" width="24" height="8" rx="3" fill="#B8925A" />
+
+          <rect x="190" y="205" width="40" height="50" rx="10" fill="#FFFDF9" fill-opacity="0.9" stroke="#B8925A" stroke-width="2" />
+          <circle cx="210" cy="233" r="11" fill="#D3A29D" />
+          <rect x="198" y="197" width="24" height="8" rx="3" fill="#B8925A" />
+
+          <rect x="248" y="212" width="76" height="43" rx="6" fill="#F1DBD0" stroke="#A36361" stroke-width="2" />
+          <rect x="281" y="212" width="10" height="43" fill="#A36361" />
+        </g>
+
+        <!-- Meja Kasir Utama (Kiri) -->
+        <g filter="url(#fBayangan)">
+          <!-- Bodi Meja Kasir -->
+          <rect x="95" y="545" width="320" height="238" rx="10" fill="#D3A29D" stroke="#A36361" stroke-width="2.5" />
+          <rect x="115" y="572" width="280" height="182" rx="6" fill="none" stroke="#F1DBD0" stroke-width="2.5" />
+          <!-- Top Table Marmer Kasir -->
+          <rect x="82" y="528" width="346" height="20" rx="6" fill="url(#gMarmer)" stroke="#CDBFAA" stroke-width="2" />
+          <!-- Mesin Kasir / POS Tablet & Dudukan Kuningan -->
+          <rect x="165" y="452" width="96" height="62" rx="8" fill="#3D2B28" stroke="#B8925A" stroke-width="3" />
+          <rect x="173" y="460" width="80" height="44" rx="4" fill="#FDF5E7" />
+          <rect x="182" y="468" width="42" height="8" rx="2" fill="#A36361" />
+          <rect x="182" y="482" width="60" height="6" rx="2" fill="#CDBFAA" />
+          <rect x="204" y="514" width="18" height="14" fill="url(#gKuningan)" />
+          <!-- Papan QRIS & Lonceng Kasir -->
+          <rect x="295" y="484" width="36" height="44" rx="5" fill="#FFFFFF" stroke="#A36361" stroke-width="2" />
+          <rect x="303" y="492" width="20" height="20" fill="#3D2B28" />
+          <path d="M352 528 A14 12 0 0 1 380 528 Z" fill="url(#gKuningan)" />
+        </g>
+
+        <!-- ===== TENGAH: ETALASE KACA UTAMA (CURVED GLASS PATISSERIE SHOWCASE) ===== -->
+        <g filter="url(#fBayangan)">
+          <!-- Kabinet Kaca Lengkung Semi-Realistis -->
+          <path d="M465 568 V375 Q465 335 510 335 H1090 Q1135 335 1135 375 V568 Z" fill="#FFFDF9" fill-opacity="0.76" stroke="url(#gKuningan)" stroke-width="5" />
+          <path d="M473 564 V378 Q473 343 512 343 H1088 Q1127 343 1127 378 V564 Z" fill="#F9ECE4" fill-opacity="0.58" />
+
+          <!-- Rak Kaca 1 & Strip Lampu LED -->
+          <rect x="473" y="464" width="654" height="8" fill="#DCE5E8" stroke="#B8925A" stroke-width="1.5" />
+          <line x1="495" y1="350" x2="1105" y2="350" stroke="#FFF2CC" stroke-width="4" />
+
+          <!-- Rak Kaca 2 & Strip Lampu LED -->
+          <rect x="473" y="556" width="654" height="9" fill="#DCE5E8" stroke="#B8925A" stroke-width="1.5" />
+          <line x1="490" y1="474" x2="1110" y2="474" stroke="#FFF2CC" stroke-width="3" />
+
+          <!-- Pantulan Kaca Etalase -->
+          <polygon points="495,343 585,343 525,564 473,564" fill="url(#gKacaEtalase)" pointer-events="none" />
+          <polygon points="610,343 645,343 585,564 550,564" fill="url(#gKacaEtalase)" pointer-events="none" />
+
+          <!-- Meja Marmer & Bodi Kayu/Blush Etalase -->
+          <rect x="445" y="568" width="710" height="22" rx="6" fill="url(#gMarmer)" stroke="#CDBFAA" stroke-width="2" />
+          <rect x="462" y="590" width="676" height="180" rx="8" fill="#A36361" />
+          <rect x="492" y="612" width="190" height="132" rx="6" fill="none" stroke="#F1DBD0" stroke-width="2.5" opacity="0.7" />
+          <rect x="705" y="612" width="190" height="132" rx="6" fill="none" stroke="#F1DBD0" stroke-width="2.5" opacity="0.7" />
+          <rect x="918" y="612" width="190" height="132" rx="6" fill="none" stroke="#F1DBD0" stroke-width="2.5" opacity="0.7" />
+          <rect x="456" y="768" width="688" height="16" rx="3" fill="url(#gKuningan)" />
+        </g>
+
+        <!-- ===== SISI KANAN: STUDIO MEJA RACIK CUSTOM CAKE ===== -->
+        <g filter="url(#fBayangan)">
+          <!-- Rak Pajangan Custom Tier di Dinding Kanan -->
+          <rect x="1225" y="185" width="265" height="275" rx="14" fill="#F1DBD0" stroke="url(#gKayuWalnut)" stroke-width="6" />
+          <rect x="1238" y="198" width="239" height="249" rx="8" fill="#FFFDF9" />
+          <text x="1357" y="232" text-anchor="middle" font-size="14" font-weight="800" letter-spacing="1.5" fill="#A36361">CUSTOM CAKE STUDIO</text>
+          <line x1="1265" y1="244" x2="1450" y2="244" stroke="#E8D6D0" stroke-width="2" />
+          <!-- Ilustrasi Kue 2 Tingkat di Dalam Bingkai -->
+          <ellipse cx="1357" cy="404" rx="74" ry="12" fill="#CDBFAA" />
+          <path d="M1302 356 L1302 396 A55 10 0 0 0 1412 396 L1412 356 Z" fill="#F1DBD0" />
+          <ellipse cx="1357" cy="356" rx="55" ry="10" fill="#FDF5E7" />
+          <path d="M1318 318 L1318 352 A39 8 0 0 0 1396 352 L1396 318 Z" fill="#D3A29D" />
+          <ellipse cx="1357" cy="318" rx="39" ry="8" fill="#FDF5E7" />
+          <circle cx="1357" cy="306" r="8" fill="#A36361" />
+
+          <!-- Meja Kerja Dekorasi Kue (Kanan Bawah) -->
+          <rect x="1195" y="545" width="315" height="238" rx="10" fill="#E3BFB1" stroke="#C49A8B" stroke-width="2.5" />
+          <rect x="1182" y="528" width="340" height="20" rx="6" fill="url(#gMarmer)" stroke="#CDBFAA" stroke-width="2" />
+          <!-- Meja Putar Kue (Turntable) & Piping Bag di Atas Meja -->
+          <rect x="1296" y="512" width="16" height="16" fill="url(#gKuningan)" />
+          <ellipse cx="1304" cy="512" rx="54" ry="9" fill="#FFFFFF" stroke="#CDBFAA" stroke-width="2" />
+          <path d="M1268 476 L1268 508 A36 7 0 0 0 1340 508 L1340 476 Z" fill="#D3A29D" />
+          <ellipse cx="1304" cy="476" rx="36" ry="7" fill="#FDF5E7" />
+          <!-- Piping Bag di Meja -->
+          <polygon points="1395,522 1448,492 1456,512" fill="#F1DBD0" stroke="#A36361" stroke-width="2" />
+        </g>
+
+        <!-- ===== 3 LAMPU GANTUNG KUNINGAN ===== -->
+        <g pointer-events="none">
+          <polygon points="310,145 150,550 470,550" fill="url(#gSorotLampu)" />
+          <polygon points="800,125 560,550 1040,550" fill="url(#gSorotLampu)" />
+          <polygon points="1290,145 1130,550 1450,550" fill="url(#gSorotLampu)" />
+        </g>
+        <g filter="url(#fBayanganKecil)">
+          <line x1="310" y1="24" x2="310" y2="122" stroke="#8C6936" stroke-width="3.5" />
+          <path d="M282 142 A28 22 0 0 1 338 142 Z" fill="url(#gKuningan)" />
+          <circle cx="310" cy="146" r="11" fill="#FFF7DC" />
+
+          <line x1="800" y1="24" x2="800" y2="104" stroke="#8C6936" stroke-width="3.5" />
+          <path d="M770 124 A30 24 0 0 1 830 124 Z" fill="url(#gKuningan)" />
+          <circle cx="800" cy="128" r="12" fill="#FFF7DC" />
+
+          <line x1="1290" y1="24" x2="1290" y2="122" stroke="#8C6936" stroke-width="3.5" />
+          <path d="M1262 142 A28 22 0 0 1 1318 142 Z" fill="url(#gKuningan)" />
+          <circle cx="1290" cy="146" r="11" fill="#FFF7DC" />
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- ==================== NAVBAR PAPAN MENU GANTUNG (MUNCUL SAAT DI DALAM TOKO) ==================== -->
+  <nav id="papan-menu" aria-label="Navigasi Papan Menu" class="papan-menu fixed left-1/2 z-50 w-[calc(100%-1.25rem)] max-w-4xl" style="top: calc(env(safe-area-inset-top, 0px) + 0.45rem)">
+    <div class="flex justify-around max-w-md mx-auto px-8">
+      <span class="rantai-kuningan"></span>
+      <span class="rantai-kuningan"></span>
+    </div>
+    <div class="bingkai-papan-menu text-ivory rounded-2xl px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-4">
+      <button type="button" onclick="bukaTampilan('toko')" class="flex items-center gap-2 font-extrabold text-xs sm:text-base tracking-wider whitespace-nowrap text-ivory hover:text-blush transition">
+        <span class="w-2.5 h-2.5 rounded-full bg-kuningan inline-block"></span>
+        <span>DAPUR KUE MANIS</span>
+      </button>
+      <div class="flex items-center gap-2 sm:gap-5 text-xs sm:text-sm font-semibold">
+        <button type="button" onclick="bukaTampilan('toko')" id="nav-toko" class="text-blush underline underline-offset-4 font-bold transition">Ruang Cafe</button>
+        <button type="button" onclick="bukaTampilan('katalog')" id="nav-katalog" class="hover:text-blush transition">Etalase Kue</button>
+        <button type="button" onclick="bukaTampilan('custom')" id="nav-custom" class="hover:text-blush transition">Custom Cake</button>
+        <button type="button" onclick="bukaTampilan('kasir')" id="nav-kasir" class="hover:text-blush transition">Kasir</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="toggleLampuToko()" title="Ubah Pencahayaan Cafe" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-kayuGelap/80 border border-kuningan/60 text-blush hover:text-white text-xs font-semibold transition">
+          <span id="ikon-lampu">☀️</span>
+        </button>
+        <button type="button" onclick="bukaTampilan('kasir')" class="relative px-3.5 py-1.5 bg-burgundy hover:bg-burgundy/90 text-white rounded-full text-xs font-bold whitespace-nowrap shadow-sm border border-blush/30 transition flex items-center gap-1.5">
+          <span>Keranjang</span>
+          <span id="badge-keranjang" class="px-1.5 py-0.2 rounded-full bg-ivory text-burgundy text-[11px] font-extrabold">1</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== 1. PINTU MASUK TOKO (LANDING ENTRANCE) ==================== -->
+  <section id="pintu-masuk" class="relative h-[100dvh] w-full overflow-hidden bg-ivory">
+    <div id="layer-interior" class="absolute inset-0 opacity-45 scale-95">
+      <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" class="w-full h-full block">
+        <use href="#sIsi" />
+      </svg>
+    </div>
+    <div id="layer-fasad" class="absolute inset-0">
+      <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" class="w-full h-full block">
+        <use href="#sFasad" />
+      </svg>
+      <!-- Area Klik Pintu Masuk -->
+      <button type="button" onclick="masukKeToko()" aria-label="Ketuk pintu untuk masuk ke toko" class="group absolute left-1/2 top-[62%] -translate-x-1/2 -translate-y-1/2 w-44 sm:w-56 h-64 sm:h-80 rounded-t-full bg-transparent hover:bg-amber-100/10 transition flex items-center justify-center">
+        <span class="opacity-0 group-hover:opacity-100 transition bg-kayu/95 text-ivory text-xs font-bold px-4 py-2 rounded-full border border-kuningan shadow-lg">
+          Ketuk Pintu Masuk
+        </span>
+      </button>
+    </div>
+    <div id="hint-masuk" class="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col sm:flex-row items-center gap-2.5 bg-white/95 backdrop-blur-md border border-kuningan/70 shadow-xl rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold text-ink whitespace-nowrap">
+      <span>Gulir ke bawah untuk masuk ke dalam toko</span>
+      <button type="button" onclick="masukKeToko()" class="px-3.5 py-1 rounded-full bg-burgundy text-white text-xs font-bold hover:bg-burgundy/90 transition">
+        Masuk ke Cafe ↓
+      </button>
+    </div>
+  </section>
+
+  <!-- ==================== 2. VIEW UTAMA: SUASANA CAFE FULL-SCREEN (FUNKYLAND ESCAPE STYLE) ==================== -->
+  <div id="view-toko" class="min-h-[100dvh] flex flex-col justify-between bg-ivory">
+    <main class="relative flex-1 w-full h-[calc(100dvh-44px)] overflow-hidden select-none">
+      <!-- Kanvas Ruangan Cafe dengan Kamera Zoom Interaktif -->
+      <div id="kamera-cafe" class="relative w-full h-full">
+        <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" class="w-full h-full block">
+          <use href="#sIsi" />
+        </svg>
+
+        <!-- HOTSPOT 1: LAMPU GANTUNG (UBAH PENCAHAYAAN) -->
+        <button type="button" onclick="toggleLampuToko()" class="objek-klik absolute left-[50%] top-[11%] -translate-x-1/2 -translate-y-1/2">
+          <span class="label-pin inline-flex items-center gap-1.5 bg-white/95 border border-kuningan text-ink text-[11px] sm:text-xs font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap">
+            💡 <span id="label-lampu">Lampu Pagi</span>
+          </span>
+        </button>
+
+        <!-- HOTSPOT 2: PLAKAT OVAL DINDING (INFO TOKO) -->
+        <button type="button" onclick="bukaModalInfoToko()" class="objek-klik absolute left-[50%] top-[25%] -translate-x-1/2 -translate-y-1/2 w-[24%] h-[14%] rounded-full flex items-end justify-center pb-1">
+          <span class="label-pin bg-white/95 border border-kuningan text-ink text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full shadow-md whitespace-nowrap">
+            ℹ️ Info Toko
+          </span>
+        </button>
+
+        <!-- HOTSPOT 3: RAK TOPLES KUE KERING (KIRI ATAS) -->
+        <button type="button" onclick="bukaModalHampers()" class="objek-klik absolute left-[14.5%] top-[24%] -translate-x-1/2 -translate-y-1/2">
+          <span class="label-pin inline-flex items-center gap-1 bg-white/95 border border-kuningan text-ink text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full shadow-md whitespace-nowrap">
+            🍪 Rak Kue Kering
+          </span>
+        </button>
+
+        <!-- HOTSPOT 4: MEJA KASIR (PEMBAYARAN & PESANAN) -->
+        <button type="button" onclick="bukaTampilan('kasir')" class="objek-klik absolute left-[16%] top-[63%] -translate-x-1/2 -translate-y-1/2 w-[21%] h-[30%] rounded-2xl flex items-center justify-center">
+          <span class="label-pin inline-flex items-center gap-1.5 bg-white/95 border-2 border-burgundy text-ink text-xs sm:text-sm font-extrabold px-3.5 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+            🧾 Kasir &amp; Bayar
+          </span>
+        </button>
+
+        <!-- HOTSPOT 5: ETALASE KACA UTAMA (ZOOM KE ETALASE / KATALOG KUE) -->
+        <div id="zona-etalase" class="absolute left-[50%] top-[53%] -translate-x-1/2 -translate-y-1/2 w-[42%] h-[36%]">
+          <!-- Tombol Zoom Etalase saat kamera normal -->
+          <button id="btn-zoom-etalase" type="button" onclick="toggleZoomEtalase(true)" class="objek-klik w-full h-full rounded-2xl flex items-end justify-center pb-3">
+            <span class="label-pin inline-flex items-center gap-1.5 bg-burgundy text-white border-2 border-ivory text-xs sm:text-sm font-extrabold px-4 py-1.5 rounded-full shadow-xl whitespace-nowrap">
+              🔍 Lihat Etalase Kue
+            </span>
+          </button>
+
+          <!-- Kue-Kue Interaktif di Dalam Etalase (Muncul lebih jelas saat di-zoom) -->
+          <div id="daftar-kue-etalase" class="hidden absolute inset-0"></div>
+        </div>
+
+        <!-- HOTSPOT 6: MEJA RACIK CUSTOM CAKE (KANAN) -->
+        <button type="button" onclick="bukaTampilan('custom')" class="objek-klik absolute left-[84.5%] top-[53%] -translate-x-1/2 -translate-y-1/2 w-[21%] h-[46%] rounded-2xl flex items-center justify-center">
+          <span class="label-pin inline-flex items-center gap-1.5 bg-white/95 border-2 border-burgundy text-ink text-xs sm:text-sm font-extrabold px-3.5 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+            🎂 Custom Cake 3D
+          </span>
+        </button>
+      </div>
+
+      <!-- KONTROL HUD SAAT ETALASE DI-ZOOM (ALA GAME ESCAPE FUNKYLAND) -->
+      <div id="hud-zoom-etalase" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center justify-center gap-2.5 bg-kayu/95 text-ivory border-2 border-kuningan px-4 py-2.5 rounded-full shadow-2xl">
+        <button type="button" onclick="toggleZoomEtalase(false)" class="px-3.5 py-1.5 rounded-full bg-ivory text-ink text-xs font-extrabold hover:bg-blush transition">
+          ← Mundur ke Ruangan
+        </button>
+        <span class="text-xs text-blush hidden sm:inline">Ketuk kue di rak kaca atau buka halaman katalog lengkap:</span>
+        <button type="button" onclick="bukaTampilan('katalog')" class="px-4 py-1.5 rounded-full bg-burgundy hover:bg-burgundy/90 text-white text-xs font-extrabold transition">
+          Buka Halaman Beli Kue →
+        </button>
+      </div>
+
+      <!-- Petunjuk Singkat Interaksi di Pojok Kiri Bawah -->
+      <div id="hud-petunjuk-cafe" class="fixed bottom-14 left-4 z-30 hidden sm:flex items-center gap-2 bg-white/90 backdrop-blur border border-khaki/70 px-3.5 py-1.5 rounded-full text-xs font-semibold text-ink shadow-sm">
+        <span>✨ Klik <b>Etalase</b> untuk lihat kue, <b>Kasir</b> untuk bayar, atau <b>Meja Kanan</b> untuk Custom Cake</span>
+      </div>
+    </main>
+
+    <!-- FOOTER RINGKAS DI PALING BAWAH LANDING PAGE -->
+    <footer class="h-11 px-4 sm:px-8 bg-kayuGelap text-ivory/85 border-t border-kuningan/50 flex items-center justify-between text-[11px] sm:text-xs z-30">
+      <span class="font-bold text-ivory">Dapur Kue Manis • Jl. Melati Manis No. 18, Bandung</span>
+      <span class="hidden sm:inline">Buka Setiap Hari 08.00 – 20.00 WIB • WA: 0812-3456-7890</span>
+    </footer>
+  </div>
+
+  <!-- ==================== 3. VIEW KATALOG / HALAMAN BELI KUE (INSPIRASI GAMBAR 1) ==================== -->
+  <div id="view-katalog" class="hidden min-h-screen bg-ivory pt-24 pb-16 px-4 sm:px-8">
+    <div class="max-w-6xl mx-auto">
+      <!-- Bar Navigasi Kembali ke Ruangan Cafe -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <button type="button" onclick="bukaTampilan('toko')" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-khaki hover:border-burgundy text-xs sm:text-sm font-bold text-ink shadow-sm transition">
+          ← Kembali ke Suasana Cafe
+        </button>
+        <div class="flex flex-wrap gap-2" id="filter-katalog">
+          <button type="button" onclick="filterKatalog('semua')" data-kat="semua" class="btn-kat px-4 py-1.5 rounded-full text-xs font-bold bg-burgundy text-white">Semua</button>
+          <button type="button" onclick="filterKatalog('ulang-tahun')" data-kat="ulang-tahun" class="btn-kat px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-khaki text-ink">Ulang Tahun</button>
+          <button type="button" onclick="filterKatalog('mini')" data-kat="mini" class="btn-kat px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-khaki text-ink">Bento &amp; Mini</button>
+          <button type="button" onclick="filterKatalog('tart')" data-kat="tart" class="btn-kat px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-khaki text-ink">Tart &amp; Chiffon</button>
+        </div>
+      </div>
+
+      <!-- Hero Editorial Banner (Terinspirasi Referensi Gambar 1 dengan Palet Dapur Kue Manis) -->
+      <div class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#DFB6AE] via-[#E8C8C0] to-[#F1DBD0] p-8 sm:p-12 mb-10 shadow-md border border-dusty/40">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div class="md:col-span-7 text-center md:text-left space-y-3">
+            <span class="inline-block px-3 py-1 rounded-full bg-white/75 text-burgundy text-[11px] font-extrabold tracking-widest uppercase">
+              Etalase Segar Hari Ini
+            </span>
+            <h1 class="font-serif text-4xl sm:text-6xl font-bold text-white drop-shadow-sm leading-none">
+              Dapur Kue Manis
+            </h1>
+            <p class="text-xs sm:text-sm text-ink/80 max-w-md mx-auto md:mx-0 leading-relaxed">
+              Setiap kue dipanggang segar setiap pagi menggunakan mentega premium, krim lembut, dan buah pilihan. Siap dipesan langsung atau dikustomisasi sesuai acaramu.
+            </p>
+            <div class="pt-2 flex flex-wrap justify-center md:justify-start gap-3">
+              <a href="#grid-katalog-kue" class="px-6 py-2.5 rounded-full border-2 border-white bg-white/25 hover:bg-white hover:text-burgundy text-white text-xs sm:text-sm font-bold transition">
+                Pilih Kue Etalase
+              </a>
+              <button type="button" onclick="bukaTampilan('custom')" class="px-6 py-2.5 rounded-full bg-burgundy hover:bg-burgundy/90 text-white text-xs sm:text-sm font-bold shadow-sm transition">
+                Racik Custom Cake 3D
+              </button>
+            </div>
+          </div>
+          <div class="md:col-span-5 flex justify-center">
+            <!-- Ilustrasi Layer Cake Berry di Atas Cake Stand Putih -->
+            <svg viewBox="0 0 260 210" class="w-60 sm:w-72 h-auto drop-shadow-xl">
+              <ellipse cx="130" cy="192" rx="74" ry="11" fill="#3D2B28" opacity="0.16" />
+              <rect x="118" y="154" width="24" height="36" fill="#FFFFFF" />
+              <ellipse cx="130" cy="190" rx="48" ry="10" fill="#F5EDE6" stroke="#E2D4C8" stroke-width="1.5" />
+              <ellipse cx="130" cy="154" rx="96" ry="18" fill="#FFFFFF" stroke="#E2D4C8" stroke-width="2" />
+              <!-- Layer Cake Potongan Segar -->
+              <path d="M62 86 L62 144 A68 14 0 0 0 198 144 L198 86 Z" fill="#FDF8F2" stroke="#E8D6C8" stroke-width="1.5" />
+              <path d="M62 106 A68 13 0 0 0 198 106 L198 112 A68 13 0 0 1 62 112 Z" fill="#B23A48" />
+              <path d="M62 126 A68 13 0 0 0 198 126 L198 132 A68 13 0 0 1 62 132 Z" fill="#B23A48" />
+              <ellipse cx="130" cy="86" rx="68" ry="14" fill="#FFFFFF" />
+              <!-- Topping Raspberry / Strawberry -->
+              <circle cx="96" cy="80" r="10" fill="#B23A48" /><circle cx="93" cy="77" r="2.5" fill="#FF9AA2" />
+              <circle cx="118" cy="76" r="11" fill="#C43445" /><circle cx="115" cy="73" r="2.5" fill="#FF9AA2" />
+              <circle cx="142" cy="76" r="11" fill="#B23A48" /><circle cx="139" cy="73" r="2.5" fill="#FF9AA2" />
+              <circle cx="164" cy="80" r="10" fill="#C43445" /><circle cx="161" cy="77" r="2.5" fill="#FF9AA2" />
+              <circle cx="130" cy="86" r="10" fill="#B23A48" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid Kartu Produk Kue (Rapi 3 Kolom ala Gambar 1) -->
+      <div id="grid-katalog-kue" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. VIEW STUDIO CUSTOM CAKE 3D (TERHUBUNG KE CAKECRAFT USER) ==================== -->
+  <div id="view-custom" class="hidden min-h-screen bg-[#FCE8EC] pt-20">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <button type="button" onclick="bukaTampilan('toko')" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-dusty text-xs sm:text-sm font-bold text-ink shadow-sm hover:bg-blush transition">
+        ← Kembali ke Ruang Cafe
+      </button>
+      <span class="text-xs font-bold text-burgundy">Meja Racik 3D Interaktif • Klik "Pesan Sekarang 🛒" untuk masuk ke Kasir</span>
+    </div>
+    <iframe id="frame-cakecraft" title="CakeCraft Custom Cake Studio" class="w-full h-[calc(100vh-132px)] border-0 rounded-t-3xl shadow-inner bg-[#FCE8EC]"></iframe>
+  </div>
+
+  <!-- ==================== 5. VIEW MEJA KASIR & PEMBAYARAN ==================== -->
+  <div id="view-kasir" class="hidden min-h-screen bg-ivory pt-24 pb-16 px-4 sm:px-8">
+    <div class="max-w-4xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <button type="button" onclick="bukaTampilan('toko')" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-khaki hover:border-burgundy text-xs sm:text-sm font-bold text-ink shadow-sm transition">
+          ← Kembali ke Ruang Cafe
+        </button>
+        <span class="px-3.5 py-1 rounded-full bg-blush text-burgundy text-xs font-extrabold">Meja Kasir Dapur Kue Manis</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Daftar Item Keranjang -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-khaki/60 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-khaki/40 pb-3">
+            <h2 class="text-xl font-extrabold text-ink">Pesanan di Meja Kasir</h2>
+            <button type="button" onclick="bukaTampilan('katalog')" class="text-xs font-bold text-burgundy underline">+ Tambah Kue Lain</button>
+          </div>
+          <div id="list-keranjang" class="space-y-3"></div>
+          <div class="pt-3 border-t border-khaki/40 flex items-center justify-between">
+            <span class="text-sm font-bold text-ink/70">Total Pembayaran</span>
+            <span id="total-kasir" class="text-2xl font-extrabold text-burgundy">Rp 0</span>
+          </div>
+        </div>
+
+        <!-- Formulir Pembayaran & Pengambilan -->
+        <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-khaki/60 shadow-sm space-y-4">
+          <h3 class="text-lg font-extrabold text-ink">Detail Pengambilan &amp; Bayar</h3>
+          <div>
+            <label for="kasir-nama" class="block text-xs font-bold text-ink/70 mb-1">Nama Pemesan</label>
+            <input id="kasir-nama" type="text" placeholder="Contoh: Nabila Putri" class="w-full px-3.5 py-2.5 rounded-xl border border-khaki text-sm outline-none focus:border-burgundy" />
+          </div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label for="kasir-tanggal" class="block text-xs font-bold text-ink/70 mb-1">Tanggal</label>
+              <input id="kasir-tanggal" type="date" class="w-full px-3 py-2 rounded-xl border border-khaki text-xs outline-none focus:border-burgundy" />
+            </div>
+            <div>
+              <label for="kasir-metode-ambil" class="block text-xs font-bold text-ink/70 mb-1">Pengambilan</label>
+              <select id="kasir-metode-ambil" onchange="renderKasir()" class="w-full px-3 py-2 rounded-xl border border-khaki text-xs outline-none focus:border-burgundy bg-white">
+                <option value="toko">Ambil di Toko (Gratis)</option>
+                <option value="kurir">Kirim Kurir (+Rp 15.000)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="kasir-bayar" class="block text-xs font-bold text-ink/70 mb-1">Metode Pembayaran</label>
+            <select id="kasir-bayar" class="w-full px-3.5 py-2.5 rounded-xl border border-khaki text-sm outline-none focus:border-burgundy bg-white">
+              <option value="QRIS Instan">QRIS Instan</option>
+              <option value="Transfer Bank BCA / Mandiri">Transfer Bank BCA / Mandiri</option>
+              <option value="Bayar Tunai di Kasir">Bayar Tunai di Kasir</option>
+              <option value="E-Wallet (GoPay / OVO / Dana)">E-Wallet (GoPay / OVO / Dana)</option>
+            </select>
+          </div>
+          <button type="button" onclick="prosesPembayaranKasir()" class="w-full py-3 rounded-full bg-burgundy hover:bg-burgundy/90 text-white text-sm font-extrabold shadow-md transition">
+            Konfirmasi &amp; Bayar Sekarang
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DETAIL KUE ETALASE ==================== -->
+  <div id="modal-detail" class="hidden fixed inset-0 z-[70] bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 border border-khaki/60">
+      <div class="flex items-center justify-between">
+        <span id="detail-badge" class="px-3 py-1 rounded-full bg-blush text-burgundy text-xs font-bold">Terlaris</span>
+        <button type="button" onclick="tutupDetail()" class="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink flex items-center justify-center text-sm font-bold">✕</button>
+      </div>
+      <div id="detail-gambar" class="bg-ivory rounded-2xl py-4 border border-khaki/40"></div>
+      <div>
+        <p id="detail-label" class="text-xs font-semibold text-ink/60">Ulang Tahun</p>
+        <h3 id="detail-nama" class="text-xl font-extrabold text-ink mt-0.5">Nama Kue</h3>
+        <p id="detail-ukuran" class="text-sm text-ink/70 mt-1">Ukuran</p>
+      </div>
+      <div class="bg-ivory rounded-2xl border border-khaki/50 p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-ink/60">Harga</p>
+          <p id="detail-harga" class="text-2xl font-extrabold text-burgundy">Rp 0</p>
+        </div>
+        <span class="text-[11px] text-ink/60 text-right">Termasuk pisau kue<br>&amp; lilin standar</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" onclick="tutupDetail(); bukaTampilan('custom')" class="py-2.5 px-3 bg-white border border-khaki hover:border-burgundy text-ink rounded-full text-xs sm:text-sm font-bold transition">Custom 3D</button>
+        <button type="button" onclick="tambahEtalaseKeKasir(detailId)" class="py-2.5 px-3 bg-burgundy hover:bg-burgundy/90 text-white rounded-full text-xs sm:text-sm font-bold transition">+ Masuk Kasir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL HAMPERS & KUE KERING ==================== -->
+  <div id="modal-hampers" class="hidden fixed inset-0 z-[70] bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-khaki/60">
+      <div class="flex items-center justify-between">
+        <span class="px-3 py-1 rounded-full bg-blush text-burgundy text-xs font-bold">Rak Kue Kering</span>
+        <button type="button" onclick="document.getElementById('modal-hampers').classList.add('hidden')" class="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink text-sm font-bold">✕</button>
+      </div>
+      <h3 class="text-xl font-extrabold text-ink">Toples Cookies &amp; Hampers</h3>
+      <div class="space-y-2.5">
+        <div class="p-3.5 rounded-2xl bg-ivory border border-khaki/60 flex items-center justify-between">
+          <div>
+            <p class="text-sm font-bold text-ink">Toples Choco Chip Butter (350g)</p>
+            <p class="text-xs text-burgundy font-extrabold">Rp 85.000</p>
+          </div>
+          <button type="button" onclick="tambahItemManual('Toples Choco Chip Butter (350g)', 85000); document.getElementById('modal-hampers').classList.add('hidden')" class="px-3.5 py-1.5 rounded-full bg-burgundy text-white text-xs font-bold">+ Kasir</button>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-ivory border border-khaki/60 flex items-center justify-between">
+          <div>
+            <p class="text-sm font-bold text-ink">Paket Hampers Pita Klasik</p>
+            <p class="text-xs text-burgundy font-extrabold">Rp 175.000</p>
+          </div>
+          <button type="button" onclick="tambahItemManual('Paket Hampers Pita Klasik', 175000); document.getElementById('modal-hampers').classList.add('hidden')" class="px-3.5 py-1.5 rounded-full bg-burgundy text-white text-xs font-bold">+ Kasir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL INFO TOKO ==================== -->
+  <div id="modal-info" class="hidden fixed inset-0 z-[70] bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-khaki/60">
+      <div class="flex items-center justify-between">
+        <span class="px-3 py-1 rounded-full bg-blush text-burgundy text-xs font-bold">Tentang Toko</span>
+        <button type="button" onclick="document.getElementById('modal-info').classList.add('hidden')" class="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink text-sm font-bold">✕</button>
+      </div>
+      <h3 class="text-xl font-extrabold text-ink">Dapur Kue Manis</h3>
+      <p class="text-sm text-ink/75 leading-relaxed">Patisserie rumahan sejak 2018 yang menyajikan kue etalase segar harian dan layanan desain kue 3D sesuai impian acaramu.</p>
+      <div class="bg-ivory rounded-2xl p-4 border border-khaki/50 space-y-1.5 text-xs">
+        <p><b>Alamat:</b> Jl. Melati Manis No. 18, Bandung</p>
+        <p><b>Jam Buka:</b> Setiap Hari, 08.00 – 20.00 WIB</p>
+        <p><b>WhatsApp:</b> 0812-3456-7890</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== KURSOR PIPING BAG DENGAN PITA PINK ==================== -->
+  <div id="kursor-piping" aria-hidden="true">
+    <svg viewBox="0 0 80 80" class="w-full h-full overflow-visible">
+      <!-- Krim Pink Keluar Saat Hover -->
+      <g class="krim-keluar">
+        <circle cx="5" cy="5" r="5" fill="#F1DBD0" stroke="#D96B91" stroke-width="1.5" />
+        <circle cx="2" cy="11" r="3" fill="#EFA7B8" />
+      </g>
+      <!-- Spuit Logam di Ujung (0,0) -->
+      <polygon points="4,4 18,10 10,18" fill="#D8DEE4" stroke="#7A828A" stroke-width="1.5" stroke-linejoin="round" />
+      <!-- Kantong Piping Bag Krim Lembut -->
+      <path d="M14,14 L54,28 C62,31 66,38 62,46 L46,62 C38,66 31,62 28,54 Z" fill="#FFFDF9" stroke="#D3A29D" stroke-width="2" stroke-linejoin="round" />
+      <!-- Garis Lipatan Plastik Piping Bag -->
+      <line x1="22" y1="22" x2="52" y2="38" stroke="#F1DBD0" stroke-width="2" stroke-linecap="round" />
+      <line x1="20" y1="26" x2="44" y2="48" stroke="#F1DBD0" stroke-width="2" stroke-linecap="round" />
+      <!-- Ujung Kantong Terlipat di Belakang Pita -->
+      <polygon points="52,42 74,52 64,64 70,72 52,64 42,52" fill="#FCE8EC" stroke="#D3A29D" stroke-width="1.8" stroke-linejoin="round" />
+      <!-- Pita Pink Cantik Mengikat Piping Bag -->
+      <g transform="translate(50, 48) rotate(-45)">
+        <!-- Sayap Pita Kiri & Kanan -->
+        <path d="M0,0 C-10,-10 -18,-4 -12,4 C-8,8 -2,3 0,0 Z" fill="#EFA7B8" stroke="#A36361" stroke-width="1.5" />
+        <path d="M0,0 C10,-10 18,-4 12,4 C8,8 2,3 0,0 Z" fill="#EFA7B8" stroke="#A36361" stroke-width="1.5" />
+        <!-- Ekor Pita -->
+        <path d="M-2,2 L-9,13 L-4,11 L0,3 Z" fill="#D96B91" />
+        <path d="M2,2 L9,13 L4,11 L0,3 Z" fill="#D96B91" />
+        <!-- Simpul Tengah Pita -->
+        <circle cx="0" cy="0" r="3.5" fill="#D96B91" stroke="#A36361" stroke-width="1.2" />
+      </g>
+    </svg>
+  </div>
+
+  <!-- Toast Notifikasi -->
+  <div id="toast-utama" class="fixed bottom-16 right-5 z-[90] translate-y-24 opacity-0 transition-all duration-300 bg-kayu text-ivory border border-kuningan px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-xl"></div>
+
+  <!-- ==================== TEMPLATE SOURCE CAKECRAFT CUSTOM CAKE STUDIO (TERHUBUNG PENUH) ==================== -->
+  <template id="tpl-cakecraft">
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CakeCraft – Custom Cake</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Pacifico&family=Fredoka:wght@500;600&family=Dancing+Script:wght@600&family=Nunito:wght@400;600;700;800&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--soft:#FCE8EC;--cream:#FFF8F0;--rose:#EFA7B8;--pk:#D96B91;--ink:#713D50;--beige:#E8D6D0;--mut:#86566A;--pk2:#EFA7B8;--line:#E8D6D0;--panel:#FFF8F0}
+*{box-sizing:border-box;margin:0}
+body{font-family:Nunito,system-ui,sans-serif;color:var(--ink);min-height:100vh;overflow-x:hidden;background:radial-gradient(900px 420px at 95% -5%,#EFA7B866,transparent),radial-gradient(800px 500px at -5% 105%,#EFA7B855,transparent),#FCE8EC}
+body::before{content:"";position:fixed;right:-140px;top:-170px;width:460px;height:340px;border-radius:50%;background:#EFA7B866;z-index:-1}
+body::after{content:"🧁";position:fixed;left:14px;bottom:70px;font-size:48px;opacity:.28;z-index:-1}
+button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--pk);outline-offset:2px}
+.wrap{max-width:1320px;margin:0 auto;padding:8px 24px 24px}
+.steps{display:flex;justify-content:space-between;gap:4px;padding:12px 0 18px;overflow-x:auto}
+.st{flex:1;min-width:70px;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--mut);position:relative}
+.st:not(:last-child)::after{content:"";position:absolute;top:24px;left:calc(50% + 30px);right:calc(-50% + 30px);height:3px;border-radius:3px;background:#E8D6D0}
+.st.done:not(:last-child)::after{background:var(--pk2)}
+.ic{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--cream);border:2px solid #E8D6D0;font-size:19px}
+.st.done .ic{background:var(--rose);border-color:transparent;color:var(--ink);font-weight:800}
+.st.cur .ic{background:var(--pk);border-color:transparent;color:#fff;box-shadow:0 0 0 5px #fff,0 8px 20px #D96B9166}
+.st.cur,.st.done{color:#713D50}
+main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+main.d{grid-template-columns:260px minmax(0,1fr) 300px}
+.card{background:var(--panel);border:1.5px solid #E8D6D0;box-shadow:0 14px 34px #713D5026;border-radius:24px;padding:24px;min-height:470px}
+main.d .card{padding:20px;min-height:0}#Rp{display:none}main.d #Rp{display:block}
+.ttl{display:flex;gap:12px;align-items:center;margin-bottom:18px}.ti{width:42px;height:42px;border-radius:13px;background:var(--soft);display:grid;place-items:center;font-size:21px;flex:none}
+h1{font:700 26px/1.1 "Baloo 2"}.ttl p{color:var(--mut);font-size:14px;font-weight:600}
+.lb{font-weight:800;font-size:13px;margin:18px 0 9px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px}
+.opt{background:var(--cream);border:2px solid #E8D6D0;border-radius:18px;padding:12px 8px 12px;text-align:center;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:800;transition:.15s;box-shadow:0 2px 6px #D96B9114}
+.opt:hover{transform:translateY(-2px);border-color:var(--pk2);box-shadow:0 8px 18px #D96B912b}
+.opt.on{border-color:var(--pk);background:#FCE8EC;box-shadow:0 8px 20px #D96B9133}
+.opt.on::after{content:"✓";position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:var(--pk);color:#fff;font-size:13px;line-height:24px}
+.opt svg{width:100%;height:auto;max-height:92px}.opt small{color:var(--mut);font-weight:700;font-size:12px}.opt em{font-style:normal;color:#713D50}
+.opt .big{font-size:34px;line-height:1.3}.opt .sw{width:52px;height:52px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #E8D6D0,0 4px 10px #0002;margin:6px 0 4px}
+.opt.dash{border-style:dashed}.opt.dash .big{font-size:52px;color:var(--mut);font-weight:400}
+.g2c{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode{padding:18px;border-radius:20px;border:2px solid #E8D6D0;background:var(--cream);text-align:left;display:grid;gap:4px}.mode.on{border-color:var(--pk);background:#FCE8EC}.mode b{font:700 18px "Baloo 2"}.mode span{font-size:13px;color:var(--mut);font-weight:600}.mode .mi{font-size:30px}
+.tip{display:flex;align-items:center;gap:12px;background:#FCE8EC;border-radius:16px;padding:14px 16px;margin-top:20px;font-size:14px;font-weight:700}.tip::before{content:"i";width:22px;height:22px;border:2px solid var(--ink);border-radius:50%;display:grid;place-items:center;font:800 12px Nunito;flex:none}
+.sc{display:flex;flex-wrap:wrap;gap:9px}.sc .ch{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:99px;background:var(--cream);border:2px solid #E8D6D0;font-weight:800;font-size:14px}.sc .ch.on{border-color:var(--pk);background:#FCE8EC}.sc i{width:20px;height:20px;border-radius:50%;box-shadow:0 0 0 2px #E8D6D0}
+input,textarea,select{width:100%;padding:12px 14px;border-radius:14px;border:2px solid #E8D6D0;background:var(--cream);font-weight:700}textarea{resize:vertical;min-height:70px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.rv{display:flex;justify-content:space-between;align-items:center;background:var(--cream);border:1.5px solid #E8D6D0;border-radius:16px;padding:10px 16px;margin-bottom:8px}.rv small{color:var(--mut);display:block;font-size:12px;font-weight:700}.rv button{color:var(--ink);font-weight:800;text-decoration:underline;font-size:14px}
+.vbox{position:relative;height:min(410px,52vh);border-radius:26px;overflow:hidden;background:radial-gradient(circle at 50% 38%,#FFF8F0,#FCE8EC 55%,#EFA7B8);box-shadow:0 14px 34px #713D502e}
+main.d .vbox{height:min(570px,70vh);background:linear-gradient(#ffffff55 1px,transparent 1px) 0 0/28px 28px,linear-gradient(90deg,#ffffff55 1px,transparent 1px) 0 0/28px 28px,radial-gradient(circle at 50% 40%,#FFF8F0,#FCE8EC 70%,#EFA7B8)}
+.vbox::before,.vbox::after{content:"✦";position:absolute;color:#fff;opacity:.9;pointer-events:none}.vbox::before{left:11%;top:22%;font-size:34px}.vbox::after{right:12%;top:46%;font-size:26px}
+canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}
+.vt{position:absolute;inset:12px 12px auto 12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}.vt>*{pointer-events:auto}.vt .col{display:grid;gap:8px;align-content:start}
+.ib{width:42px;height:42px;border-radius:13px;background:var(--cream);box-shadow:0 3px 10px #713D5033;font-size:17px;font-weight:800}.ib:disabled{opacity:.4}
+.seg{display:flex;background:var(--cream);border-radius:14px;padding:4px;box-shadow:0 3px 10px #713D5033;height:fit-content}.seg button{padding:8px 16px;border-radius:11px;font-weight:800;font-size:14px}.seg .on{background:var(--pk);color:#fff}
+.pill{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;background:#ffffffe6;border-radius:99px;box-shadow:0 4px 14px #713D5033;padding:4px}.pill button{padding:9px 16px;border-radius:99px;font-weight:800;font-size:14px}.pill button.on{background:var(--soft)}
+.fav{position:absolute;left:16px;top:48%;font-size:32px;color:var(--ink)}.fav.on{color:var(--pk)}
+.under{margin-top:12px}.under .card{min-height:0;padding:18px 20px}
+.sum{display:flex;gap:14px;align-items:center}.sum svg{width:84px;flex:none;background:var(--soft);border-radius:14px}.sum h3{font-size:15px}.sum p{font-size:13px;color:var(--mut);font-weight:700}
+.tot{display:flex;justify-content:space-between;border-top:1.5px solid var(--line);margin-top:12px;padding-top:12px;font-weight:800}.tot span:last-child{color:var(--pk);font-size:21px}
+.shp{display:grid;grid-template-columns:1.5fr .8fr 1fr;gap:12px;margin-top:10px}.shp canvas{background:linear-gradient(#E8D6D0 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,#E8D6D0 1px,transparent 1px) 0 0/20px 20px,#fff;border-radius:14px;border:2px solid #E8D6D0;cursor:crosshair;height:210px}
+.tools{display:grid;gap:6px;align-content:start}.tools button{padding:10px;border-radius:12px;font-weight:800;font-size:14px;text-align:left}.tools button.on{background:var(--soft);color:var(--ink)}
+.tips{background:#FCE8EC;border-radius:14px;padding:12px;font-size:13px;font-weight:700;color:var(--mut)}
+.el{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:14px;background:var(--cream);border:2px solid #E8D6D0;font-weight:800;margin-bottom:8px}.el.on{border-color:var(--pk);background:#FCE8EC}.el span:first-child{font-size:20px;width:26px;text-align:center}
+.ep{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 10px}.ep button{width:42px;height:42px;border-radius:12px;background:var(--cream);border:2px solid #E8D6D0;font-size:22px}
+.pal{display:flex;gap:9px;flex-wrap:wrap}.pal button{width:26px;height:26px;border-radius:50%;box-shadow:0 0 0 2px #fff,0 0 0 3px #E8D6D0}.pal button.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--pk)}
+.sub2{font-size:12px;color:var(--mut);font-weight:700;margin:-4px 0 8px}.hd2{font:700 17px "Baloo 2";margin-bottom:10px}
+.rng{display:flex;gap:10px;align-items:center}.rng input[type=range]{padding:0;border:0;accent-color:var(--pk);background:none}.rng span{background:var(--cream);border:2px solid #E8D6D0;border-radius:10px;padding:5px 9px;font-size:13px;font-weight:800;white-space:nowrap}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sg button{padding:10px;border-radius:12px;background:var(--cream);border:2px solid #E8D6D0;font-weight:800;font-size:14px}.sg button.on{background:#FCE8EC;border-color:var(--pk);color:var(--ink)}
+.cnt{text-align:right;font-size:12px;color:var(--mut);font-weight:700;margin:3px 0 10px}
+input[type=color]{padding:2px;height:42px;width:64px;cursor:pointer}
+footer{display:flex;align-items:center;gap:18px;margin-top:20px;flex-wrap:wrap}
+.btn{padding:15px 30px;border-radius:18px;font-weight:800;font-size:16px}.prv{background:var(--cream);box-shadow:0 4px 14px #713D502e}
+.nxt{background:var(--pk);color:#fff;box-shadow:0 10px 22px #D96B9155}.nxt:hover{filter:brightness(.93)}
+.trust{display:flex;gap:22px;font-size:13px;font-weight:700;flex-wrap:wrap}.fr{margin-left:auto;display:flex;align-items:center;gap:22px}.fr b{font:700 26px "Baloo 2"}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,90px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:14px;font-weight:700;transition:.3s;z-index:20}.toast.show{transform:translate(-50%,0)}
+@media(min-width:981px){main:not(.d) #V{position:sticky;top:12px}}
+.thm{background:#EFA7B8;border-color:#ffffff88}.thm .ti{background:#ffffff99}
+.rcpw{position:relative;max-width:430px;margin:30px auto 14px;filter:drop-shadow(0 12px 16px #713D5055);transform:rotate(-.6deg)}
+.rc{position:relative;background:#FFF8F0;color:#713D50;font-family:"Courier Prime",monospace;padding:30px 24px 26px;text-align:center}
+.rc::before,.rc::after{content:"";position:absolute;left:0;right:0;height:10px;background-size:20px 100%}
+.rc::before{top:-9px;background-image:conic-gradient(from 135deg at top,#FFF8F0 90deg,#0000 0)}
+.rc::after{bottom:-9px;background-image:conic-gradient(from -45deg at bottom,#FFF8F0 90deg,#0000 0)}
+.rc h2{font:700 34px "Courier Prime",monospace;letter-spacing:.3em;margin-right:-.3em}
+.rc .s{font-size:11px;letter-spacing:.05em;margin:6px 0 2px}.rc .st2{font-size:17px;letter-spacing:.06em;margin:8px 0}
+.rc .ast{overflow:hidden;white-space:nowrap;font-size:15px;font-weight:700;margin:8px 0}.rc .dt{font-weight:700;font-size:15px}
+.rl{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;font:400 13px/1.35 "Courier Prime",monospace;padding:6px 4px;border-radius:4px;color:inherit}
+button.rl:hover{background:#FCE8EC}.rl span:last-child{white-space:nowrap}
+.rc .dbl{border-top:4px double #713D50;margin:10px 0}.rc .tt{display:flex;justify-content:space-between;font:700 18px "Courier Prime",monospace;padding:2px 4px}
+.rc .bars{display:grid;gap:8px;margin:18px 0 12px}.rc .bars div{display:flex;gap:16px}.rc .bars i{height:10px;background:#713D50;display:block}
+.rc svg.bc{width:100%;height:64px;display:block}
+.stk{position:absolute;background:var(--cream);border:3px solid #EFA7B8;border-radius:18px;padding:5px 7px;font-size:30px;line-height:1;box-shadow:0 4px 10px #0003;z-index:2}
+.hint2{text-align:center;font-size:13px;font-weight:700;color:#713D50}
+.fl{display:grid;gap:6px;font-weight:800;font-size:13px;color:var(--mut)}
+.card.rcp{padding:14px;background:#EFA7B8 linear-gradient(90deg,#ffffff55 50%,#0000 50%) 0 0/28px 28px;border:0;background-image:linear-gradient(90deg,#ffffff55 50%,#0000 50%),linear-gradient(#ffffff55 50%,#0000 50%);background-size:28px 28px}
+.pp{position:relative;background:#FFF8F0;border-radius:34px;padding:26px 24px 22px;outline:2px dashed #EFA7B8;outline-offset:-10px;color:#713D50}
+.pp .bub{font:700 clamp(44px,7vw,66px)/1 "Baloo 2";color:#D96B91;text-align:center;margin-top:6px;text-shadow:-3px -3px 0 #fff,3px -3px 0 #fff,-3px 3px 0 #fff,3px 3px 0 #fff,0 6px 0 #EFA7B8}
+.pp .thx{font:700 22px "Baloo 2";color:#D96B91;text-align:center}
+.pp .rib{background:#EFA7B8;color:#713D50;font:700 12.5px Nunito;text-align:center;padding:6px 22px;margin:6px auto 0;width:fit-content;max-width:100%;clip-path:polygon(0 0,100% 0,97% 50%,100% 100%,0 100%,3% 50%)}
+.pp .note{position:absolute;left:16px;top:22px;width:90px;background:#FFF8F0;border:2px solid #E8D6D0;border-radius:6px;padding:16px 6px 10px;text-align:center;font:600 13px/1.2 "Baloo 2";transform:rotate(-7deg);box-shadow:0 3px 8px #713D5033}
+.pp .note::before{content:"";position:absolute;left:14px;right:14px;top:-8px;height:14px;background:#EFA7B8aa}
+.pp .tul{position:absolute;right:16px;top:24px;font-size:38px}
+.pr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.pf{display:flex;align-items:center;gap:8px;border:2px solid #E8D6D0;border-radius:14px;padding:10px 14px;font-weight:800;font-size:14px;white-space:nowrap}
+.dots{flex:1;border-bottom:2px dotted #EFA7B8;min-height:1.3em;font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.tb{border:2px solid #E8D6D0;border-radius:14px;overflow:hidden;margin-top:14px}
+.tb .tr{display:grid;grid-template-columns:34px 1fr 38px 84px 92px;border-bottom:1.5px dashed #E8D6D0}
+.tb .tr>span{padding:8px 6px;border-left:1.5px solid #E8D6D0;min-height:34px;font-size:12.5px;font-weight:700}.tb .tr>span:first-child{border-left:0;text-align:center}
+.tb .h>span{background:#EFA7B8;text-align:center;font-weight:800;border-left-color:#E8D6D0}
+.tb .ds{text-align:left}.tb .rt{text-align:right}.tb .tl{border-bottom:0}.tb .tot2{background:#EFA7B8;text-align:center;font-weight:800}
+.pn{display:grid;grid-template-columns:1fr 1.25fr;gap:14px;margin-top:22px}
+.bx{position:relative;border:2px solid #E8D6D0;border-radius:16px;padding:22px 14px 12px}
+.tag{position:absolute;top:-13px;left:16px;background:#EFA7B8;color:#713D50;padding:2px 14px;font:600 14px "Baloo 2";font-style:normal;border-radius:4px}
+.cb{display:block;text-align:left;font-weight:700;padding:5px 0;font-size:14px;width:100%}
+.nt{border-bottom:2px dashed #E8D6D0;min-height:30px;padding:5px 2px;font-size:13px;font-weight:700}
+.ty{font:600 44px/1 "Dancing Script",cursive;color:#D96B91;text-align:center;margin-top:22px}.ap{text-align:center;font-weight:700;font-size:14px;margin-bottom:4px}
+.cup,.fl2{position:absolute;bottom:16px;font-size:34px}.cup{left:24px}.fl2{right:24px}
+@media(max-width:980px){main,main.d{grid-template-columns:1fr}.card{min-height:0}.shp{grid-template-columns:1fr}.fr{margin:0;width:100%;justify-content:space-between}.vbox,main.d .vbox{height:46vh}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="steps" id="steps"></div>
+<main id="main">
+ <section class="card" id="L"></section>
+ <section id="V"><div class="vbox" id="vbox"><canvas id="cv" aria-label="Pratinjau kue 3D"></canvas><div class="vt" id="vt"></div><button class="fav" id="fav" aria-label="Favorit">♡</button>
+  <div class="pill"><button data-a="rot" data-v="-1" aria-label="Putar kiri">‹</button><button data-a="spin" id="bSpin" class="on">⟳ Putar</button><button data-a="rot" data-v="1" aria-label="Putar kanan">›</button></div></div>
+  <div class="under" id="under"></div></section>
+ <section class="card" id="Rp"></section>
+</main>
+<footer id="ft"></footer>
+</div>
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const rp=n=>"Rp "+n.toLocaleString("id-ID"),$=id=>document.getElementById(id),esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SZ={mini:{d:10,p:85000,s:"1–2 orang"},small:{d:14,p:125000,s:"3–5 orang"},medium:{d:18,p:165000,s:"6–10 orang"},large:{d:22,p:210000,s:"10–15 orang"}};
+const SHP={round:["Lingkaran",0],square:["Kotak",0],heart:["Hati",10000],star:["Bintang",15000],hex:["Hexagon",10000],custom:["Buat Sendiri",25000]};
+const FLAV={vanilla:["Vanilla",0,"#fbefd5"],choco:["Cokelat",10000,"#8a5a3c"],velvet:["Red Velvet",15000,"#c0404e"],straw:["Stroberi",10000,"#f9cdd6"]};
+const FILL={cream:["Krim Vanilla",0,"#fffaf0"],ganache:["Ganache Cokelat",8000,"#5b3322"],jam:["Selai Stroberi",5000,"#d6304a"],cheese:["Cream Cheese",12000,"#fff0c9"]};
+const ICE=[["Pink","#f6b4c2"],["Putih","#FFF8F0"],["Cokelat","#6b3d2a"],["Mint","#bfe8d8"],["Kuning","#fbe39a"],["Lavender","#d8c7f0"]];
+const DECO={drip:["🍫","Lelehan krim",12000],straw:["🍓","Stroberi",10000],berry:["🫐","Mixed berry",15000],flower:["🌸","Bunga gula",8000],spr:["✨","Taburan",5000],candle:["🕯️","Lilin",3000]};
+const ELS=[["Stiker","😊",["❤️","💗","⭐","🌈","😊"],3000],["Topper","⭐",["🐰","🐻","🦄","🎀","👑"],8000],["Bunga","🌸",["🌸","🌼","🌷","🌹"],2000],["Buah","🍎",["🍓","🍒","🍑","🫐","🍋"],2500],["Cokelat","🍫",["🍫","🍪","🍩","🍬","🍭"],3000],["Lainnya","•••",["🎈","✨","🎉","🧁"],2000]];
+const FONTS=["Baloo 2","Pacifico","Fredoka","Dancing Script","Nunito"];
+const PAL=["#fbd5e0","#D96B91","#e53935","#ffb38a","#ffd54f","#81c784","#90caf9","#d1c4e9","#5c6bc0","#ab47bc","#6d3b27"];
+const CAT=[[-.95,.1],[-.9,-.8],[-.45,-.45],[0,-.55],[.45,-.45],[.9,-.8],[.95,.1],[.8,.55],[.4,.85],[0,.92],[-.4,.85],[-.8,.55]];
+const STEPS=[["Jenis Kue","🎂"],["Ukuran","⤢"],["Bentuk","⬡"],["Rasa","🎨"],["Dekorasi","☆"],["Custom Desain","✎"],["Review Kue","🧾"],["Pengambilan","🚚"],["Review Pesanan","💌"]];
+const DEF=()=>({shape:"round",size:"mini",flavor:"vanilla",fill:"cream",icing:"#f6b4c2",deco:{drip:true,straw:true},items:[{id:1,t:"text",text:"Happy Birthday!",font:"Baloo 2",px:32,color:"#5b2a1b",align:"center",fx:"normal"}],sel:1,cpts:null,pick:"pickup",pay:null,f:{}});
+const TPL=[
+ {n:"Strawberry Dream",d:"Vanilla, selai stroberi, stroberi segar",s:{size:"small",fill:"jam"}},
+ {n:"Choco Berry",d:"Cokelat, ganache, mixed berry",s:{size:"medium",flavor:"choco",fill:"ganache",icing:"#6b3d2a",deco:{drip:true,berry:true}}},
+ {n:"Velvet Love",d:"Kue hati red velvet, cream cheese",s:{shape:"heart",size:"small",flavor:"velvet",fill:"cheese",icing:"#FFF8F0",deco:{flower:true,drip:true}}}];
+let S=DEF(),step=0,mode="custom",tplI=null,nid=2,openC=-1,tool="draw",hist=[],hi=-1;
+const sel=()=>S.items.find(i=>i.id===S.sel);
+const ELP={Stiker:3000,Topper:8000,Bunga:2000,Buah:2500,Cokelat:3000,Lainnya:2000};
+function base(s){return SZ[s.size].p+SHP[s.shape][1]+FLAV[s.flavor][1]+FILL[s.fill][1]+Object.keys(s.deco).filter(k=>s.deco[k]).reduce((a,k)=>a+DECO[k][2],0)+s.items.reduce((a,i)=>a+(i.t==="text"?0:i.t==="img"?15000:ELP[i.k]||2000),0)}
+const total=()=>base(S)+(S.pick==="delivery"?15000:0);
+const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2400)};
+const ORD="CC-"+new Date().toISOString().slice(2,10).replace(/-/g,"")+"-"+Math.floor(1000+Math.random()*9000),TODAY=new Date(),MIND=new Date(Date.now()+3*864e5);
+const fmtD=d=>d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+const need=()=>!S.f.nm?"Isi nama dulu ya":!/.+@.+/.test(S.f.em||"")?"Isi email yang valid dulu ya":!S.f.dt?"Pilih tanggal dibutuhkan":S.pick==="delivery"&&!S.f.addr?"Isi alamat pengantaran":!S.pay?"Pilih metode pembayaran dulu ya":S.pay==="other"&&!S.f.payOther?"Tulis metode pembayaran lainnya":"";
+function barcode(s){let h=0,x=0,o="";for(const c of s)h=(Math.imul(h,31)+c.charCodeAt(0))>>>0;
+ for(let i=0;i<64;i++){h=(Math.imul(h,1103515245)+12345)>>>0;const w=1+(h>>>16)%4,g=1+(h>>>20)%3;o+=`<rect x="${x}" y="0" width="${w}" height="64"/>`;x+=w+g}
+ return`<svg class="bc" viewBox="0 0 ${x} 64" preserveAspectRatio="none" fill="#713D50" aria-hidden="true">${o}</svg>`}
+function lineItems(){const z=SZ[S.size],L=[[`ukuran ${S.size} (Ø${z.d} cm)`,z.p,1],[`bentuk ${SHP[S.shape][0].toLowerCase()}`,SHP[S.shape][1],2],[`rasa ${FLAV[S.flavor][0].toLowerCase()}`,FLAV[S.flavor][1],3],[`isian ${FILL[S.fill][0].toLowerCase()}`,FILL[S.fill][1],3],[`krim ${iceName(S.icing).toLowerCase()}`,0,3]];
+ Object.keys(S.deco).filter(k=>S.deco[k]).forEach(k=>L.push([`dekorasi ${DECO[k][1].toLowerCase()}`,DECO[k][2],4]));
+ S.items.forEach(i=>L.push(i.t==="text"?[`tulisan "${i.text.replace(/\n/g," ").slice(0,22)}"`,0,5]:i.t==="img"?["gambar kustom",15000,5]:[`${i.k.toLowerCase()} ${i.e}`,ELP[i.k]||2000,5]));return L}
+function thermal(){const R=n=>n?rp(n):"termasuk",A=`<div class="ast">${"*".repeat(32)}</div>`;
+ return`<div class="rcpw"><span class="stk" style="left:-26px;top:-20px;transform:rotate(-10deg)">🎂</span><span class="stk" style="right:-22px;bottom:40px;transform:rotate(8deg)">🍒</span><div class="rc"><h2>STRUK KUE</h2><div class="s">CEK LAGI KUE KAMU SEBELUM LANJUT!</div><div class="st2">DAPUR KUE MANIS</div>${A}<div class="dt">TANGGAL: ${fmtD(TODAY).toUpperCase()}</div>${A}${lineItems().map(l=>`${mode==="tpl"?`<div class="rl">`:`<button class="rl" data-a="go" data-v="${l[2]}">`}<span>${esc(l[0])}</span><span>${R(l[1])}</span>${mode==="tpl"?"</div>":"</button>"}`).join("")}<div class="dbl"></div><div class="tt"><span>TOTAL:</span><span>${rp(base(S))}</span></div><div class="s" style="margin-top:6px">*belum termasuk ongkir</div><div class="bars"><div><i style="flex:5"></i><i style="flex:2"></i></div><div><i style="flex:3"></i><i style="flex:2"></i></div></div>${barcode(ORD+base(S))}<div class="s">${ORD}</div></div></div><p class="hint2">${mode==="tpl"?"Template tidak bisa diubah.":"Klik baris mana saja untuk mengubahnya 🖍️"}</p>`}
+function pinkReceipt(){const dv=S.pick==="delivery",rows=lineItems().map(l=>[l[0],l[1]]);if(dv)rows.push(["ongkir antar",15000]);
+ const cells=Array.from({length:Math.max(8,rows.length)},(_,i)=>{const r=rows[i];return`<div class="tr"><span>${r?i+1:""}</span><span class="ds">${r?esc(r[0]):""}</span><span>${r?1:""}</span><span class="rt">${r?rp(r[1]):""}</span><span class="rt">${r?rp(r[1]):""}</span></div>`}).join("");
+ const dots=v=>`<span class="dots">${esc(v||"")}</span>`,pm=(k,l)=>`<div class="cb">${S.pay===k?"☑":"☐"} ${l}</div>`;
+ const nts=[dv?"Diantar ke: "+(S.f.addr||"-"):"Ambil di toko",S.f.dt?"Dibutuhkan: "+fmtD(new Date(S.f.dt+"T00:00")):"Dibutuhkan: -",S.f.ph?"WhatsApp: "+S.f.ph:"",S.f.notes||""].filter(Boolean);
+ return`<div class="pp"><div class="note">made<br>with love ♡</div><div class="tul">🌷🎀</div><div class="bub">Pesanan</div><div class="thx">Terima kasih banyak!</div><div class="rib">cek lagi pesananmu sebelum dikirim ♡</div>
+<div class="pr"><div class="pf">No. Pesanan : ${dots(ORD)}</div><div class="pf">Tanggal : ${dots(fmtD(TODAY))}</div></div>
+<div class="pf" style="margin-top:12px">♡ Nama Pelanggan : ${dots(S.f.nm)}</div><div class="pf" style="margin-top:12px">♡ Kontak : ${dots(S.f.em)}</div>
+<div class="tb"><div class="tr h"><span>No.</span><span>Item / Deskripsi</span><span>Qty</span><span>Harga Satuan</span><span>Jumlah (Rp)</span></div>${cells}<div class="tr tl"><span></span><span></span><span></span><span class="tot2">Total</span><span class="rt"><b>${rp(total())}</b></span></div></div>
+<div class="pn"><div class="bx"><i class="tag">Metode Pembayaran</i>${pm("cash","Tunai 💵")}${pm("bank","Transfer Bank 🏦")}${pm("ewallet","E-Wallet 📱")}<div class="cb">${S.pay==="other"?"☑":"☐"} Lainnya : ${S.pay==="other"?esc(S.f.payOther||""):""}</div></div><div class="bx"><i class="tag">Catatan</i>${nts.map(t=>`<div class="nt">${esc(t)}</div>`).join("")}<div class="nt"></div></div></div>
+<div class="ty">Terima kasih!</div><p class="ap">Kami menghargai dukunganmu ♡</p><span class="cup">☕</span><span class="fl2">🌸</span></div>`}
+const iceName=h=>(ICE.find(x=>x[1]===h)||["Kustom"])[0];
+const snap=()=>{const j=JSON.stringify({...S,f:0});if(hist[hi]===j)return;hist=hist.slice(0,hi+1);hist.push(j);hi=hist.length-1;if(hist.length>60){hist.shift();hi--}};
+const restore=()=>{S={...JSON.parse(hist[hi]),f:S.f};drawAll()};
+function cakeSVG(size,body,ice){const rx=20+SZ[size].d*1.75,t=36,b=64,d=[8,15,6,13,9];
+ let o=`<svg viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg"><ellipse cx="60" cy="72" rx="56" ry="12" fill="#e8dce2"/><ellipse cx="60" cy="68" rx="56" ry="12" fill="#faf4f7"/><path d="M${60-rx},${t}V${b}A${rx},${rx*.28} 0 0 0 ${60+rx},${b}V${t}Z" fill="${body}"/>`;
+ d.forEach((l,i)=>{const x=60-rx+8+i*(2*rx-16)/4;o+=`<rect x="${x-3.5}" y="${t}" width="7" height="${l+4}" rx="3.5" fill="${ice}"/>`});
+ o+=`<ellipse cx="60" cy="${t}" rx="${rx}" ry="${rx*.28}" fill="${ice}"/>`;
+ [[-.45,2],[0,-1],[.45,2]].forEach(([k,dy])=>{const x=60+rx*k;o+=`<circle cx="${x}" cy="${t-3+dy}" r="6" fill="#e0303f"/><path d="M${x-3},${t-8+dy}h6l-3 3z" fill="#3d9a4a"/>`});
+ return o+`</svg>`}
+function shapeSVG(k){const st=`fill="#fbefd5" stroke="#D96B91" stroke-width="4" stroke-linejoin="round"`;let b="";
+ if(k==="round")b=`<ellipse cx="60" cy="46" rx="42" ry="30" ${st}/>`;
+ else if(k==="square")b=`<rect x="22" y="14" width="76" height="64" rx="10" ${st}/>`;
+ else if(k==="heart")b=`<path d="M60 84C50 70 14 56 14 34 14 16 42 10 60 30 78 10 106 16 106 34 106 56 70 70 60 84Z" ${st}/>`;
+ else{const n=k==="star"?10:6,P=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2-Math.PI/2,r=k==="star"?(i%2?20:44):42;P.push((60+r*Math.cos(a)).toFixed(1)+","+(46+r*Math.sin(a)).toFixed(1))}b=`<polygon points="${P.join(" ")}" ${st}/>`}
+ return`<svg viewBox="0 0 120 92">${b}</svg>`}
+const head=(i,t,s)=>`<div class="ttl"><span class="ti">${i}</span><div><h1>${t}</h1><p>${s}</p></div></div>`;
+const card=(k,v,on,inner)=>`<button class="opt ${on?"on":""}" data-a="set" data-k="${k}" data-v="${v}">${inner}</button>`;
+function drawL(){let h="";const z=SZ[S.size],bd=FLAV[S.flavor][2];
+ if(step===0){h=head("🎂","Pilih Jenis Kue","Buat sendiri dari nol, atau pilih template siap pakai.")+`<div class="g2c"><button class="mode ${mode==="custom"?"on":""}" data-a="mode" data-v="custom"><span class="mi">🎨</span><b>Custom Sendiri</b><span>Atur ukuran, bentuk, rasa, dekorasi, dan desain.</span></button><button class="mode ${mode==="tpl"?"on":""}" data-a="mode" data-v="tpl"><span class="mi">⚡</span><b>Template Siap Pakai</b><span>Tidak mau repot? Pilih satu, langsung review.</span></button></div>`+
+  (mode==="tpl"?`<div class="lb">Pilih template</div><div class="grid">${TPL.map((t,i)=>`<button class="opt ${tplI===i?"on":""}" data-a="tpl" data-v="${i}">${t.s.shape==="heart"?shapeSVG("heart"):cakeSVG(t.s.size,FLAV[t.s.flavor||"vanilla"][2],t.s.icing||"#f6b4c2")}<b>${t.n}</b><small>${t.d}</small><em>${rp(base({...DEF(),...t.s}))}</em></button>`).join("")}</div><div class="tip">Template dipesan apa adanya, jadi langkah ukuran sampai desain dilewati.</div>`:`<div class="tip">Mulai dari ukuran dan bentuk, lalu pilih rasa dan hiasan. Hasilnya langsung tampil di preview 3D.</div>`)}
+ if(step===1)h=head("⤢","Pilih Ukuran Kue","Tentukan ukuran kue sesuai kebutuhanmu.")+`<div class="grid">${Object.entries(SZ).map(([k,v])=>card("size",k,S.size===k,`${cakeSVG(k,bd,S.icing)}<b>${k[0].toUpperCase()+k.slice(1)}</b><small>Ø ${v.d} cm</small><em>${rp(v.p)}</em>`)).join("")}</div><div class="tip">Ukuran ${S.size[0].toUpperCase()+S.size.slice(1)} cocok untuk ${z.s}.</div>`;
+ if(step===2)h=head("⬡","Pilih Bentuk Kue","Tentukan bentuk kue sesuai dengan keinginanmu.")+`<div class="grid">${Object.keys(SHP).map(k=>k==="custom"?`<button class="opt dash ${S.shape==="custom"?"on":""}" data-a="set" data-k="shape" data-v="custom"><span class="big">+</span><b>Buat Sendiri</b><small>+${rp(SHP.custom[1])}</small></button>`:card("shape",k,S.shape===k,`${shapeSVG(k)}<b>${SHP[k][0]}</b>${SHP[k][1]?`<small>+${rp(SHP[k][1])}</small>`:""}`)).join("")}</div>`;
+ if(step===3)h=head("🎨","Pilih Rasa dan Isian","Rasa sponge, isian tengah, dan warna krim luar.")+`<div class="lb">Rasa sponge</div><div class="grid">${Object.entries(FLAV).map(([k,v])=>card("flavor",k,S.flavor===k,`<i class="sw" style="background:${v[2]}"></i><b>${v[0]}</b><small>${v[1]?"+"+rp(v[1]):"Termasuk"}</small>`)).join("")}</div><div class="lb">Isian</div><div class="grid">${Object.entries(FILL).map(([k,v])=>card("fill",k,S.fill===k,`<i class="sw" style="background:${v[2]}"></i><b>${v[0]}</b><small>${v[1]?"+"+rp(v[1]):"Termasuk"}</small>`)).join("")}</div><div class="lb">Warna krim</div><div class="sc">${ICE.map(c=>`<button class="ch ${S.icing===c[1]?"on":""}" data-a="set" data-k="icing" data-v="${c[1]}"><i style="background:${c[1]}"></i>${c[0]}</button>`).join("")}</div>`;
+ if(step===4)h=head("☆","Pilih Dekorasi","Boleh pilih lebih dari satu.")+`<div class="grid">${Object.entries(DECO).map(([k,v])=>`<button class="opt ${S.deco[k]?"on":""}" data-a="deco" data-v="${k}"><span class="big">${v[0]}</span><b>${v[1]}</b><small>+${rp(v[2])}</small></button>`).join("")}</div>`;
+ if(step===5){const tc=sel()&&sel().t==="text";
+  h=`<div class="hd2">✨ Tambah Elemen</div><p class="sub2">Pilih elemen untuk menghiasi kue kamu</p><button class="el" data-a="addText"><span>T</span>Teks</button>`+ELS.map((c,i)=>`<button class="el ${openC===i?"on":""}" data-a="cat" data-v="${i}"><span>${c[1]}</span>${c[0]}</button>${openC===i?`<div class="ep">${c[2].map(e=>`<button data-a="addE" data-v="${i}" data-e="${e}">${e}</button>`).join("")}</div>`:""}`).join("")+
+  `<div class="hd2" style="margin-top:12px">Warna</div><p class="sub2">${tc?"untuk teks terpilih":"untuk krim kue"}</p><div class="pal">${PAL.map(c=>`<button style="background:${c}" class="${(tc?sel().color:S.icing)===c?"on":""}" data-a="pal" data-v="${c}"></button>`).join("")}</div>
+  <label class="el" style="margin:14px 0 0;justify-content:center">☁️ Upload Gambar<input type="file" id="up" accept="image/png,image/jpeg" hidden></label>`}
+ if(step===6)h=head("🧾","Review Kue","Cek lagi kue kamu sebelum lanjut ke pengambilan.")+thermal();
+ if(step===7){const dv=S.pick==="delivery",fl=(k,l,t,ph,x="")=>`<label class="fl">${l}<input data-f="${k}" ${t?`type="${t}"`:""} ${x} placeholder="${ph||""}" value="${esc(S.f[k]||"")}"></label>`;
+  h=head("🚚","Pengambilan dan Pembayaran","Pilih cara kue sampai ke tanganmu.")+`<div class="g2c"><button class="mode ${!dv?"on":""}" data-a="set" data-k="pick" data-v="pickup"><span class="mi">🏪</span><b>Ambil di toko</b><span>Gratis · ambil langsung di toko kami</span></button><button class="mode ${dv?"on":""}" data-a="set" data-k="pick" data-v="delivery"><span class="mi">🚚</span><b>Diantar</b><span>+${rp(15000)} · diantar sampai rumah</span></button></div>
+  <div class="g2">${fl("nm","Nama","","Nama lengkap")}${fl("em","Email","email","nama@email.com")}</div><div class="g2">${fl("ph","No. WhatsApp (opsional)","tel","08xxxxxxxxxx")}${fl("dt","Tanggal dibutuhkan","date","",`min="${MIND.toISOString().slice(0,10)}"`)}</div>${dv?`<div style="margin-top:10px">${fl("addr","Alamat pengantaran","","Jalan, nomor, kota")}</div>`:""}
+  <div class="lb">Metode pembayaran</div><div class="grid">${[["cash","💵","Tunai"],["bank","🏦","Transfer Bank"],["ewallet","📱","E-Wallet"],["other","✨","Lainnya"]].map(p=>`<button class="opt ${S.pay===p[0]?"on":""}" data-a="pay" data-v="${p[0]}"><span class="big">${p[1]}</span><b>${p[2]}</b></button>`).join("")}</div>${S.pay==="other"?`<div style="margin-top:10px">${fl("payOther","Metode pembayaran lainnya","","Contoh: QRIS")}</div>`:""}<label class="fl" style="margin-top:14px">Catatan tambahan<textarea data-f="notes" placeholder="Alergi, tema, atau pesan khusus">${esc(S.f.notes||"")}</textarea></label>`}
+ if(step===8)h=pinkReceipt();
+ $("L").innerHTML=h;const up=$("up");if(up)up.onchange=uploadImg;
+}
+function drawR(){const it=sel();let h="";
+ if(!it)h=`<div class="hd2">Pengaturan Elemen</div><div class="tips">Tambahkan teks atau elemen dari menu kiri.</div>`;
+ else if(it.t==="text")h=`<div class="hd2">T Pengaturan Teks</div><textarea data-i="text" maxlength="50">${esc(it.text)}</textarea><div class="cnt" id="cnt">${it.text.length} / 50</div>
+  <div class="lb" style="margin-top:0">Font</div><select data-i="font">${FONTS.map(f=>`<option ${f===it.font?"selected":""}>${f}</option>`).join("")}</select>
+  <div class="lb">Ukuran</div><div class="rng"><input type="range" min="16" max="64" value="${it.px}" data-i="px"><span id="pxv">${it.px} px</span></div>
+  <div class="lb">Warna</div><input type="color" data-i="color" value="${it.color}">
+  <div class="lb">Posisi</div><div class="sg">${[["left","⇤ Kiri"],["center","≡ Tengah"],["right","Kanan ⇥"]].map(a=>`<button class="${it.align===a[0]?"on":""}" data-a="align" data-v="${a[0]}">${a[1]}</button>`).join("")}</div>
+  <div class="lb">Efek</div><div class="sg">${["normal","shadow","outline"].map(a=>`<button class="${it.fx===a?"on":""}" data-a="fx" data-v="${a}">${a[0].toUpperCase()+a.slice(1)}</button>`).join("")}</div>`;
+ else h=`<div class="hd2">${it.e||"🖼️"} Pengaturan Elemen</div><div class="lb" style="margin-top:0">Ukuran</div><div class="rng"><input type="range" min="0.5" max="2" step="0.1" value="${it.sz}" data-i="sz"><span id="pxv">${it.sz}×</span></div>
+  <div class="lb">Posisi</div><div class="sg"><button data-a="nud" data-x="-.1" data-z="0">◀ Kiri</button><button data-a="nud" data-x="0" data-z="-.1">▲ Belakang</button><button data-a="nud" data-x=".1" data-z="0">Kanan ▶</button><button data-a="nud" data-x="0" data-z=".1">▼ Depan</button><button data-a="del" style="grid-column:span 2;color:#c62828">🗑 Hapus</button></div>`;
+ if(it&&it.t==="text")h+=`<button class="el" style="margin:12px 0 0;justify-content:center;color:#c62828" data-a="del">🗑 Hapus teks</button>`;
+ if(S.items.length)h+=`<div class="lb">Elemen di kue</div><div class="sc">${S.items.map(i=>`<button class="ch ${i.id===S.sel?"on":""}" data-a="sel" data-v="${i.id}">${i.t==="text"?"T "+esc(i.text.slice(0,8)):i.e||"🖼️"}</button>`).join("")}</div>`;
+ $("Rp").innerHTML=h}
+function drawVT(){$("vt").innerHTML=step===5?`<div class="col" style="display:flex;gap:8px"><button class="ib" data-a="undo" ${hi<1?"disabled":""}>↶</button><button class="ib" data-a="redo" ${hi>=hist.length-1?"disabled":""}>↷</button></div><div class="seg"><button class="${ph>1?"":"on"}" data-a="v3">3D</button><button class="${ph>1?"on":""}" data-a="v2">2D</button></div>`
+ :`<span></span><div class="col"><button class="ib" data-a="reset3d">⟳</button><button class="ib" data-a="zoom">🔍</button></div>`}
+function drawUnder(){let h="";
+ if(step===2)h=`<div class="card"><div class="ttl" style="margin-bottom:6px"><span class="ti" style="width:34px;height:34px;font-size:17px">✎</span><div><h1 style="font-size:20px">Bentuk Kustom</h1><p>Gambar bentuk kue sesuai keinginanmu!</p></div></div><div class="shp"><canvas id="dc" width="300" height="210"></canvas>
+  <div class="tools"><button class="${tool==="draw"?"on":""}" data-a="tool" data-v="draw">✏️ Gambar</button><button data-a="clr">◇ Hapus</button><button data-a="rst">🗑 Reset</button></div><div class="tips"><b>💡 Tips:</b><br>Gambar bentuk bebas seperti karakter atau hati!</div></div></div>`;
+ else if(step!==5&&step!==6&&step!==8)h=`<div class="card"><h3 style="font:700 17px 'Baloo 2';margin-bottom:10px">Ringkasan Pesanan</h3><div class="sum">${S.shape==="round"||S.shape==="custom"?cakeSVG(S.size,FLAV[S.flavor][2],S.icing):shapeSVG(S.shape)}<div style="flex:1"><h3>Custom Cake</h3><p>${SHP[S.shape][0]} · ${S.size[0].toUpperCase()+S.size.slice(1)} (Ø ${SZ[S.size].d} cm)</p><p>${FLAV[S.flavor][0]} · ${FILL[S.fill][0]}</p></div></div><div class="tot"><span>Total Harga</span><span id="stot">${rp(total())}</span></div></div>`;
+ $("under").innerHTML=h;if(step===2)bindDraw()}
+function drawFt(){$("ft").innerHTML=`<button class="btn prv" data-a="prev" style="visibility:${step?"visible":"hidden"}">‹ Sebelumnya</button><div class="fr"><b id="fp">${rp(total())}</b><button class="btn nxt" data-a="next">${step===8?"Kirim ke Kasir Toko 🛒":step===7?"Review Pesanan ›":step===6?"Lanjut Pengambilan ›":"Selanjutnya ›"}</button></div>`}
+function stepper(){$("steps").innerHTML=(mode==="tpl"?[0,6,7,8]:[0,1,2,3,4,5,6,7,8]).map(i=>{const t=STEPS[i];return`<button class="st ${i<step?"done":""} ${i===step?"cur":""}" data-a="go" data-v="${i}"><span class="ic">${i<step?"✓":t[1]}</span>${t[0]}</button>`}).join("")}
+function side(){const f=$("fp"),s=$("stot");if(f)f.textContent=rp(total());if(s)s.textContent=rp(total())}
+function drawAll(){$("main").className=step===5?"d":"";$("L").className="card"+(step===8?" rcp":step===6?" thm":"");stepper();drawL();drawVT();drawUnder();drawR();drawFt();build()}
+const go=i=>{i=Math.max(0,Math.min(8,i));if(mode==="tpl"){if(i>0&&tplI===null)return toast("Pilih satu template dulu ya");if(i>=1&&i<=5)i=i<step?0:6}step=i;if(step===5&&ph>1)setView(false);drawAll();scrollTo({top:0,behavior:"smooth"})};
+let stroke=[];
+function paintDC(){const c=$("dc");if(!c)return;const x=c.getContext("2d");x.clearRect(0,0,300,210);const P=S.cpts||(S.shape==="custom"?CAT:null);
+ x.lineWidth=4;x.lineJoin=x.lineCap="round";x.strokeStyle="#D96B91";
+ if(P){const k=85;x.beginPath();P.forEach((p,i)=>x[i?"lineTo":"moveTo"](150+p[0]*k,105+p[1]*k*.95));x.closePath();x.fillStyle="#FCE8EC";x.fill();x.stroke()}
+ if(stroke.length>1){x.beginPath();stroke.forEach((p,i)=>x[i?"lineTo":"moveTo"](p[0],p[1]));x.stroke()}}
+function bindDraw(){const c=$("dc");paintDC();let on=false;const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*300/r.width,(e.clientY-r.top)*210/r.height]};
+ c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);on=true;stroke=[pt(e)]};
+ c.onpointermove=e=>{if(!on)return;stroke.push(pt(e));paintDC()};
+ c.onpointerup=()=>{if(!on)return;on=false;if(stroke.length>12){const xs=stroke.map(p=>p[0]),ys=stroke.map(p=>p[1]),cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2,k=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys))/2||1,n=36;
+  S.cpts=Array.from({length:n},(_,i)=>{const p=stroke[Math.floor(i*stroke.length/n)];return[(p[0]-cx)/k,(p[1]-cy)/k]});S.shape="custom";snap();stroke=[];drawL();side();paintDC();build()}else{stroke=[];paintDC()}}}
+function upd(){drawL();drawUnder();side();build()}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,v=b.dataset.v,it=sel();
+ switch(a){
+ case"go":return go(+v);case"prev":return go(step-1);
+ case"next":if(step===0&&mode==="tpl"){if(tplI===null)return toast("Pilih satu template dulu ya");return go(6)}
+  if(step<7)return go(step+1);
+  if(step===7){const m=need();return m?toast(m):go(8)}
+  {const m=need()||(S.pay?"":"Pilih metode pembayaran dulu ya");if(m)return toast(m)}
+  window.parent.postMessage({
+    type: "CUSTOM_CAKE_ORDER",
+    nama: "Custom Cake 3D (" + SHP[S.shape][0] + ", " + FLAV[S.flavor][0] + ", Ø" + SZ[S.size].d + "cm)",
+    harga: base(S),
+    pemesan: S.f.nm,
+    tanggal: S.f.dt
+  }, "*");
+  return toast("Pesanan dikirim ke Meja Kasir!");
+ case"mode":mode=v;stepper();return drawL();
+ case"pay":S.pay=v;return drawL();
+ case"tpl":tplI=+v;S={...DEF(),...TPL[tplI].s,f:S.f};snap();return drawAll();
+ case"set":S[b.dataset.k]=v;snap();return step===2?(drawL(),drawUnder(),side(),build()):upd();
+ case"deco":S.deco[v]=!S.deco[v];snap();return upd();
+ case"cat":openC=openC===+v?-1:+v;return drawL();
+ case"addText":S.items.push({id:nid,t:"text",text:"Teks baru",font:"Baloo 2",px:28,color:"#5b2a1b",align:"center",fx:"normal"});S.sel=nid++;break;
+ case"addE":{const n=S.items.filter(i=>i.t!=="text").length,k=ELS[+v][0],g=2*Math.PI*n/5;S.items.push({id:nid,t:"emoji",e:b.dataset.e,k,sz:1,x:k==="Topper"?0:.55*Math.sin(g),z:k==="Topper"?-.1:-.55*Math.cos(g)});S.sel=nid++;break}
+ case"sel":S.sel=+v;drawL();return drawR();
+ case"del":S.items=S.items.filter(i=>i.id!==S.sel);S.sel=S.items.length?S.items[0].id:null;break;
+ case"pal":if(it&&it.t==="text")it.color=v;else S.icing=v;break;
+ case"align":it.align=v;break;case"fx":it.fx=v;break;
+ case"nud":it.x=Math.max(-1,Math.min(1,+(it.x+ +b.dataset.x).toFixed(2)));it.z=Math.max(-1,Math.min(1,+(it.z+ +b.dataset.z).toFixed(2)));break;
+ case"undo":if(hi>0){hi--;restore()}return;case"redo":if(hi<hist.length-1){hi++;restore()}return;
+ case"v3":return setView(false);case"v2":return setView(true);
+ case"rot":th+=+v*.6;auto=false;$("bSpin").classList.remove("on");return;
+ case"spin":auto=!auto;b.classList.toggle("on",auto);return;
+ case"reset3d":th=.5;ph=.42;auto=true;$("bSpin").classList.add("on");dist=SZ[S.size].d/12*2.6+3.6;return;
+ case"zoom":dist=dist>5?4:SZ[S.size].d/12*2.6+3.6;return;
+ case"tool":tool=v;return;
+ case"clr":S.cpts=null;stroke=[];paintDC();return build();
+ case"rst":S.cpts=null;S.shape="round";stroke=[];snap();return drawAll();
+ }
+ snap();drawAll()});
+document.addEventListener("input",e=>{const t=e.target,it=sel();
+ if(t.dataset.i&&it){const k=t.dataset.i;it[k]=k==="px"?+t.value:k==="sz"?+t.value:t.value;
+  if(k==="text"){$("cnt").textContent=it.text.length+" / 50";drawRchips()}
+  if(k==="px"||k==="sz")$("pxv").textContent=it[k]+(k==="px"?" px":"×");
+  if(k==="font")document.fonts.load(`600 40px "${t.value}"`).then(build);build();side()}
+ else if(t.dataset.f)S.f[t.dataset.f]=t.value});
+document.addEventListener("change",e=>{if(e.target.dataset.i)snap();if(e.target.dataset.i==="color")drawL()});
+function drawRchips(){const c=document.querySelector("#Rp .sc");if(c)c.innerHTML=S.items.map(i=>`<button class="ch ${i.id===S.sel?"on":""}" data-a="sel" data-v="${i.id}">${i.t==="text"?"T "+esc(i.text.slice(0,8)):i.e||"🖼️"}</button>`).join("")}
+function uploadImg(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{S.items.push({id:nid,t:"img",src:r.result,sz:1,x:0,z:0});S.sel=nid++;snap();drawAll()};r.readAsDataURL(f)}
+$("fav").onclick=e=>{const f=e.currentTarget;f.classList.toggle("on");f.textContent=f.classList.contains("on")?"♥":"♡"};
+const cv=$("cv"),R3=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R3.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(35,1,.1,50);
+scene.add(new THREE.HemisphereLight(0xffffff,0xf8c9d4,.95));
+const dl=new THREE.DirectionalLight(0xffffff,.85);dl.position.set(3,6,5);scene.add(dl);const dl2=new THREE.DirectionalLight(0xffd6e0,.35);dl2.position.set(-4,2,-3);scene.add(dl2);
+const root=new THREE.Group(),cake=new THREE.Group();scene.add(root);root.add(cake);
+const M=(c,r=.55,x={})=>new THREE.MeshStandardMaterial({color:c,roughness:r,...x}),mesh=(g,m,x=0,y=0,z=0)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);return o};
+const cyl=(a,b,h,s=48)=>new THREE.CylinderGeometry(a,b,h,s);
+function heartShape(r){const s=new THREE.Shape();s.moveTo(0,-.9*r);s.bezierCurveTo(-.2*r,-.6*r,-r,-.3*r,-r,.25*r);s.bezierCurveTo(-r,.8*r,-.3*r,r,0,.55*r);s.bezierCurveTo(.3*r,r,r,.8*r,r,.25*r);s.bezierCurveTo(r,-.3*r,.2*r,-.6*r,0,-.9*r);return s}
+function fp(R){const k=S.shape,s=new THREE.Shape();
+ if(k==="round")s.absarc(0,0,R,0,Math.PI*2);
+ else if(k==="square"){const a=R*.92,r=.16;s.moveTo(-a+r,-a);s.lineTo(a-r,-a);s.quadraticCurveTo(a,-a,a,-a+r);s.lineTo(a,a-r);s.quadraticCurveTo(a,a,a-r,a);s.lineTo(-a+r,a);s.quadraticCurveTo(-a,a,-a,a-r);s.lineTo(-a,-a+r);s.quadraticCurveTo(-a,-a,-a+r,-a)}
+ else if(k==="heart")return heartShape(R*1.12);
+ else if(k==="star"||k==="hex"){const n=k==="star"?10:6;for(let i=0;i<n;i++){const a=i/n*Math.PI*2+(k==="star"?Math.PI/2:0),r=k==="star"?(i%2?R*.58:R*1.2):R*1.05;s[i?"lineTo":"moveTo"](r*Math.cos(a),r*Math.sin(a))}s.closePath()}
+ else{new THREE.CatmullRomCurve3((S.cpts||CAT).map(p=>new THREE.Vector3(p[0]*R*1.1,-p[1]*R*1.1,0)),true).getPoints(100).forEach((p,i)=>s[i?"lineTo":"moveTo"](p.x,p.y))}
+ return s}
+function solid(R,h,y,mat){if(S.shape==="round")return mesh(cyl(R,R,h,72),mat,0,y+h/2,0);
+ const g=new THREE.ExtrudeGeometry(fp(R),{depth:h,bevelEnabled:true,bevelSize:.025,bevelThickness:.025,bevelSegments:2,curveSegments:40});g.rotateX(-Math.PI/2);g.translate(0,y,0);return new THREE.Mesh(g,mat)}
+const emoCache={};
+function emoTex(e){if(emoCache[e])return emoCache[e];const c=document.createElement("canvas");c.width=c.height=128;const x=c.getContext("2d");x.font="100px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText(e,64,70);return emoCache[e]=new THREE.CanvasTexture(c)}
+function textTex(it){const c=document.createElement("canvas");c.width=1024;c.height=512;const x=c.getContext("2d"),L=it.text.split("\n").slice(0,3),fs0=it.px*2.8;
+ x.textBaseline="middle";x.textAlign=it.align;const ax=it.align==="left"?70:it.align==="right"?954:512;
+ L.forEach((t,i)=>{let fs=fs0;do{x.font=`600 ${fs}px "${it.font}",cursive`;fs-=4}while(x.measureText(t).width>880&&fs>20);
+  const y=256+(i-(L.length-1)/2)*fs0*1.1;
+  if(it.fx==="shadow"){x.shadowColor="#0008";x.shadowBlur=10;x.shadowOffsetY=5}
+  if(it.fx==="outline"){x.lineWidth=14;x.strokeStyle="#fff";x.lineJoin="round";x.strokeText(t,ax,y)}
+  x.fillStyle=it.color;x.fillText(t,ax,y);x.shadowColor="transparent"});
+ const tx=new THREE.CanvasTexture(c);tx.anisotropy=4;return tx}
+let flame=null,lastSize=null;
+function build(){
+ while(cake.children.length){const c=cake.children[0];cake.remove(c);c.traverse(o=>{o.geometry&&o.geometry.dispose();if(o.material){if(o.material.map&&!o.isSprite)o.material.map.dispose();o.material.dispose()}})}
+ flame=null;const R=SZ[S.size].d/12,H=1.04,ice=S.icing,add=o=>cake.add(o);
+ if(lastSize!==S.size){dist=R*2.6+3.6;lastSize=S.size}
+ const pr=R*1.35+.55;
+ add(mesh(cyl(pr,pr,.08,72),M("#f3eaef",.3),0,-.04,0));add(mesh(cyl(.5,.65,.5,32),M("#f3eaef",.3),0,-.33,0));add(mesh(cyl(Math.min(1.1,pr*.55),Math.min(1.1,pr*.55),.08,48),M("#e9dde3",.3),0,-.58,0));
+ add(solid(R,H,0,M(FLAV[S.flavor][2],.65)));add(solid(R*1.01,.07,H*.46,M(FILL[S.fill][2],.5)));add(solid(R*1.015,.1,H-.06,M(ice,.25)));
+ const top=H+.1;
+ if(S.deco.drip){const n=Math.round(R*16),L=[.2,.38,.15,.46,.28,.34];fp(R*1.02).getSpacedPoints(n).slice(0,-1).forEach((p,i)=>{const l=L[i%6];add(mesh(cyl(.065,.065,l,10),M(ice,.25),p.x,H-l/2,-p.y));add(mesh(new THREE.SphereGeometry(.065,10,8),M(ice,.25),p.x,H-l,-p.y))})}
+ const kinds=["straw","berry","flower"].filter(k=>S.deco[k]);
+ if(kinds.length){const n=Math.max(8,Math.round(R*10));fp(R).getSpacedPoints(n).slice(0,-1).forEach((p,i)=>{const x=p.x*.74,z=-p.y*.74,y=top;
+  if(i%2===0){add(mesh(new THREE.SphereGeometry(.14,16,12),M("#FFF8F0",.4),x,y+.05,z));add(mesh(new THREE.SphereGeometry(.08,12,10),M("#fff",.4),x,y+.2,z));return}
+  const k=kinds[(i>>1)%kinds.length];
+  if(k==="straw"){const b=mesh(new THREE.SphereGeometry(.14,16,12),M("#e0303f",.35),x,y+.1,z);b.scale.set(1,1.2,1);add(b);add(mesh(new THREE.ConeGeometry(.08,.07,6),M("#3d9a4a"),x,y+.27,z))}
+  else if(k==="berry")add(mesh(new THREE.SphereGeometry(.12,14,12),M(["#4a4a94","#c2185b","#3b2a4f"][i%3],.3),x,y+.08,z));
+  else{for(let j=0;j<5;j++){const a=j/5*Math.PI*2,q=mesh(new THREE.SphereGeometry(.07,10,8),M("#fff",.5),x+.08*Math.cos(a),y+.06,z+.08*Math.sin(a));q.scale.y=.6;add(q)}add(mesh(new THREE.SphereGeometry(.05,10,8),M("#f7c948"),x,y+.09,z))}})}
+ if(S.deco.spr){const cs=["#ff6f91","#ffd166","#06d6a0","#118ab2","#fff"],P=fp(R*.85).getSpacedPoints(40);for(let i=0;i<90;i++){const p=P[i%40],k=Math.sqrt(Math.random()),b=mesh(new THREE.BoxGeometry(.1,.025,.025),M(cs[i%5]),p.x*k,top-.01,-p.y*k);b.rotation.y=Math.random()*3;add(b)}}
+ if(S.deco.candle){const z=-R*.4;add(mesh(cyl(.035,.035,.45,12),M("#ffd1dc"),0,top+.2,z));flame=mesh(new THREE.SphereGeometry(.055,12,10),new THREE.MeshBasicMaterial({color:"#ffcf4a"}),0,top+.48,z);flame.scale.y=1.6;add(flame)}
+ S.items.forEach(it=>{
+  if(it.t==="text"){if(!it.text.trim())return;const side=["round","square","hex"].includes(S.shape),mt=new THREE.MeshBasicMaterial({map:textTex(it),transparent:true,depthWrite:false});
+   if(side){const zf=(S.shape==="round"?R:S.shape==="square"?R*.92:R*1.05*.866)+.06,w=Math.min(R*1.7,1.9),p=mesh(new THREE.PlaneGeometry(w,w/2),mt,0,H*.42,zf);add(p)}
+   else{const w=R*1.7,p=mesh(new THREE.PlaneGeometry(w,w/2),mt,0,H+.08,R*.1);p.rotation.x=-Math.PI/2;add(p)}return}
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:it.t==="img"?null:emoTex(it.e),transparent:true}));
+  const s=.5*it.sz*(it.k==="Topper"?1.4:1);sp.scale.set(s,s,1);sp.position.set(it.x*R,top+s*.45,it.z*R);
+  if(it.t==="img")new THREE.TextureLoader().load(it.src,t=>{sp.material.map=t;sp.material.needsUpdate=true;sp.scale.set(s*t.image.width/Math.max(t.image.width,t.image.height)*1.4,s*t.image.height/Math.max(t.image.width,t.image.height)*1.4,1)});
+  add(sp)});
+}
+let th=.5,ph=.42,dist=5.8,auto=true,pts=new Map(),pd=0,dragging=false;
+function setView(two){if(two){ph=1.5;th=0;auto=false;$("bSpin").classList.remove("on")}else{ph=.42}drawVT()}
+cv.addEventListener("pointerdown",e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);dragging=true;if(pts.size===2){const[a,b]=[...pts.values()];pd=Math.hypot(a[0]-b[0],a[1]-b[1])}});
+cv.addEventListener("pointermove",e=>{if(!pts.has(e.pointerId))return;const o=pts.get(e.pointerId);if(pts.size===1){th+=(e.clientX-o[0])*.01;ph=Math.max(.05,Math.min(1.5,ph+(e.clientY-o[1])*.006))}
+ pts.set(e.pointerId,[e.clientX,e.clientY]);if(pts.size===2){const[a,b]=[...pts.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);dist=Math.max(3.4,Math.min(11,dist*pd/d));pd=d}});
+const upP=e=>{pts.delete(e.pointerId);if(!pts.size)dragging=false};cv.addEventListener("pointerup",upP);cv.addEventListener("pointercancel",upP);
+cv.addEventListener("wheel",e=>{e.preventDefault();dist=Math.max(3.4,Math.min(11,dist*(1+e.deltaY*.001)))},{passive:false});
+function size(){const b=$("vbox");R3.setSize(b.clientWidth,b.clientHeight,false);cam.aspect=b.clientWidth/b.clientHeight;cam.updateProjectionMatrix()}
+new ResizeObserver(size).observe($("vbox"));size();
+(function loop(t){requestAnimationFrame(loop);if(auto&&!dragging)th+=.006;root.rotation.y=th;cam.position.set(0,.5+dist*Math.sin(ph),dist*Math.cos(ph));cam.lookAt(0,.4,0);
+ if(flame)flame.scale.set(1+Math.sin(t*.02)*.12,1.6+Math.sin(t*.031)*.2,1);R3.render(scene,cam)})(0);
+snap();drawAll();
+</script>
+</body>
+</html>
+  </template>
+
+  <!-- ==================== SCRIPT UTAMA TOKO & INTERAKSI ==================== -->
+  <script>
+    var daftarKue = [
+      { id: 1, nama: "Berry Velvet Classic", kategori: "ulang-tahun", labelKategori: "Ulang Tahun", badge: "Terlaris", ukuran: "Diameter 20 cm (10–12 porsi)", harga: 185000, warnaBadan: "#A36361", warnaKrim: "#F1DBD0", topping: "strawberry", x: 24, y: 45 },
+      { id: 2, nama: "Choco Ganache Truffle", kategori: "ulang-tahun", labelKategori: "Ulang Tahun", badge: "Siap Hari Ini", ukuran: "Diameter 20 cm (10–12 porsi)", harga: 195000, warnaBadan: "#6B4A3E", warnaKrim: "#CDBFAA", topping: "coklat_chip", x: 50, y: 45 },
+      { id: 3, nama: "Pastel Bento Ribbon", kategori: "mini", labelKategori: "Bento & Mini", badge: "Favorit", ukuran: "Diameter 12 cm (2–4 porsi)", harga: 95000, warnaBadan: "#D3A29D", warnaKrim: "#FDF5E7", topping: "lilin", x: 76, y: 45 },
+      { id: 4, nama: "Strawberry Shortcake", kategori: "tart", labelKategori: "Tart & Chiffon", badge: "Segar", ukuran: "Diameter 18 cm (8–10 porsi)", harga: 165000, warnaBadan: "#F1DBD0", warnaKrim: "#FDF5E7", topping: "strawberry", x: 26, y: 88 },
+      { id: 5, nama: "Mini Choco Berry", kategori: "mini", labelKategori: "Bento & Mini", badge: "Siap Hari Ini", ukuran: "Diameter 14 cm (4–6 porsi)", harga: 110000, warnaBadan: "#6B4A3E", warnaKrim: "#F1DBD0", topping: "strawberry", x: 52, y: 88 },
+      { id: 6, nama: "Royal Pink Chiffon", kategori: "tart", labelKategori: "Tart & Chiffon", badge: "Baru", ukuran: "Diameter 22 cm (12–15 porsi)", harga: 210000, warnaBadan: "#D3A29D", warnaKrim: "#E8D9B5", topping: "lilin", x: 78, y: 88 }
+    ];
+
+    var keranjang = [
+      { nama: "Berry Velvet Classic (Ø 20 cm)", harga: 185000, qty: 1 }
+    ];
+
+    var detailId = 0;
+    var lampuHangat = false;
+    var cakecraftDimuat = false;
+
+    function formatRupiah(angka) {
+      return "Rp " + angka.toLocaleString("id-ID");
+    }
+
+    function tampilkanToast(pesan) {
+      var el = document.getElementById("toast-utama");
+      el.textContent = pesan;
+      el.classList.remove("translate-y-24", "opacity-0");
+      setTimeout(function () {
+        el.classList.add("translate-y-24", "opacity-0");
+      }, 2600);
+    }
+
+    /* SVG Kue dengan Cake Stand Putih (Menyatu dengan Gaya Foto Referensi 1) */
+    function buatKuePedestalSvg(warnaBadan, warnaKrim, topping) {
+      var hiasan = "";
+      if (topping === "strawberry") {
+        hiasan =
+          '<circle cx="72" cy="54" r="8" fill="#B23A48" /><circle cx="69" cy="51" r="2.2" fill="#FF9AA2" />' +
+          '<circle cx="90" cy="50" r="9" fill="#B23A48" /><circle cx="87" cy="47" r="2.5" fill="#FF9AA2" />' +
+          '<circle cx="108" cy="54" r="8" fill="#B23A48" /><circle cx="105" cy="51" r="2.2" fill="#FF9AA2" />';
+      } else if (topping === "coklat_chip") {
+        hiasan =
+          '<rect x="68" y="50" width="10" height="6" rx="2" fill="#3D2B28" />' +
+          '<rect x="86" y="47" width="10" height="6" rx="2" fill="#3D2B28" />' +
+          '<rect x="104" y="50" width="10" height="6" rx="2" fill="#3D2B28" />';
+      } else {
+        hiasan =
+          '<rect x="88" y="28" width="4" height="20" rx="2" fill="#A36361" />' +
+          '<ellipse cx="90" cy="22" rx="4.5" ry="6.5" fill="#F4A261" />';
+      }
+
+      return '<svg viewBox="0 0 180 155" class="w-full h-auto">' +
+        '<ellipse cx="90" cy="142" rx="48" ry="8" fill="#3D2B28" opacity="0.14" />' +
+        '<rect x="82" y="114" width="16" height="26" fill="#FFFFFF" stroke="#E2D4C8" stroke-width="1.2" />' +
+        '<ellipse cx="90" cy="140" rx="34" ry="7" fill="#F7EFE7" stroke="#DFD0C3" stroke-width="1.5" />' +
+        '<ellipse cx="90" cy="114" rx="64" ry="13" fill="#FFFFFF" stroke="#DFD0C3" stroke-width="1.5" />' +
+        '<path d="M44 62 L44 104 A46 11 0 0 0 136 104 L136 62 Z" fill="' + warnaBadan + '" />' +
+        '<path d="M44 82 A46 10 0 0 0 136 82 L136 87 A46 10 0 0 1 44 87 Z" fill="' + warnaKrim + '" opacity="0.65" />' +
+        '<ellipse cx="90" cy="62" rx="46" ry="11" fill="' + warnaKrim + '" />' +
+        '<path d="M44 62 Q54 76 64 64 Q74 78 84 64 Q94 78 104 64 Q114 76 124 64 L136 62" fill="none" stroke="' + warnaKrim + '" stroke-width="6.5" stroke-linecap="round" />' +
+        hiasan +
+        '</svg>';
+    }
+
+    /* Render Kue di Dalam Etalase Cafe (Saat Zoom) */
+    function renderKueEtalase() {
+      var wadah = document.getElementById("daftar-kue-etalase");
+      var html = "";
+      for (var i = 0; i < daftarKue.length; i++) {
+        var item = daftarKue[i];
+        html +=
+          '<button type="button" onclick="bukaDetail(' + item.id + ')" class="kue-etalase absolute w-[19%] min-w-[66px] text-center" style="left:' + item.x + '%; top:' + item.y + '%">' +
+          buatKuePedestalSvg(item.warnaBadan, item.warnaKrim, item.topping) +
+          '<span class="block -mt-1 text-[9px] sm:text-[11px] font-extrabold text-ink bg-white/95 border border-kuningan rounded-full px-2 py-0.5 shadow-sm whitespace-nowrap">' + item.nama + '</span>' +
+          '</button>';
+      }
+      wadah.innerHTML = html;
+    }
+
+    /* Render Halaman Katalog Beli Kue (Gaya Referensi Gambar 1) */
+    function renderKatalog(kategori) {
+      var grid = document.getElementById("grid-katalog-kue");
+      var html = "";
+      for (var i = 0; i < daftarKue.length; i++) {
+        var item = daftarKue[i];
+        if (kategori && kategori !== "semua" && item.kategori !== kategori) continue;
+        html +=
+          '<article class="bg-[#F6EAE3] rounded-[2rem] p-6 border border-khaki/50 shadow-sm hover:shadow-md transition flex flex-col items-center text-center">' +
+          '<div class="w-full flex justify-between items-center text-[11px] font-bold text-burgundy mb-1">' +
+          '<span class="px-2.5 py-0.5 rounded-full bg-white/80">' + item.badge + '</span>' +
+          '<span class="text-ink/60">' + item.labelKategori + '</span>' +
+          '</div>' +
+          '<div class="w-44 sm:w-48 my-2">' + buatKuePedestalSvg(item.warnaBadan, item.warnaKrim, item.topping) + '</div>' +
+          '<h3 class="text-lg font-extrabold text-ink mt-1">' + item.nama + '</h3>' +
+          '<p class="text-xs text-ink/65 mt-0.5">' + item.ukuran + '</p>' +
+          '<p class="text-base font-extrabold text-burgundy mt-2">' + formatRupiah(item.harga) + '</p>' +
+          '<div class="mt-4 flex items-center gap-2 w-full justify-center">' +
+          '<button type="button" onclick="tambahEtalaseKeKasir(' + item.id + ')" class="px-5 py-2 rounded-full bg-white hover:bg-burgundy hover:text-white border border-khaki text-ink text-xs font-extrabold transition shadow-sm">Beli Kue</button>' +
+          '<button type="button" onclick="bukaTampilan(\'custom\')" class="px-4 py-2 rounded-full bg-white/60 hover:bg-white border border-khaki/70 text-ink/80 text-xs font-bold transition">Custom</button>' +
+          '</div>' +
+          '</article>';
+      }
+      grid.innerHTML = html;
+    }
+
+    function filterKatalog(kategori) {
+      document.querySelectorAll(".btn-kat").forEach(function (btn) {
+        var aktif = btn.getAttribute("data-kat") === kategori;
+        btn.className = aktif
+          ? "btn-kat px-4 py-1.5 rounded-full text-xs font-bold bg-burgundy text-white"
+          : "btn-kat px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-khaki text-ink";
+      });
+      renderKatalog(kategori);
+    }
+
+    /* Funkyland Camera Zoom pada Etalase */
+    function toggleZoomEtalase(aktif) {
+      var kamera = document.getElementById("kamera-cafe");
+      var btnZoom = document.getElementById("btn-zoom-etalase");
+      var daftar = document.getElementById("daftar-kue-etalase");
+      var hudZoom = document.getElementById("hud-zoom-etalase");
+      var hudPetunjuk = document.getElementById("hud-petunjuk-cafe");
+
+      if (aktif) {
+        kamera.classList.add("zoom-etalase");
+        btnZoom.classList.add("hidden");
+        daftar.classList.remove("hidden");
+        hudZoom.classList.remove("hidden");
+        if (hudPetunjuk) hudPetunjuk.classList.add("hidden");
+      } else {
+        kamera.classList.remove("zoom-etalase");
+        btnZoom.classList.remove("hidden");
+        daftar.classList.add("hidden");
+        hudZoom.classList.add("hidden");
+        if (hudPetunjuk) hudPetunjuk.classList.remove("hidden");
+      }
+    }
+
+    /* Navigasi Antar Ruangan / Halaman */
+    function bukaTampilan(nama) {
+      var views = ["toko", "katalog", "custom", "kasir"];
+      for (var i = 0; i < views.length; i++) {
+        var el = document.getElementById("view-" + views[i]);
+        var nav = document.getElementById("nav-" + views[i]);
+        if (views[i] === nama) {
+          el.classList.remove("hidden");
+          if (nav) nav.classList.add("text-blush", "underline", "underline-offset-4", "font-bold");
+        } else {
+          el.classList.add("hidden");
+          if (nav) nav.classList.remove("text-blush", "underline", "underline-offset-4", "font-bold");
+        }
+      }
+
+      if (nama === "toko") {
+        toggleZoomEtalase(false);
+        document.getElementById("view-toko").scrollIntoView({ behavior: "smooth" });
+      } else {
+        window.scrollTo({ top: document.getElementById("pintu-masuk").offsetHeight, behavior: "smooth" });
+      }
+
+      if (nama === "custom" && !cakecraftDimuat) {
+        var tpl = document.getElementById("tpl-cakecraft");
+        document.getElementById("frame-cakecraft").srcdoc = tpl.innerHTML;
+        cakecraftDimuat = true;
+      }
+
+      if (nama === "kasir") {
+        renderKasir();
+      }
+    }
+
+    /* Modal Detail Kue */
+    function bukaDetail(id) {
+      for (var i = 0; i < daftarKue.length; i++) {
+        var item = daftarKue[i];
+        if (item.id === id) {
+          detailId = id;
+          document.getElementById("detail-badge").textContent = item.badge;
+          document.getElementById("detail-label").textContent = item.labelKategori;
+          document.getElementById("detail-nama").textContent = item.nama;
+          document.getElementById("detail-ukuran").textContent = item.ukuran;
+          document.getElementById("detail-harga").textContent = formatRupiah(item.harga);
+          document.getElementById("detail-gambar").innerHTML = '<div class="w-44 mx-auto">' + buatKuePedestalSvg(item.warnaBadan, item.warnaKrim, item.topping) + '</div>';
+          document.getElementById("modal-detail").classList.remove("hidden");
+          return;
+        }
+      }
+    }
+
+    function tutupDetail() {
+      document.getElementById("modal-detail").classList.add("hidden");
+    }
+
+    function bukaModalHampers() {
+      document.getElementById("modal-hampers").classList.remove("hidden");
+    }
+
+    function bukaModalInfoToko() {
+      document.getElementById("modal-info").classList.remove("hidden");
+    }
+
+    /* Keranjang & Kasir */
+    function perbaruiBadgeKeranjang() {
+      var totalQty = 0;
+      for (var i = 0; i < keranjang.length; i++) {
+        totalQty += keranjang[i].qty;
+      }
+      document.getElementById("badge-keranjang").textContent = totalQty;
+    }
+
+    function tambahEtalaseKeKasir(id) {
+      for (var i = 0; i < daftarKue.length; i++) {
+        if (daftarKue[i].id === id) {
+          tambahItemManual(daftarKue[i].nama + " (" + daftarKue[i].ukuran.split("(")[0].trim() + ")", daftarKue[i].harga);
+          tutupDetail();
+          return;
+        }
+      }
+    }
+
+    function tambahItemManual(nama, harga) {
+      for (var i = 0; i < keranjang.length; i++) {
+        if (keranjang[i].nama === nama) {
+          keranjang[i].qty += 1;
+          perbaruiBadgeKeranjang();
+          tampilkanToast("Ditambahkan ke Meja Kasir: " + nama);
+          return;
+        }
+      }
+      keranjang.push({ nama: nama, harga: harga, qty: 1 });
+      perbaruiBadgeKeranjang();
+      tampilkanToast("Masuk ke Meja Kasir: " + nama);
+    }
+
+    function ubahQtyKasir(index, delta) {
+      keranjang[index].qty += delta;
+      if (keranjang[index].qty <= 0) {
+        keranjang.splice(index, 1);
+      }
+      perbaruiBadgeKeranjang();
+      renderKasir();
+    }
+
+    function renderKasir() {
+      var wadah = document.getElementById("list-keranjang");
+      var subtotal = 0;
+      if (keranjang.length === 0) {
+        wadah.innerHTML = '<p class="text-sm text-ink/60 py-6 text-center">Keranjang masih kosong. Silakan pilih kue di Etalase atau racik di Custom Cake 3D.</p>';
+      } else {
+        var html = "";
+        for (var i = 0; i < keranjang.length; i++) {
+          var item = keranjang[i];
+          subtotal += item.harga * item.qty;
+          html +=
+            '<div class="p-3.5 rounded-2xl bg-ivory border border-khaki/60 flex items-center justify-between gap-3">' +
+            '<div>' +
+            '<p class="text-sm font-bold text-ink">' + item.nama + '</p>' +
+            '<p class="text-xs font-extrabold text-burgundy mt-0.5">' + formatRupiah(item.harga) + '</p>' +
+            '</div>' +
+            '<div class="flex items-center gap-2">' +
+            '<button type="button" onclick="ubahQtyKasir(' + i + ', -1)" class="w-7 h-7 rounded-full bg-white border border-khaki font-bold text-xs">−</button>' +
+            '<span class="text-xs font-extrabold w-5 text-center">' + item.qty + '</span>' +
+            '<button type="button" onclick="ubahQtyKasir(' + i + ', 1)" class="w-7 h-7 rounded-full bg-white border border-khaki font-bold text-xs">+</button>' +
+            '</div>' +
+            '</div>';
+        }
+        wadah.innerHTML = html;
+      }
+
+      var ongkir = document.getElementById("kasir-metode-ambil").value === "kurir" ? 15000 : 0;
+      document.getElementById("total-kasir").textContent = formatRupiah(subtotal + ongkir);
+    }
+
+    function prosesPembayaranKasir() {
+      if (keranjang.length === 0) {
+        tampilkanToast("Tambahkan kue terlebih dahulu sebelum membayar.");
+        return;
+      }
+      var nama = document.getElementById("kasir-nama").value.trim() || "Pelanggan";
+      var tgl = document.getElementById("kasir-tanggal").value || "Sesuai konfirmasi";
+      var ambil = document.getElementById("kasir-metode-ambil").value === "kurir" ? "Kirim Kurir" : "Ambil di Toko";
+      var bayar = document.getElementById("kasir-bayar").value;
+      var daftarTeks = keranjang.map(function (it) {
+        return "- " + it.nama + " x" + it.qty + " (" + formatRupiah(it.harga * it.qty) + ")";
+      }).join("\n");
+
+      var pesanWa =
+        "Halo Kasir Dapur Kue Manis, konfirmasi pesanan:\n" +
+        daftarTeks + "\n" +
+        "Total: " + document.getElementById("total-kasir").textContent + "\n" +
+        "Nama: " + nama + "\n" +
+        "Tanggal: " + tgl + "\n" +
+        "Metode: " + ambil + " (" + bayar + ")";
+
+      window.open("https://wa.me/6281234567890?text=" + encodeURIComponent(pesanWa), "_blank");
+      tampilkanToast("Pesanan diteruskan ke Kasir & WhatsApp!");
+    }
+
+    /* Menerima Pesanan dari CakeCraft 3D Custom Studio */
+    window.addEventListener("message", function (event) {
+      if (event.data && event.data.type === "CUSTOM_CAKE_ORDER") {
+        tambahItemManual(event.data.nama, event.data.harga);
+        if (event.data.pemesan) document.getElementById("kasir-nama").value = event.data.pemesan;
+        if (event.data.tanggal) document.getElementById("kasir-tanggal").value = event.data.tanggal;
+        bukaTampilan("kasir");
+      }
+    });
+
+    /* Toggle Pencahayaan Lampu Cafe */
+    function toggleLampuToko() {
+      lampuHangat = !lampuHangat;
+      var kamera = document.getElementById("kamera-cafe");
+      var ikon = document.getElementById("ikon-lampu");
+      var label = document.getElementById("label-lampu");
+      if (lampuHangat) {
+        kamera.classList.add("ruangan-hangat");
+        if (ikon) ikon.textContent = "🕯️";
+        if (label) label.textContent = "Lampu Sore";
+      } else {
+        kamera.classList.remove("ruangan-hangat");
+        if (ikon) ikon.textContent = "☀️";
+        if (label) label.textContent = "Lampu Pagi";
+      }
+    }
+
+    function masukKeToko() {
+      document.getElementById("view-toko").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function cekPapanMenu() {
+      var papan = document.getElementById("papan-menu");
+      if (window.scrollY > window.innerHeight * 0.65) {
+        papan.classList.add("terlihat");
+      } else {
+        papan.classList.remove("terlihat");
+      }
+    }
+
+    renderKueEtalase();
+    renderKatalog("semua");
+    perbaruiBadgeKeranjang();
+    cekPapanMenu();
+    window.addEventListener("scroll", cekPapanMenu);
+
+    /* Kursor Piping Bag dengan Pita Pink */
+    var kursorHalus = window.matchMedia("(pointer: fine)").matches;
+    if (kursorHalus) {
+      document.body.classList.add("kursor-piping", "kursor-aktif");
+      var kursor = document.getElementById("kursor-piping");
+      window.addEventListener("mousemove", function (e) {
+        kursor.style.left = e.clientX + "px";
+        kursor.style.top = e.clientY + "px";
+      });
+      document.addEventListener("mouseover", function (e) {
+        if (e.target.closest("button, a, input, select, .objek-klik, .kue-etalase")) {
+          kursor.classList.add("aktif");
+        } else {
+          kursor.classList.remove("aktif");
+        }
+      });
+    }
+
+    /* Animasi Pintu Masuk Toko */
+    var kurangiGerak = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (kurangiGerak || typeof gsap === "undefined") {
+      document.getElementById("pintu-masuk").style.display = "none";
+      document.getElementById("papan-menu").classList.add("terlihat");
+    } else {
+      gsap.registerPlugin(ScrollTrigger);
+      var tlMasuk = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#pintu-masuk",
+          start: "top top",
+          end: "+=155%",
+          scrub: 0.85,
+          pin: true
+        }
+      });
+      tlMasuk
+        .to("#hint-masuk", { opacity: 0, y: 12, duration: 0.2 }, 0)
+        .to("#pintu-kiri", { scaleX: 0.14, svgOrigin: "695 550", duration: 0.5, ease: "power1.inOut" }, 0.08)
+        .to("#pintu-kanan", { scaleX: 0.14, svgOrigin: "905 550", duration: 0.5, ease: "power1.inOut" }, 0.08)
+        .to("#layer-fasad", { scale: 2.75, opacity: 0, transformOrigin: "50% 62%", duration: 0.95, ease: "power2.in" }, 0.45)
+        .to("#layer-interior", { scale: 1, opacity: 1, duration: 0.95, ease: "power2.out" }, 0.45);
+    }
+  </script>
+</body>
+</html>

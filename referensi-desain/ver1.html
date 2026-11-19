@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Referensi Desain - Toko Kue Parallax, Etalase &amp; Custom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .kanopi-toko {
+      background: repeating-linear-gradient(
+        90deg,
+        #fb7185 0px,
+        #fb7185 28px,
+        #fff1f2 28px,
+        #fff1f2 56px
+      );
+    }
+    .garis-penuntun {
+      background-image: linear-gradient(to bottom, #f43f5e 50%, transparent 50%);
+      background-size: 2px 14px;
+      background-repeat: repeat-y;
+    }
+    .perspektif-pintu {
+      perspective: 1200px;
+    }
+    .daun-pintu {
+      transform-origin: left center;
+      transform-style: preserve-3d;
+    }
+  </style>
+</head>
+<body class="bg-amber-50 text-stone-800 antialiased selection:bg-rose-200 selection:text-rose-900 overflow-x-hidden">
+
+  <header class="fixed top-4 inset-x-0 z-50 px-4 pointer-events-none">
+    <nav class="pointer-events-auto max-w-5xl mx-auto bg-white/90 backdrop-blur rounded-full shadow-sm border border-stone-100 px-5 sm:px-7 py-3 flex items-center justify-between">
+      <a href="#panggung-toko" class="flex items-center gap-2.5 font-extrabold text-stone-900 text-base sm:text-lg">
+        <span class="w-9 h-9 rounded-full bg-rose-600 text-white flex items-center justify-center text-sm shadow-sm">
+          <i class="fa-solid fa-cake-candles"></i>
+        </span>
+        <span>Dapur Kue Manis</span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-6 text-sm font-semibold text-stone-600">
+        <a href="#etalase" class="hover:text-rose-600 transition">Etalase Kue</a>
+        <a href="#custom-kue" class="hover:text-rose-600 transition">Custom Kue</a>
+        <a href="#perjalanan" class="hover:text-rose-600 transition">Cara Pesan</a>
+        <a href="#info-toko" class="hover:text-rose-600 transition">Info Toko</a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="#etalase" class="hidden sm:inline-flex px-4 py-2 bg-white border border-stone-200 text-stone-700 hover:border-rose-300 rounded-full text-xs sm:text-sm font-semibold transition">
+          Lihat Menu
+        </a>
+        <a href="#custom-kue" class="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs sm:text-sm font-semibold transition shadow-sm">
+          Pesan Custom
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <section id="panggung-toko" class="relative h-screen min-h-[680px] w-full overflow-hidden bg-amber-100">
+
+    <div id="layer-interior" class="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-rose-100/80 via-amber-50 to-amber-100/90 scale-90 opacity-60">
+      <div class="w-full max-w-5xl mx-auto px-4 pt-16 flex flex-col items-center">
+        <div class="flex justify-around w-full max-w-2xl mb-4">
+          <div class="flex flex-col items-center">
+            <div class="w-0.5 h-10 bg-stone-400"></div>
+            <div class="w-16 h-8 rounded-t-full bg-white border-b-4 border-amber-300 shadow-md"></div>
+            <div class="w-24 h-12 bg-amber-200/40 blur-xl -mt-1"></div>
+          </div>
+          <div class="flex flex-col items-center">
+            <div class="w-0.5 h-14 bg-stone-400"></div>
+            <div class="w-16 h-8 rounded-t-full bg-white border-b-4 border-amber-300 shadow-md"></div>
+            <div class="w-24 h-12 bg-amber-200/40 blur-xl -mt-1"></div>
+          </div>
+          <div class="flex flex-col items-center">
+            <div class="w-0.5 h-10 bg-stone-400"></div>
+            <div class="w-16 h-8 rounded-t-full bg-white border-b-4 border-amber-300 shadow-md"></div>
+            <div class="w-24 h-12 bg-amber-200/40 blur-xl -mt-1"></div>
+          </div>
+        </div>
+
+        <div class="bg-white/95 rounded-3xl border border-stone-200 shadow-sm px-6 py-4 mb-6 text-center max-w-lg">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-rose-600">Selamat Datang di Dalam Toko</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-stone-900 mt-1">
+            Pilih dari Etalase <span class="text-rose-600">Atau Rancang Sendiri</span>
+          </h2>
+        </div>
+
+        <div class="w-full max-w-3xl bg-white/85 backdrop-blur rounded-3xl border-4 border-stone-200 p-5 shadow-lg">
+          <div class="grid grid-cols-3 gap-4 border-b-2 border-stone-100 pb-4 mb-4">
+            <div class="flex flex-col items-center">
+              <svg viewBox="0 0 120 90" class="w-24 h-20">
+                <ellipse cx="60" cy="76" rx="40" ry="9" fill="#E7E5E4" />
+                <path d="M28 45 L28 68 A32 8 0 0 0 92 68 L92 45 Z" fill="#FDA4AF" />
+                <ellipse cx="60" cy="45" rx="32" ry="8" fill="#FFF1F2" />
+                <circle cx="60" cy="40" r="7" fill="#E11D48" />
+              </svg>
+              <span class="text-[11px] font-bold text-stone-700">Berry Velvet</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <svg viewBox="0 0 120 90" class="w-24 h-20">
+                <ellipse cx="60" cy="76" rx="40" ry="9" fill="#E7E5E4" />
+                <path d="M28 42 L28 68 A32 8 0 0 0 92 68 L92 42 Z" fill="#78350F" />
+                <ellipse cx="60" cy="42" rx="32" ry="8" fill="#D97706" />
+                <circle cx="50" cy="39" r="5" fill="#FBBF24" />
+                <circle cx="70" cy="39" r="5" fill="#FBBF24" />
+              </svg>
+              <span class="text-[11px] font-bold text-stone-700">Choco Ganache</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <svg viewBox="0 0 120 90" class="w-24 h-20">
+                <ellipse cx="60" cy="76" rx="40" ry="9" fill="#E7E5E4" />
+                <path d="M28 46 L28 68 A32 8 0 0 0 92 68 L92 46 Z" fill="#FDE68A" />
+                <ellipse cx="60" cy="46" rx="32" ry="8" fill="#FFFFFF" />
+                <circle cx="60" cy="42" r="6" fill="#F97316" />
+              </svg>
+              <span class="text-[11px] font-bold text-stone-700">Peach Cream</span>
+            </div>
+          </div>
+          <div class="h-10 rounded-2xl bg-rose-100/70 flex items-center justify-center text-xs font-bold text-rose-700">
+            Etalase Kaca &amp; Meja Racik Kue Custom
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="layer-fasad" class="absolute inset-0 flex flex-col justify-between pt-20 pb-8 px-3 sm:px-8 pointer-events-none">
+      <div class="max-w-5xl w-full mx-auto flex-1 flex flex-col bg-amber-100 rounded-t-[36px] border-x-8 border-t-8 border-amber-200 shadow-2xl overflow-hidden relative">
+
+        <div class="bg-amber-200/80 border-b-4 border-amber-300/70 py-3 sm:py-4 px-4 text-center">
+          <div class="inline-block bg-amber-50 border-2 border-amber-300 px-6 sm:px-10 py-1.5 rounded-2xl shadow-sm">
+            <span class="text-lg sm:text-2xl font-extrabold tracking-widest text-rose-600 uppercase">
+              DAPUR KUE MANIS
+            </span>
+          </div>
+        </div>
+
+        <div class="relative">
+          <div class="h-10 sm:h-12 kanopi-toko shadow-md"></div>
+          <div class="flex">
+            <div class="flex-1 h-4 rounded-b-full bg-rose-400"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-50"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-400"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-50"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-400"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-50"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-400"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-50"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-400"></div>
+            <div class="flex-1 h-4 rounded-b-full bg-rose-50"></div>
+          </div>
+        </div>
+
+        <div class="flex-1 grid grid-cols-12 gap-3 sm:gap-5 p-3 sm:p-6">
+          <div class="col-span-7 sm:col-span-8 flex flex-col">
+            <div class="flex-1 rounded-2xl border-4 border-amber-200 bg-white/35 backdrop-blur-[2px] p-3 flex flex-col justify-end relative overflow-hidden">
+              <div class="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-[11px] font-bold text-rose-600 shadow-sm">
+                <i class="fa-solid fa-sparkles mr-1"></i>Kue Siap &amp; Custom
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 items-end pt-8">
+                <div class="bg-white/90 rounded-2xl p-2 text-center shadow-sm">
+                  <svg viewBox="0 0 100 75" class="w-full h-12 mx-auto">
+                    <path d="M22 36 L22 58 A28 7 0 0 0 78 58 L78 36 Z" fill="#FDA4AF" />
+                    <ellipse cx="50" cy="36" rx="28" ry="7" fill="#FFF1F2" />
+                    <circle cx="50" cy="31" r="6" fill="#E11D48" />
+                  </svg>
+                  <span class="block text-[10px] font-bold text-stone-700 truncate">Strawberry</span>
+                </div>
+                <div class="bg-white/90 rounded-2xl p-2 text-center shadow-sm">
+                  <svg viewBox="0 0 100 75" class="w-full h-12 mx-auto">
+                    <path d="M20 40 L20 60 A30 7 0 0 0 80 60 L80 40 Z" fill="#D97706" />
+                    <path d="M30 22 L30 38 A20 5 0 0 0 70 38 L70 22 Z" fill="#FFE4E6" />
+                    <circle cx="50" cy="18" r="5" fill="#E11D48" />
+                  </svg>
+                  <span class="block text-[10px] font-bold text-stone-700 truncate">2 Tingkat</span>
+                </div>
+                <div class="bg-white/90 rounded-2xl p-2 text-center shadow-sm">
+                  <svg viewBox="0 0 100 75" class="w-full h-12 mx-auto">
+                    <path d="M22 36 L22 58 A28 7 0 0 0 78 58 L78 36 Z" fill="#92400E" />
+                    <ellipse cx="50" cy="36" rx="28" ry="7" fill="#FDE68A" />
+                    <circle cx="50" cy="31" r="6" fill="#B45309" />
+                  </svg>
+                  <span class="block text-[10px] font-bold text-stone-700 truncate">Choco Melt</span>
+                </div>
+              </div>
+            </div>
+            <div class="h-12 sm:h-16 mt-2 rounded-xl bg-amber-200/90 border-2 border-amber-300/60"></div>
+          </div>
+
+          <div class="col-span-5 sm:col-span-4 perspektif-pintu flex">
+            <div id="pintu-toko" class="daun-pintu flex-1 rounded-t-2xl border-4 border-amber-300 bg-white/45 backdrop-blur-[2px] p-2.5 flex flex-col justify-between shadow-inner">
+              <div class="flex-1 rounded-xl border-2 border-amber-200 bg-rose-50/30 flex flex-col items-center justify-center p-2 text-center">
+                <span class="px-3 py-1 rounded-full bg-rose-600 text-white text-[11px] font-extrabold tracking-wide shadow-sm">
+                  BUKA
+                </span>
+                <span class="text-[10px] font-semibold text-stone-700 mt-1.5">
+                  08.00 – 20.00 WIB
+                </span>
+              </div>
+              <div class="my-2 flex items-center justify-end pr-1">
+                <div class="w-2.5 h-10 rounded-full bg-amber-500 shadow"></div>
+              </div>
+              <div class="h-12 sm:h-14 rounded-xl bg-amber-200 border border-amber-300"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-5xl w-full mx-auto h-5 bg-stone-300 rounded-b-2xl shadow-inner"></div>
+    </div>
+
+    <div id="layer-depan" class="absolute inset-x-0 bottom-0 pointer-events-none flex items-end justify-between max-w-5xl mx-auto px-6 sm:px-14 pb-4">
+      <div id="bangku-kiri" class="flex items-end gap-3 sm:gap-5">
+        <svg viewBox="0 0 70 110" class="w-12 sm:w-16 h-auto drop-shadow">
+          <ellipse cx="35" cy="18" rx="22" ry="6" fill="#F43F5E" />
+          <rect x="13" y="18" width="44" height="6" rx="3" fill="#E11D48" />
+          <line x1="22" y1="24" x2="14" y2="105" stroke="#FB7185" stroke-width="5" stroke-linecap="round" />
+          <line x1="48" y1="24" x2="56" y2="105" stroke="#FB7185" stroke-width="5" stroke-linecap="round" />
+          <line x1="18" y1="62" x2="52" y2="62" stroke="#F43F5E" stroke-width="4" />
+        </svg>
+        <svg viewBox="0 0 70 110" class="w-12 sm:w-16 h-auto drop-shadow">
+          <ellipse cx="35" cy="18" rx="22" ry="6" fill="#F43F5E" />
+          <rect x="13" y="18" width="44" height="6" rx="3" fill="#E11D48" />
+          <line x1="22" y1="24" x2="14" y2="105" stroke="#FB7185" stroke-width="5" stroke-linecap="round" />
+          <line x1="48" y1="24" x2="56" y2="105" stroke="#FB7185" stroke-width="5" stroke-linecap="round" />
+          <line x1="18" y1="62" x2="52" y2="62" stroke="#F43F5E" stroke-width="4" />
+        </svg>
+      </div>
+
+      <div class="pointer-events-auto mb-3 flex flex-col items-center gap-2">
+        <div class="bg-white/95 backdrop-blur border border-stone-100 shadow-md rounded-full px-5 py-2.5 flex items-center gap-2.5 text-xs sm:text-sm font-bold text-stone-800">
+          <i class="fa-solid fa-computer-mouse text-rose-600 animate-bounce"></i>
+          <span>Gulir ke bawah untuk masuk ke toko</span>
+        </div>
+        <a href="#etalase" class="text-xs font-semibold text-stone-600 hover:text-rose-600 underline">
+          Langsung ke Etalase Kue
+        </a>
+      </div>
+
+      <div id="tanaman-kanan" class="hidden sm:block">
+        <svg viewBox="0 0 80 110" class="w-16 h-auto drop-shadow">
+          <polygon points="22,68 58,68 52,105 28,105" fill="#F59E0B" />
+          <rect x="18" y="62" width="44" height="8" rx="4" fill="#D97706" />
+          <circle cx="40" cy="44" r="18" fill="#10B981" />
+          <circle cx="28" cy="50" r="13" fill="#059669" />
+          <circle cx="52" cy="50" r="13" fill="#34D399" />
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <main class="relative z-10 bg-amber-50">
+
+    <section id="etalase" class="max-w-6xl mx-auto px-4 pt-16 pb-20">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+        <div>
+          <span class="inline-flex items-center gap-2 bg-rose-100 text-rose-700 text-xs font-bold px-3.5 py-1 rounded-full">
+            <i class="fa-solid fa-store"></i>
+            Etalase Toko Hari Ini
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-stone-900 mt-2">
+            Kue Pilihan Siap Pesan
+            <span class="block text-rose-600">Langsung dari Etalase Kami</span>
+          </h2>
+        </div>
+
+        <div id="filter-kategori" class="flex flex-wrap gap-2">
+          <button type="button" data-kategori="semua" onclick="filterEtalase('semua')" class="tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-rose-600 text-white transition">
+            Semua Kue
+          </button>
+          <button type="button" data-kategori="ulang-tahun" onclick="filterEtalase('ulang-tahun')" class="tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-white border border-stone-200 text-stone-700 hover:border-rose-300 transition">
+            Ulang Tahun
+          </button>
+          <button type="button" data-kategori="mini" onclick="filterEtalase('mini')" class="tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-white border border-stone-200 text-stone-700 hover:border-rose-300 transition">
+            Bento &amp; Mini
+          </button>
+          <button type="button" data-kategori="tart" onclick="filterEtalase('tart')" class="tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-white border border-stone-200 text-stone-700 hover:border-rose-300 transition">
+            Tart &amp; Chiffon
+          </button>
+        </div>
+      </div>
+
+      <div id="grid-etalase" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <section id="custom-kue" class="max-w-6xl mx-auto px-4 py-12">
+      <div class="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 sm:p-10">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-100 pb-6 mb-8">
+          <div>
+            <span class="inline-flex items-center gap-2 bg-amber-100 text-amber-800 text-xs font-bold px-3.5 py-1 rounded-full">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              Studio Kustomisasi Kue
+            </span>
+            <h2 class="text-2xl sm:text-4xl font-extrabold text-stone-900 mt-2">
+              Ingin Desain Sendiri?
+              <span class="text-rose-600">Racik Kue Custommu</span>
+            </h2>
+          </div>
+          <p class="text-sm text-stone-600 max-w-md">
+            Coba padukan rasa, ukuran, warna krim, dan topping di bawah ini. Pratinjau kue dan estimasi harga akan langsung berubah.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div class="lg:col-span-5 bg-gradient-to-b from-rose-50/70 via-amber-50 to-white rounded-3xl border border-rose-100 p-6 flex flex-col items-center">
+            <div class="w-full flex items-center justify-between text-xs font-bold text-stone-500 mb-2">
+              <span>Preview Kue Berlapis</span>
+              <span id="label-ringkasan-custom" class="text-rose-600">Ukuran Sedang</span>
+            </div>
+
+            <svg id="svg-preview-kue" viewBox="0 0 320 270" class="w-full max-w-xs h-auto my-2"></svg>
+
+            <div class="w-full bg-white rounded-2xl border border-stone-100 p-4 mt-3 flex items-center justify-between">
+              <div>
+                <p class="text-xs text-stone-500">Estimasi Harga Kue</p>
+                <p id="harga-custom" class="text-xl font-extrabold text-rose-600">Rp 190.000</p>
+              </div>
+              <button type="button" onclick="bukaModalKonfirmasi('Kue Custom Pilihanmu', document.getElementById('harga-custom').textContent)" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs sm:text-sm font-semibold transition">
+                Lanjut Pesan
+              </button>
+            </div>
+          </div>
+
+          <div class="lg:col-span-7 space-y-6">
+            <div>
+              <p class="text-xs font-extrabold uppercase tracking-wider text-stone-500 mb-2.5">1. Pilih Rasa Dasar Kue</p>
+              <div class="grid grid-cols-3 gap-2.5">
+                <button type="button" onclick="aturCustom('rasa', 'Strawberry', '#FDA4AF', 45000)" class="opsi-rasa p-3 rounded-2xl border border-rose-600 bg-rose-50/60 text-left transition">
+                  <span class="block w-5 h-5 rounded-full bg-rose-300 border border-stone-200 mb-1.5"></span>
+                  <span class="block text-xs sm:text-sm font-bold text-stone-900">Strawberry</span>
+                  <span class="text-[11px] text-stone-500">+Rp 45.000</span>
+                </button>
+                <button type="button" onclick="aturCustom('rasa', 'Coklat', '#78350F', 45000)" class="opsi-rasa p-3 rounded-2xl border border-stone-200 bg-white hover:border-rose-300 text-left transition">
+                  <span class="block w-5 h-5 rounded-full bg-amber-900 border border-stone-200 mb-1.5"></span>
+                  <span class="block text-xs sm:text-sm font-bold text-stone-900">Coklat</span>
+                  <span class="text-[11px] text-stone-500">+Rp 45.000</span>
+                </button>
+                <button type="button" onclick="aturCustom('rasa', 'Vanilla', '#FDE68A', 40000)" class="opsi-rasa p-3 rounded-2xl border border-stone-200 bg-white hover:border-rose-300 text-left transition">
+                  <span class="block w-5 h-5 rounded-full bg-amber-200 border border-stone-200 mb-1.5"></span>
+                  <span class="block text-xs sm:text-sm font-bold text-stone-900">Vanilla</span>
+                  <span class="text-[11px] text-stone-500">+Rp 40.000</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-extrabold uppercase tracking-wider text-stone-500 mb-2.5">2. Pilih Ukuran &amp; Tingkat</p>
+              <div class="grid grid-cols-3 gap-2.5">
+                <button type="button" onclick="aturCustom('ukuran', 'kecil', 'Kecil (16 cm)', 80000)" class="opsi-ukuran p-3 rounded-2xl border border-stone-200 bg-white hover:border-rose-300 text-left transition">
+                  <span class="block text-xs sm:text-sm font-bold text-stone-900">Kecil (16 cm)</span>
+                  <span class="text-[11px] text-stone-500">Rp 80.000</span>
+                </button>
+                <button type="button" onclick="aturCustom('ukuran', 'sedang', 'Sedang (20 cm)', 120000)" class="opsi-ukuran p-3 rounded-2xl border border-rose-600 bg-rose-50/60 text-left transition">
+                  <span class="block text-xs sm:text-sm font-bold text-stone-900">Sedang (20 cm)</span>
+                  <span class="text-[11px] text-stone-500">Rp 120.000</span>
+                </button>
+                <button type="button" onclick="aturCustom('ukuran', 'besar', 'Besar 2 Tingkat', 210000)" class="opsi-ukuran p-3 rounded-2xl border border-stone-200 bg-white hover:border-rose-300 text-left transition">
+                  <span class="block text-xs sm:text-sm font-bold text-stone-900">Besar 2 Tingkat</span>
+                  <span class="text-[11px] text-stone-500">Rp 210.000</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-stone-500 mb-2.5">3. Warna Lapisan Krim</p>
+                <div class="flex items-center gap-2.5">
+                  <button type="button" onclick="aturCustom('krim', 'Putih Mawar', '#FFF1F2', 0)" class="w-9 h-9 rounded-full bg-rose-50 border-2 border-rose-600 shadow-sm" title="Putih Mawar"></button>
+                  <button type="button" onclick="aturCustom('krim', 'Pink Pastel', '#FBCFE8', 0)" class="w-9 h-9 rounded-full bg-pink-200 border border-stone-300 shadow-sm" title="Pink Pastel"></button>
+                  <button type="button" onclick="aturCustom('krim', 'Krem Kuning', '#FEF3C7', 0)" class="w-9 h-9 rounded-full bg-amber-100 border border-stone-300 shadow-sm" title="Krem Kuning"></button>
+                  <button type="button" onclick="aturCustom('krim', 'Coklat Susu', '#D97706', 5000)" class="w-9 h-9 rounded-full bg-amber-600 border border-stone-300 shadow-sm" title="Coklat Susu"></button>
+                </div>
+              </div>
+
+              <div>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-stone-500 mb-2.5">4. Pilih Topping Utama</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="aturCustom('topping', 'strawberry', 'Buah Strawberry', 25000)" class="opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border border-rose-600 bg-rose-50 text-rose-700">
+                    Strawberry (+25rb)
+                  </button>
+                  <button type="button" onclick="aturCustom('topping', 'coklat_chip', 'Choco Chip', 20000)" class="opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border border-stone-200 bg-white text-stone-700">
+                    Choco Chip (+20rb)
+                  </button>
+                  <button type="button" onclick="aturCustom('topping', 'lilin', 'Lilin Ulang Tahun', 15000)" class="opsi-topping px-3.5 py-2 rounded-full text-xs font-semibold border border-stone-200 bg-white text-stone-700">
+                    Lilin (+15rb)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="input-tulisan-kue" class="block text-xs font-extrabold uppercase tracking-wider text-stone-500 mb-2">
+                5. Tulisan di Atas Kue
+              </label>
+              <input id="input-tulisan-kue" type="text" maxlength="22" oninput="ubahTulisanKue(this.value)" placeholder="Contoh: Selamat Ulang Tahun!" value="Happy Birthday!" class="w-full px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="perjalanan" class="max-w-5xl mx-auto px-4 py-16 sm:py-20">
+      <div class="text-center max-w-2xl mx-auto mb-14">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-rose-600">Alur Pemesanan Mudah</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-stone-900 mt-1">
+          Dari Pilihanmu
+          <span class="block text-rose-600">Sampai Siap di Meja Acara</span>
+        </h2>
+      </div>
+
+      <div class="relative">
+        <div class="hidden md:block absolute left-1/2 top-6 bottom-6 w-0.5 -translate-x-1/2 garis-penuntun"></div>
+
+        <div class="space-y-10">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <div class="md:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
+              <h3 class="text-lg font-extrabold text-stone-900">Pilih dari Etalase <span class="text-rose-600">atau Custom</span></h3>
+              <p class="text-xs sm:text-sm text-stone-600 mt-2 leading-relaxed">
+                Pesan kue favorit yang sudah tersedia di etalase atau rancang kombinasi rasa, ukuran, dan tulisan sendiri.
+              </p>
+            </div>
+            <div class="hidden md:flex md:col-span-2 justify-center relative z-10">
+              <span class="w-10 h-10 rounded-full bg-rose-600 text-white font-extrabold text-sm flex items-center justify-center ring-8 ring-amber-50">1</span>
+            </div>
+            <div class="hidden md:block md:col-span-5"></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <div class="hidden md:block md:col-span-5"></div>
+            <div class="hidden md:flex md:col-span-2 justify-center relative z-10">
+              <span class="w-10 h-10 rounded-full bg-rose-600 text-white font-extrabold text-sm flex items-center justify-center ring-8 ring-amber-50">2</span>
+            </div>
+            <div class="md:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
+              <h3 class="text-lg font-extrabold text-stone-900">Tentukan Tanggal <span class="text-rose-600">Ambil atau Antar</span></h3>
+              <p class="text-xs sm:text-sm text-stone-600 mt-2 leading-relaxed">
+                Pilih jadwal sesuai kuota harian dapur kami, lalu tentukan ambil di tempat atau kirim ke alamat tujuan.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <div class="md:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
+              <h3 class="text-lg font-extrabold text-stone-900">Bayar DP / Lunas <span class="text-rose-600">&amp; Terima Tiket QR</span></h3>
+              <p class="text-xs sm:text-sm text-stone-600 mt-2 leading-relaxed">
+                Unggah bukti transfer atau QRIS, pantau status pembuatan kue, dan gunakan tiket QR saat pengambilan.
+              </p>
+            </div>
+            <div class="hidden md:flex md:col-span-2 justify-center relative z-10">
+              <span class="w-10 h-10 rounded-full bg-emerald-600 text-white font-extrabold text-sm flex items-center justify-center ring-8 ring-amber-50">
+                <i class="fa-solid fa-check"></i>
+              </span>
+            </div>
+            <div class="hidden md:block md:col-span-5"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="info-toko" class="max-w-6xl mx-auto px-4 pt-6 pb-20">
+      <div class="bg-white rounded-3xl shadow-sm border border-stone-100 p-8 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div class="flex items-start gap-4">
+          <span class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-location-dot"></i>
+          </span>
+          <div>
+            <p class="text-xs font-bold uppercase text-stone-400">Lokasi Toko</p>
+            <p class="text-sm font-bold text-stone-900 mt-1">Jl. Melati Manis No. 18, Bandung</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-4">
+          <span class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-clock"></i>
+          </span>
+          <div>
+            <p class="text-xs font-bold uppercase text-stone-400">Jam Buka</p>
+            <p class="text-sm font-bold text-stone-900 mt-1">Setiap Hari, 08.00 – 20.00 WIB</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-4">
+          <span class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+            <i class="fa-brands fa-whatsapp text-lg"></i>
+          </span>
+          <div>
+            <p class="text-xs font-bold uppercase text-stone-400">WhatsApp Toko</p>
+            <p class="text-sm font-bold text-stone-900 mt-1">0812-3456-7890</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-stone-200/70 py-8 px-4 bg-amber-50">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+      <span class="font-bold text-stone-800">Dapur Kue Manis</span>
+      <span>Kue Etalase Siap Pesan &amp; Kustomisasi Kue Acara</span>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/6281234567890" target="_blank" rel="noreferrer" aria-label="Chat WhatsApp" class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center text-2xl transition">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+
+  <div id="modal-konfirmasi" class="hidden fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-xl space-y-5">
+      <div class="flex items-center justify-between">
+        <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">Siap Lanjut ke Pemesanan</span>
+        <button type="button" onclick="tutupModalKonfirmasi()" class="w-8 h-8 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div>
+        <h3 id="judul-modal-kue" class="text-xl font-extrabold text-stone-900">Nama Kue</h3>
+        <p id="harga-modal-kue" class="text-base font-extrabold text-rose-600 mt-1">Rp 0</p>
+      </div>
+      <p class="text-sm text-stone-600 leading-relaxed">
+        Pilihan kue ini akan diteruskan ke langkah pemilihan tanggal pengambilan/pengiriman, pengisian data penerima, dan pembuatan tiket QR.
+      </p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="tutupModalKonfirmasi()" class="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-sm font-semibold transition">
+          Mengerti
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var daftarEtalase = [
+      {
+        id: 1,
+        nama: "Berry Velvet Classic",
+        kategori: "ulang-tahun",
+        labelKategori: "Ulang Tahun",
+        badge: "Terlaris",
+        ukuran: "Diameter 20 cm (10-12 Porsi)",
+        harga: 185000,
+        warnaBadan: "#FDA4AF",
+        warnaKrim: "#FFF1F2",
+        topping: "strawberry"
+      },
+      {
+        id: 2,
+        nama: "Choco Ganache Truffle",
+        kategori: "ulang-tahun",
+        labelKategori: "Ulang Tahun",
+        badge: "Siap Hari Ini",
+        ukuran: "Diameter 20 cm (10-12 Porsi)",
+        harga: 195000,
+        warnaBadan: "#78350F",
+        warnaKrim: "#D97706",
+        topping: "coklat_chip"
+      },
+      {
+        id: 3,
+        nama: "Pastel Bento Ribbon",
+        kategori: "mini",
+        labelKategori: "Bento & Mini",
+        badge: "Favorit",
+        ukuran: "Diameter 12 cm (2-4 Porsi)",
+        harga: 95000,
+        warnaBadan: "#FDE68A",
+        warnaKrim: "#FBCFE8",
+        topping: "lilin"
+      },
+      {
+        id: 4,
+        nama: "Strawberry Shortcake",
+        kategori: "tart",
+        labelKategori: "Tart & Chiffon",
+        badge: "Segar",
+        ukuran: "Diameter 18 cm (8-10 Porsi)",
+        harga: 165000,
+        warnaBadan: "#FDE68A",
+        warnaKrim: "#FFF1F2",
+        topping: "strawberry"
+      },
+      {
+        id: 5,
+        nama: "Mini Choco Berry",
+        kategori: "mini",
+        labelKategori: "Bento & Mini",
+        badge: "Siap Hari Ini",
+        ukuran: "Diameter 14 cm (4-6 Porsi)",
+        harga: 110000,
+        warnaBadan: "#78350F",
+        warnaKrim: "#FFF1F2",
+        topping: "strawberry"
+      },
+      {
+        id: 6,
+        nama: "Royal Pink Chiffon",
+        kategori: "tart",
+        labelKategori: "Tart & Chiffon",
+        badge: "Baru",
+        ukuran: "Diameter 22 cm (12-15 Porsi)",
+        harga: 210000,
+        warnaBadan: "#FDA4AF",
+        warnaKrim: "#FEF3C7",
+        topping: "lilin"
+      }
+    ];
+
+    function formatRupiah(angka) {
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0
+      }).format(angka);
+    }
+
+    function buatSvgKueMini(warnaBadan, warnaKrim, topping) {
+      var hiasan = "";
+      if (topping === "strawberry") {
+        hiasan =
+          '<circle cx="62" cy="52" r="7" fill="#E11D48" />' +
+          '<circle cx="80" cy="48" r="8" fill="#E11D48" />' +
+          '<circle cx="98" cy="52" r="7" fill="#E11D48" />';
+      } else if (topping === "coklat_chip") {
+        hiasan =
+          '<rect x="58" y="48" width="9" height="6" rx="2" fill="#451A03" />' +
+          '<rect x="76" y="45" width="9" height="6" rx="2" fill="#451A03" />' +
+          '<rect x="94" y="48" width="9" height="6" rx="2" fill="#451A03" />';
+      } else {
+        hiasan =
+          '<rect x="78" y="28" width="4" height="18" rx="2" fill="#F43F5E" />' +
+          '<ellipse cx="80" cy="22" rx="4" ry="6" fill="#F59E0B" />';
+      }
+
+      return (
+        '<svg viewBox="0 0 160 120" class="w-40 h-28 mx-auto">' +
+        '<ellipse cx="80" cy="102" rx="58" ry="12" fill="#E7E5E4" />' +
+        '<ellipse cx="80" cy="98" rx="54" ry="11" fill="#FFFFFF" />' +
+        '<path d="M36 58 L36 90 A44 11 0 0 0 124 90 L124 58 Z" fill="' + warnaBadan + '" />' +
+        '<ellipse cx="80" cy="58" rx="44" ry="11" fill="' + warnaKrim + '" />' +
+        '<path d="M36 58 Q46 72 56 60 Q66 74 76 60 Q86 74 96 60 Q106 72 116 60 L124 58" fill="none" stroke="' + warnaKrim + '" stroke-width="6" stroke-linecap="round" />' +
+        hiasan +
+        "</svg>"
+      );
+    }
+
+    function renderEtalase(kategori) {
+      var wadah = document.getElementById("grid-etalase");
+      var html = "";
+      for (var i = 0; i < daftarEtalase.length; i++) {
+        var item = daftarEtalase[i];
+        if (kategori !== "semua" && item.kategori !== kategori) {
+          continue;
+        }
+        html +=
+          '<div class="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 flex flex-col justify-between hover:border-rose-200 transition">' +
+          "<div>" +
+          '<div class="flex items-center justify-between mb-3">' +
+          '<span class="px-3 py-1 rounded-full bg-amber-50 text-stone-700 text-xs font-semibold">' + item.labelKategori + "</span>" +
+          '<span class="px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-xs font-bold">' + item.badge + "</span>" +
+          "</div>" +
+          '<div class="bg-amber-50/60 rounded-2xl py-4 mb-4">' +
+          buatSvgKueMini(item.warnaBadan, item.warnaKrim, item.topping) +
+          "</div>" +
+          '<h3 class="text-lg font-extrabold text-stone-900">' + item.nama + "</h3>" +
+          '<p class="text-xs text-stone-500 mt-1">' + item.ukuran + "</p>" +
+          '<p class="text-lg font-extrabold text-rose-600 mt-3">' + formatRupiah(item.harga) + "</p>" +
+          "</div>" +
+          '<div class="grid grid-cols-2 gap-2 pt-5 mt-4 border-t border-stone-100">' +
+          '<button type="button" onclick="bukaModalKonfirmasi(\'' + item.nama + "', '" + formatRupiah(item.harga) + '\')" class="py-2.5 px-3 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs font-semibold transition">Pesan Langsung</button>' +
+          '<button type="button" onclick="salinKeCustom(' + item.id + ')" class="py-2.5 px-3 bg-white border border-stone-200 hover:border-rose-300 text-stone-700 rounded-full text-xs font-semibold transition">Kustomisasi</button>' +
+          "</div>" +
+          "</div>";
+      }
+      wadah.innerHTML = html;
+    }
+
+    function filterEtalase(kategori) {
+      var tombol = document.querySelectorAll(".tombol-filter");
+      for (var i = 0; i < tombol.length; i++) {
+        var kat = tombol[i].getAttribute("data-kategori");
+        if (kat === kategori) {
+          tombol[i].className = "tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-rose-600 text-white transition";
+        } else {
+          tombol[i].className = "tombol-filter px-4 py-2 rounded-full text-xs sm:text-sm font-semibold bg-white border border-stone-200 text-stone-700 hover:border-rose-300 transition";
+        }
+      }
+      renderEtalase(kategori);
+    }
+
+    var stateCustom = {
+      rasa: "Strawberry",
+      warnaBadan: "#FDA4AF",
+      hargaRasa: 45000,
+      ukuranKode: "sedang",
+      ukuranLabel: "Sedang (20 cm)",
+      hargaUkuran: 120000,
+      warnaKrim: "#FFF1F2",
+      hargaKrim: 0,
+      topping: "strawberry",
+      hargaTopping: 25000,
+      tulisan: "Happy Birthday!"
+    };
+
+    function gambarPreviewCustom() {
+      var svg = document.getElementById("svg-preview-kue");
+      var badan = stateCustom.warnaBadan;
+      var krim = stateCustom.warnaKrim;
+      var u = stateCustom.ukuranKode;
+
+      var tubuhKue = "";
+      var topY = 125;
+
+      if (u === "kecil") {
+        topY = 135;
+        tubuhKue =
+          '<path d="M95 135 L95 190 A65 18 0 0 0 225 190 L225 135 Z" fill="' + badan + '" />' +
+          '<ellipse cx="160" cy="135" rx="65" ry="18" fill="' + krim + '" />' +
+          '<path d="M95 135 Q110 155 125 138 Q140 158 155 138 Q170 158 185 138 Q200 155 215 138 L225 135" fill="none" stroke="' + krim + '" stroke-width="9" stroke-linecap="round" />';
+      } else if (u === "besar") {
+        topY = 85;
+        tubuhKue =
+          '<path d="M68 135 L68 192 A92 22 0 0 0 252 192 L252 135 Z" fill="' + badan + '" />' +
+          '<ellipse cx="160" cy="135" rx="92" ry="22" fill="' + krim + '" />' +
+          '<path d="M98 85 L98 130 A62 16 0 0 0 222 130 L222 85 Z" fill="' + badan + '" />' +
+          '<ellipse cx="160" cy="85" rx="62" ry="16" fill="' + krim + '" />' +
+          '<path d="M98 85 Q112 104 126 88 Q140 106 154 88 Q168 106 182 88 Q196 104 210 88 L222 85" fill="none" stroke="' + krim + '" stroke-width="8" stroke-linecap="round" />';
+      } else {
+        topY = 120;
+        tubuhKue =
+          '<path d="M78 120 L78 190 A82 20 0 0 0 242 190 L242 120 Z" fill="' + badan + '" />' +
+          '<ellipse cx="160" cy="120" rx="82" ry="20" fill="' + krim + '" />' +
+          '<path d="M78 120 Q94 144 110 124 Q126 148 142 124 Q158 148 174 124 Q190 148 206 124 Q222 144 238 120" fill="none" stroke="' + krim + '" stroke-width="10" stroke-linecap="round" />';
+      }
+
+      var hiasan = "";
+      if (stateCustom.topping === "strawberry") {
+        hiasan =
+          '<circle cx="132" cy="' + (topY - 6) + '" r="9" fill="#E11D48" />' +
+          '<circle cx="160" cy="' + (topY - 11) + '" r="10" fill="#E11D48" />' +
+          '<circle cx="188" cy="' + (topY - 6) + '" r="9" fill="#E11D48" />';
+      } else if (stateCustom.topping === "coklat_chip") {
+        hiasan =
+          '<rect x="125" y="' + (topY - 10) + '" width="12" height="8" rx="2" fill="#451A03" />' +
+          '<rect x="154" y="' + (topY - 14) + '" width="12" height="8" rx="2" fill="#451A03" />' +
+          '<rect x="183" y="' + (topY - 10) + '" width="12" height="8" rx="2" fill="#451A03" />';
+      } else {
+        hiasan =
+          '<rect x="157" y="' + (topY - 34) + '" width="6" height="24" rx="3" fill="#F43F5E" />' +
+          '<ellipse cx="160" cy="' + (topY - 42) + '" rx="5" ry="9" fill="#F59E0B" />';
+      }
+
+      var papanTeks = "";
+      if (stateCustom.tulisan && stateCustom.tulisan.trim() !== "") {
+        var teksAman = stateCustom.tulisan.replace(/</g, "").replace(/>/g, "");
+        papanTeks =
+          '<rect x="92" y="' + (topY + 2) + '" width="136" height="24" rx="12" fill="#FFFFFF" stroke="#E11D48" stroke-width="2" />' +
+          '<text x="160" y="' + (topY + 18) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#1C1917">' +
+          teksAman +
+          "</text>";
+      }
+
+      svg.innerHTML =
+        '<ellipse cx="160" cy="214" rx="112" ry="24" fill="#E7E5E4" />' +
+        '<ellipse cx="160" cy="208" rx="106" ry="21" fill="#FFFFFF" stroke="#E7E5E4" stroke-width="2" />' +
+        tubuhKue +
+        hiasan +
+        papanTeks;
+
+      var total =
+        stateCustom.hargaRasa +
+        stateCustom.hargaUkuran +
+        stateCustom.hargaKrim +
+        stateCustom.hargaTopping;
+      document.getElementById("harga-custom").textContent = formatRupiah(total);
+      document.getElementById("label-ringkasan-custom").textContent =
+        stateCustom.rasa + " • " + stateCustom.ukuranLabel;
+    }
+
+    function aturCustom(jenis, nilai1, nilai2, harga) {
+      if (jenis === "rasa") {
+        stateCustom.rasa = nilai1;
+        stateCustom.warnaBadan = nilai2;
+        stateCustom.hargaRasa = harga;
+      }
+      if (jenis === "ukuran") {
+        stateCustom.ukuranKode = nilai1;
+        stateCustom.ukuranLabel = nilai2;
+        stateCustom.hargaUkuran = harga;
+      }
+      if (jenis === "krim") {
+        stateCustom.warnaKrim = nilai2;
+        stateCustom.hargaKrim = harga;
+      }
+      if (jenis === "topping") {
+        stateCustom.topping = nilai1;
+        stateCustom.hargaTopping = harga;
+      }
+      gambarPreviewCustom();
+    }
+
+    function ubahTulisanKue(teks) {
+      stateCustom.tulisan = teks;
+      gambarPreviewCustom();
+    }
+
+    function salinKeCustom(id) {
+      for (var i = 0; i < daftarEtalase.length; i++) {
+        if (daftarEtalase[i].id === id) {
+          stateCustom.rasa = daftarEtalase[i].nama;
+          stateCustom.warnaBadan = daftarEtalase[i].warnaBadan;
+          stateCustom.warnaKrim = daftarEtalase[i].warnaKrim;
+          stateCustom.topping = daftarEtalase[i].topping;
+          gambarPreviewCustom();
+          document.getElementById("custom-kue").scrollIntoView({ behavior: "smooth" });
+          return;
+        }
+      }
+    }
+
+    function bukaModalKonfirmasi(nama, harga) {
+      document.getElementById("judul-modal-kue").textContent = nama;
+      document.getElementById("harga-modal-kue").textContent = harga;
+      document.getElementById("modal-konfirmasi").classList.remove("hidden");
+    }
+
+    function tutupModalKonfirmasi() {
+      document.getElementById("modal-konfirmasi").classList.add("hidden");
+    }
+
+    renderEtalase("semua");
+    gambarPreviewCustom();
+
+    var kurangiGerak = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!kurangiGerak && typeof gsap !== "undefined") {
+      gsap.registerPlugin(ScrollTrigger);
+
+      var tlMasukToko = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#panggung-toko",
+          start: "top top",
+          end: "+=150%",
+          scrub: 0.8,
+          pin: true
+        }
+      });
+
+      tlMasukToko
+        .to("#bangku-kiri", { x: -220, y: 80, scale: 1.4, opacity: 0, duration: 0.5 }, 0)
+        .to("#tanaman-kanan", { x: 220, y: 80, scale: 1.4, opacity: 0, duration: 0.5 }, 0)
+        .to("#pintu-toko", { rotationY: -78, duration: 0.5 }, 0.05)
+        .to("#layer-fasad", { scale: 2.35, opacity: 0, duration: 0.85, ease: "power2.in" }, 0.15)
+        .to("#layer-interior", { scale: 1, opacity: 1, duration: 0.85, ease: "power2.out" }, 0.15);
+    }
+  </script>
+</body>
+</html>

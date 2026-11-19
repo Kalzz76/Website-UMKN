@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
@@ -17,10 +18,17 @@ export default function DashboardShell({
   const [dropdownBuka, setDropdownBuka] = useState(false);
   const [notifDropdownBuka, setNotifDropdownBuka] = useState(false);
   const [notifDibaca, setNotifDibaca] = useState(false);
+  const [modalKeluarBuka, setModalKeluarBuka] = useState(false);
+  const [sedangKeluar, setSedangKeluar] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const notifRef = useRef(null);
   const profilRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const role = profil?.role || "staf";
   const userName = profil?.nama || "Admin";
@@ -292,6 +300,7 @@ export default function DashboardShell({
   }
 
   async function handleLogout() {
+    setSedangKeluar(true);
     const supabase = getSupabaseBrowser();
     await supabase.auth.signOut();
     router.push("/masuk");
@@ -572,7 +581,10 @@ export default function DashboardShell({
                   <button
                     type="button"
                     className="profile-dropdown-item danger"
-                    onClick={handleLogout}
+                    onClick={() => {
+                      setDropdownBuka(false);
+                      setModalKeluarBuka(true);
+                    }}
                   >
                     <i className="fa-solid fa-arrow-right-from-bracket"></i>
                     <span>Keluar</span>
@@ -587,6 +599,61 @@ export default function DashboardShell({
       </main>
 
       <PortalLedge />
+
+      {modalKeluarBuka && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+            onClick={() => !sedangKeluar && setModalKeluarBuka(false)}
+          />
+          <div className="relative bg-[#fbf6e9] border border-[#e2d9c7] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl text-center space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-full bg-rose-100/70 border border-rose-200 text-rose-600 flex items-center justify-center text-2xl shadow-inner">
+              <i className="fa-solid fa-arrow-right-from-bracket"></i>
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-[#17382d]">
+                Konfirmasi Keluar Akun
+              </h3>
+              <p className="text-xs text-[#6b7d6c] mt-1.5 leading-relaxed">
+                Apakah Anda yakin ingin keluar dari akun{" "}
+                <strong className="text-[#17382d]">
+                  {profil?.role === "admin" ? "Administrator" : "Petugas / Staf"}
+                </strong>
+                ? Anda perlu masuk kembali dengan email dan kata sandi untuk mengakses dashboard toko.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                disabled={sedangKeluar}
+                onClick={() => setModalKeluarBuka(false)}
+                className="px-5 py-2.5 rounded-xl border border-[#d8cca6] text-[#1d3b2e] bg-white hover:bg-stone-50 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={sedangKeluar}
+                onClick={handleLogout}
+                className="px-5 py-2.5 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              >
+                {sedangKeluar ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>Sedang Keluar...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Ya, Keluar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
