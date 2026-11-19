@@ -1,14 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import ModalPesan from "@/components/ModalPesan";
 
 export default function StokDashboardPage() {
+  const [isMounted, setIsMounted] = useState(false);
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [profil, setProfil] = useState(null);
   const [daftarBahan, setDaftarBahan] = useState([]);
   const [sedangProses, setSedangProses] = useState(false);
+
+  const [kataKunciCari, setKataKunciCari] = useState("");
+  const [filterStatus, setFilterStatus] = useState("semua");
 
   const [modalSesuaikanBuka, setModalSesuaikanBuka] = useState(false);
   const [bahanAktif, setBahanAktif] = useState(null);
@@ -31,6 +36,21 @@ export default function StokDashboardPage() {
     pesan: "",
     tipe: "info",
   });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (modalSesuaikanBuka || modalBahanBuka || notifikasi.terbuka) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [modalSesuaikanBuka, modalBahanBuka, notifikasi.terbuka]);
 
   async function muatData() {
     setSedangMemuat(true);
@@ -229,114 +249,256 @@ export default function StokDashboardPage() {
 
   const isAdmin = profil?.role === "admin";
 
+  const totalBahan = daftarBahan.length;
+  const daftarMenipis = daftarBahan.filter(
+    (b) => Number(b.jumlah) <= Number(b.batas_minimum)
+  );
+  const totalMenipis = daftarMenipis.length;
+  const totalAman = totalBahan - totalMenipis;
+
+  const bahanTersaring = daftarBahan.filter((b) => {
+    const namaCocok = b.nama
+      .toLowerCase()
+      .includes(kataKunciCari.trim().toLowerCase());
+    const isMenipis = Number(b.jumlah) <= Number(b.batas_minimum);
+
+    if (filterStatus === "menipis") return namaCocok && isMenipis;
+    if (filterStatus === "aman") return namaCocok && !isMenipis;
+    return namaCocok;
+  });
+
   return (
     <div className="space-y-6">
-      {isAdmin && (
-        <div className="flex items-center justify-end">
+      <div className="content-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-[#1d3b2e]">
+            Kelola Stok & Inventaris Bahan
+          </h2>
+          <p className="text-xs text-stone-500 mt-0.5">
+            Pantau persediaan bahan baku kue, lakukan penyesuaian stok masuk/keluar harian, dan pantau peringatan bahan menipis
+          </p>
+        </div>
+
+        {isAdmin && (
           <button
             type="button"
             onClick={bukaModalTambahBahan}
-            className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded-full font-semibold bg-rose-600 hover:bg-rose-500 text-white text-xs transition shadow-sm cursor-pointer"
+            className="h-[42px] px-5 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-sm inline-flex items-center justify-center space-x-2 flex-shrink-0"
           >
-            <i className="fa-solid fa-plus"></i>
-            <span>Tambah Bahan</span>
+            <i className="fa-solid fa-plus text-xs"></i>
+            <span>Tambah Bahan Baru</span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="content-card p-5 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-xl flex-shrink-0 shadow-xs">
+            <i className="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <div className="text-2xl font-black text-[#1d3b2e]">
+              {totalBahan}
+            </div>
+            <div className="text-xs font-bold text-stone-500 mt-0.5">
+              Total Jenis Bahan
+            </div>
+          </div>
+        </div>
+
+        <div className="content-card p-5 flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#d8e3cf] border border-[#bad1ab] text-[#215934] flex items-center justify-center text-xl flex-shrink-0 shadow-xs">
+            <i className="fa-solid fa-circle-check"></i>
+          </div>
+          <div>
+            <div className="text-2xl font-black text-[#215934]">
+              {totalAman}
+            </div>
+            <div className="text-xs font-bold text-stone-500 mt-0.5">
+              Stok Aman & Mencukupi
+            </div>
+          </div>
+        </div>
+
+        <div className={`content-card p-5 flex items-center space-x-4 ${totalMenipis > 0 ? "border-rose-300 bg-[#fff5f5]" : ""}`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 shadow-xs ${
+            totalMenipis > 0
+              ? "bg-rose-100 border border-rose-200 text-rose-700 animate-pulse"
+              : "bg-[#ede2cd] border border-[#dfd4bd] text-stone-600"
+          }`}>
+            <i className="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <div className={`text-2xl font-black ${totalMenipis > 0 ? "text-rose-700" : "text-stone-700"}`}>
+              {totalMenipis}
+            </div>
+            <div className="text-xs font-bold text-stone-500 mt-0.5">
+              Bahan Menipis (Perlu Restok)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="content-card p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#e8dfc8]">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-sm font-bold shadow-xs">
+              <i className="fa-solid fa-clipboard-list"></i>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#1d3b2e]">
+                Daftar Persediaan Bahan
+              </h3>
+              <p className="text-[11px] text-stone-500">
+                Menampilkan {bahanTersaring.length} dari {totalBahan} bahan baku
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative">
+              <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
+              <input
+                type="text"
+                placeholder="Cari nama bahan..."
+                value={kataKunciCari}
+                onChange={(e) => setKataKunciCari(e.target.value)}
+                className="h-[38px] pl-9 pr-3.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e] w-48 sm:w-56"
+              />
+            </div>
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-[38px] px-3 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e] cursor-pointer"
+            >
+              <option value="semua">Semua Status</option>
+              <option value="menipis">Stok Menipis Saja</option>
+              <option value="aman">Stok Aman Saja</option>
+            </select>
+          </div>
+        </div>
+
         {sedangMemuat ? (
           <div className="py-12 text-center text-stone-400">
-            <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-rose-500"></i>
-            <p className="text-xs">Memuat data bahan...</p>
+            <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#ba2b2b]"></i>
+            <p className="text-xs font-semibold">Memuat data persediaan bahan...</p>
           </div>
-        ) : daftarBahan.length === 0 ? (
+        ) : bahanTersaring.length === 0 ? (
           <div className="py-12 text-center text-stone-400">
             <i className="fa-solid fa-boxes-stacked text-3xl mb-2 block text-stone-300"></i>
-            <p className="text-sm font-semibold text-stone-700">Belum ada data bahan.</p>
+            <p className="text-sm font-bold text-stone-700">
+              {kataKunciCari || filterStatus !== "semua"
+                ? "Tidak ada bahan yang cocok dengan pencarian atau filter."
+                : "Belum ada data persediaan bahan."}
+            </p>
+            {isAdmin && (
+              <p className="text-xs text-stone-400 mt-1">
+                Klik tombol &quot;Tambah Bahan Baru&quot; untuk mulai mencatat stok.
+              </p>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-stone-100 text-stone-700 uppercase text-xs">
+              <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
                 <tr>
-                  <th className="py-3 px-4 rounded-l-xl">Nama Bahan</th>
-                  <th className="py-3 px-4">Jumlah Stok</th>
-                  <th className="py-3 px-4">Satuan</th>
+                  <th className="py-3 px-4 rounded-l-xl w-14">No.</th>
+                  <th className="py-3 px-4">Nama Bahan</th>
+                  <th className="py-3 px-4">Sisa Stok</th>
                   <th className="py-3 px-4">Batas Minimum</th>
                   <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right rounded-r-xl">Aksi</th>
+                  <th className="py-3 px-4 text-center">Penyesuaian Cepat</th>
+                  <th className="py-3 px-4 text-right rounded-r-xl w-24">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
-                {daftarBahan.map((b) => {
+              <tbody className="divide-y divide-[#ede2cd]">
+                {bahanTersaring.map((b, idx) => {
                   const menipis = Number(b.jumlah) <= Number(b.batas_minimum);
                   return (
-                    <tr key={b.id} className="hover:bg-stone-50/60 transition">
-                      <td className="py-3.5 px-4 font-bold text-stone-900">
-                        {b.nama}
+                    <tr key={b.id} className="hover:bg-[#f7f2e4]/70 transition">
+                      <td className="py-3.5 px-4 font-bold text-stone-600 text-xs">
+                        {idx + 1}
                       </td>
-                      <td className="py-3.5 px-4 font-extrabold text-base text-stone-900">
-                        {b.jumlah}
+                      <td className="py-3.5 px-4 font-bold text-[#1d3b2e]">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2 h-2 rounded-full bg-[#1d3b2e]/30"></span>
+                          <span>{b.nama}</span>
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4 text-stone-600 text-xs font-medium">
-                        {b.satuan}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-baseline space-x-1.5">
+                          <span className={`text-base font-black ${menipis ? "text-rose-700" : "text-[#1d3b2e]"}`}>
+                            {b.jumlah}
+                          </span>
+                          <span className="text-xs font-bold text-stone-500">
+                            {b.satuan}
+                          </span>
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4 text-stone-500 text-xs">
-                        {b.batas_minimum} {b.satuan}
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-1 rounded-lg bg-[#ede2cd] text-stone-700 border border-[#dfd4bd] text-xs font-semibold">
+                          Min. {b.batas_minimum} {b.satuan}
+                        </span>
                       </td>
                       <td className="py-3.5 px-4">
                         {menipis ? (
-                          <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                            <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
                             <span>Menipis</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#d8e3cf] text-[#215934] border border-[#bad1ab]">
+                            <span className="w-2 h-2 rounded-full bg-[#215934]"></span>
                             <span>Aman</span>
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end space-x-1.5">
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center justify-center space-x-2">
                           <button
                             type="button"
                             onClick={() => bukaModalSesuaikan(b, "tambah")}
-                            className="p-1.5 px-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs transition cursor-pointer"
-                            title="Tambah Jumlah Stok"
+                            className="h-[32px] px-3 rounded-xl bg-[#d8e3cf] hover:bg-[#cbe0bf] text-[#215934] border border-[#bad1ab] font-bold text-xs inline-flex items-center space-x-1 transition cursor-pointer shadow-xs"
+                            title="Tambah Stok Masuk"
                           >
-                            <i className="fa-solid fa-plus"></i>
+                            <i className="fa-solid fa-plus text-[10px]"></i>
+                            <span>Masuk</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => bukaModalSesuaikan(b, "kurang")}
-                            className="p-1.5 px-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold text-xs transition cursor-pointer"
-                            title="Kurangi Jumlah Stok"
+                            className="h-[32px] px-3 rounded-xl bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 border border-[#f0c2c2] font-bold text-xs inline-flex items-center space-x-1 transition cursor-pointer shadow-xs"
+                            title="Kurangi Stok Keluar / Terpakai"
                           >
-                            <i className="fa-solid fa-minus"></i>
+                            <i className="fa-solid fa-minus text-[10px]"></i>
+                            <span>Keluar</span>
                           </button>
-                          {isAdmin && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => bukaModalEditBahan(b)}
-                                className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition cursor-pointer"
-                                title="Edit Bahan"
-                              >
-                                <i className="fa-solid fa-pen-to-square text-xs"></i>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleHapusBahan(b)}
-                                className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                                title="Hapus Bahan"
-                              >
-                                <i className="fa-solid fa-trash text-xs"></i>
-                              </button>
-                            </>
-                          )}
                         </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        {isAdmin ? (
+                          <div className="flex items-center justify-end space-x-1.5">
+                            <button
+                              type="button"
+                              onClick={() => bukaModalEditBahan(b)}
+                              className="w-8 h-8 rounded-lg border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
+                              title="Edit Bahan"
+                            >
+                              <i className="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleHapusBahan(b)}
+                              className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
+                              title="Hapus Bahan"
+                            >
+                              <i className="fa-solid fa-trash text-xs"></i>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-stone-400 text-xs">-</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -347,186 +509,258 @@ export default function StokDashboardPage() {
         )}
       </div>
 
-      {modalSesuaikanBuka && bahanAktif && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-stone-100 mb-4">
+      {isMounted && modalSesuaikanBuka && bahanAktif && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalSesuaikanBuka(false);
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 99999,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+        >
+          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-sm w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
               <div>
-                <h3 className="text-base font-bold text-stone-900">
-                  {tipeSesuaikan === "tambah" ? "Tambah Stok" : "Kurangi Stok"}
+                <h3 className="text-base font-bold text-[#1d3b2e]">
+                  {tipeSesuaikan === "tambah" ? "Tambah Stok Masuk" : "Catat Stok Keluar"}
                 </h3>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Bahan: <strong className="text-stone-800">{bahanAktif.nama}</strong> (Saat ini: {bahanAktif.jumlah} {bahanAktif.satuan})
+                <p className="text-xs text-stone-600 mt-0.5">
+                  Bahan: <strong className="text-[#1d3b2e]">{bahanAktif.nama}</strong>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setModalSesuaikanBuka(false)}
-                className="text-stone-400 hover:text-stone-700 p-1 rounded-xl cursor-pointer"
+                className="w-8 h-8 rounded-xl border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center cursor-pointer transition"
               >
-                <i className="fa-solid fa-xmark text-lg"></i>
+                <i className="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
-            {pesanError.length > 0 && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-                {pesanError.map((err, idx) => (
-                  <p key={idx}>{err}</p>
-                ))}
-              </div>
-            )}
+            <form onSubmit={handleKirimSesuaikan} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-700">Stok Saat Ini:</span>
+                  <span className="text-sm font-black text-[#1d3b2e]">
+                    {bahanAktif.jumlah} {bahanAktif.satuan}
+                  </span>
+                </div>
 
-            <form onSubmit={handleKirimSesuaikan} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Jumlah yang Di{tipeSesuaikan === "tambah" ? "tambahkan" : "kurangkan"} ({bahanAktif.satuan})
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  min="0.1"
-                  required
-                  placeholder="Contoh: 5"
-                  value={nilaiSesuaikan}
-                  onChange={(e) => setNilaiSesuaikan(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-sm"
-                  autoFocus
-                />
+                {pesanError.length > 0 && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
+                    {pesanError.map((err, idx) => (
+                      <p key={idx}>{err}</p>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Jumlah yang Di{tipeSesuaikan === "tambah" ? "tambahkan" : "kurangkan"} ({bahanAktif.satuan}) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0.1"
+                    required
+                    placeholder="Contoh: 5"
+                    value={nilaiSesuaikan}
+                    onChange={(e) => setNilaiSesuaikan(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm font-bold text-[#1d3b2e]"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <span className="block text-[11px] font-bold text-stone-600 mb-1.5">
+                    Pilihan Cepat Kuantitas:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 5, 10, 25].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setNilaiSesuaikan(String(amt))}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                          nilaiSesuaikan === String(amt)
+                            ? "bg-[#ba2b2b] text-white border-[#ba2b2b]"
+                            : "bg-white border-[#e0d5b8] text-[#1d3b2e] hover:bg-[#ede2cd]"
+                        }`}
+                      >
+                        {tipeSesuaikan === "tambah" ? `+${amt}` : `-${amt}`} {bahanAktif.satuan}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-stone-100">
+              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
                 <button
                   type="button"
                   onClick={() => setModalSesuaikanBuka(false)}
-                  className="px-4 py-2 rounded-full border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-medium cursor-pointer"
+                  className="h-[40px] px-5 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={sedangProses}
-                  className="px-5 py-2 rounded-full font-semibold bg-rose-600 hover:bg-rose-500 text-white text-xs transition disabled:opacity-50 cursor-pointer"
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-sm"
                 >
-                  {sedangProses ? "Menyimpan..." : "Simpan Perubahan"}
+                  {sedangProses ? "Menyimpan..." : "Simpan Penyesuaian"}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {modalBahanBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-stone-100 mb-4">
-              <h3 className="text-lg font-bold text-stone-900">
-                {editBahanId ? "Edit Bahan" : "Tambah Bahan Baru"}
+      {isMounted && modalBahanBuka && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalBahanBuka(false);
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 99999,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+          className="flex items-center justify-center p-3 sm:p-5 bg-black/75 overflow-hidden"
+        >
+          <div className="relative bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
+              <h3 className="text-lg font-bold text-[#1d3b2e]">
+                {editBahanId ? "Edit Data Bahan" : "Tambah Bahan Baru"}
               </h3>
               <button
                 type="button"
                 onClick={() => setModalBahanBuka(false)}
-                className="text-stone-400 hover:text-stone-700 p-1.5 rounded-xl cursor-pointer"
+                className="w-8 h-8 rounded-xl border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center cursor-pointer transition"
               >
-                <i className="fa-solid fa-xmark text-lg"></i>
+                <i className="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
-            {pesanError.length > 0 && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-                {pesanError.map((err, idx) => (
-                  <p key={idx}>{err}</p>
-                ))}
-              </div>
-            )}
+            <form onSubmit={handleSimpanBahan} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {pesanError.length > 0 && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
+                    {pesanError.map((err, idx) => (
+                      <p key={idx}>{err}</p>
+                    ))}
+                  </div>
+                )}
 
-            <form onSubmit={handleSimpanBahan} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Nama Bahan <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Tepung Terigu Segitiga Biru"
-                  value={formBahan.nama}
-                  onChange={(e) =>
-                    setFormBahan({ ...formBahan, nama: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-700 mb-1">
-                    Satuan <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                    Nama Bahan Baku <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="kg / butir / liter"
-                    value={formBahan.satuan}
+                    placeholder="Contoh: Tepung Terigu Segitiga Biru, Mentega Anchor"
+                    value={formBahan.nama}
                     onChange={(e) =>
-                      setFormBahan({ ...formBahan, satuan: e.target.value })
+                      setFormBahan({ ...formBahan, nama: e.target.value })
                     }
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                   />
                 </div>
 
-                {!editBahanId && (
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
-                      Jumlah Awal
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                      Satuan Takaran <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="kg / butir / liter / box"
+                      value={formBahan.satuan}
+                      onChange={(e) =>
+                        setFormBahan({ ...formBahan, satuan: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                    />
+                  </div>
+
+                  {!editBahanId && (
+                    <div>
+                      <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                        Jumlah Stok Awal
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={formBahan.jumlah}
+                        onChange={(e) =>
+                          setFormBahan({ ...formBahan, jumlah: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1">
+                      Batas Minimum Peringatan
                     </label>
                     <input
                       type="number"
                       step="any"
                       min="0"
-                      value={formBahan.jumlah}
+                      value={formBahan.batas_minimum}
                       onChange={(e) =>
-                        setFormBahan({ ...formBahan, jumlah: e.target.value })
+                        setFormBahan({
+                          ...formBahan,
+                          batas_minimum: e.target.value,
+                        })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border-2 border-[#e0d5b8] bg-white outline-none focus:border-[#ba2b2b] text-sm text-[#1d3b2e]"
                     />
                   </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-stone-700 mb-1">
-                    Batas Minimum Peringatan
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    value={formBahan.batas_minimum}
-                    onChange={(e) =>
-                      setFormBahan({ ...formBahan, batas_minimum: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400 text-sm"
-                  />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-stone-100">
+              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
                 <button
                   type="button"
                   onClick={() => setModalBahanBuka(false)}
-                  className="px-4 py-2 rounded-full border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-medium cursor-pointer"
+                  className="h-[40px] px-5 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={sedangProses}
-                  className="px-5 py-2 rounded-full font-semibold bg-rose-600 hover:bg-rose-500 text-white text-xs transition disabled:opacity-50 cursor-pointer"
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {sedangProses ? "Menyimpan..." : "Simpan Bahan"}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ModalPesan
