@@ -29,6 +29,7 @@ export async function POST(request) {
   let id_zona = null;
   let pilihanItemIds = [];
   let fileFoto = null;
+  let skema_pembayaran = "DP";
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
@@ -40,6 +41,7 @@ export async function POST(request) {
     jam_ambil = formData.get("jam_ambil") || "";
     metode_pengiriman = formData.get("metode_pengiriman") || "Ambil";
     alamat = formData.get("alamat") || "";
+    skema_pembayaran = formData.get("skema_pembayaran") || "DP";
     const idZonaRaw = formData.get("id_zona");
     id_zona = idZonaRaw ? Number(idZonaRaw) : null;
     const pilihanRaw = formData.get("pilihan_ids");
@@ -61,6 +63,7 @@ export async function POST(request) {
     jam_ambil = body.jam_ambil || "";
     metode_pengiriman = body.metode_pengiriman || "Ambil";
     alamat = body.alamat || "";
+    skema_pembayaran = body.skema_pembayaran || "DP";
     id_zona = body.id_zona ? Number(body.id_zona) : null;
     pilihanItemIds = body.pilihan_ids || [];
   }
@@ -243,7 +246,12 @@ export async function POST(request) {
   }
 
   const total_bayar = total_kue + ongkir;
-  const modeBayar = pengaturan?.mode_pembayaran || "DP";
+  const modeBayar =
+    pengaturan?.mode_pembayaran === "Lunas"
+      ? "Lunas"
+      : skema_pembayaran === "Lunas"
+      ? "Lunas"
+      : "DP";
   let persen_dp_saat_pesan = null;
   let jumlah_dp = total_bayar;
 

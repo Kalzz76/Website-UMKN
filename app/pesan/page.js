@@ -170,6 +170,7 @@ function getDefState() {
     cpts: null,
     pick: "pickup",
     pay: "bank",
+    payScheme: "dp",
     f: {},
   };
 }
@@ -248,6 +249,15 @@ export default function PesanPage() {
       Math.floor(1000 + Math.random() * 9000)
     );
   });
+
+  const persenDp = pengaturan?.persen_dp || 50;
+  const totalBiayaPesanan = calcTotal(S, daftarZona);
+  const isDpActive =
+    pengaturan?.mode_pembayaran !== "Lunas" && S.payScheme !== "lunas";
+  const jumlahDpSekarang = isDpActive
+    ? Math.round((totalBiayaPesanan * persenDp) / 100)
+    : totalBiayaPesanan;
+  const sisaPelunasan = totalBiayaPesanan - jumlahDpSekarang;
 
   const canvasRef = useRef(null);
   const vboxRef = useRef(null);
@@ -1270,6 +1280,9 @@ export default function PesanPage() {
       decoSummary ? `Dekorasi: ${decoSummary}` : "",
       itemsSummary ? `Elemen: ${itemsSummary}` : "",
       S.pay ? `Metode Bayar: ${S.pay}` : "",
+      isDpActive
+        ? `Skema: DP ${persenDp}% (${formatRp(jumlahDpSekarang)}) | Sisa: ${formatRp(sisaPelunasan)}`
+        : "Skema: Bayar Penuh (Lunas 100%)",
       S.f.notes || "",
     ]
       .filter(Boolean)
@@ -1369,6 +1382,7 @@ export default function PesanPage() {
         formData.append("id_zona", String(selectedZonaId));
       }
     }
+    formData.append("skema_pembayaran", isDpActive ? "DP" : "Lunas");
     formData.append("pilihan_ids", JSON.stringify(mappedPilihanIds));
 
     const imgItem = (S.items || []).find((i) => i.t === "img" && i.file);
@@ -2198,6 +2212,32 @@ export default function PesanPage() {
                   </div>
                 )}
 
+                <div className="lb">Skema Pembayaran</div>
+                <div className="g2c" style={{ marginBottom: "14px" }}>
+                  <button
+                    type="button"
+                    className={`mode ${isDpActive ? "on" : ""}`}
+                    onClick={() => handleSet("payScheme", "dp")}
+                  >
+                    <span className="mi">🪙</span>
+                    <b>Uang Muka (DP {persenDp}%)</b>
+                    <span>
+                      Bayar {formatRp(jumlahDpSekarang)} sekarang · sisa {formatRp(sisaPelunasan)} saat siap
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode ${!isDpActive ? "on" : ""}`}
+                    onClick={() => handleSet("payScheme", "lunas")}
+                  >
+                    <span className="mi">💳</span>
+                    <b>Bayar Penuh (100%)</b>
+                    <span>
+                      Langsung bayar {formatRp(totalBiayaPesanan)} sekarang sekaligus
+                    </span>
+                  </button>
+                </div>
+
                 <div className="lb">Metode pembayaran</div>
                 <div className="grid">
                   {[
@@ -2231,6 +2271,65 @@ export default function PesanPage() {
                     </label>
                   </div>
                 )}
+
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "16px 18px",
+                    borderRadius: "18px",
+                    background: "var(--pk3, #FFF0F4)",
+                    border: "1.5px dashed var(--pk2, #F8B5C6)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <b style={{ fontSize: "13px", color: "var(--pk, #D96B91)" }}>
+                      📌 Rekening Pembayaran Toko
+                    </b>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        padding: "3px 10px",
+                        borderRadius: "10px",
+                        background: "#fff",
+                        color: "var(--ink, #4A2D36)",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      Batas: {pengaturan?.batas_bayar_jam || 24} Jam
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--ink, #4A2D36)",
+                      lineHeight: "1.6",
+                    }}
+                  >
+                    <div>Bank: <b>{pengaturan?.nama_bank || "BCA"}</b></div>
+                    <div>No. Rekening: <b style={{ letterSpacing: "1px" }}>{pengaturan?.no_rekening || "1234567890"}</b></div>
+                    <div>Atas Nama: <b>{pengaturan?.atas_nama || "Cravely Bakery"}</b></div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11.5px",
+                      color: "var(--mut, #8E6573)",
+                      marginTop: "8px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {isDpActive
+                      ? `* Cukup bayar DP ${formatRp(jumlahDpSekarang)} agar pesanan langsung masuk jadwal dapur. Sisa ${formatRp(sisaPelunasan)} saat siap.`
+                      : `* Silakan transfer senilai ${formatRp(totalBiayaPesanan)} untuk pelunasan langsung.`}
+                  </div>
+                </div>
 
                 <label className="fl" style={{ marginTop: "14px" }}>
                   Catatan tambahan
@@ -2313,21 +2412,59 @@ export default function PesanPage() {
                     <span></span>
                     <span></span>
                     <span></span>
-                    <span className="tot2">Total</span>
+                    <span className="tot2">Total Pesanan</span>
                     <span className="rt">
-                      <b>{formatRp(calcTotal(S))}</b>
+                      <b>{formatRp(totalBiayaPesanan)}</b>
                     </span>
                   </div>
+                  {isDpActive && (
+                    <>
+                      <div
+                        className="tr"
+                        style={{
+                          background: "#FFF0F4",
+                          fontWeight: "800",
+                          color: "var(--pk, #D96B91)",
+                        }}
+                      >
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span>Wajib DP ({persenDp}%)</span>
+                        <span className="rt">
+                          <b>{formatRp(jumlahDpSekarang)}</b>
+                        </span>
+                      </div>
+                      <div
+                        className="tr"
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--mut, #8E6573)",
+                        }}
+                      >
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span>Sisa Pelunasan</span>
+                        <span className="rt">
+                          <span>{formatRp(sisaPelunasan)}</span>
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="pn">
                   <div className="bx">
-                    <i className="tag">Metode Pembayaran</i>
+                    <i className="tag">Skema & Pembayaran</i>
+                    <div style={{ fontWeight: 800, color: "var(--pk, #D96B91)", marginBottom: "6px" }}>
+                      {isDpActive ? `Uang Muka (DP ${persenDp}%)` : "Bayar Penuh (Lunas 100%)"}
+                    </div>
                     <div className="cb">
                       {S.pay === "cash" ? "☑" : "☐"} Tunai 💵
                     </div>
                     <div className="cb">
-                      {S.pay === "bank" ? "☑" : "☐"} Transfer Bank 🏦
+                      {S.pay === "bank" ? "☑" : "☐"} Transfer Bank 🏦 ({pengaturan?.nama_bank || "BCA"})
                     </div>
                     <div className="cb">
                       {S.pay === "ewallet" ? "☑" : "☐"} E-Wallet 📱
@@ -2335,6 +2472,17 @@ export default function PesanPage() {
                     <div className="cb">
                       {S.pay === "other" ? "☑" : "☐"} Lainnya :{" "}
                       {S.pay === "other" ? S.f.payOther || "" : ""}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        paddingTop: "6px",
+                        borderTop: "1px dashed #E8D6D0",
+                        fontSize: "11px",
+                        color: "var(--ink, #4A2D36)",
+                      }}
+                    >
+                      Bayar Sekarang: <b>{formatRp(jumlahDpSekarang)}</b>
                     </div>
                   </div>
                   <div className="bx">
@@ -2805,7 +2953,23 @@ export default function PesanPage() {
           )}
 
           <div className="fr">
-            <b>{formatRp(calcTotal(S))}</b>
+            <div style={{ textAlign: "right" }}>
+              <b style={{ display: "block", fontSize: "16px" }}>
+                {formatRp(isDpActive ? jumlahDpSekarang : totalBiayaPesanan)}
+              </b>
+              {isDpActive ? (
+                <small
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    color: "var(--mut, #8E6573)",
+                    fontWeight: 700,
+                  }}
+                >
+                  DP {persenDp}% · Total {formatRp(totalBiayaPesanan)}
+                </small>
+              ) : null}
+            </div>
             <button
               className="btn nxt"
               disabled={sedangKirim}
