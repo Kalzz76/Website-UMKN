@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/batalkan-pesanan",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

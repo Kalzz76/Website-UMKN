@@ -26,7 +26,7 @@ Kode di project ini harus sederhana dan bersih, terlihat ditulis manual oleh pel
 9. **DILARANG mengubah struktur tabel lewat kode aplikasi.** Struktur tabel hanya lewat file SQL di `supabase/migrations/`. Data awal (pengaturan toko, grup opsi contoh, zona ongkir contoh) lewat `supabase/seed.sql`.
 10. Query memakai Supabase client (`from().select().eq().insert().update().delete()`). Tidak memakai ORM. Tidak boleh menyambung string SQL dari input pengguna.
 11. Tampilan memakai **Next.js App Router + Tailwind CSS + Font Awesome 6.4 (lewat CDN di layout)**. Tidak memakai library komponen (shadcn, MUI, dll).
-12. Library yang diizinkan hanya: `next`, `react`, `react-dom`, `tailwindcss`, `@supabase/supabase-js`, `@supabase/ssr`, `gsap` (animasi scroll di landing), dan `qrcode` (membuat QR tiket). Library lain, termasuk Three.js, tanya dulu.
+12. Library yang diizinkan hanya: `next`, `react`, `react-dom`, `tailwindcss`, `@supabase/supabase-js`, `@supabase/ssr`, `gsap` (animasi scroll di landing), `qrcode` (membuat QR tiket), dan `chart.js` (dipakai langsung di client component lewat `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`, tanpa `react-chartjs-2`). Library lain, termasuk Three.js, tanya dulu.
 13. Fitur yang tidak ada di `CLAUDE.md` ini tidak boleh ditambahkan hanya karena ada di referensi. Referensi dipakai untuk **tampilan**, bukan untuk menambah fitur.
 
 Aturan ini berlaku untuk semua perubahan berikutnya, tanpa perlu diingatkan lagi.
@@ -49,7 +49,8 @@ Yang **tidak diambil**:
 ## Tech Stack
 
 - **Framework**: Next.js (App Router), JavaScript, React
-- **Tampilan**: Tailwind CSS (lewat npm, bukan CDN) + Font Awesome 6.4 (CDN) + font Plus Jakarta Sans (`next/font/google`)
+- **Tampilan**: Tailwind CSS (halaman publik) + CSS kustom dashboard (`app/dashboard/dashboard.css` dari desain referensi) + Font Awesome 6.5/6.4 (CDN) + font Plus Jakarta Sans, Caveat, Dancing Script, dan Satisfy (khusus hero dashboard) lewat `next/font/google`
+- **Grafik Dashboard**: `chart.js` (langsung di client component lewat `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`, tanpa `react-chartjs-2`)
 - **Database, login, penyimpanan file**: Supabase (PostgreSQL, Supabase Auth email + password, Supabase Storage)
 - **Animasi landing**: GSAP + ScrollTrigger
 - **Preview kue**: komponen SVG berlapis (bukan 3D), lihat bagian "Preview Kue"
@@ -83,8 +84,9 @@ toko-kue/
 │   ├── pesanan-saya/page.js             daftar pesanan pelanggan
 │   ├── pesanan-saya/[kode]/page.js      detail, status, tiket QR
 │   ├── dashboard/
-│   │   ├── layout.js                    sidebar sesuai role
-│   │   ├── page.js                      ringkasan
+│   │   ├── dashboard.css                CSS dashboard referensi (semua class dipertahankan, tanpa komentar)
+│   │   ├── layout.js                    sidebar & topbar sesuai role
+│   │   ├── page.js                      ringkasan dashboard admin & staf
 │   │   ├── harga-opsi/page.js           admin
 │   │   ├── pesanan/page.js              admin + staf
 │   │   ├── pesanan/[kode]/page.js       admin + staf
@@ -109,6 +111,7 @@ toko-kue/
 │   ├── migrations/                      file .sql berurutan
 │   └── seed.sql
 ├── public/
+│   └── assets/images/                   admin-banner.png, admin-banner2.png
 ├── referensi-desain/                    tidak ikut di-deploy
 └── vercel.json                          jadwal cron
 ```
@@ -137,23 +140,69 @@ toko-kue/
 
 ## Palet Warna dan Tampilan
 
+Seluruh tampilan (baik dashboard admin/staf maupun halaman publik) memakai **palet hijau** yang diambil dari variabel CSS di `referensi-desain/dashboard-admin.html`. Font yang digunakan adalah **Plus Jakarta Sans** (teks utama) ditambah font **Caveat**, **Dancing Script**, dan **Satisfy** (khusus judul/hero dashboard) yang diimpor lewat `next/font/google`.
+
+### Variabel CSS Utama (disimpan di `app/dashboard/dashboard.css`)
+
+```css
+:root {
+  --bg-page: #eff4ee;
+  --bg-sidebar: #17382d;
+  --bg-sidebar-active: #eaf0e6;
+  --text-sidebar-active: #17382d;
+  --text-sidebar: #c2d6ca;
+
+  --card-bg: #ffffff;
+  --card-radius: 20px;
+  --card-shadow: 0 4px 18px rgba(23, 56, 45, 0.04);
+  --card-border: 1px solid rgba(220, 230, 222, 0.75);
+
+  --color-primary: #17382d;
+  --color-text-main: #182b23;
+  --color-text-muted: #788d80;
+
+  --badge-green-bg: #dcf5e4;
+  --badge-green-txt: #26804a;
+  --badge-blue-bg: #d7ecfa;
+  --badge-blue-txt: #1f76b5;
+  --badge-orange-bg: #faeed8;
+  --badge-orange-txt: #b47518;
+}
+```
+
+### Penerapan pada Halaman Publik (Tailwind CSS)
+
 | Elemen                         | Kelas Tailwind                                                           |
 | ------------------------------ | ------------------------------------------------------------------------ |
-| Latar halaman                  | `bg-amber-50`, teks `text-stone-800`                                     |
-| Navbar publik (melayang)       | `bg-white/90 backdrop-blur rounded-full shadow-sm`, `sticky top-4`       |
-| Tombol utama                   | `bg-rose-600 hover:bg-rose-500 text-white rounded-full font-semibold`    |
-| Tombol sekunder                | `bg-white border border-stone-200 text-stone-700 rounded-full`           |
-| Headline                       | `font-extrabold text-stone-900`, baris kedua `text-rose-600`             |
-| Card                           | `bg-white rounded-3xl shadow-sm border border-stone-100 p-6`             |
-| Sidebar dashboard              | `bg-stone-900 text-stone-300`, menu aktif `bg-rose-600 text-white`, hover `hover:bg-stone-800` |
-| Header tabel                   | `bg-stone-100 text-stone-700 uppercase text-xs`, baris `divide-y divide-stone-100` |
-| Input                          | `px-4 py-2.5 rounded-xl border border-stone-200 outline-none focus:border-rose-400` |
-| Modal                          | overlay `bg-stone-950/60 backdrop-blur-sm`, kotak `bg-white rounded-3xl p-8` |
-| Tombol hapus / batalkan        | `text-rose-600` atau `bg-rose-50 text-rose-600`                          |
+| Latar halaman                  | `bg-[#eff4ee]`, teks `text-[#182b23]`                                    |
+| Navbar publik (melayang)       | `bg-white/90 backdrop-blur rounded-full shadow-sm border border-[#dce6de]`, `sticky top-4` |
+| Tombol utama                   | `bg-[#17382d] hover:bg-[#265a48] text-white rounded-full font-semibold transition` |
+| Tombol sekunder                | `bg-white border border-[#dce6de] text-[#17382d] hover:bg-[#eef5ef] rounded-full` |
+| Headline                       | `font-extrabold text-[#182b23]`, baris kedua `text-[#265a48]`           |
+| Card                           | `bg-white rounded-3xl shadow-sm border border-[#dce6de] p-6`            |
+| Sidebar dashboard              | `position: fixed`, warna polos `var(--bg-sidebar)` (`#17382d`), menu aktif `var(--bg-sidebar-active)` (`#eaf0e6`) teks `var(--text-sidebar-active)` (`#17382d`) |
+| Header tabel                   | `bg-[#eff4ee] text-[#17382d] uppercase text-xs font-semibold`, baris `divide-y divide-[#dce6de]` |
+| Input                          | `px-4 py-2.5 rounded-xl border border-[#dce6de] outline-none focus:border-[#17382d]` |
+| Modal                          | overlay `bg-[#17382d]/60 backdrop-blur-sm`, kotak `bg-white rounded-3xl p-8` |
+| Tombol hapus / batalkan        | `text-red-700 hover:text-red-800` atau `bg-red-50 text-red-700`         |
 
-**Badge status pesanan:** Menunggu Pembayaran `bg-stone-100 text-stone-700`, Diterima `bg-sky-100 text-sky-800`, Sedang Dibuat `bg-amber-100 text-amber-800`, Siap `bg-emerald-100 text-emerald-800`, Dikirim `bg-indigo-100 text-indigo-800`, Selesai `bg-green-100 text-green-800`, Dibatalkan `bg-rose-100 text-rose-800`.
+### Badge Status (Palet Hijau Selaras)
 
-**Badge status bayar:** Belum Bayar `bg-rose-100 text-rose-800`, DP Dibayar `bg-amber-100 text-amber-800`, Lunas `bg-emerald-100 text-emerald-800`.
+Semua badge status pesanan dan status bayar menggunakan warna yang bersumber dari palet hijau yang harmonis:
+
+- **7 Status Pesanan:**
+  - `Menunggu Pembayaran`: `bg-[#eaf0eb] text-[#556e5f]` (sage pucat)
+  - `Diterima`: `bg-[#dcf5e4] text-[#26804a]` (mint segar)
+  - `Sedang Dibuat`: `bg-[#eff5dc] text-[#53702a]` (olive lembut)
+  - `Siap`: `bg-[#d7f3e1] text-[#1c6e3d]` (zamrud cerah)
+  - `Dikirim`: `bg-[#daf1ec] text-[#1f7366]` (toska lembut)
+  - `Selesai`: `bg-[#d8edd9] text-[#17382d]` (hijau daun tua)
+  - `Dibatalkan`: `bg-[#fae8e8] text-[#9c3838]` (terracotta lembut)
+
+- **3 Status Bayar:**
+  - `Belum Bayar`: `bg-[#fae8e8] text-[#9c3838]` (terracotta lembut)
+  - `DP Dibayar`: `bg-[#faeed8] text-[#b47518]` (krem/amber zaitun)
+  - `Lunas`: `bg-[#dcf5e4] text-[#26804a]` (mint segar)
 
 - Semua halaman harus rapi di HP (mobile-first), karena kebanyakan pelanggan membuka lewat HP. Dashboard staf produksi juga dipakai di HP atau tablet di dapur.
 - Tombol WhatsApp mengambang di halaman publik, nomornya dari Pengaturan Toko.
@@ -212,13 +261,84 @@ Setiap grup opsi punya `peran_visual`, setiap item opsi punya `warna` dan `kode_
 
 ## Dashboard (`/dashboard`)
 
-Layout `app/dashboard/layout.js`: sidebar kiri (di HP menjadi menu di atas) berisi nama toko, daftar menu sesuai role, dan tombol **Keluar**.
+### Tampilan dan Layout Dashboard (`app/dashboard/layout.js` & `app/dashboard/dashboard.css`)
 
-**Menu Admin:** Dashboard, Harga & Opsi, Pesanan, Stok, Laporan, Pengaturan, Akun.
-**Menu Staf Produksi:** Dashboard, Pesanan, Stok.
+- Menggunakan CSS khusus yang diambil langsung dari desain referensi (`referensi-desain/dashboard-admin.html`), disimpan di `app/dashboard/dashboard.css` dengan **semua nama class dipertahankan persis**. Tailwind tetap digunakan untuk halaman publik. Semua komentar di file CSS dan HTML referensi dibuang.
+- **Aset Gambar**: File gambar latar `admin-sidebar.png`, `admin-banner.png`, dan `admin-banner2.png` disimpan di `public/assets/images/` dan dipanggil dengan path `/assets/images/...`.
+- **Sidebar**:
+  - Dipindahkan apa adanya sesuai struktur referensi (`.sidebar`, `.sidebar-top-gap`, `.nav-menu`, `.nav-link`, `.sidebar-bottom-gap`). Latar belakang menggunakan `#17382d` dan gambar latar `/assets/images/admin-sidebar.png`.
+  - **Menu Navigasi dikembalikan ke menu sebelumnya** (jangan diubah menjadi Produk / Pelanggan):
+    - **Menu Admin:** Dashboard (`/dashboard`), Harga & Opsi (`/dashboard/harga-opsi`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`), Laporan (`/dashboard/laporan`), Pengaturan (`/dashboard/pengaturan`), Akun (`/dashboard/akun`).
+    - **Menu Staf Produksi:** Dashboard (`/dashboard`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`).
+  - **Fitur Buka/Tutup Sidebar**: Saat sidebar ditutup (tombol toggle di topbar diklik), **sidebar jangan tertutup/hilang seluruhnya**. Sidebar menyusut menjadi mode ringkas (collapsed) di mana **ikon menu tetap tampil** sehingga pengguna tetap bisa melihat dan mengeklik menu lewat ikonnya (teks label menu disembunyikan).
+- **Topbar**:
+  - Dipindahkan apa adanya sesuai referensi (`.topbar`, `.topbar-left`, `.btn-toggle-sidebar`, `.search-wrapper`, `.topbar-user-area`, `.btn-bell-notif`, `.user-profile-btn`).
+  - Search input untuk pencarian live dan tombol lonceng notifikasi dengan badge angka.
+  - Area profil menampilkan avatar SVG anime dari referensi.
+  - **Nama dan role diambil secara dinamis dari akun yang sedang login** (bukan teks statis "Refky" dan "Admin").
+  - Dropdown profil dilengkapi tombol **Keluar** (logout) untuk mengakhiri sesi.
 
-**Dashboard (admin):** kartu jumlah pesanan hari ini, pesanan yang belum dibayar, pesanan menunggu konfirmasi bayar, omzet bulan ini, dan peringatan stok menipis. Di bawahnya daftar pesanan terdekat (urut tanggal ambil/kirim).
-**Dashboard (staf):** hanya daftar kue yang harus dibuat (status Diterima dan Sedang Dibuat) diurut tanggal dan jam terdekat, plus peringatan stok menipis. Tanpa angka uang.
+### Dashboard (admin)
+
+Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan data dummy), dengan tata letak dan komponen sesuai desain referensi:
+
+1. **Sidebar Murni Kode**:
+   - `position: fixed`, tinggi penuh layar (`top: 0`, `bottom: 0`), latar warna polos `var(--bg-sidebar)`. Tanpa gambar latar (`admin-sidebar.png` dihapus).
+   - Bagian atas: logo kecil ikon `fa-cake-candles` dan nama toko dari `pengaturan_toko` dengan font `Dancing Script`.
+   - Tengah: navigasi menu ber-scrollbar tipis. Menu admin: Dashboard, Harga & Opsi, Pesanan, Stok, Laporan, Pengaturan, Akun. Menu staf: Dashboard, Pesanan, Stok. Menu aktif memakai `var(--bg-sidebar-active)` dan `var(--text-sidebar-active)`.
+   - Bawah: tulisan "Make Life Sweeter" dengan ikon hati, font `Satisfy`, disembunyikan jika tinggi layar terbatas atau sidebar diciutkan.
+   - Tombol buka-tutup: saat diciutkan, sidebar mengecil menjadi bar ikon 72px (label dan kutipan bawah disembunyikan, ikon memiliki title tooltip). Konten menyesuaikan lebar dengan transisi dan memicu resize `chart.js`. Status disimpan di `localStorage` dengan blok `try/catch`. Pada layar <= 800px menjadi laci (drawer) dengan overlay.
+
+2. **Header Ringkas**:
+   - Kolom pencarian di header dihapus. Kiri: tombol buka-tutup sidebar dan judul halaman aktif (contoh "Dashboard", "Pesanan", teks tebal besar sesuai route).
+   - Kanan: lonceng notifikasi dan profil. Lonceng berisi badge jumlah (pembayaran `Menunggu Konfirmasi` + bahan dengan `jumlah <= batas_minimum`; staf hanya stok menipis). Klik membuka dropdown 2 baris ringkasan dengan tautan ke Pesanan dan Stok; jika kosong tampilkan "Tidak ada notifikasi baru" dan sembunyikan badge.
+   - Profil: avatar SVG bawaan, nama dan role akun yang login, dropdown berisi "Keluar".
+
+3. **Hero Banner** (`.hero-banner-card`):
+   - Menggunakan gambar latar `/assets/images/admin-banner.png`.
+   - Hanya berisi sapaan "Selamat Datang di", nama toko dari `pengaturan_toko` dengan tanda seru (font `Dancing Script`, ukuran `clamp` satu baris, lebar maksimal teks ~52%), dan slogan dari `pengaturan_toko`. Tombol "Mulai Kelola Toko" / "Kelola Pesanan" dan ringkasan teks dihapus.
+   - Berdampingan sejajar dengan grid 4 kartu metrik (tinggi sama, atas dan bawah sejajar). Di atas hero terdapat pemilih periode tipis rata kanan (default: Bulan Ini).
+
+4. **4 Kartu Metrik Ringkasan** (`.metrics-quad-grid`):
+   - Dilengkapi pemilih periode (Hari Ini, Minggu Ini, Bulan Ini, Tahun Ini; default: **Bulan Ini**).
+   - Seluruh angka dihitung nyata dari database:
+     1. **Total Pesanan**: Jumlah total pesanan non-batal pada periode terpilih, dengan teks kecil di bawah angka "N kue harus dibuat hari ini" (pesanan `Diterima` atau `Sedang Dibuat` dengan `tanggal_ambil` hari ini zona `Asia/Jakarta`). Badge persen pertumbuhan di samping angka hanya muncul jika periode sebelumnya tidak nol.
+     2. **Perlu Dikonfirmasi**: Jumlah pembayaran berstatus `Menunggu Konfirmasi` saat ini, dengan teks kecil "bukti bayar" (tanpa persentase pertumbuhan).
+     3. **Total Pendapatan**: Total nominal rupiah pembayaran berstatus `Dikonfirmasi` pada periode tersebut (berdasarkan `pembayaran.dikonfirmasi_pada`, zona `Asia/Jakarta`).
+     4. **Pelanggan Aktif**: Jumlah pelanggan unik (`id_pelanggan`) yang membuat pesanan pada periode terpilih.
+   - Ornamen gelombang SVG (`.metric-wave-svg`) di pojok kartu sebagai dekorasi visual statis.
+
+5. **Grafik Penjualan** (`.chart-canvas-box`):
+   - Dibuat menggunakan `chart.js` (line chart) di client component via `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`.
+   - Tiga pilihan periode: 7 Hari (harian), 30 Hari (mingguan), 90 Hari (bulanan).
+   - Sumbu Y dihitung dinamis dari data pendapatan riil. Titik penjualan tertinggi ditandai dinamis. Tooltip statis hari Jumat dihapus.
+   - Menampilkan pesan abu-abu di tengah kartu jika data kosong.
+
+6. **Daftar Terlaris Dinamis** (`{nama grup} Terlaris`):
+   - Menampilkan 3 item teratas dari grup opsi yang kolom `peran_dashboard`-nya diset ke `'terlaris'`, dihitung dari `pesanan_pilihan` berdasarkan `id_grup` pada pesanan non-batal periode terpilih.
+   - Menampilkan nama item, persentase pangsa pilihan, jumlah kue/porsi terjual, bilah progres, dan **bulatan warna** dari kolom `warna` tabel `opsi_item`.
+   - Menampilkan pesan informatif jika belum ada grup yang diset atau pesanan kosong.
+
+7. **Donut Jenis Kue Dinamis** (`Pesanan Berdasarkan {nama grup}`):
+   - Dibuat menggunakan `chart.js` (doughnut chart) di client component via `useEffect`, dihancurkan saat unmount.
+   - Data dihitung dari item pada grup opsi yang kolom `peran_dashboard`-nya diset ke `'jenis'` dari `pesanan_pilihan` berdasarkan `id_grup` pada pesanan non-batal periode terpilih.
+   - Irisan warna dari palet hijau (`#1e4b3c`, `#608d7c`, `#b2cfbe`, `#8fa58f`, `#d9e6dd`). Maksimal 4 item teratas, sisanya digabung "Lainnya".
+   - Total pesanan di tengah donat dan legenda di sebelah kanan. Pesan informatif jika belum ada grup atau pesanan kosong.
+
+8. **Pesanan Terbaru** (`.orders-flow-list`):
+   - Menampilkan 3 pesanan terbaru: kode pesanan (`kode_pesanan`), waktu pemesanan (format tanggal & jam zona `Asia/Jakarta`), badge status pesanan (palet hijau), total harga rupiah, dan **mini preview kue** menggunakan komponen `PreviewKue`.
+   - Mengklik baris pesanan membuka halaman detail pesanan (`/dashboard/pesanan/[kode]`).
+   - Tautan "Lihat Semua" mengarah ke `/dashboard/pesanan`. Pesan abu-abu di tengah jika kosong.
+
+9. **Kartu Promo Kanan** (`.vertical-promo-card`):
+   - Menggunakan gambar latar `/assets/images/admin-banner2.png` tanpa tombol aksi (hanya gambar dan tulisan promosi visual).
+
+10. **Dashboard Staf Produksi**:
+    - Khusus operasional staf dapur: hero ringkas, daftar kue yang harus dibuat (`Diterima` dan `Sedang Dibuat` urut tanggal/jam terdekat), dan peringatan stok bahan menipis.
+    - Dilarang menampilkan angka uang, total omzet, pendapatan, nominal harga pesanan, maupun grafik penjualan.
+
+11. **Aturan Gambar**:
+    - Semua gambar dari URL luar (Unsplash) DILARANG. Foto diganti bulatan warna opsi atau preview SVG (`PreviewKue`). Latar kartu memakai gambar lokal `/assets/images/`.
 
 ### Menu Harga & Opsi (satu menu untuk semua pengaturan harga)
 
@@ -232,7 +352,7 @@ Topping   : ...
                                                                  [+ grup]
 ```
 
-- Tiap **grup** punya: nama, urutan, `wajib` (pelanggan harus memilih), `jenis_pilihan` (`satu` atau `banyak`), dan `peran_visual`. Grup bisa ditambah, diubah, dan dihapus oleh admin.
+- Tiap **grup** punya: nama, urutan, `wajib` (pelanggan harus memilih), `jenis_pilihan` (`satu` atau `banyak`), `peran_visual`, dan `peran_dashboard` (`jenis` / `terlaris` / null). Di modal grup, terdapat pilihan "Tampil di dashboard sebagai" (Tidak ditampilkan, Grafik jenis kue (donut), Daftar terlaris) dengan teks bantuan "Item di grup ini yang dihitung di dashboard". Di sisi server, saat satu grup diset ke suatu peran, grup lain yang memegang peran tersebut otomatis dikosongkan (eksklusif). Grup bisa ditambah, diubah, dan dihapus oleh admin.
 - Tiap **item** punya: nama, harga, `aktif` (nonaktif berarti tidak muncul untuk pelanggan, misalnya bahan lagi habis), urutan, `warna` (kode hex, untuk preview), dan `kode_visual`.
 - Grup dan item memakai tombol **Tambah, Edit, Hapus** lewat modal. Hapus memakai konfirmasi.
 - Grup atau item yang sudah dipakai pesanan boleh dihapus karena pesanan menyimpan salinan (lihat aturan harga). Tapi sarankan **nonaktifkan** lewat pesan konfirmasi.
@@ -279,7 +399,7 @@ Filter periode (dari tanggal sampai tanggal, default bulan berjalan). Isi:
 ### Menu Pengaturan (admin)
 
 Form berisi:
-- **Info toko**: nama toko, alamat, nomor WhatsApp, jam operasional (teks)
+- **Info toko**: nama toko, slogan, alamat, nomor WhatsApp, jam operasional (teks)
 - **Jadwal pemesanan**: `jam_buka`, `jam_tutup`, `kuota_harian` (jumlah pesanan aktif per tanggal), `minimal_hari_pesan` (default 2)
 - **Pembayaran**: `mode_pembayaran` (`DP` atau `Lunas`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), nama bank + nomor rekening + atas nama, unggah gambar QRIS
 - **Zona ongkir**: tabel zona (nama zona, tarif, aktif) dengan Tambah, Edit, Hapus
@@ -306,8 +426,8 @@ Persen DP yang berlaku **disimpan di pesanan** (`persen_dp_saat_pesan`), jadi me
 **Alur pembayaran manual:**
 1. Pelanggan memesan, lalu membayar sesuai jumlah yang tampil (DP atau lunas).
 2. Pelanggan **mengunggah bukti bayar** di halaman tiket. Dibuat baris `pembayaran` dengan status `Menunggu Konfirmasi`.
-3. Admin memeriksa bukti, lalu menekan **Konfirmasi** (status `Dikonfirmasi`) atau **Tolak** (status `Ditolak`, pelanggan bisa unggah ulang).
-4. Saat konfirmasi, server memperbarui `jumlah_terbayar` dan `status_bayar` pesanan: kalau `jumlah_terbayar >= total_bayar` menjadi `Lunas`, kalau belum penuh tetapi sudah ada yang terbayar menjadi `DP Dibayar`.
+3. Admin memeriksa bukti, lalu menekan **Konfirmasi** (status `Dikonfirmasi`, server mengisi kolom `dikonfirmasi_pada` dengan waktu konfirmasi saat ini) atau **Tolak** (status `Ditolak`, pelanggan bisa unggah ulang).
+4. Saat konfirmasi, server memperbarui `jumlah_terbayar`, mencatat `dikonfirmasi_pada`, dan memperbarui `status_bayar` pesanan: kalau `jumlah_terbayar >= total_bayar` menjadi `Lunas`, kalau belum penuh tetapi sudah ada yang terbayar menjadi `DP Dibayar`.
 5. Pelunasan (mode DP) dilakukan dengan cara yang sama (unggah bukti lagi), atau dicatat langsung oleh admin sebagai Tunai di Tempat.
 
 Bukti bayar disimpan di bucket **privat** dan ditampilkan lewat signed URL yang dibuat di server, hanya untuk admin dan pemilik pesanan.
@@ -355,14 +475,22 @@ Dua pilihan di pesanan: `Ambil di Tempat` atau `Kirim`.
 
 Dibuat lewat **file SQL di `supabase/migrations/`** dan data awal lewat `seed.sql`. Nama tabel dan kolom memakai Bahasa Indonesia, huruf kecil, dipisah garis bawah. Primary key `id` (uuid untuk `profil`, bigint identity untuk tabel lain). Kolom status memakai `text` dengan nilai tetap seperti di dokumen ini. **Row Level Security (RLS) aktif di semua tabel.**
 
+**Aturan Migrasi & Seed:**
+- **Migration Baru**: Dilarang mengubah file migration lama. Catat file migration baru (misal `00005_tambah_slogan_dan_dikonfirmasi_pada.sql`) untuk kolom tambahan:
+  - `pengaturan_toko.slogan` (`text`, boleh kosong)
+  - `pembayaran.dikonfirmasi_pada` (`timestamptz`, diisi saat admin mengonfirmasi pembayaran, boleh kosong)
+- **Data Awal (`supabase/seed.sql`)**:
+  - `pengaturan_toko`: `nama_toko` disetel `"Cravely Bakery"`, `slogan` disetel `"Buat hari lebih manis dengan kue terbaik kami ♡"`.
+  - `grup_opsi` & `opsi_item`: memiliki grup opsi `"Jenis Kue"` (wajib `true`, jenis_pilihan `'satu'`, peran_visual `'badan'`, urutan 1) yang berisi item: `"Custom Cake"`, `"Regular Cake"`, dan `"Cupcake"`.
+
 ### profil
 `id` (uuid, sama dengan `auth.users.id`), `nama`, `no_wa`, `role` (`admin` / `staf` / `pelanggan`, default `pelanggan`), `aktif` (boolean, default true), `dibuat_pada`. Dibuat otomatis lewat trigger saat ada pendaftaran baru di `auth.users`.
 
 ### pengaturan_toko
-Satu baris saja (id selalu 1): `nama_toko`, `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
+Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
 
 ### grup_opsi
-`id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / kosong).
+`id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
 
 ### opsi_item
 `id`, `id_grup` (FK), `nama`, `harga` (integer, rupiah), `aktif` (boolean, default true), `urutan`, `warna` (hex, boleh kosong), `kode_visual` (boleh kosong).
@@ -377,10 +505,10 @@ Satu baris saja (id selalu 1): `nama_toko`, `alamat`, `no_wa`, `jam_operasional`
 `id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `dibuat_pada`.
 
 ### pesanan_pilihan
-Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `nama_grup`, `nama_item`, `harga`, `warna`, `kode_visual`, `peran_visual`.
+Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `warna`, `kode_visual`, `peran_visual`.
 
 ### pembayaran
-`id`, `id_pesanan` (FK), `jenis` (`DP` / `Pelunasan` / `Lunas`), `jumlah`, `metode` (`Transfer Bank` / `QRIS` / `Tunai di Tempat`), `bukti` (path di Storage, boleh kosong untuk tunai), `status` (`Menunggu Konfirmasi` / `Dikonfirmasi` / `Ditolak`), `id_pengonfirmasi` (FK `profil`, boleh kosong), `dibuat_pada`.
+`id`, `id_pesanan` (FK), `jenis` (`DP` / `Pelunasan` / `Lunas`), `jumlah`, `metode` (`Transfer Bank` / `QRIS` / `Tunai di Tempat`), `bukti` (path di Storage, boleh kosong untuk tunai), `status` (`Menunggu Konfirmasi` / `Dikonfirmasi` / `Ditolak`), `id_pengonfirmasi` (FK `profil`, boleh kosong), `dikonfirmasi_pada` (timestamptz, diisi saat admin mengonfirmasi pembayaran, zona waktu `Asia/Jakarta`/UTC), `dibuat_pada`.
 
 ### bahan
 `id`, `nama`, `satuan` (contoh `kg`, `butir`), `jumlah` (numeric), `batas_minimum` (numeric).

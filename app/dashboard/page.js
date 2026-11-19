@@ -1,316 +1,504 @@
-import Link from "next/link";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseServer } from "@/lib/supabaseServer";
-import {
-  formatRupiah,
-  formatTanggalSingkat,
-  getTanggalHariIniJakarta,
-} from "@/lib/format";
+import DashboardAdminView from "@/components/DashboardAdminView";
+import DashboardStafView from "@/components/DashboardStafView";
 
 export const metadata = {
-  title: "Ringkasan - Dashboard",
+  title: "Dashboard - Cravely Bakery",
 };
 
 export default async function DashboardPage() {
   const { profil } = await cekRole(["admin", "staf"]);
-  const isAdmin = profil?.role === "admin";
+  const role = profil?.role || "staf";
+
   const supabase = await getSupabaseServer();
-  const hariIni = getTanggalHariIniJakarta();
 
-  let pesananHariIniCount = 0;
-  let belumBayarCount = 0;
-  let menungguKonfirmasiCount = 0;
-  let omzetBulanIni = 0;
-  let daftarPesanan = [];
-  let stokMenipis = [];
+  const sekarang = new Date();
+  const formatIsoJakarta = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" });
+  const tglHariIni = formatIsoJakarta.format(sekarang);
 
-  const { data: bahanList } = await supabase.from("bahan").select("*");
-  if (bahanList) {
-    stokMenipis = bahanList.filter(
+  if (role === "staf") {
+    const [
+      { data: pengaturan },
+      { count: buktiMenungguCount },
+      { count: kueHariIniCount },
+      { data: antreanRaw },
+      { data: bahanData },
+    ] = await Promise.all([
+      supabase
+        .from("pengaturan_toko")
+        .select("nama_toko, slogan")
+        .eq("id", 1)
+        .maybeSingle(),
+      supabase
+        .from("pembayaran")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "Menunggu Konfirmasi"),
+      supabase
+        .from("pesanan")
+        .select("*", { count: "exact", head: true })
+        .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
+        .eq("tanggal_ambil", tglHariIni),
+      supabase
+        .from("pesanan")
+        .select("id, kode_pesanan, nama_penerima, tanggal_ambil, jam_ambil, status_pesanan, metode_pengiriman")
+        .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
+        .order("tanggal_ambil", { ascending: true })
+        .order("jam_ambil", { ascending: true })
+        .limit(10),
+      supabase
+        .from("bahan")
+        .select("id, nama, satuan, jumlah, batas_minimum"),
+    ]);
+
+    const namaToko = pengaturan?.nama_toko || "Cravely Bakery";
+    const slogan = pengaturan?.slogan || "Buat hari lebih manis dengan kue terbaik kami ♡";
+
+    const ringkasanHero = {
+      buktiMenunggu: buktiMenungguCount || 0,
+      kueHariIni: kueHariIniCount || 0,
+    };
+
+    const daftarAntrean = antreanRaw || [];
+    const idList = daftarAntrean.map((p) => p.id);
+
+    let pilihanMap = {};
+    if (idList.length > 0) {
+      const { data: pilihanData } = await supabase
+        .from("pesanan_pilihan")
+        .select("id_pesanan, peran_visual, warna, kode_visual")
+        .in("id_pesanan", idList);
+
+      if (pilihanData) {
+        for (let i = 0; i < pilihanData.length; i++) {
+          const item = pilihanData[i];
+          if (!pilihanMap[item.id_pesanan]) {
+            pilihanMap[item.id_pesanan] = [];
+          }
+          pilihanMap[item.id_pesanan].push(item);
+        }
+      }
+    }
+
+    const antreanKue = daftarAntrean.map((p) => ({
+      ...p,
+      pilihan: pilihanMap[p.id] || [],
+    }));
+
+    const stokMenipis = (bahanData || []).filter(
       (b) => Number(b.jumlah) <= Number(b.batas_minimum)
+    );
+
+    return (
+      <DashboardStafView
+        namaToko={namaToko}
+        slogan={slogan}
+        ringkasanHero={ringkasanHero}
+        antreanKue={antreanKue}
+        stokMenipis={stokMenipis}
+      />
     );
   }
 
-  if (isAdmin) {
-    const { count: cHariIni } = await supabase
-      .from("pesanan")
-      .select("*", { count: "exact", head: true })
-      .eq("tanggal_ambil", hariIni)
-      .neq("status_pesanan", "Dibatalkan");
-    pesananHariIniCount = cHariIni || 0;
-
-    const { count: cBelumBayar } = await supabase
-      .from("pesanan")
-      .select("*", { count: "exact", head: true })
-      .eq("status_bayar", "Belum Bayar")
-      .neq("status_pesanan", "Dibatalkan");
-    belumBayarCount = cBelumBayar || 0;
-
-    const { count: cKonfirmasi } = await supabase
+  const [
+    { data: pengaturan },
+    { count: buktiMenungguCount },
+    { count: kueHariIniCount },
+  ] = await Promise.all([
+    supabase
+      .from("pengaturan_toko")
+      .select("nama_toko, slogan")
+      .eq("id", 1)
+      .maybeSingle(),
+    supabase
       .from("pembayaran")
       .select("*", { count: "exact", head: true })
-      .eq("status", "Menunggu Konfirmasi");
-    menungguKonfirmasiCount = cKonfirmasi || 0;
-
-    const awalBulan = `${hariIni.slice(0, 7)}-01T00:00:00Z`;
-    const { data: bayarBulan } = await supabase
-      .from("pembayaran")
-      .select("jumlah")
-      .eq("status", "Dikonfirmasi")
-      .gte("dibuat_pada", awalBulan);
-
-    if (bayarBulan) {
-      omzetBulanIni = bayarBulan.reduce((acc, curr) => acc + (curr.jumlah || 0), 0);
-    }
-
-    const { data: pList } = await supabase
+      .eq("status", "Menunggu Konfirmasi"),
+    supabase
       .from("pesanan")
-      .select("id, kode_pesanan, nama_penerima, tanggal_ambil, jam_ambil, metode_pengiriman, status_pesanan, status_bayar, total_bayar")
-      .neq("status_pesanan", "Dibatalkan")
-      .neq("status_pesanan", "Selesai")
-      .order("tanggal_ambil", { ascending: true })
-      .order("jam_ambil", { ascending: true })
-      .limit(5);
-    daftarPesanan = pList || [];
-  } else {
-    const { data: pList } = await supabase
-      .from("pesanan")
-      .select("id, kode_pesanan, nama_penerima, tanggal_ambil, jam_ambil, metode_pengiriman, status_pesanan, tulisan_kue, catatan")
+      .select("*", { count: "exact", head: true })
       .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
-      .order("tanggal_ambil", { ascending: true })
-      .order("jam_ambil", { ascending: true })
-      .limit(10);
-    daftarPesanan = pList || [];
+      .eq("tanggal_ambil", tglHariIni),
+  ]);
+
+  const namaToko = pengaturan?.nama_toko || "Cravely Bakery";
+  const slogan = pengaturan?.slogan || "Buat hari lebih manis dengan kue terbaik kami ♡";
+
+  const ringkasanHero = {
+    buktiMenunggu: buktiMenungguCount || 0,
+    kueHariIni: kueHariIniCount || 0,
+  };
+
+  const { data: semuaPesananRaw } = await supabase
+    .from("pesanan")
+    .select("id, id_pelanggan, status_pesanan, total_bayar, dibuat_pada")
+    .neq("status_pesanan", "Dibatalkan");
+
+  const semuaPesanan = semuaPesananRaw || [];
+  const orderTimeMap = {};
+  for (let i = 0; i < semuaPesanan.length; i++) {
+    orderTimeMap[semuaPesanan[i].id] = new Date(semuaPesanan[i].dibuat_pada).getTime();
   }
 
-  function getBadgeStatusPesanan(status) {
-    if (status === "Menunggu Pembayaran") {
-      return "bg-stone-100 text-stone-700";
-    }
-    if (status === "Diterima") {
-      return "bg-sky-100 text-sky-800";
-    }
-    if (status === "Sedang Dibuat") {
-      return "bg-amber-100 text-amber-800";
-    }
-    if (status === "Siap") {
-      return "bg-emerald-100 text-emerald-800";
-    }
-    if (status === "Dikirim") {
-      return "bg-indigo-100 text-indigo-800";
-    }
-    if (status === "Selesai") {
-      return "bg-green-100 text-green-800";
-    }
-    return "bg-rose-100 text-rose-800";
+  const { data: semuaPembayaranRaw } = await supabase
+    .from("pembayaran")
+    .select("id, jumlah, dikonfirmasi_pada, status")
+    .eq("status", "Dikonfirmasi");
+
+  const semuaPembayaran = semuaPembayaranRaw || [];
+
+  const parts = formatIsoJakarta.format(sekarang).split("-").map(Number);
+  const thn = parts[0];
+  const bln = parts[1];
+  const tgl = parts[2];
+
+  const tglAwalHariIni = new Date(Date.UTC(thn, bln - 1, tgl, -7, 0, 0)).getTime();
+  const tglAwalKemarin = new Date(Date.UTC(thn, bln - 1, tgl - 1, -7, 0, 0)).getTime();
+
+  const tglTujuhHariLalu = new Date(Date.UTC(thn, bln - 1, tgl - 7, -7, 0, 0)).getTime();
+  const tglEmpatBelasHariLalu = new Date(Date.UTC(thn, bln - 1, tgl - 14, -7, 0, 0)).getTime();
+
+  const tglAwalBulanIni = new Date(Date.UTC(thn, bln - 1, 1, -7, 0, 0)).getTime();
+  const tglAwalBulanLalu = new Date(Date.UTC(thn, bln - 2, 1, -7, 0, 0)).getTime();
+
+  const tglAwalTahunIni = new Date(Date.UTC(thn, 0, 1, -7, 0, 0)).getTime();
+  const tglAwalTahunLalu = new Date(Date.UTC(thn - 1, 0, 1, -7, 0, 0)).getTime();
+
+  function hitungPersen(skrg, lalu) {
+    if (!lalu || lalu === 0) return null;
+    return Math.round(((skrg - lalu) / lalu) * 100);
   }
 
-  function getBadgeStatusBayar(status) {
-    if (status === "Lunas") {
-      return "bg-emerald-100 text-emerald-800";
+  function hitungMetrikRentang(startNow, startPrev, endPrev) {
+    let pesananNow = 0;
+    let pesananPrev = 0;
+    const pelangganNowSet = new Set();
+    const pelangganPrevSet = new Set();
+
+    for (let i = 0; i < semuaPesanan.length; i++) {
+      const p = semuaPesanan[i];
+      const waktu = orderTimeMap[p.id];
+      if (waktu >= startNow) {
+        pesananNow++;
+        if (p.id_pelanggan) pelangganNowSet.add(p.id_pelanggan);
+      } else if (waktu >= startPrev && waktu < endPrev) {
+        pesananPrev++;
+        if (p.id_pelanggan) pelangganPrevSet.add(p.id_pelanggan);
+      }
     }
-    if (status === "DP Dibayar") {
-      return "bg-amber-100 text-amber-800";
+
+    let pendapatanNow = 0;
+    let pendapatanPrev = 0;
+
+    for (let i = 0; i < semuaPembayaran.length; i++) {
+      const b = semuaPembayaran[i];
+      if (!b.dikonfirmasi_pada) continue;
+      const waktu = new Date(b.dikonfirmasi_pada).getTime();
+      if (waktu >= startNow) {
+        pendapatanNow += b.jumlah || 0;
+      } else if (waktu >= startPrev && waktu < endPrev) {
+        pendapatanPrev += b.jumlah || 0;
+      }
     }
-    return "bg-rose-100 text-rose-800";
+
+    return {
+      totalPesanan: pesananNow,
+      persenPesanan: hitungPersen(pesananNow, pesananPrev),
+      perluDikonfirmasi: ringkasanHero.buktiMenunggu,
+      totalPendapatan: pendapatanNow,
+      persenPendapatan: hitungPersen(pendapatanNow, pendapatanPrev),
+      pelangganAktif: pelangganNowSet.size,
+      persenPelanggan: hitungPersen(pelangganNowSet.size, pelangganPrevSet.size),
+    };
   }
+
+  const metrikPeriode = {
+    hari_ini: hitungMetrikRentang(tglAwalHariIni, tglAwalKemarin, tglAwalHariIni),
+    minggu_ini: hitungMetrikRentang(tglTujuhHariLalu, tglEmpatBelasHariLalu, tglTujuhHariLalu),
+    bulan_ini: hitungMetrikRentang(tglAwalBulanIni, tglAwalBulanLalu, tglAwalBulanIni),
+    tahun_ini: hitungMetrikRentang(tglAwalTahunIni, tglAwalTahunLalu, tglAwalTahunIni),
+  };
+
+  const labels7Hari = [];
+  const data7Hari = [];
+  const namaHari = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.UTC(thn, bln - 1, tgl - i, -7, 0, 0));
+    const nextD = new Date(Date.UTC(thn, bln - 1, tgl - i + 1, -7, 0, 0));
+    const idxHari = d.getUTCDay();
+    labels7Hari.push(namaHari[idxHari]);
+
+    let sum = 0;
+    const startWaktu = d.getTime();
+    const endWaktu = nextD.getTime();
+
+    for (let j = 0; j < semuaPembayaran.length; j++) {
+      const b = semuaPembayaran[j];
+      if (!b.dikonfirmasi_pada) continue;
+      const w = new Date(b.dikonfirmasi_pada).getTime();
+      if (w >= startWaktu && w < endWaktu) {
+        sum += b.jumlah || 0;
+      }
+    }
+    data7Hari.push(sum);
+  }
+
+  const labels30Hari = ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"];
+  const data30Hari = [0, 0, 0, 0];
+
+  for (let w = 0; w < 4; w++) {
+    const startW = new Date(Date.UTC(thn, bln - 1, tgl - (28 - w * 7), -7, 0, 0)).getTime();
+    const endW = new Date(Date.UTC(thn, bln - 1, tgl - (21 - w * 7), -7, 0, 0)).getTime();
+
+    for (let j = 0; j < semuaPembayaran.length; j++) {
+      const b = semuaPembayaran[j];
+      if (!b.dikonfirmasi_pada) continue;
+      const t = new Date(b.dikonfirmasi_pada).getTime();
+      if (t >= startW && t < endW) {
+        data30Hari[w] += b.jumlah || 0;
+      }
+    }
+  }
+
+  const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const labels90Hari = [];
+  const data90Hari = [0, 0, 0];
+
+  for (let m = 2; m >= 0; m--) {
+    const targetBulanIdx = (bln - 1 - m + 12) % 12;
+    labels90Hari.push(namaBulan[targetBulanIdx]);
+
+    const startM = new Date(Date.UTC(thn, bln - 1 - m, 1, -7, 0, 0)).getTime();
+    const endM = new Date(Date.UTC(thn, bln - m, 1, -7, 0, 0)).getTime();
+
+    for (let j = 0; j < semuaPembayaran.length; j++) {
+      const b = semuaPembayaran[j];
+      if (!b.dikonfirmasi_pada) continue;
+      const t = new Date(b.dikonfirmasi_pada).getTime();
+      if (t >= startM && t < endM) {
+        data90Hari[2 - m] += b.jumlah || 0;
+      }
+    }
+  }
+
+  const dataGrafik = {
+    "7hari": { labels: labels7Hari, data: data7Hari },
+    "30hari": { labels: labels30Hari, data: data30Hari },
+    "90hari": { labels: labels90Hari, data: data90Hari },
+  };
+
+  const { data: grupJenis } = await supabase
+    .from("grup_opsi")
+    .select("id, nama")
+    .eq("peran_dashboard", "jenis")
+    .maybeSingle();
+
+  const { data: grupTerlaris } = await supabase
+    .from("grup_opsi")
+    .select("id, nama")
+    .eq("peran_dashboard", "terlaris")
+    .maybeSingle();
+
+  const { data: semuaPilihanRaw } = await supabase
+    .from("pesanan_pilihan")
+    .select("id_pesanan, id_grup, nama_grup, nama_item, warna");
+
+  const semuaPilihan = (semuaPilihanRaw || []).filter(
+    (item) => orderTimeMap[item.id_pesanan] !== undefined
+  );
+
+  const periodeStartMap = {
+    hari_ini: tglAwalHariIni,
+    minggu_ini: tglTujuhHariLalu,
+    bulan_ini: tglAwalBulanIni,
+    tahun_ini: tglAwalTahunIni,
+  };
+
+  const paletDonut = ["#1e4b3c", "#608d7c", "#b2cfbe", "#8fa58f", "#d9e6dd"];
+
+  const donutPerPeriode = {};
+  const terlarisPerPeriode = {};
+
+  const daftarKunciPeriode = ["hari_ini", "minggu_ini", "bulan_ini", "tahun_ini"];
+
+  for (let k = 0; k < daftarKunciPeriode.length; k++) {
+    const key = daftarKunciPeriode[k];
+    const startTs = periodeStartMap[key];
+
+    if (!grupJenis) {
+      donutPerPeriode[key] = {
+        adaGrup: false,
+        namaGrup: "",
+        kosong: true,
+        pesan: "Belum ada grup yang diset sebagai jenis kue di menu Harga & Opsi",
+        items: [],
+        total: 0,
+      };
+    } else {
+      const hitungMap = {};
+      let totalPilihan = 0;
+
+      for (let p = 0; p < semuaPilihan.length; p++) {
+        const item = semuaPilihan[p];
+        const waktuPesanan = orderTimeMap[item.id_pesanan];
+        if (waktuPesanan < startTs) continue;
+
+        const cocokGrup =
+          (item.id_grup && String(item.id_grup) === String(grupJenis.id)) ||
+          (!item.id_grup && item.nama_grup === grupJenis.nama);
+
+        if (cocokGrup) {
+          hitungMap[item.nama_item] = (hitungMap[item.nama_item] || 0) + 1;
+          totalPilihan++;
+        }
+      }
+
+      if (totalPilihan === 0) {
+        donutPerPeriode[key] = {
+          adaGrup: true,
+          namaGrup: grupJenis.nama,
+          kosong: true,
+          pesan: "Belum ada pesanan pada periode ini",
+          items: [],
+          total: 0,
+        };
+      } else {
+        const urutList = Object.keys(hitungMap)
+          .map((nama) => ({ nama, jumlah: hitungMap[nama] }))
+          .sort((a, b) => b.jumlah - a.jumlah);
+
+        let finalItems = [];
+        if (urutList.length <= 4) {
+          finalItems = urutList;
+        } else {
+          finalItems = urutList.slice(0, 4);
+          let sisa = 0;
+          for (let s = 4; s < urutList.length; s++) {
+            sisa += urutList[s].jumlah;
+          }
+          finalItems.push({ nama: "Lainnya", jumlah: sisa });
+        }
+
+        const itemsWithPercent = finalItems.map((item, idx) => ({
+          nama: item.nama,
+          jumlah: item.jumlah,
+          warna: paletDonut[idx % paletDonut.length],
+          persen: Math.round((item.jumlah / totalPilihan) * 100),
+        }));
+
+        donutPerPeriode[key] = {
+          adaGrup: true,
+          namaGrup: grupJenis.nama,
+          kosong: false,
+          pesan: "",
+          items: itemsWithPercent,
+          total: totalPilihan,
+        };
+      }
+    }
+
+    if (!grupTerlaris) {
+      terlarisPerPeriode[key] = {
+        adaGrup: false,
+        namaGrup: "",
+        kosong: true,
+        pesan: "Belum ada grup yang diset sebagai terlaris di menu Harga & Opsi",
+        items: [],
+      };
+    } else {
+      const hitungMap = {};
+      const warnaMap = {};
+      let totalPilihan = 0;
+
+      for (let p = 0; p < semuaPilihan.length; p++) {
+        const item = semuaPilihan[p];
+        const waktuPesanan = orderTimeMap[item.id_pesanan];
+        if (waktuPesanan < startTs) continue;
+
+        const cocokGrup =
+          (item.id_grup && String(item.id_grup) === String(grupTerlaris.id)) ||
+          (!item.id_grup && item.nama_grup === grupTerlaris.nama);
+
+        if (cocokGrup) {
+          hitungMap[item.nama_item] = (hitungMap[item.nama_item] || 0) + 1;
+          if (item.warna) warnaMap[item.nama_item] = item.warna;
+          totalPilihan++;
+        }
+      }
+
+      if (totalPilihan === 0) {
+        terlarisPerPeriode[key] = {
+          adaGrup: true,
+          namaGrup: grupTerlaris.nama,
+          kosong: true,
+          pesan: "Belum ada pesanan pada periode ini",
+          items: [],
+        };
+      } else {
+        const top3 = Object.keys(hitungMap)
+          .map((nama) => ({
+            nama,
+            jumlah: hitungMap[nama],
+            warna: warnaMap[nama] || "#1e4b3c",
+            persen: Math.round((hitungMap[nama] / totalPilihan) * 100),
+          }))
+          .sort((a, b) => b.jumlah - a.jumlah)
+          .slice(0, 3);
+
+        terlarisPerPeriode[key] = {
+          adaGrup: true,
+          namaGrup: grupTerlaris.nama,
+          kosong: false,
+          pesan: "",
+          items: top3,
+        };
+      }
+    }
+  }
+
+  const { data: pesananTerbaruRaw } = await supabase
+    .from("pesanan")
+    .select("id, kode_pesanan, dibuat_pada, status_pesanan, total_bayar")
+    .order("dibuat_pada", { ascending: false })
+    .limit(3);
+
+  const daftarTerbaru = pesananTerbaruRaw || [];
+  const idTerbaruList = daftarTerbaru.map((p) => p.id);
+
+  let pilihanTerbaruMap = {};
+  if (idTerbaruList.length > 0) {
+    const { data: pilihanTerbaruData } = await supabase
+      .from("pesanan_pilihan")
+      .select("id_pesanan, peran_visual, warna, kode_visual")
+      .in("id_pesanan", idTerbaruList);
+
+    if (pilihanTerbaruData) {
+      for (let i = 0; i < pilihanTerbaruData.length; i++) {
+        const item = pilihanTerbaruData[i];
+        if (!pilihanTerbaruMap[item.id_pesanan]) {
+          pilihanTerbaruMap[item.id_pesanan] = [];
+        }
+        pilihanTerbaruMap[item.id_pesanan].push(item);
+      }
+    }
+  }
+
+  const pesananTerbaru = daftarTerbaru.map((p) => ({
+    ...p,
+    pilihan: pilihanTerbaruMap[p.id] || [],
+  }));
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-extrabold text-stone-900">
-          Selamat Datang, {profil?.nama || "Pengguna"}
-        </h1>
-        <p className="text-sm text-stone-500 mt-1">
-          {isAdmin
-            ? "Berikut adalah ringkasan performa dan operasional toko kue Anda hari ini."
-            : "Berikut adalah daftar kue yang perlu diproduksi dan informasi stok bahan dapur."}
-        </p>
-      </div>
-
-      {stokMenipis.length > 0 && (
-        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start space-x-3">
-          <i className="fa-solid fa-triangle-exclamation text-rose-600 text-lg mt-0.5"></i>
-          <div>
-            <h4 className="font-bold text-sm">Peringatan: Stok Bahan Menipis</h4>
-            <p className="text-xs text-rose-700 mt-0.5">
-              Ada {stokMenipis.length} bahan yang sudah mencapai atau di bawah batas minimum:{" "}
-              {stokMenipis.map((b) => `${b.nama} (${b.jumlah} ${b.satuan})`).join(", ")}.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {isAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Pesanan Hari Ini
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                <i className="fa-solid fa-calendar-day"></i>
-              </div>
-            </div>
-            <p className="text-3xl font-black text-stone-900 mt-4">
-              {pesananHariIniCount}
-            </p>
-            <span className="text-xs text-stone-400 mt-1 block">
-              Jadwal ambil atau kirim hari ini
-            </span>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Belum Dibayar
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center">
-                <i className="fa-solid fa-clock"></i>
-              </div>
-            </div>
-            <p className="text-3xl font-black text-stone-900 mt-4">
-              {belumBayarCount}
-            </p>
-            <span className="text-xs text-stone-400 mt-1 block">
-              Pesanan menunggu pembayaran
-            </span>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Konfirmasi Bayar
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center">
-                <i className="fa-solid fa-receipt"></i>
-              </div>
-            </div>
-            <p className="text-3xl font-black text-stone-900 mt-4">
-              {menungguKonfirmasiCount}
-            </p>
-            <span className="text-xs text-stone-400 mt-1 block">
-              Bukti bayar perlu dicek
-            </span>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Omzet Bulan Ini
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <i className="fa-solid fa-wallet"></i>
-              </div>
-            </div>
-            <p className="text-2xl font-black text-stone-900 mt-4 truncate">
-              {formatRupiah(omzetBulanIni)}
-            </p>
-            <span className="text-xs text-stone-400 mt-1 block">
-              Pembayaran terkonfirmasi
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-bold text-lg text-stone-900">
-              {isAdmin ? "Pesanan Terdekat" : "Daftar Kue yang Harus Dibuat"}
-            </h3>
-            <p className="text-xs text-stone-500 mt-0.5">
-              {isAdmin
-                ? "Daftar pesanan aktif terdekat yang perlu diproses"
-                : "Pesanan dengan status Diterima dan Sedang Dibuat (diurutkan jam terdekat)"}
-            </p>
-          </div>
-          <Link
-            href="/dashboard/pesanan"
-            className="text-xs font-semibold text-rose-600 hover:underline flex items-center space-x-1"
-          >
-            <span>Lihat Semua</span>
-            <i className="fa-solid fa-arrow-right text-[10px]"></i>
-          </Link>
-        </div>
-
-        {daftarPesanan.length === 0 ? (
-          <div className="py-12 text-center text-stone-400 text-sm">
-            <i className="fa-solid fa-box-open text-3xl mb-2 block text-stone-300"></i>
-            Belum ada pesanan yang perlu diproses saat ini.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-stone-100 text-stone-700 uppercase text-xs">
-                <tr>
-                  <th className="py-3 px-4 rounded-l-xl">Kode</th>
-                  <th className="py-3 px-4">Penerima</th>
-                  <th className="py-3 px-4">Jadwal</th>
-                  <th className="py-3 px-4">Pengambilan</th>
-                  <th className="py-3 px-4">Status Pesanan</th>
-                  {isAdmin && <th className="py-3 px-4">Status Bayar</th>}
-                  {isAdmin && <th className="py-3 px-4">Total</th>}
-                  <th className="py-3 px-4 text-right rounded-r-xl">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {daftarPesanan.map((p) => (
-                  <tr key={p.id} className="hover:bg-stone-50/60 transition">
-                    <td className="py-3.5 px-4 font-bold text-stone-900">
-                      {p.kode_pesanan}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-stone-800">
-                      {p.nama_penerima}
-                    </td>
-                    <td className="py-3.5 px-4 text-stone-600">
-                      {formatTanggalSingkat(p.tanggal_ambil)} {p.jam_ambil?.slice(0, 5)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-stone-100 text-stone-700">
-                        {p.metode_pengiriman === "Ambil" ? "Ambil di Tempat" : "Kirim"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getBadgeStatusPesanan(
-                          p.status_pesanan
-                        )}`}
-                      >
-                        {p.status_pesanan}
-                      </span>
-                    </td>
-                    {isAdmin && (
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getBadgeStatusBayar(
-                            p.status_bayar
-                          )}`}
-                        >
-                          {p.status_bayar}
-                        </span>
-                      </td>
-                    )}
-                    {isAdmin && (
-                      <td className="py-3.5 px-4 font-semibold text-stone-900">
-                        {formatRupiah(p.total_bayar)}
-                      </td>
-                    )}
-                    <td className="py-3.5 px-4 text-right">
-                      <Link
-                        href={`/dashboard/pesanan/${p.kode_pesanan}`}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-500 py-1 px-3 rounded-full hover:bg-rose-50 transition"
-                      >
-                        Detail
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+    <DashboardAdminView
+      namaToko={namaToko}
+      slogan={slogan}
+      kueHariIni={ringkasanHero.kueHariIni}
+      metrikPeriode={metrikPeriode}
+      dataGrafik={dataGrafik}
+      terlarisPerPeriode={terlarisPerPeriode}
+      donutPerPeriode={donutPerPeriode}
+      pesananTerbaru={pesananTerbaru}
+    />
   );
 }
