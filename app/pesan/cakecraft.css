@@ -234,6 +234,18 @@
   color: #713D50;
 }
 
+.cakecraft-studio .st.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cakecraft-studio .st.locked .ic {
+  background: #f5ebe6;
+  border-color: #e4d5ce;
+  color: #a8949a;
+  box-shadow: none;
+}
+
 .cakecraft-studio main {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);

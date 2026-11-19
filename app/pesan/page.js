@@ -219,6 +219,7 @@ export default function PesanPage() {
 
   const [S, setS] = useState(getDefState);
   const [step, setStep] = useState(0);
+  const [maxStep, setMaxStep] = useState(0);
   const [mode, setMode] = useState("custom");
   const [tplI, setTplI] = useState(null);
   const [cartCount, setCartCount] = useState(1);
@@ -370,6 +371,14 @@ export default function PesanPage() {
         try {
           const parsed = JSON.parse(saved);
           if (parsed) setS(parsed);
+        } catch {}
+      }
+
+      const savedMax = sessionStorage.getItem("cravely_custom_maxstep");
+      if (savedMax) {
+        try {
+          const num = Number(savedMax);
+          if (!isNaN(num)) setMaxStep(num);
         } catch {}
       }
     }
@@ -1142,19 +1151,73 @@ export default function PesanPage() {
     }));
   }
 
+  function validateStep(sIdx) {
+    if (sIdx === 0) {
+      if (mode === "tpl" && tplI === null) {
+        return "Pilih salah satu template kue terlebih dahulu ya.";
+      }
+      return "";
+    }
+    if (sIdx === 1) {
+      if (!S.size) return "Pilih ukuran kue terlebih dahulu ya.";
+      return "";
+    }
+    if (sIdx === 2) {
+      if (!S.shape) return "Pilih bentuk kue terlebih dahulu ya.";
+      return "";
+    }
+    if (sIdx === 3) {
+      if (!S.flavor) return "Pilih rasa bolu kue terlebih dahulu ya.";
+      if (!S.fill) return "Pilih isian krim terlebih dahulu ya.";
+      if (!S.icing) return "Pilih warna krim icing terlebih dahulu ya.";
+      return "";
+    }
+    if (sIdx === 7) {
+      return checkValidation();
+    }
+    return "";
+  }
+
   function go(targetStep) {
-    const i = Math.max(0, Math.min(8, targetStep));
+    let i = Math.max(0, Math.min(8, targetStep));
+    if (i === step) return;
+
     if (mode === "tpl") {
       if (i > 0 && tplI === null) {
-        showToast("Pilih satu template dulu ya");
+        showToast("Pilih salah satu template dulu ya");
         return;
       }
       if (i >= 1 && i <= 5) {
-        setStep(i < step ? 0 : 6);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
+        i = i < step ? 0 : 6;
       }
     }
+
+    if (i > step) {
+      const isNextAllowed =
+        (mode === "tpl" && step === 0 && i === 6) ||
+        i === step + 1 ||
+        i <= maxStep;
+      if (!isNextAllowed) {
+        showToast("Selesaikan langkah sebelumnya terlebih dahulu ya.");
+        return;
+      }
+      for (let k = step; k < i; k++) {
+        if (mode === "tpl" && k >= 1 && k <= 5) continue;
+        const err = validateStep(k);
+        if (err) {
+          showToast(err);
+          return;
+        }
+      }
+      setMaxStep((prev) => {
+        const nextVal = Math.max(prev, i);
+        try {
+          sessionStorage.setItem("cravely_custom_maxstep", String(nextVal));
+        } catch {}
+        return nextVal;
+      });
+    }
+
     setStep(i);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -1328,6 +1391,7 @@ export default function PesanPage() {
 
       setCartCount((c) => c + 1);
       sessionStorage.removeItem("cravely_custom_draft");
+      sessionStorage.removeItem("cravely_custom_maxstep");
       showToast("Pesanan berhasil dibuat!");
       setTimeout(() => {
         router.push(`/pesanan-saya/${data.kode_pesanan}`);
@@ -1345,6 +1409,11 @@ export default function PesanPage() {
         return;
       }
       go(6);
+      return;
+    }
+    const err = validateStep(step);
+    if (err) {
+      showToast(err);
       return;
     }
     if (step < 7) {
@@ -1569,13 +1638,23 @@ export default function PesanPage() {
               const item = STEPS[idx];
               const isDone = idx < step;
               const isCur = idx === step;
+              const isUnlocked = idx <= maxStep;
               return (
                 <button
                   key={idx}
-                  className={`st ${isDone ? "done" : ""} ${isCur ? "cur" : ""}`}
-                  onClick={() => go(idx)}
+                  className={`st ${isDone ? "done" : ""} ${isCur ? "cur" : ""} ${!isUnlocked ? "locked" : ""}`}
+                  onClick={() => {
+                    if (!isUnlocked) {
+                      showToast("Selesaikan langkah sebelumnya terlebih dahulu ya");
+                      return;
+                    }
+                    go(idx);
+                  }}
+                  title={!isUnlocked ? "Langkah ini belum terbuka" : item[0]}
                 >
-                  <span className="ic">{isDone ? "✓" : item[1]}</span>
+                  <span className="ic">
+                    {!isUnlocked ? "🔒" : isDone ? "✓" : item[1]}
+                  </span>
                   {item[0]}
                 </button>
               );
@@ -1602,6 +1681,7 @@ export default function PesanPage() {
                     className={`mode ${mode === "custom" ? "on" : ""}`}
                     onClick={() => {
                       setMode("custom");
+                      setMaxStep(0);
                     }}
                   >
                     <span className="mi">🎨</span>
@@ -1612,6 +1692,7 @@ export default function PesanPage() {
                     className={`mode ${mode === "tpl" ? "on" : ""}`}
                     onClick={() => {
                       setMode("tpl");
+                      setMaxStep(0);
                     }}
                   >
                     <span className="mi">⚡</span>
