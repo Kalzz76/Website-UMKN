@@ -23,6 +23,7 @@ export default function HargaOpsiPage() {
   const [daftarItem, setDaftarItem] = useState([]);
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [sedangProses, setSedangProses] = useState(false);
+  const [grupTerbukaMap, setGrupTerbukaMap] = useState({});
 
   const [modalGrupBuka, setModalGrupBuka] = useState(false);
   const [editGrupId, setEditGrupId] = useState(null);
@@ -97,6 +98,26 @@ export default function HargaOpsiPage() {
   useEffect(() => {
     muatData();
   }, []);
+
+  function toggleGrupBuka(grupId) {
+    setGrupTerbukaMap((prev) => ({
+      ...prev,
+      [grupId]: prev[grupId] === false ? true : false,
+    }));
+  }
+
+  const apakahSemuaTutup =
+    daftarGrup.length > 0 &&
+    daftarGrup.every((g) => grupTerbukaMap[g.id] === false);
+
+  function toggleSemuaGrup() {
+    const nextVal = apakahSemuaTutup ? true : false;
+    const newMap = {};
+    for (let i = 0; i < daftarGrup.length; i++) {
+      newMap[daftarGrup[i].id] = nextVal;
+    }
+    setGrupTerbukaMap(newMap);
+  }
 
   function bukaModalTambahGrup() {
     setEditGrupId(null);
@@ -491,14 +512,27 @@ export default function HargaOpsiPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={bukaModalTambahGrup}
-          className="h-[42px] px-5 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-sm inline-flex items-center justify-center space-x-2 flex-shrink-0"
-        >
-          <i className="fa-solid fa-plus text-xs"></i>
-          <span>Tambah Grup Opsi</span>
-        </button>
+        <div className="flex items-center space-x-2.5 flex-wrap gap-y-2">
+          {daftarGrup.length > 0 && (
+            <button
+              type="button"
+              onClick={toggleSemuaGrup}
+              className="h-[42px] px-4 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer inline-flex items-center space-x-2 shadow-xs"
+            >
+              <i className={`fa-solid ${apakahSemuaTutup ? "fa-angles-down" : "fa-angles-up"} text-xs`}></i>
+              <span>{apakahSemuaTutup ? "Buka Semua" : "Tutup Semua"}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={bukaModalTambahGrup}
+            className="h-[42px] px-5 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-sm inline-flex items-center justify-center space-x-2 flex-shrink-0"
+          >
+            <i className="fa-solid fa-plus text-xs"></i>
+            <span>Tambah Grup Opsi</span>
+          </button>
+        </div>
       </div>
 
       {sedangMemuat ? (
@@ -515,23 +549,36 @@ export default function HargaOpsiPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {daftarGrup.map((grup) => {
             const itemGrup = daftarItem.filter((it) => it.id_grup === grup.id);
+            const isBuka = grupTerbukaMap[grup.id] !== false;
 
             return (
               <div
                 key={grup.id}
-                className="content-card p-6 space-y-5"
+                className={`content-card transition-all duration-200 ${
+                  isBuka ? "p-6 space-y-5" : "p-5"
+                }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#e8dfc8]">
-                  <div className="space-y-2">
+                <div
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
+                    isBuka ? "pb-4 border-b border-[#e8dfc8]" : ""
+                  }`}
+                >
+                  <div
+                    onClick={() => toggleGrupBuka(grup.id)}
+                    className="space-y-2 cursor-pointer select-none flex-1 group"
+                  >
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-sm font-bold shadow-xs">
+                      <div className="w-8 h-8 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-sm font-bold shadow-xs transition group-hover:scale-105">
                         <i className="fa-solid fa-layer-group"></i>
                       </div>
-                      <h3 className="text-lg font-bold text-[#1d3b2e]">
-                        {grup.nama}
+                      <h3 className="text-lg font-bold text-[#1d3b2e] flex items-center gap-2">
+                        <span>{grup.nama}</span>
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#ede2cd] text-stone-700 border border-[#dfd4bd]">
+                          {itemGrup.length} item
+                        </span>
                       </h3>
                     </div>
 
@@ -560,7 +607,7 @@ export default function HargaOpsiPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 self-start sm:self-center">
+                  <div className="flex items-center space-x-2 self-start sm:self-center flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => bukaModalTambahItem(grup)}
@@ -585,92 +632,106 @@ export default function HargaOpsiPage() {
                     >
                       <i className="fa-solid fa-trash text-xs"></i>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleGrupBuka(grup.id)}
+                      className="w-9 h-9 rounded-xl border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center transition cursor-pointer"
+                      title={isBuka ? "Tutup Grup" : "Buka Grup"}
+                    >
+                      <i
+                        className={`fa-solid ${
+                          isBuka ? "fa-chevron-up" : "fa-chevron-down"
+                        } text-xs transition-transform duration-200`}
+                      ></i>
+                    </button>
                   </div>
                 </div>
 
-                {itemGrup.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-stone-500 bg-[#f7f2e4] rounded-2xl border border-dashed border-[#dfd4bd]">
-                    Belum ada pilihan item di dalam grup ini. Silakan klik tombol &quot;Tambah Item&quot;.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
-                        <tr>
-                          <th className="py-3 px-3.5 rounded-l-xl w-14">No.</th>
-                          <th className="py-3 px-3.5">Nama Opsi</th>
-                          <th className="py-3 px-3.5">Harga Tambahan</th>
-                          <th className="py-3 px-3.5">
-                            {grup.peran_visual === "ukuran"
-                              ? "Ukuran Visual"
-                              : grup.peran_visual === "badan" || grup.peran_visual === "krim"
-                              ? "Warna Visual"
-                              : grup.peran_visual === "topping"
-                              ? "Ikon Visual"
-                              : "Format"}
-                          </th>
-                          <th className="py-3 px-3.5">Status</th>
-                          <th className="py-3 px-3.5 text-right rounded-r-xl w-24">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#ede2cd]">
-                        {itemGrup.map((item, idx) => (
-                          <tr key={item.id} className="hover:bg-[#f7f2e4]/70 transition">
-                            <td className="py-3 px-3.5 font-bold text-stone-600 text-xs">
-                              {idx + 1}
-                            </td>
-                            <td className="py-3 px-3.5 font-bold text-[#1d3b2e]">
-                              {item.nama}
-                            </td>
-                            <td className="py-3 px-3.5 font-bold text-stone-800">
-                              {formatRupiah(item.harga)}
-                            </td>
-                            <td className="py-3 px-3.5">
-                              {renderVisualItem(item, grup.peran_visual)}
-                            </td>
-                            <td className="py-3 px-3.5">
-                              <button
-                                type="button"
-                                onClick={() => toggleAktifItem(item)}
-                                className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer border ${
-                                  item.aktif
-                                    ? "bg-[#d8e3cf] text-[#215934] border-[#bad1ab] hover:bg-[#cbe0bf]"
-                                    : "bg-stone-200 text-stone-600 border-stone-300 hover:bg-stone-300"
-                                }`}
-                              >
-                                <span
-                                  className={`w-2 h-2 rounded-full ${
-                                    item.aktif ? "bg-[#215934]" : "bg-stone-400"
-                                  }`}
-                                ></span>
-                                <span>{item.aktif ? "Aktif" : "Nonaktif"}</span>
-                              </button>
-                            </td>
-                            <td className="py-3 px-3.5 text-right">
-                              <div className="flex items-center justify-end space-x-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => bukaModalEditItem(item, grup)}
-                                  className="w-8 h-8 rounded-lg border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
-                                  title="Edit Item"
-                                >
-                                  <i className="fa-solid fa-pen-to-square text-xs"></i>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => hapusItem(item)}
-                                  className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
-                                  title="Hapus Item"
-                                >
-                                  <i className="fa-solid fa-trash text-xs"></i>
-                                </button>
-                              </div>
-                            </td>
+                {isBuka && (
+                  itemGrup.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-stone-500 bg-[#f7f2e4] rounded-2xl border border-dashed border-[#dfd4bd]">
+                      Belum ada pilihan item di dalam grup ini. Silakan klik tombol &quot;Tambah Item&quot;.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
+                          <tr>
+                            <th className="py-3 px-3.5 rounded-l-xl w-14">No.</th>
+                            <th className="py-3 px-3.5">Nama Opsi</th>
+                            <th className="py-3 px-3.5">Harga Tambahan</th>
+                            <th className="py-3 px-3.5">
+                              {grup.peran_visual === "ukuran"
+                                ? "Ukuran Visual"
+                                : grup.peran_visual === "badan" || grup.peran_visual === "krim"
+                                ? "Warna Visual"
+                                : grup.peran_visual === "topping"
+                                ? "Ikon Visual"
+                                : "Format"}
+                            </th>
+                            <th className="py-3 px-3.5">Status</th>
+                            <th className="py-3 px-3.5 text-right rounded-r-xl w-24">Aksi</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-[#ede2cd]">
+                          {itemGrup.map((item, idx) => (
+                            <tr key={item.id} className="hover:bg-[#f7f2e4]/70 transition">
+                              <td className="py-3 px-3.5 font-bold text-stone-600 text-xs">
+                                {idx + 1}
+                              </td>
+                              <td className="py-3 px-3.5 font-bold text-[#1d3b2e]">
+                                {item.nama}
+                              </td>
+                              <td className="py-3 px-3.5 font-bold text-stone-800">
+                                {formatRupiah(item.harga)}
+                              </td>
+                              <td className="py-3 px-3.5">
+                                {renderVisualItem(item, grup.peran_visual)}
+                              </td>
+                              <td className="py-3 px-3.5">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleAktifItem(item)}
+                                  className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer border ${
+                                    item.aktif
+                                      ? "bg-[#d8e3cf] text-[#215934] border-[#bad1ab] hover:bg-[#cbe0bf]"
+                                      : "bg-stone-200 text-stone-600 border-stone-300 hover:bg-stone-300"
+                                  }`}
+                                >
+                                  <span
+                                    className={`w-2 h-2 rounded-full ${
+                                      item.aktif ? "bg-[#215934]" : "bg-stone-400"
+                                    }`}
+                                  ></span>
+                                  <span>{item.aktif ? "Aktif" : "Nonaktif"}</span>
+                                </button>
+                              </td>
+                              <td className="py-3 px-3.5 text-right">
+                                <div className="flex items-center justify-end space-x-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => bukaModalEditItem(item, grup)}
+                                    className="w-8 h-8 rounded-lg border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
+                                    title="Edit Item"
+                                  >
+                                    <i className="fa-solid fa-pen-to-square text-xs"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => hapusItem(item)}
+                                    className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
+                                    title="Hapus Item"
+                                  >
+                                    <i className="fa-solid fa-trash text-xs"></i>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
                 )}
               </div>
             );
