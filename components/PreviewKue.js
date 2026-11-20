@@ -17,7 +17,9 @@ export default function PreviewKue({
   let itemUkuran = null;
   let itemBadan = null;
   let itemKrim = null;
+  let itemBentuk = null;
   const daftarTopping = [];
+  const daftarStiker = [];
 
   for (let i = 0; i < daftarPilihan.length; i++) {
     const item = daftarPilihan[i];
@@ -30,10 +32,14 @@ export default function PreviewKue({
       itemKrim = item;
     } else if (item.peran_visual === "topping") {
       daftarTopping.push(item);
+    } else if (item.peran_visual === "bentuk") {
+      itemBentuk = item;
+    } else if (item.peran_visual === "stiker") {
+      daftarStiker.push(item);
     }
   }
 
-  const kodeUkuran = itemUkuran ? itemUkuran.kode_visual : "sedang";
+  const kodeUkuran = itemUkuran ? itemUkuran.kode_visual : "medium";
   const warnaBadan = itemBadan && itemBadan.warna ? itemBadan.warna : "#5c3a21";
   const warnaKrim = itemKrim && itemKrim.warna ? itemKrim.warna : "#ffffff";
 
@@ -75,7 +81,8 @@ export default function PreviewKue({
   }
 
   let tiers = [];
-  if (kodeUkuran === "kecil") {
+  const kUkuran = (kodeUkuran || "").toLowerCase();
+  if (kUkuran === "mini" || kUkuran === "small" || kUkuran === "kecil") {
     tiers = [
       {
         cx: 200,
@@ -88,7 +95,7 @@ export default function PreviewKue({
         isTopTier: true,
       },
     ];
-  } else if (kodeUkuran === "besar") {
+  } else if (kUkuran === "large" || kUkuran === "besar") {
     tiers = [
       {
         cx: 200,
@@ -154,11 +161,11 @@ export default function PreviewKue({
   let adaBuah = false;
 
   for (let j = 0; j < daftarTopping.length; j++) {
-    const kv = daftarTopping[j].kode_visual;
-    if (kv === "lilin") adaLilin = true;
-    if (kv === "strawberry") adaStrawberry = true;
-    if (kv === "coklat_chip") adaCoklatChip = true;
-    if (kv === "buah") adaBuah = true;
+    const kv = (daftarTopping[j]?.kode_visual || "").toLowerCase();
+    if (kv === "lilin" || kv === "candle") adaLilin = true;
+    if (kv === "strawberry" || kv === "straw") adaStrawberry = true;
+    if (kv === "coklat_chip" || kv === "spr" || kv === "flower") adaCoklatChip = true;
+    if (kv === "buah" || kv === "berry") adaBuah = true;
   }
 
   return (

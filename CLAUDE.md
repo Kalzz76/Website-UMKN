@@ -26,7 +26,7 @@ Kode di project ini harus sederhana dan bersih, terlihat ditulis manual oleh pel
 9. **DILARANG mengubah struktur tabel lewat kode aplikasi.** Struktur tabel hanya lewat file SQL di `supabase/migrations/`. Data awal (pengaturan toko, grup opsi contoh, zona ongkir contoh) lewat `supabase/seed.sql`.
 10. Query memakai Supabase client (`from().select().eq().insert().update().delete()`). Tidak memakai ORM. Tidak boleh menyambung string SQL dari input pengguna.
 11. Tampilan memakai **Next.js App Router + Tailwind CSS + Font Awesome 6.4 (lewat CDN di layout)**. Tidak memakai library komponen (shadcn, MUI, dll).
-12. Library yang diizinkan hanya: `next`, `react`, `react-dom`, `tailwindcss`, `@supabase/supabase-js`, `@supabase/ssr`, `gsap` (animasi scroll di landing), `qrcode` (membuat QR tiket), dan `chart.js` (dipakai langsung di client component lewat `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`, tanpa `react-chartjs-2`). Library lain, termasuk Three.js, tanya dulu.
+12. Library yang diizinkan hanya: `next`, `react`, `react-dom`, `tailwindcss`, `@supabase/supabase-js`, `@supabase/ssr`, `gsap` (animasi scroll di landing), `qrcode` (membuat QR tiket), `chart.js` (dipakai langsung di client component lewat `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`, tanpa `react-chartjs-2`), dan `three` (Three.js diizinkan hanya di `/pesan` dan wajib dimuat secara dinamis). File CSS eksternal studio `app/pesan/cakecraft.css` khusus digunakan di `/pesan`. Library lain tanya dulu.
 13. Fitur yang tidak ada di `CLAUDE.md` ini tidak boleh ditambahkan hanya karena ada di referensi. Referensi dipakai untuk **tampilan**, bukan untuk menambah fitur.
 
 Aturan ini berlaku untuk semua perubahan berikutnya, tanpa perlu diingatkan lagi.
@@ -228,36 +228,50 @@ Memakai gaya scroll-storytelling dari "Referensi Desain". Semua teks toko (nama,
 
 ## Alur Pemesanan Pelanggan (`/pesan`)
 
-Pop-up atau halaman bertahap dengan panel ringkasan di sisi kiri (preview kue + total berjalan) dan langkah di kanan:
+Halaman pemesanan studio kue interaktif (`app/pesan/page.js`) menghubungkan katalog database langsung ke kanvas 3D Three.js dan ringkasan pesanan real-time. Alur terdiri dari 9 langkah berurutan (Langkah 0 sampai Langkah 8):
 
-1. **Kustomisasi**: tiap grup opsi tampil sebagai langkah atau bagian (Rasa, Ukuran, Krim, Topping, dst, sesuai data admin). Preview kue berubah langsung dan total harga ikut berubah. Ada kolom **Tulisan di Kue**, **Catatan**, dan unggah **Foto Referensi** (opsional).
-2. **Tanggal & Pengambilan**: pilih tanggal (hanya tanggal yang tersedia), pilih jam, pilih **Ambil di Tempat** atau **Kirim**. Kalau Kirim: isi alamat dan pilih zona ongkir.
-3. **Data Penerima**: nama, nomor WhatsApp (terisi otomatis dari profil kalau sudah ada).
-4. **Ringkasan & Pembayaran**: rincian harga, ongkir, total, jumlah yang harus dibayar sekarang (DP atau lunas, sesuai pengaturan), pilihan metode pembayaran, dan petunjuk bayar.
-5. **Tiket Pesanan**: kode pesanan + QR, status, dan tombol unggah bukti bayar.
+1. **Langkah 0: Jenis Kue / Template** (`grup_opsi: Jenis Kue`, peran dashboard `jenis`)
+   - Pilihan: Custom Cake (mulai dari awal) atau Template Siap Pakai (Birthday Sweet, Romantic Rose, Choco Delight, Minimalist Mint, dll).
+2. **Langkah 1: Ukuran** (`grup_opsi: Ukuran`, peran visual `ukuran`)
+   - Pilihan: Mini Ø10 (Rp 85.000), Small Ø14 (Rp 125.000), Medium Ø18 (Rp 165.000), Large Ø22 (Rp 210.000). Mengubah skala geometris kue 3D.
+3. **Langkah 2: Bentuk** (`grup_opsi: Bentuk`, peran visual `bentuk`)
+   - Pilihan: Lingkaran (Rp 0), Kotak (Rp 0), Hati (Rp 10.000), Bintang (Rp 15.000), Hexagon (Rp 10.000), Buat Sendiri (Rp 25.000). Untuk pilihan "Buat Sendiri", pengguna menggambar titik bentuk kustom di kanvas 2D dan hasilnya disimpan sebagai file snapshot bentuk kustom.
+4. **Langkah 3: Rasa Kue** (`grup_opsi: Rasa`, peran visual `badan`, peran dashboard `terlaris`)
+   - Pilihan: Vanilla (Rp 0), Cokelat (Rp 10.000), Red Velvet (Rp 15.000), Stroberi (Rp 10.000).
+5. **Langkah 4: Isian Kue** (`grup_opsi: Isian`, non-visual)
+   - Pilihan: Krim Vanilla (Rp 0), Ganache Cokelat (Rp 8.000), Selai Stroberi (Rp 5.000), Cream Cheese (Rp 12.000).
+6. **Langkah 5: Warna Krim** (`grup_opsi: Warna Krim`, peran visual `krim`)
+   - Pilihan: Pink, Putih, Cokelat, Mint, Kuning, Lavender (semua Rp 0). Mengubah warna material frosting pada kue 3D.
+7. **Langkah 6: Dekorasi** (`grup_opsi: Dekorasi`, peran visual `topping`, jenis pilihan `banyak`)
+   - Pilihan: Lelehan Krim (Rp 12.000), Stroberi (Rp 10.000), Mixed Berry (Rp 15.000), Bunga Gula (Rp 8.000), Taburan (Rp 5.000), Lilin (Rp 3.000).
+8. **Langkah 7: Custom Desain**
+   - Menambahkan elemen interaktif ke permukaan kue:
+     - Teks di kue: kustom teks, pilihan font (Caveat, Playfair, Pacifico, Montserrat), ukuran font, warna, dan efek gaya (polos, emas, neon, bayangan, melengkung). Teks gratis dan disimpan di `pesanan.tulisan_kue` serta `desain_json`.
+     - Elemen hiasan (`grup_opsi: Elemen Hiasan`, peran visual `stiker`, jenis pilihan `banyak`): Stiker, Topper, Bunga, Buah, Cokelat (harga per buah dari database). Disimpan koordinat posisi, rotasi, skala, dan emojinya ke `desain_json`.
+     - Upload Gambar Kustom (`grup_opsi: Desain Kustom`, item Gambar Kustom flat): diunggah oleh pelanggan dan disimpan ke `pesanan.foto_gambar_kustom`.
+9. **Langkah 8: Review & Pemesanan**
+   - Rincian lengkap pesanan (setiap item, jumlah, harga atau label "Termasuk" untuk item gratis).
+   - Pengambilan: pilih tanggal (dari `/api/ketersediaan`), jam per jam (`jam_buka` sampai `jam_tutup`), metode Ambil di Toko atau Kirim ke Alamat (dengan tarif zona ongkir otomatis).
+   - Data Pemesan: nama lengkap, nomor WhatsApp, catatan khusus murni.
+   - Pembayaran: menampilkan jumlah yang harus dibayar sekarang (DP atau lunas sesuai pengaturan toko), metode Transfer Bank atau QRIS (beserta nomor rekening/gambar QRIS resmi).
+   - Saat tombol kirim ditekan, sistem secara otomatis mengambil snapshot kanvas 3D (JPEG max 1000px, kualitas 0.85) dan mengirimkannya ke `POST /api/pesanan` bersama desain_json dan file kustom lainnya.
 
-- Pelanggan boleh mencoba kustomisasi **tanpa login**. Pilihannya disimpan sementara di `sessionStorage`. Saat menekan **Pesan**, kalau belum login arahkan ke `/masuk`, lalu kembali ke `/pesan` dengan pilihan yang masih tersimpan.
-- Tanggal yang tersedia: minimal `minimal_hari_pesan` hari dari hari ini (zona Jakarta), tidak termasuk tanggal di tabel `tanggal_tutup`, dan tidak termasuk tanggal yang jumlah pesanan aktifnya sudah mencapai `kuota_harian`. Pesanan berstatus **Dibatalkan** tidak dihitung ke kuota. **Pengecekan ini diulang di server saat pesanan dibuat.**
-- Jam yang bisa dipilih dibuat per jam dari `jam_buka` sampai `jam_tutup`.
-- Setelah pesanan dibuat, pelanggan **tidak bisa mengubah** komponen kue. Perubahan lewat chat WhatsApp ke toko, lalu admin membatalkan dan pelanggan memesan ulang kalau perlu.
+### Aturan Baku Katalog & Perhitungan Harga
+- **Satu Katalog Bersama**: Katalog database sama persis dengan katalog studio 3D. Tidak ada pencocokan nama atau tebakan kode.
+- **Penentu Harga Hanya Database**: Ditentukan HANYA oleh `opsi_item.harga` di database. Tidak ada harga yang ditulis langsung di kode.
+- **Fungsi Hitung Bersama**: Total harga di `/pesan`, server `POST /api/pesanan`, tiket pelanggan, dan admin dihitung dengan fungsi bersama `lib/hitungHarga.js` (`hitungTotal({ pilihan, daftarItem, ongkir, pengaturanDP })`).
+- **Pilihan Awal Hanya Item Gratis**: Dekorasi berbayar, bentuk berbayar, rasa/isian berbayar, dan elemen hiasan tidak boleh terpilih otomatis. Total awal hanya mencakup item gratis dan base ukuran terkecil (Mini Rp 85.000). Teks di kue awalnya kosong.
+- **Semua Pilihan Tersimpan**: Setiap pilihan pelanggan (termasuk yang gratis) tersimpan di `pesanan_pilihan` beserta `id_grup` dan `jumlah`. Item gratis ditampilkan dengan label "Termasuk".
+- **Kolom Baru Database (Migration 00008)**:
+  - `pesanan_pilihan.jumlah` (integer, default 1, subtotal = harga × jumlah).
+  - `pesanan.foto_preview`, `pesanan.foto_bentuk_kustom`, `pesanan.foto_gambar_kustom` (text, nama path file di bucket privat `referensi-kue`).
+  - `pesanan.desain_json` (jsonb, menyimpan data detail teks, posisi/rotasi elemen stiker, titik bentuk kustom, template).
+  - Nilai kolom `peran_visual` di `grup_opsi` mencakup: `badan`, `ukuran`, `krim`, `topping`, `bentuk`, `stiker`.
+- **Ketersediaan & Jadwal (`/api/ketersediaan`)**: Mengembalikan `tanggal_minimal`, `tanggal_tutup`, `tanggal_penuh` (kuota harian habis), `jam_buka`, dan `jam_tutup` berbasis zona waktu `Asia/Jakarta`.
 
 ## Preview Kue
 
-Komponen `components/PreviewKue.js` menerima daftar pilihan (nama grup, nama item, warna, kode visual, peran visual) dan teks tulisan, lalu menggambar kue dengan **SVG berlapis**. Komponen yang sama dipakai di alur pemesanan, detail pesanan admin dan staf, dan tiket pelanggan.
-
-Setiap grup opsi punya `peran_visual`, setiap item opsi punya `warna` dan `kode_visual`:
-
-| peran_visual | Efek pada gambar                                                                |
-| ------------ | ------------------------------------------------------------------------------- |
-| `badan`      | Warna badan kue diambil dari `warna` item (contoh rasa coklat: coklat tua, strawberry: merah muda) |
-| `ukuran`     | `kode_visual` (`kecil`, `sedang`, `besar`) mengatur skala dan jumlah tingkat kue |
-| `krim`       | Warna lapisan krim di atas dan sisi kue dari `warna` item                       |
-| `topping`    | `kode_visual` memilih bentuk SVG yang ditempel di atas kue (contoh `strawberry`, `coklat_chip`, `buah`, `lilin`) |
-| kosong       | Tidak mempengaruhi gambar (hanya mempengaruhi harga)                            |
-
-- Teks **Tulisan di Kue** ditampilkan di atas permukaan kue.
-- Kalau `kode_visual` tidak dikenal komponen, abaikan tanpa error (kue tetap tampil).
-- Preview ini **2D berlapis, bukan 3D**. Three.js tidak dipakai dan tidak boleh ditambahkan kecuali diminta. Komponen dibuat menerima props yang sama supaya bisa diganti versi 3D nanti.
+Halaman `/pesan` menggunakan Studio Kue 3D interaktif berbasis Three.js dengan pencahayaan studio, bayangan lembut, dan kontrol rotasi/zoom orbit. Jika perangkat atau peramban pengguna tidak mendukung WebGL, sistem otomatis beralih menampilkan fallback komponen 2D `components/PreviewKue.js`. Di halaman detail pesanan admin/staf dan tiket pelanggan, snapshot hasil rendering 3D (`foto_preview`) ditampilkan sebagai thumbnail utama, dengan fallback ke `PreviewKue` jika pesanan lama belum memiliki snapshot.
 
 ## Dashboard (`/dashboard`)
 
@@ -327,7 +341,7 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 
 8. **Pesanan Terbaru** (`.orders-flow-list`):
    - Menampilkan 3 pesanan terbaru: kode pesanan (`kode_pesanan`), waktu pemesanan (format tanggal & jam zona `Asia/Jakarta`), badge status pesanan (palet hijau), total harga rupiah, dan **mini preview kue** menggunakan komponen `PreviewKue`.
-   - Mengklik baris pesanan membuka halaman detail pesanan (`/dashboard/pesanan/[kode]`).
+   - Mengklik baris pesanan membuka halaman daftar pesanan dengan side drawer detail pesanan (`/dashboard/pesanan?kode=...`).
    - Tautan "Lihat Semua" mengarah ke `/dashboard/pesanan`. Pesan abu-abu di tengah jika kosong.
 
 9. **Kartu Promo Kanan** (`.vertical-promo-card`):
@@ -345,10 +359,11 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 Satu halaman, isinya **grup opsi**, dan tiap grup punya daftar item beserta harganya. Tidak ada menu terpisah untuk rasa, ukuran, dan lainnya.
 
 ```
-Rasa      : Strawberry 40.000 | Coklat 40.000 | Vanilla 35.000   [+ item]
-Ukuran    : Kecil 80.000 | Medium 150.000 | Besar 250.000        [+ item]
-Krim      : ...
-Topping   : ...
+Rasa      : Vanilla 0 | Cokelat 10.000 | Red Velvet 15.000       [+ item]
+Ukuran    : Mini Ø10 85.000 | Small Ø14 125.000 | Medium 165.000 [+ item]
+Bentuk    : Lingkaran 0 | Kotak 0 | Hati 10.000                  [+ item]
+Warna Krim: Pink 0 | Putih 0 | Cokelat 0                         [+ item]
+Dekorasi  : Lelehan Krim 12.000 | Lilin 3.000                    [+ item]
                                                                  [+ grup]
 ```
 
@@ -368,7 +383,7 @@ Topping   : ...
 
 **Daftar** (admin dan staf): kolom Kode, Nama Pelanggan, Tanggal & Jam, Pengambilan (Ambil / Kirim), Status Pesanan (badge), Status Bayar (badge, hanya admin). Filter status, filter tanggal, dan pencarian (`?cari=` kode atau nama). Urut default: tanggal ambil/kirim terdekat. Pagination 10 baris.
 
-**Detail pesanan** (`/dashboard/pesanan/[kode]`):
+**Detail pesanan** (side drawer di `/dashboard/pesanan`):
 - **Preview kue** dari pilihan pelanggan
 - **Komponen** yang dipilih (grup, item), tulisan di kue, catatan, foto referensi
 - **Rincian harga** per komponen, ongkir, total, jumlah DP, jumlah terbayar, sisa (admin saja)
@@ -490,7 +505,7 @@ Dibuat lewat **file SQL di `supabase/migrations/`** dan data awal lewat `seed.sq
 Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
 
 ### grup_opsi
-`id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
+`id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / `bentuk` / `stiker` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
 
 ### opsi_item
 `id`, `id_grup` (FK), `nama`, `harga` (integer, rupiah), `aktif` (boolean, default true), `urutan`, `warna` (hex, boleh kosong), `kode_visual` (boleh kosong).
@@ -502,10 +517,10 @@ Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alama
 `id`, `tanggal` (date, unik), `alasan`.
 
 ### pesanan
-`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `dibuat_pada`.
+`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `dibuat_pada`.
 
 ### pesanan_pilihan
-Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `warna`, `kode_visual`, `peran_visual`.
+Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
 
 ### pembayaran
 `id`, `id_pesanan` (FK), `jenis` (`DP` / `Pelunasan` / `Lunas`), `jumlah`, `metode` (`Transfer Bank` / `QRIS` / `Tunai di Tempat`), `bukti` (path di Storage, boleh kosong untuk tunai), `status` (`Menunggu Konfirmasi` / `Dikonfirmasi` / `Ditolak`), `id_pengonfirmasi` (FK `profil`, boleh kosong), `dikonfirmasi_pada` (timestamptz, diisi saat admin mengonfirmasi pembayaran, zona waktu `Asia/Jakarta`/UTC), `dibuat_pada`.
@@ -564,4 +579,4 @@ Kerjakan bertahap. Setelah tiap tahap, pastikan project bisa dijalankan (`npm ru
 - Semua teks, pesan, dan label dalam Bahasa Indonesia.
 - Data toko (nama, alamat, rekening, QRIS, nomor WhatsApp) diisi lewat Pengaturan, jangan ditulis langsung di kode.
 - Paket gratis Vercel (Hobby) sepengetahuan saya ditujukan untuk penggunaan non-komersial. Kalau website dipakai UMKM sungguhan yang berjualan, cek ketentuan dan paket terbaru Vercel dan Supabase terlebih dahulu.
-- **Belum dikerjakan (ditunda, jangan ditambahkan kecuali diminta):** payment gateway otomatis (Midtrans/Xendit), notifikasi WhatsApp atau email otomatis, preview kue 3D (Three.js), pengurangan stok otomatis berdasarkan resep, galeri dan testimoni, scan QR tiket oleh admin, login tanpa email (Google), kupon dan promo, banyak cabang, ubah pesanan oleh pelanggan setelah dibuat, ekspor Excel (.xlsx), aplikasi mobile.
+- **Belum dikerjakan (ditunda, jangan ditambahkan kecuali diminta):** payment gateway otomatis (Midtrans/Xendit), notifikasi WhatsApp atau email otomatis, pengurangan stok otomatis berdasarkan resep, galeri dan testimoni, scan QR tiket oleh admin, login tanpa email (Google), kupon dan promo, banyak cabang, ubah pesanan oleh pelanggan setelah dibuat, ekspor Excel (.xlsx), aplikasi mobile.

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta } from "@/lib/format";
+import { hitungTotal } from "@/lib/hitungHarga";
 
 export async function POST(request) {
   const supabaseUser = await getSupabaseServer();
@@ -27,9 +28,12 @@ export async function POST(request) {
   let metode_pengiriman = "Ambil";
   let alamat = "";
   let id_zona = null;
-  let pilihanItemIds = [];
+  let pilihanRaw = null;
   let fileFoto = null;
-  let skema_pembayaran = "DP";
+  let filePreview = null;
+  let fileBentukKustom = null;
+  let fileGambarKustom = null;
+  let desainJsonRaw = null;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
@@ -41,18 +45,14 @@ export async function POST(request) {
     jam_ambil = formData.get("jam_ambil") || "";
     metode_pengiriman = formData.get("metode_pengiriman") || "Ambil";
     alamat = formData.get("alamat") || "";
-    skema_pembayaran = formData.get("skema_pembayaran") || "DP";
     const idZonaRaw = formData.get("id_zona");
     id_zona = idZonaRaw ? Number(idZonaRaw) : null;
-    const pilihanRaw = formData.get("pilihan_ids");
-    if (pilihanRaw) {
-      try {
-        pilihanItemIds = JSON.parse(pilihanRaw);
-      } catch {
-        pilihanItemIds = [];
-      }
-    }
+    pilihanRaw = formData.get("pilihan") || formData.get("pilihan_ids");
     fileFoto = formData.get("foto_referensi");
+    filePreview = formData.get("foto_preview");
+    fileBentukKustom = formData.get("foto_bentuk_kustom");
+    fileGambarKustom = formData.get("foto_gambar_kustom");
+    desainJsonRaw = formData.get("desain_json");
   } else {
     const body = await request.json();
     nama_penerima = body.nama_penerima || "";
@@ -63,9 +63,9 @@ export async function POST(request) {
     jam_ambil = body.jam_ambil || "";
     metode_pengiriman = body.metode_pengiriman || "Ambil";
     alamat = body.alamat || "";
-    skema_pembayaran = body.skema_pembayaran || "DP";
     id_zona = body.id_zona ? Number(body.id_zona) : null;
-    pilihanItemIds = body.pilihan_ids || [];
+    pilihanRaw = body.pilihan || body.pilihan_ids;
+    desainJsonRaw = body.desain_json;
   }
 
   if (!nama_penerima || nama_penerima.trim() === "") {
@@ -94,6 +94,19 @@ export async function POST(request) {
       { pesan: "Jam pengambilan/pengiriman harus dipilih." },
       { status: 400 }
     );
+  }
+
+  let daftarPilihan = [];
+  if (pilihanRaw) {
+    if (typeof pilihanRaw === "string") {
+      try {
+        daftarPilihan = JSON.parse(pilihanRaw);
+      } catch {
+        daftarPilihan = [];
+      }
+    } else if (Array.isArray(pilihanRaw)) {
+      daftarPilihan = pilihanRaw;
+    }
   }
 
   const { data: pengaturan } = await supabase
@@ -206,16 +219,28 @@ export async function POST(request) {
     .eq("aktif", true);
 
   const itemMap = new Map();
-  for (let i = 0; i < allActiveItems.length; i++) {
+  for (let i = 0; i < (allActiveItems || []).length; i++) {
     itemMap.set(allActiveItems[i].id, allActiveItems[i]);
+  }
+
+  const grupMap = new Map();
+  for (let i = 0; i < (grupList || []).length; i++) {
+    grupMap.set(grupList[i].id, grupList[i]);
   }
 
   const grupItemCount = {};
   const itemTerpilihList = [];
-  let total_kue = 0;
+  let adaGambarKustom = false;
+  let adaBuatSendiri = false;
 
-  for (let i = 0; i < pilihanItemIds.length; i++) {
-    const itemId = Number(pilihanItemIds[i]);
+  for (let i = 0; i < daftarPilihan.length; i++) {
+    const raw = daftarPilihan[i];
+    if (!raw) continue;
+    const itemId = Number(typeof raw === "object" ? raw.id_item : raw);
+    const jumlah = Number(typeof raw === "object" && raw.jumlah ? raw.jumlah : 1);
+
+    if (isNaN(itemId)) continue;
+
     const itemData = itemMap.get(itemId);
     if (!itemData) {
       return NextResponse.json(
@@ -223,8 +248,34 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    itemTerpilihList.push(itemData);
-    total_kue += itemData.harga;
+
+    const grupData = grupMap.get(itemData.id_grup);
+    if (grupData && grupData.jenis_pilihan === "satu" && jumlah > 1) {
+      return NextResponse.json(
+        { pesan: `Grup "${grupData.nama}" tidak mengizinkan jumlah lebih dari 1.` },
+        { status: 400 }
+      );
+    }
+
+    if (jumlah < 1 || jumlah > 20) {
+      return NextResponse.json(
+        { pesan: `Jumlah untuk "${itemData.nama}" harus antara 1 sampai 20.` },
+        { status: 400 }
+      );
+    }
+
+    if (itemData.kode_visual === "gambar_kustom") {
+      adaGambarKustom = true;
+    }
+
+    if (grupData?.peran_visual === "bentuk" && itemData.kode_visual === "custom") {
+      adaBuatSendiri = true;
+    }
+
+    itemTerpilihList.push({
+      itemData,
+      jumlah,
+    });
     grupItemCount[itemData.id_grup] = (grupItemCount[itemData.id_grup] || 0) + 1;
   }
 
@@ -245,55 +296,101 @@ export async function POST(request) {
     }
   }
 
-  const total_bayar = total_kue + ongkir;
-  const modeBayar =
-    pengaturan?.mode_pembayaran === "Lunas"
-      ? "Lunas"
-      : skema_pembayaran === "Lunas"
-      ? "Lunas"
-      : "DP";
-  let persen_dp_saat_pesan = null;
-  let jumlah_dp = total_bayar;
-
-  if (modeBayar === "DP") {
-    persen_dp_saat_pesan = pengaturan?.persen_dp || 50;
-    jumlah_dp = Math.round((total_bayar * persen_dp_saat_pesan) / 100);
+  if (adaGambarKustom && (!fileGambarKustom || typeof fileGambarKustom !== "object" || fileGambarKustom.size === 0)) {
+    return NextResponse.json(
+      { pesan: "Item 'Gambar Kustom' memerlukan unggahan file gambar kustom." },
+      { status: 400 }
+    );
   }
 
-  let foto_referensi_path = null;
-  if (fileFoto && typeof fileFoto === "object" && fileFoto.size > 0) {
-    const tipeValid = ["image/jpeg", "image/jpg", "image/png"];
-    if (!tipeValid.includes(fileFoto.type)) {
-      return NextResponse.json(
-        { pesan: "Format foto referensi harus JPG, JPEG, atau PNG." },
-        { status: 400 }
-      );
-    }
-    if (fileFoto.size > 2 * 1024 * 1024) {
-      return NextResponse.json(
-        { pesan: "Ukuran foto referensi maksimal 2 MB." },
-        { status: 400 }
-      );
-    }
+  if (adaBuatSendiri && (!fileBentukKustom || typeof fileBentukKustom !== "object" || fileBentukKustom.size === 0)) {
+    return NextResponse.json(
+      { pesan: "Item bentuk 'Buat Sendiri' memerlukan unggahan gambar bentuk." },
+      { status: 400 }
+    );
+  }
 
-    const ekstensi = fileFoto.name.split(".").pop() || "jpg";
-    const namaFile = `${user.id}-${Date.now()}.${ekstensi}`;
-    const bytes = await fileFoto.arrayBuffer();
+  const pilihanFormat = itemTerpilihList.map((x) => ({
+    id_item: x.itemData.id,
+    jumlah: x.jumlah,
+  }));
+
+  const kalkulasi = hitungTotal({
+    pilihan: pilihanFormat,
+    daftarItem: allActiveItems || [],
+    ongkir,
+    pengaturanDP: pengaturan,
+  });
+
+  const total_kue = kalkulasi.total_kue;
+  const total_bayar = kalkulasi.total_bayar;
+  const jumlah_dp = kalkulasi.jumlah_dp;
+  const persen_dp_saat_pesan = kalkulasi.persen_dp_saat_pesan;
+
+  async function uploadBerkas(berkas, awalan) {
+    if (!berkas || typeof berkas !== "object" || berkas.size === 0) {
+      return null;
+    }
+    const tipeValid = ["image/jpeg", "image/jpg", "image/png"];
+    if (!tipeValid.includes(berkas.type)) {
+      throw new Error(`Format berkas ${awalan} harus JPG, JPEG, atau PNG.`);
+    }
+    if (berkas.size > 2 * 1024 * 1024) {
+      throw new Error(`Ukuran berkas ${awalan} maksimal 2 MB.`);
+    }
+    const ekstensi = berkas.name ? berkas.name.split(".").pop() : (berkas.type === "image/png" ? "png" : "jpg");
+    const namaFile = `${user.id}-${awalan}-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}.${ekstensi}`;
+    const bytes = await berkas.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     const { error: errUpload } = await supabase.storage
       .from("referensi-kue")
       .upload(namaFile, buffer, {
-        contentType: fileFoto.type,
+        contentType: berkas.type,
       });
 
     if (errUpload) {
-      return NextResponse.json(
-        { pesan: "Gagal mengunggah foto referensi: " + errUpload.message },
-        { status: 500 }
-      );
+      throw new Error(`Gagal mengunggah berkas ${awalan}: ${errUpload.message}`);
     }
-    foto_referensi_path = namaFile;
+    return namaFile;
+  }
+
+  let foto_referensi_path = null;
+  let foto_preview_path = null;
+  let foto_bentuk_kustom_path = null;
+  let foto_gambar_kustom_path = null;
+
+  try {
+    if (fileFoto) {
+      foto_referensi_path = await uploadBerkas(fileFoto, "ref");
+    }
+    if (filePreview) {
+      foto_preview_path = await uploadBerkas(filePreview, "preview");
+    }
+    if (fileBentukKustom) {
+      foto_bentuk_kustom_path = await uploadBerkas(fileBentukKustom, "bentuk");
+    }
+    if (fileGambarKustom) {
+      foto_gambar_kustom_path = await uploadBerkas(fileGambarKustom, "custom");
+    }
+  } catch (err) {
+    return NextResponse.json(
+      { pesan: err.message || "Terjadi kesalahan saat mengunggah berkas." },
+      { status: 400 }
+    );
+  }
+
+  let desain_json = null;
+  if (desainJsonRaw) {
+    if (typeof desainJsonRaw === "object") {
+      desain_json = desainJsonRaw;
+    } else if (typeof desainJsonRaw === "string") {
+      try {
+        desain_json = JSON.parse(desainJsonRaw);
+      } catch {
+        desain_json = null;
+      }
+    }
   }
 
   const { data: newPesanan, error: errInsert } = await supabase
@@ -304,7 +401,11 @@ export async function POST(request) {
       no_wa: no_wa.trim(),
       tulisan_kue: tulisan_kue ? tulisan_kue.trim() : null,
       catatan: catatan ? catatan.trim() : null,
-      foto_referensi: foto_referensi_path,
+      foto_referensi: foto_referensi_path || foto_preview_path,
+      foto_preview: foto_preview_path,
+      foto_bentuk_kustom: foto_bentuk_kustom_path,
+      foto_gambar_kustom: foto_gambar_kustom_path,
+      desain_json,
       tanggal_ambil,
       jam_ambil: jam_ambil.slice(0, 5),
       metode_pengiriman,
@@ -336,23 +437,19 @@ export async function POST(request) {
     .update({ kode_pesanan })
     .eq("id", newPesanan.id);
 
-  const grupLookup = new Map();
-  for (let i = 0; i < (grupList || []).length; i++) {
-    grupLookup.set(grupList[i].id, grupList[i]);
-  }
-
   const pilihanRows = [];
   for (let i = 0; i < itemTerpilihList.length; i++) {
-    const it = itemTerpilihList[i];
-    const gr = grupLookup.get(it.id_grup);
+    const { itemData, jumlah } = itemTerpilihList[i];
+    const gr = grupMap.get(itemData.id_grup);
     pilihanRows.push({
       id_pesanan: newPesanan.id,
-      id_grup: it.id_grup || (gr ? gr.id : null),
+      id_grup: itemData.id_grup || (gr ? gr.id : null),
       nama_grup: gr ? gr.nama : "Opsi",
-      nama_item: it.nama,
-      harga: it.harga,
-      warna: it.warna,
-      kode_visual: it.kode_visual,
+      nama_item: itemData.nama,
+      harga: itemData.harga,
+      jumlah: jumlah || 1,
+      warna: itemData.warna,
+      kode_visual: itemData.kode_visual,
       peran_visual: gr ? gr.peran_visual : null,
     });
   }

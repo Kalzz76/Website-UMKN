@@ -61,7 +61,7 @@ export default function DashboardStafView({
               {antreanKue.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/dashboard/pesanan/${item.kode_pesanan}`}
+                  href={`/dashboard/pesanan?kode=${item.kode_pesanan}`}
                   className="order-flow-row"
                 >
                   <div className="order-thumb-meta">

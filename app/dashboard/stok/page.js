@@ -283,7 +283,7 @@ export default function StokDashboardPage() {
           <button
             type="button"
             onClick={bukaModalTambahBahan}
-            className="h-[42px] px-5 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-sm inline-flex items-center justify-center space-x-2 flex-shrink-0"
+            className="h-[42px] px-5 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer inline-flex items-center justify-center space-x-2 flex-shrink-0"
           >
             <i className="fa-solid fa-plus text-xs"></i>
             <span>Tambah Bahan Baru</span>
@@ -293,7 +293,7 @@ export default function StokDashboardPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="content-card p-5 flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-xl flex-shrink-0 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-xl flex-shrink-0">
             <i className="fa-solid fa-boxes-stacked"></i>
           </div>
           <div>
@@ -307,7 +307,7 @@ export default function StokDashboardPage() {
         </div>
 
         <div className="content-card p-5 flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#d8e3cf] border border-[#bad1ab] text-[#215934] flex items-center justify-center text-xl flex-shrink-0 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-[#d8e3cf] border border-[#bad1ab] text-[#215934] flex items-center justify-center text-xl flex-shrink-0">
             <i className="fa-solid fa-circle-check"></i>
           </div>
           <div>
@@ -321,7 +321,7 @@ export default function StokDashboardPage() {
         </div>
 
         <div className={`content-card p-5 flex items-center space-x-4 ${totalMenipis > 0 ? "border-rose-300 bg-[#fff5f5]" : ""}`}>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 shadow-xs ${
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 ${
             totalMenipis > 0
               ? "bg-rose-100 border border-rose-200 text-rose-700"
               : "bg-[#ede2cd] border border-[#dfd4bd] text-stone-600"
@@ -342,7 +342,7 @@ export default function StokDashboardPage() {
       <div className="content-card p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#e8dfc8]">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-sm font-bold shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-sm font-bold">
               <i className="fa-solid fa-clipboard-list"></i>
             </div>
             <div>
@@ -459,7 +459,7 @@ export default function StokDashboardPage() {
                           <button
                             type="button"
                             onClick={() => bukaModalSesuaikan(b, "tambah")}
-                            className="h-[32px] px-3 rounded-xl bg-[#d8e3cf] hover:bg-[#cbe0bf] text-[#215934] border border-[#bad1ab] font-bold text-xs inline-flex items-center space-x-1 transition cursor-pointer shadow-xs"
+                            className="h-[32px] px-3 rounded-xl bg-[#d8e3cf] hover:bg-[#cbe0bf] text-[#215934] border border-[#bad1ab] font-bold text-xs inline-flex items-center space-x-1 transition cursor-pointer"
                             title="Tambah Stok Masuk"
                           >
                             <i className="fa-solid fa-plus text-[10px]"></i>
@@ -468,7 +468,7 @@ export default function StokDashboardPage() {
                           <button
                             type="button"
                             onClick={() => bukaModalSesuaikan(b, "kurang")}
-                            className="h-[32px] px-3 rounded-xl bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 border border-[#f0c2c2] font-bold text-xs inline-flex items-center space-x-1 transition cursor-pointer shadow-xs"
+                            className="h-[32px] px-3 rounded-xl bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 border border-[#f0c2c2] font-bold text-xs inline-flex items-center space-x-1 transition cursor-pointer"
                             title="Kurangi Stok Keluar / Terpakai"
                           >
                             <i className="fa-solid fa-minus text-[10px]"></i>
@@ -603,7 +603,7 @@ export default function StokDashboardPage() {
                 <button
                   type="submit"
                   disabled={sedangProses}
-                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-sm"
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer"
                 >
                   {sedangProses ? "Menyimpan..." : "Simpan Penyesuaian"}
                 </button>
@@ -728,7 +728,7 @@ export default function StokDashboardPage() {
                 <button
                   type="submit"
                   disabled={sedangProses}
-                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-sm"
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer"
                 >
                   {sedangProses ? "Menyimpan..." : "Simpan Bahan"}
                 </button>

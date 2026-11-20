@@ -7,28 +7,32 @@ import { formatRupiah } from "@/lib/format";
 
 const dataSeed = {
   ukuran: [
-    { nama: "Kecil (15 cm)", harga: 80000, kode_visual: "kecil", peran_visual: "ukuran" },
-    { nama: "Sedang (20 cm)", harga: 150000, kode_visual: "sedang", peran_visual: "ukuran" },
-    { nama: "Besar (25 cm)", harga: 250000, kode_visual: "besar", peran_visual: "ukuran" },
+    { nama: "Mini Ø10", harga: 85000, kode_visual: "mini", peran_visual: "ukuran" },
+    { nama: "Small Ø14", harga: 125000, kode_visual: "small", peran_visual: "ukuran" },
+    { nama: "Medium Ø18", harga: 165000, kode_visual: "medium", peran_visual: "ukuran" },
+    { nama: "Large Ø22", harga: 210000, kode_visual: "large", peran_visual: "ukuran" },
   ],
   rasa: [
-    { nama: "Coklat", harga: 40000, warna: "#5c3a21", kode_visual: "coklat", peran_visual: "badan" },
-    { nama: "Vanilla", harga: 35000, warna: "#fbf0d9", kode_visual: "vanilla", peran_visual: "badan" },
-    { nama: "Strawberry", harga: 40000, warna: "#f472b6", kode_visual: "strawberry", peran_visual: "badan" },
-    { nama: "Red Velvet", harga: 45000, warna: "#991b1b", kode_visual: "red_velvet", peran_visual: "badan" },
-    { nama: "Matcha", harga: 45000, warna: "#4d7c0f", kode_visual: "matcha", peran_visual: "badan" },
+    { nama: "Vanilla", harga: 0, warna: "#fbefd5", kode_visual: "vanilla", peran_visual: "badan" },
+    { nama: "Cokelat", harga: 10000, warna: "#8a5a3c", kode_visual: "choco", peran_visual: "badan" },
+    { nama: "Red Velvet", harga: 15000, warna: "#c0404e", kode_visual: "velvet", peran_visual: "badan" },
+    { nama: "Stroberi", harga: 10000, warna: "#f9cdd6", kode_visual: "straw", peran_visual: "badan" },
   ],
   krim: [
-    { nama: "Buttercream Putih", harga: 20000, warna: "#ffffff", kode_visual: "putih", peran_visual: "krim" },
-    { nama: "Buttercream Pink", harga: 25000, warna: "#fbcfe8", kode_visual: "pink", peran_visual: "krim" },
-    { nama: "Buttercream Coklat", harga: 25000, warna: "#78350f", kode_visual: "coklat", peran_visual: "krim" },
-    { nama: "Cream Cheese", harga: 30000, warna: "#fef3c7", kode_visual: "cream_cheese", peran_visual: "krim" },
+    { nama: "Putih", harga: 0, warna: "#FFF8F0", kode_visual: "putih", peran_visual: "krim" },
+    { nama: "Pink", harga: 0, warna: "#f6b4c2", kode_visual: "pink", peran_visual: "krim" },
+    { nama: "Cokelat", harga: 0, warna: "#6b3d2a", kode_visual: "coklat", peran_visual: "krim" },
+    { nama: "Mint", harga: 0, warna: "#bfe8d8", kode_visual: "mint", peran_visual: "krim" },
+    { nama: "Kuning", harga: 0, warna: "#fbe39a", kode_visual: "kuning", peran_visual: "krim" },
+    { nama: "Lavender", harga: 0, warna: "#d8c7f0", kode_visual: "lavender", peran_visual: "krim" },
   ],
   topping: [
-    { nama: "Strawberry Segar", harga: 20000, warna: "#ef4444", kode_visual: "strawberry", peran_visual: "topping" },
-    { nama: "Coklat Chip", harga: 15000, warna: "#451a03", kode_visual: "coklat_chip", peran_visual: "topping" },
-    { nama: "Aneka Buah", harga: 25000, warna: "#f59e0b", kode_visual: "buah", peran_visual: "topping" },
-    { nama: "Lilin Ulang Tahun", harga: 10000, warna: "#fbbf24", kode_visual: "lilin", peran_visual: "topping" },
+    { nama: "Lelehan Krim", harga: 12000, warna: "#451a03", kode_visual: "drip", peran_visual: "topping" },
+    { nama: "Stroberi", harga: 10000, warna: "#ef4444", kode_visual: "straw", peran_visual: "topping" },
+    { nama: "Mixed Berry", harga: 15000, warna: "#4338ca", kode_visual: "berry", peran_visual: "topping" },
+    { nama: "Bunga Gula", harga: 8000, warna: "#f472b6", kode_visual: "flower", peran_visual: "topping" },
+    { nama: "Taburan", harga: 5000, warna: "#f59e0b", kode_visual: "spr", peran_visual: "topping" },
+    { nama: "Lilin", harga: 3000, warna: "#fbbf24", kode_visual: "candle", peran_visual: "topping" },
   ],
 };
 
