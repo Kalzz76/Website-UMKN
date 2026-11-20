@@ -341,7 +341,7 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 
 8. **Pesanan Terbaru** (`.orders-flow-list`):
    - Menampilkan 3 pesanan terbaru: kode pesanan (`kode_pesanan`), waktu pemesanan (format tanggal & jam zona `Asia/Jakarta`), badge status pesanan (palet hijau), total harga rupiah, dan **mini preview kue** menggunakan komponen `PreviewKue`.
-   - Mengklik baris pesanan membuka halaman detail pesanan (`/dashboard/pesanan/[kode]`).
+   - Mengklik baris pesanan membuka halaman daftar pesanan dengan side drawer detail pesanan (`/dashboard/pesanan?kode=...`).
    - Tautan "Lihat Semua" mengarah ke `/dashboard/pesanan`. Pesan abu-abu di tengah jika kosong.
 
 9. **Kartu Promo Kanan** (`.vertical-promo-card`):
@@ -383,7 +383,7 @@ Dekorasi  : Lelehan Krim 12.000 | Lilin 3.000                    [+ item]
 
 **Daftar** (admin dan staf): kolom Kode, Nama Pelanggan, Tanggal & Jam, Pengambilan (Ambil / Kirim), Status Pesanan (badge), Status Bayar (badge, hanya admin). Filter status, filter tanggal, dan pencarian (`?cari=` kode atau nama). Urut default: tanggal ambil/kirim terdekat. Pagination 10 baris.
 
-**Detail pesanan** (`/dashboard/pesanan/[kode]`):
+**Detail pesanan** (side drawer di `/dashboard/pesanan`):
 - **Preview kue** dari pilihan pelanggan
 - **Komponen** yang dipilih (grup, item), tulisan di kue, catatan, foto referensi
 - **Rincian harga** per komponen, ongkir, total, jumlah DP, jumlah terbayar, sisa (admin saja)

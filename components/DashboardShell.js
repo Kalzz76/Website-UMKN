@@ -267,11 +267,6 @@ export default function DashboardShell({
       judul: "Harga & Opsi",
       subjudul: "Kelola grup opsi kue dan daftar harga kustomisasi.",
     };
-  } else if (pathname.startsWith("/dashboard/pesanan/")) {
-    infoHalaman = {
-      judul: "Detail Pesanan",
-      subjudul: "Informasi lengkap rincian dan progres pesanan pelanggan.",
-    };
   } else if (pathname.startsWith("/dashboard/pesanan")) {
     infoHalaman = {
       judul: "Daftar Pesanan",

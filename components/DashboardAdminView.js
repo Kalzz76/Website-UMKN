@@ -637,7 +637,7 @@ export default function DashboardAdminView({
                   {pesananTerbaru.map((p) => (
                     <Link
                       key={p.id}
-                      href={`/dashboard/pesanan/${p.kode_pesanan}`}
+                      href={`/dashboard/pesanan?kode=${p.kode_pesanan}`}
                       className="order-flow-row"
                     >
                       <div className="order-thumb-meta">

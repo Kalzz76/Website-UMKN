@@ -1,5 +1,5 @@
 import { cekRole } from "@/lib/cekRole";
-import { getSupabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import DashboardAdminView from "@/components/DashboardAdminView";
 import DashboardStafView from "@/components/DashboardStafView";
 
@@ -485,10 +485,11 @@ export default async function DashboardPage() {
       }
     }
 
+    const adminClient = getSupabaseAdmin();
     for (let i = 0; i < daftarTerbaru.length; i++) {
       const p = daftarTerbaru[i];
       if (p.foto_preview) {
-        const { data: signed } = await supabase.storage
+        const { data: signed } = await adminClient.storage
           .from("referensi-kue")
           .createSignedUrl(p.foto_preview, 3600);
         if (signed) fotoPreviewMap[p.id] = signed.signedUrl;
