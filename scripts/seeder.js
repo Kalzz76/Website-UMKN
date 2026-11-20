@@ -96,10 +96,10 @@ async function jalankanSeeder() {
       ];
     } else if (g.nama === "Ukuran") {
       items = [
-        { nama: "Mini Ø10", harga: 85000, aktif: true, urutan: 1, kode_visual: "mini" },
-        { nama: "Small Ø14", harga: 125000, aktif: true, urutan: 2, kode_visual: "small" },
-        { nama: "Medium Ø18", harga: 165000, aktif: true, urutan: 3, kode_visual: "medium" },
-        { nama: "Large Ø22", harga: 210000, aktif: true, urutan: 4, kode_visual: "large" },
+        { nama: "Mini 10", harga: 85000, aktif: true, urutan: 1, kode_visual: "mini" },
+        { nama: "Small 14", harga: 125000, aktif: true, urutan: 2, kode_visual: "small" },
+        { nama: "Medium 18", harga: 165000, aktif: true, urutan: 3, kode_visual: "medium" },
+        { nama: "Large 22", harga: 210000, aktif: true, urutan: 4, kode_visual: "large" },
       ];
     } else if (g.nama === "Bentuk") {
       items = [
@@ -218,7 +218,7 @@ async function jalankanSeeder() {
     { nama: "Mentega", satuan: "kg", jumlah: 25, batas_minimum: 5 },
     { nama: "Coklat Bubuk", satuan: "kg", jumlah: 15, batas_minimum: 3 },
     { nama: "Whipping Cream", satuan: "liter", jumlah: 20, batas_minimum: 5 },
-    { nama: "Strawberry Segar", satuan: "kg", jumlah: 10, batas_minimum: 2 },
+    { nama: "Stroberi Segar", satuan: "kg", jumlah: 10, batas_minimum: 2 },
   ];
 
   for (let i = 0; i < daftarBahan.length; i++) {

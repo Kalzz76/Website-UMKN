@@ -159,13 +159,15 @@ export default function PreviewKue({
   let adaStrawberry = false;
   let adaCoklatChip = false;
   let adaBuah = false;
+  let adaBunga = false;
 
   for (let j = 0; j < daftarTopping.length; j++) {
     const kv = (daftarTopping[j]?.kode_visual || "").toLowerCase();
     if (kv === "lilin" || kv === "candle") adaLilin = true;
     if (kv === "strawberry" || kv === "straw") adaStrawberry = true;
-    if (kv === "coklat_chip" || kv === "spr" || kv === "flower") adaCoklatChip = true;
+    if (kv === "coklat_chip" || kv === "spr") adaCoklatChip = true;
     if (kv === "buah" || kv === "berry") adaBuah = true;
+    if (kv === "flower" || kv === "bunga") adaBunga = true;
   }
 
   return (
@@ -334,6 +336,16 @@ export default function PreviewKue({
               <circle cx="2" cy="2" r="0.8" fill="#fef08a" />
               <circle cx="0" cy="6" r="0.8" fill="#fef08a" />
             </g>
+          </g>
+        )}
+
+        {adaBunga && (
+          <g transform={`translate(${topTier.cx + topTier.rx * 0.25}, ${topTier.baseY - topTier.height - 2}) scale(0.85)`}>
+            <circle cx="-5" cy="0" r="3.5" fill="#f472b6" />
+            <circle cx="5" cy="0" r="3.5" fill="#f472b6" />
+            <circle cx="0" cy="-5" r="3.5" fill="#f472b6" />
+            <circle cx="0" cy="5" r="3.5" fill="#f472b6" />
+            <circle cx="0" cy="0" r="3" fill="#fef08a" />
           </g>
         )}
 

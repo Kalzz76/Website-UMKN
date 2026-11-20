@@ -359,11 +359,11 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 Satu halaman, isinya **grup opsi**, dan tiap grup punya daftar item beserta harganya. Tidak ada menu terpisah untuk rasa, ukuran, dan lainnya.
 
 ```
-Rasa      : Vanilla 0 | Cokelat 10.000 | Red Velvet 15.000       [+ item]
-Ukuran    : Mini Ø10 85.000 | Small Ø14 125.000 | Medium 165.000 [+ item]
-Bentuk    : Lingkaran 0 | Kotak 0 | Hati 10.000                  [+ item]
-Warna Krim: Pink 0 | Putih 0 | Cokelat 0                         [+ item]
-Dekorasi  : Lelehan Krim 12.000 | Lilin 3.000                    [+ item]
+Ukuran    : Mini Ø10 85.000 | Small Ø14 125.000 | Medium Ø18 165.000 | Large Ø22 210.000   [+ item]
+Bentuk    : Lingkaran 0 | Kotak 0 | Hati 10.000 | Bintang 15.000 ...                       [+ item]
+Rasa      : Vanilla 0 | Cokelat 10.000 | Red Velvet 15.000 | Stroberi 10.000               [+ item]
+Warna Krim: Pink 0 | Putih 0 | Cokelat 0 | Mint 0 ...                                      [+ item]
+Dekorasi  : Lelehan Krim 12.000 | Stroberi 10.000 | Mixed Berry 15.000 ...                 [+ item]
                                                                  [+ grup]
 ```
 

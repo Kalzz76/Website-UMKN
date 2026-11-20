@@ -631,6 +631,70 @@
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
 }
 
+.cakecraft-studio .vbox:fullscreen,
+.cakecraft-studio .vbox.studio-mode {
+  background: radial-gradient(circle at 50% 40%, #a89f94, #7b736a 78%) !important;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.cakecraft-studio .hud {
+  display: none;
+}
+.cakecraft-studio .vbox.studio-mode .hud,
+.cakecraft-studio .vbox:fullscreen .hud {
+  display: block;
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  background: rgba(255, 248, 240, 0.92);
+  border-radius: 16px;
+  padding: 10px 16px;
+  z-index: 3;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+.cakecraft-studio .hud b {
+  font: 700 20px/1.1 'Baloo 2', sans-serif;
+  color: var(--pk, #d96b91);
+  display: block;
+}
+.cakecraft-studio .hud span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mut, #86566a);
+}
+
+.cakecraft-studio .hx {
+  display: none;
+}
+.cakecraft-studio .vbox.studio-mode .hx,
+.cakecraft-studio .vbox:fullscreen .hx {
+  display: block;
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  background: #fff8f0;
+  border-radius: 14px;
+  padding: 11px 18px;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+  color: #713d50 !important;
+  cursor: pointer;
+  border: 0;
+  font-size: 13.5px;
+}
+.cakecraft-studio .vbox.studio-mode .hx:hover,
+.cakecraft-studio .vbox:fullscreen .hx:hover {
+  background: #fce8ec;
+}
+
+.cakecraft-studio .vbox:fullscreen::before,
+.cakecraft-studio .vbox:fullscreen::after,
+.cakecraft-studio .vbox.studio-mode::before,
+.cakecraft-studio .vbox.studio-mode::after {
+  display: none !important;
+}
+
 .cakecraft-studio main.d .vbox {
   height: min(570px, 70vh);
   background: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0/28px 28px, linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px) 0 0/28px 28px, radial-gradient(circle at 50% 40%, #27543d, #1a3f2f 70%, #10291f);
@@ -709,6 +773,13 @@
   border-color: #ba2b2b;
   background: rgba(19, 46, 37, 0.98);
   transform: translateY(-1px);
+}
+
+.cakecraft-studio .ib.on {
+  border-color: #ba2b2b;
+  background: #ba2b2b;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(186, 43, 43, 0.45);
 }
 
 .cakecraft-studio .ib:disabled {
@@ -1804,5 +1875,115 @@
 @media (prefers-reduced-motion: reduce) {
   .cakecraft-studio * {
     transition: none !important;
+  }
+}
+
+.cakecraft-studio .cg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 6px;
+}
+.cakecraft-studio .cg button {
+  padding: 9px 0;
+  border-radius: 10px;
+  background: var(--cream, #fffaf0);
+  border: 2px solid var(--line, #e8d6d0);
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.cakecraft-studio .cg button:hover {
+  border-color: var(--pk, #d96b91);
+}
+
+.cakecraft-studio .ov {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #FCE8EC;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) 1.7fr;
+  gap: 16px;
+  padding: 16px;
+}
+.cakecraft-studio .ov[hidden] {
+  display: none;
+}
+.cakecraft-studio .ovl {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.cakecraft-studio #ovPrev {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: radial-gradient(circle at center, #2e5647 0%, #17382d 100%);
+  border-radius: 24px;
+  overflow: hidden;
+}
+.cakecraft-studio #ovPrev .vbox {
+  height: 100% !important;
+  max-height: none !important;
+}
+.cakecraft-studio .ovr {
+  background: var(--panel, #fffdfa);
+  border-radius: 24px;
+  border: 1.5px solid var(--line, #e8d6d0);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.cakecraft-studio .ovtop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cakecraft-studio .ovtop .tl {
+  display: flex;
+  gap: 8px;
+}
+.cakecraft-studio .ovtop .tl button {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--cream, #fffaf0);
+  border: 2px solid var(--line, #e8d6d0);
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+.cakecraft-studio .ovtop .tl button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cakecraft-studio .dcw {
+  flex: 1;
+  min-height: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid var(--line, #e8d6d0);
+  background: #fff;
+  position: relative;
+}
+.cakecraft-studio #dc2 {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+.cakecraft-studio .ovft {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+@media (max-width: 900px) {
+  .cakecraft-studio .ov {
+    grid-template-columns: 1fr;
+    grid-template-rows: 36vh 1fr;
   }
 }
