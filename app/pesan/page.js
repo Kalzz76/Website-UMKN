@@ -2128,13 +2128,10 @@ export default function PesanPage() {
         } catch {}
       }
 
-      const savedMax = sessionStorage.getItem("cravely_custom_maxstep");
-      if (savedMax) {
-        try {
-          const num = Number(savedMax);
-          if (!isNaN(num)) setMaxStep(num);
-        } catch {}
-      }
+      try {
+        sessionStorage.removeItem("cravely_custom_maxstep");
+      } catch {}
+      setMaxStep(0);
     }
     muatData();
   }, []);
@@ -3265,6 +3262,9 @@ export default function PesanPage() {
       setMode("custom");
       setTplI(null);
       setMaxStep(0);
+      try {
+        sessionStorage.removeItem("cravely_custom_maxstep");
+      } catch {}
       const restored = customStateRef.current || getDefState();
       const nextS = {
         ...restored,
@@ -3275,6 +3275,9 @@ export default function PesanPage() {
     } else {
       setMode("tpl");
       setMaxStep(0);
+      try {
+        sessionStorage.removeItem("cravely_custom_maxstep");
+      } catch {}
       const targetIdx = tplI !== null ? tplI : 0;
       setTplI(targetIdx);
       const nextS = {
@@ -3783,13 +3786,7 @@ export default function PesanPage() {
           return;
         }
       }
-      setMaxStep((prev) => {
-        const nextVal = Math.max(prev, i);
-        try {
-          sessionStorage.setItem("cravely_custom_maxstep", String(nextVal));
-        } catch {}
-        return nextVal;
-      });
+      setMaxStep((prev) => Math.max(prev, i));
     }
 
     setStep(i);
@@ -5425,6 +5422,7 @@ export default function PesanPage() {
                     {hasWebGL && (
                       <div className="col">
                         <button
+                          type="button"
                           className={`ib ${sliced ? "on" : ""}`}
                           onClick={() => {
                             const next = !sliced;
@@ -5440,6 +5438,7 @@ export default function PesanPage() {
                           🍰
                         </button>
                         <button
+                          type="button"
                           className={`ib ${isStudioView ? "on" : ""}`}
                           onClick={() => {
                             const next = !isStudioView;
@@ -5463,6 +5462,7 @@ export default function PesanPage() {
                           🏠
                         </button>
                         <button
+                          type="button"
                           className="ib"
                           onClick={() => {
                             try {
@@ -5479,6 +5479,7 @@ export default function PesanPage() {
                           ⛶
                         </button>
                         <button
+                          type="button"
                           className="ib"
                           onClick={() => {
                             const ts = threeStateRef.current;
