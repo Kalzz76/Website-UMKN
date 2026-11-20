@@ -646,7 +646,7 @@ export default function DashboardAdminView({
                             <img
                               src={p.fotoPreviewUrl}
                               alt="Thumbnail"
-                              style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "8px" }}
+                              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }}
                             />
                           ) : (
                             <PreviewKue pilihan={p.pilihan || []} />

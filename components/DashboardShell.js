@@ -480,7 +480,7 @@ export default function DashboardShell({
                             <div className="notif-item-content">
                               <div className="notif-item-title">Peringatan Stok Bahan</div>
                               <div className="notif-item-desc">
-                                {notifStokCount} jenis bahan baku telah mencapai batas minimum.
+                                {notifStokCount} jenis bahan baku menipis atau kurang untuk pesanan aktif.
                               </div>
                               <span className="notif-item-action">
                                 Periksa Inventaris <i className="fa-solid fa-chevron-right text-[9px]"></i>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
-import { formatRupiah, formatTanggalSingkat, formatTanggalIndonesia } from "@/lib/format";
+import { formatRupiah, formatTanggalSingkat, formatTanggalIndonesia, formatTanggalWaktu, formatAngka } from "@/lib/format";
 import PreviewKue from "@/components/PreviewKue";
 import ModalPesan from "@/components/ModalPesan";
 
@@ -32,6 +33,12 @@ export default function PesananDashboardPage() {
   const [detailFotoPrevUrl, setDetailFotoPrevUrl] = useState(null);
   const [detailFotoBentukUrl, setDetailFotoBentukUrl] = useState(null);
   const [detailFotoGambarUrl, setDetailFotoGambarUrl] = useState(null);
+
+  const [infoStokPesanan, setInfoStokPesanan] = useState(null);
+  const [modalKurangiStokBuka, setModalKurangiStokBuka] = useState(false);
+  const [modalKembalikanStokBuka, setModalKembalikanStokBuka] = useState(false);
+  const [modalKonfirmasiBatalStokBuka, setModalKonfirmasiBatalStokBuka] = useState(false);
+  const [sedangProsesStok, setSedangProsesStok] = useState(false);
 
   const [modalBatalBuka, setModalBatalBuka] = useState(false);
   const [alasanBatal, setAlasanBatal] = useState("");
@@ -150,6 +157,7 @@ export default function PesananDashboardPage() {
       const json = await res.json();
       if (!res.ok || !json.sukses) {
         setDetailPesanan(null);
+        setInfoStokPesanan(null);
         setDetailLoading(false);
         return;
       }
@@ -162,8 +170,21 @@ export default function PesananDashboardPage() {
       setDetailFotoRefUrl(json.urls?.fotoReferensi || null);
       setDetailFotoBentukUrl(json.urls?.fotoBentukKustom || null);
       setDetailFotoGambarUrl(json.urls?.fotoGambarKustom || null);
+
+      try {
+        const resStok = await fetch(`/api/pesanan/${kode}/stok`);
+        const jsonStok = await resStok.json();
+        if (resStok.ok) {
+          setInfoStokPesanan(jsonStok);
+        } else {
+          setInfoStokPesanan(null);
+        }
+      } catch {
+        setInfoStokPesanan(null);
+      }
     } catch {
       setDetailPesanan(null);
+      setInfoStokPesanan(null);
     }
     setDetailLoading(false);
   }
@@ -177,6 +198,7 @@ export default function PesananDashboardPage() {
   function tutupDrawer() {
     setDrawerBuka(false);
     setDrawerKode(null);
+    setInfoStokPesanan(null);
   }
 
   useEffect(() => {
@@ -244,7 +266,28 @@ export default function PesananDashboardPage() {
       return;
     }
 
+    if (detailPesanan?.stok_dipotong_pada) {
+      setModalBatalBuka(false);
+      setModalKonfirmasiBatalStokBuka(true);
+      return;
+    }
+
+    await eksekusiBatalPesanan(false);
+  }
+
+  async function eksekusiBatalPesanan(kembalikanStok = false) {
     setSedangProses(true);
+
+    if (kembalikanStok) {
+      try {
+        await fetch(`/api/pesanan/${drawerKode}/stok`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ aksi: "kembalikan" }),
+        });
+      } catch {}
+    }
+
     const res = await fetch(`/api/pesanan/${drawerKode}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -256,6 +299,9 @@ export default function PesananDashboardPage() {
 
     const hasil = await res.json();
     setSedangProses(false);
+    setModalKonfirmasiBatalStokBuka(false);
+    setModalBatalBuka(false);
+    setAlasanBatal("");
 
     if (!res.ok) {
       setNotifikasi({
@@ -267,8 +313,72 @@ export default function PesananDashboardPage() {
       return;
     }
 
-    setModalBatalBuka(false);
-    setAlasanBatal("");
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan,
+      tipe: "sukses",
+    });
+    muatDetailPesanan(drawerKode);
+    muatPesanan();
+  }
+
+  async function handleKurangiStok() {
+    if (!drawerKode) return;
+    setSedangProsesStok(true);
+    const res = await fetch(`/api/pesanan/${drawerKode}/stok`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aksi: "kurangi" }),
+    });
+
+    const hasil = await res.json();
+    setSedangProsesStok(false);
+    setModalKurangiStokBuka(false);
+
+    if (!res.ok) {
+      setNotifikasi({
+        terbuka: true,
+        judul: "Gagal Mengurangi Stok",
+        pesan: hasil.pesan || "Terjadi kesalahan saat mengurangi stok.",
+        tipe: "error",
+      });
+      return;
+    }
+
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan,
+      tipe: "sukses",
+    });
+    muatDetailPesanan(drawerKode);
+    muatPesanan();
+  }
+
+  async function handleKembalikanStok() {
+    if (!drawerKode) return;
+    setSedangProsesStok(true);
+    const res = await fetch(`/api/pesanan/${drawerKode}/stok`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aksi: "kembalikan" }),
+    });
+
+    const hasil = await res.json();
+    setSedangProsesStok(false);
+    setModalKembalikanStokBuka(false);
+
+    if (!res.ok) {
+      setNotifikasi({
+        terbuka: true,
+        judul: "Gagal Mengembalikan Stok",
+        pesan: hasil.pesan || "Terjadi kesalahan saat mengembalikan stok.",
+        tipe: "error",
+      });
+      return;
+    }
+
     setNotifikasi({
       terbuka: true,
       judul: "Berhasil",
@@ -618,26 +728,6 @@ export default function PesananDashboardPage() {
               </p>
             </div>
           ) : null}
-
-          {detailFotoRefUrl && (
-            <div className="pt-1 border-t border-dashed border-stone-200">
-              <span className="text-[9px] font-bold text-stone-400 block uppercase mb-0.5">
-                Foto Referensi
-              </span>
-              <a
-                href={detailFotoRefUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block relative group"
-              >
-                <img
-                  src={detailFotoRefUrl}
-                  alt="Foto Referensi"
-                  className="w-12 h-12 object-cover rounded-lg border border-[#e0d5b8] shadow-2xs"
-                />
-              </a>
-            </div>
-          )}
         </div>
 
         <div className="p-3 rounded-2xl bg-white border border-[#dfd4bd] space-y-1.5">
@@ -743,6 +833,175 @@ export default function PesananDashboardPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="p-3 rounded-2xl bg-white border border-[#dfd4bd] space-y-2">
+          <div className="flex items-center justify-between pb-1 border-b border-stone-100">
+            <div className="flex items-center space-x-1">
+              <i className="fa-solid fa-boxes-stacked text-amber-700 text-[11px]" />
+              <h4 className="text-[10px] font-bold text-[#1d3b2e] uppercase tracking-wider">
+                Kebutuhan Bahan
+              </h4>
+            </div>
+          </div>
+
+          {infoStokPesanan?.pesanan?.stok_dipotong_pada ? (
+            <div className="space-y-2">
+              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <i className="fa-solid fa-circle-check text-emerald-600" />
+                  <span>
+                    Stok sudah dikurangi pada {formatTanggalWaktu(infoStokPesanan.pesanan.stok_dipotong_pada)} WIB oleh {infoStokPesanan.pesanan.nama_pemotong || "Staf"}
+                  </span>
+                </div>
+                {infoStokPesanan.riwayatPengurangan?.length > 0 && (
+                  <div className="pt-1.5 border-t border-emerald-200/60 text-[10px] space-y-0.5">
+                    <span className="font-semibold text-emerald-900 block">Jumlah yang dikurangi:</span>
+                    <div className="grid grid-cols-2 gap-1 font-medium">
+                      {infoStokPesanan.riwayatPengurangan.map((r) => (
+                        <div
+                          key={r.id_bahan}
+                          className="bg-white/80 px-2 py-0.5 rounded border border-emerald-200/50 flex justify-between"
+                        >
+                          <span>{r.nama}</span>
+                          <span className="font-bold">{formatAngka(r.dikurangi)} {r.satuan}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                disabled={sedangProsesStok}
+                onClick={() => setModalKembalikanStokBuka(true)}
+                className="w-full py-1.5 px-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition cursor-pointer flex items-center justify-center space-x-1.5 shadow-2xs disabled:opacity-50"
+              >
+                <i className="fa-solid fa-rotate-left text-[11px]" />
+                <span>Kembalikan Stok</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(infoStokPesanan?.daftarKebutuhan || []).filter((b) => b.kurang > 0).length > 0 ? (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px]">
+                  <div className="font-bold flex items-center gap-1.5 mb-1">
+                    <i className="fa-solid fa-triangle-exclamation text-rose-600" />
+                    <span>Stok tidak mencukupi untuk:</span>
+                  </div>
+                  <div className="text-[10px] font-medium pl-4 space-y-0.5">
+                    {(infoStokPesanan?.daftarKebutuhan || [])
+                      .filter((b) => b.kurang > 0)
+                      .map((k) => (
+                        <div key={k.id_bahan}>
+                          • {k.nama} (kurang {formatAngka(k.kurang)} {k.satuan})
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ) : (infoStokPesanan?.daftarKebutuhan?.length || 0) > 0 ? (
+                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center gap-1.5">
+                  <i className="fa-solid fa-circle-check text-emerald-600" />
+                  <span>Stok cukup</span>
+                </div>
+              ) : null}
+
+              {infoStokPesanan?.pilihanTanpaResep > 0 && (
+                <div className="p-2.5 rounded-xl bg-[#fbf6e9] border border-[#e0d5b8] text-[10px] space-y-1.5">
+                  <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#e0d5b8]">
+                    <div className="flex items-center gap-1.5 font-bold text-stone-700">
+                      <i className="fa-solid fa-circle-info text-amber-700 text-[11px]" />
+                      <span>{infoStokPesanan.pilihanTanpaResep} pilihan belum punya resep dan tidak dihitung</span>
+                    </div>
+                    {isAdmin && (
+                      <Link
+                        href="/dashboard/harga-opsi"
+                        className="font-bold text-amber-800 hover:text-amber-900 underline whitespace-nowrap text-[10px]"
+                      >
+                        Atur di Harga & Opsi
+                      </Link>
+                    )}
+                  </div>
+
+                  {infoStokPesanan.daftarPilihanTanpaResep?.length > 0 && (
+                    <div className="divide-y divide-[#ede2cd]/80">
+                      {infoStokPesanan.daftarPilihanTanpaResep.map((p, i) => (
+                        <div key={i} className="py-1 flex items-center justify-between text-[10px]">
+                          <span className="text-stone-500 font-medium">{p.nama_grup}</span>
+                          <span className="font-bold text-stone-800">
+                            {p.nama_item}
+                            {p.jumlah > 1 ? ` (${p.jumlah}x)` : ""}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {infoStokPesanan?.daftarKebutuhan?.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[10px] text-left">
+                    <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase font-bold border-y border-[#dfd4bd]">
+                      <tr>
+                        <th className="py-1 px-1.5">Bahan</th>
+                        <th className="py-1 px-1.5 text-center">Dibutuhkan</th>
+                        <th className="py-1 px-1.5 text-center">Stok Saat Ini</th>
+                        <th className="py-1 px-1.5 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#ede2cd]">
+                      {infoStokPesanan.daftarKebutuhan.map((b) => (
+                        <tr key={b.id_bahan} className="hover:bg-stone-50">
+                          <td className="py-1.5 px-1.5 font-bold text-stone-800">{b.nama}</td>
+                          <td className="py-1.5 px-1.5 text-center font-semibold text-stone-700">
+                            {formatAngka(b.dibutuhkan)} {b.satuan}
+                          </td>
+                          <td className="py-1.5 px-1.5 text-center font-semibold text-stone-700">
+                            {formatAngka(b.stok_sekarang)} {b.satuan}
+                          </td>
+                          <td className="py-1.5 px-1.5 text-right">
+                            {b.kurang > 0 ? (
+                              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                                Kurang {formatAngka(b.kurang)} {b.satuan}
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                Cukup
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-2 text-center text-[10px] text-stone-400 italic">
+                  Belum ada kebutuhan bahan terhitung.
+                </div>
+              )}
+
+              {["Diterima", "Sedang Dibuat", "Siap", "Dikirim", "Selesai"].includes(detailPesanan.status_pesanan) ? (
+                <button
+                  type="button"
+                  disabled={sedangProsesStok}
+                  onClick={() => setModalKurangiStokBuka(true)}
+                  className="w-full py-1.5 px-3 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs font-bold transition cursor-pointer flex items-center justify-center space-x-1.5 shadow-2xs disabled:opacity-50"
+                >
+                  <i className="fa-solid fa-minus text-[10px]" />
+                  <span>Kurangi Stok</span>
+                </button>
+              ) : (
+                <div className="p-2 rounded-xl bg-stone-100 border border-stone-200 text-center">
+                  <span className="text-[10px] text-stone-500 italic">
+                    Tombol kurangi stok nonaktif untuk pesanan {detailPesanan.status_pesanan}.
+                  </span>
                 </div>
               )}
             </div>
@@ -1069,22 +1328,22 @@ export default function PesananDashboardPage() {
                             : "hover:bg-stone-50/70"
                         }`}
                       >
-                        <td className="py-3 px-3 w-12">
-                          {thumbnailMap[p.id] ? (
-                            <img
-                              src={thumbnailMap[p.id]}
-                              alt="Thumbnail Kue"
-                              className="w-10 h-10 object-contain rounded-lg border border-[#e0d5b8] bg-[#fbf6e9] p-0.5"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#e0d5b8] bg-[#fbf6e9] overflow-hidden">
+                        <td className="py-2.5 px-3 w-14 align-middle">
+                          <div className="w-11 h-11 rounded-xl border border-[#e0d5b8] bg-[#fbf6e9] flex items-center justify-center overflow-hidden flex-shrink-0 shadow-2xs">
+                            {thumbnailMap[p.id] ? (
+                              <img
+                                src={thumbnailMap[p.id]}
+                                alt="Thumbnail Kue"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
                               <PreviewKue
                                 pilihan={pilihanMap[p.id] || []}
                                 tulisan_kue={p.tulisan_kue}
-                                className="w-10 h-10"
+                                className="w-full h-full p-0.5"
                               />
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-3 font-bold whitespace-nowrap">
                           <button
@@ -1282,6 +1541,183 @@ export default function PesananDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalKurangiStokBuka && (
+        <div className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#fbf6e9] border border-[#dfd4bd] rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e0d5b8]">
+              <div>
+                <h3 className="font-bold text-[#1d3b2e] text-sm">Konfirmasi Pengurangan Stok</h3>
+                <p className="text-[11px] text-stone-500 mt-0.5">Pesanan: {drawerKode}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalKurangiStokBuka(false)}
+                className="text-stone-400 hover:text-stone-600 text-sm cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+
+            {(infoStokPesanan?.daftarKebutuhan || []).some((b) => b.kurang > 0) && (
+              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2">
+                <i className="fa-solid fa-triangle-exclamation text-amber-600 text-sm" />
+                <span>Stok akan dikurangi sampai 0 dan kekurangannya dicatat</span>
+              </div>
+            )}
+
+            <div className="max-h-60 overflow-y-auto rounded-xl border border-[#dfd4bd] bg-white">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase font-bold sticky top-0">
+                  <tr>
+                    <th className="py-2 px-3">Bahan</th>
+                    <th className="py-2 px-3 text-center">Dibutuhkan</th>
+                    <th className="py-2 px-3 text-center">Stok Saat Ini</th>
+                    <th className="py-2 px-3 text-right">Akan Dipotong</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#ede2cd]">
+                  {(infoStokPesanan?.daftarKebutuhan || []).map((b) => {
+                    const dipotong = Math.min(b.stok_sekarang, b.dibutuhkan);
+                    return (
+                      <tr key={b.id_bahan}>
+                        <td className="py-2 px-3 font-bold text-stone-800">{b.nama}</td>
+                        <td className="py-2 px-3 text-center font-medium">{formatAngka(b.dibutuhkan)} {b.satuan}</td>
+                        <td className="py-2 px-3 text-center font-medium">{formatAngka(b.stok_sekarang)} {b.satuan}</td>
+                        <td className="py-2 px-3 text-right font-bold text-rose-700">
+                          -{formatAngka(Math.max(0, dipotong))} {b.satuan}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-[#dfd4bd]">
+              <button
+                type="button"
+                disabled={sedangProsesStok}
+                onClick={() => setModalKurangiStokBuka(false)}
+                className="px-4 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold hover:bg-stone-50 cursor-pointer text-xs disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={sedangProsesStok}
+                onClick={handleKurangiStok}
+                className="px-4 py-2 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white font-bold cursor-pointer text-xs shadow-xs disabled:opacity-50 inline-flex items-center space-x-1.5"
+              >
+                {sedangProsesStok ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch fa-spin text-xs" />
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <span>Konfirmasi Kurangi Stok</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalKembalikanStokBuka && (
+        <div className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#fbf6e9] border border-[#dfd4bd] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e0d5b8]">
+              <h3 className="font-bold text-[#1d3b2e] text-sm">Kembalikan Stok</h3>
+              <button
+                type="button"
+                onClick={() => setModalKembalikanStokBuka(false)}
+                className="text-stone-400 hover:text-stone-600 text-sm cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-700 leading-relaxed">
+              Apakah Anda yakin ingin mengembalikan seluruh stok bahan yang sebelumnya telah dipotong untuk pesanan{" "}
+              <span className="font-bold text-[#1d3b2e]">{drawerKode}</span>?
+            </p>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-[#dfd4bd]">
+              <button
+                type="button"
+                disabled={sedangProsesStok}
+                onClick={() => setModalKembalikanStokBuka(false)}
+                className="px-4 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold hover:bg-stone-50 cursor-pointer text-xs disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={sedangProsesStok}
+                onClick={handleKembalikanStok}
+                className="px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-bold cursor-pointer text-xs shadow-xs disabled:opacity-50 inline-flex items-center space-x-1.5"
+              >
+                {sedangProsesStok ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch fa-spin text-xs" />
+                    <span>Mengembalikan...</span>
+                  </>
+                ) : (
+                  <span>Ya, Kembalikan Stok</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalKonfirmasiBatalStokBuka && (
+        <div className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#fbf6e9] border border-[#dfd4bd] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e0d5b8]">
+              <h3 className="font-bold text-[#1d3b2e] text-sm">Kembalikan Stok Pesanan?</h3>
+              <button
+                type="button"
+                onClick={() => setModalKonfirmasiBatalStokBuka(false)}
+                className="text-stone-400 hover:text-stone-600 text-sm cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-700 leading-relaxed">
+              Stok sudah dikurangi. Kembalikan stok sekarang?
+            </p>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-[#dfd4bd]">
+              <button
+                type="button"
+                disabled={sedangProses}
+                onClick={() => setModalKonfirmasiBatalStokBuka(false)}
+                className="px-3 py-1.5 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold hover:bg-stone-50 cursor-pointer text-xs disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={sedangProses}
+                onClick={() => eksekusiBatalPesanan(false)}
+                className="px-3.5 py-1.5 rounded-xl border border-stone-300 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold cursor-pointer text-xs disabled:opacity-50"
+              >
+                Lewati
+              </button>
+              <button
+                type="button"
+                disabled={sedangProses}
+                onClick={() => eksekusiBatalPesanan(true)}
+                className="px-4 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer text-xs shadow-xs disabled:opacity-50"
+              >
+                Kembalikan
+              </button>
+            </div>
           </div>
         </div>
       )}

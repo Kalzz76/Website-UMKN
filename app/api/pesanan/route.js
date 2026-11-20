@@ -236,12 +236,17 @@ export async function POST(request) {
   for (let i = 0; i < daftarPilihan.length; i++) {
     const raw = daftarPilihan[i];
     if (!raw) continue;
-    const itemId = Number(typeof raw === "object" ? raw.id_item : raw);
+    let itemId = Number(typeof raw === "object" ? raw.id_item : raw);
     const jumlah = Number(typeof raw === "object" && raw.jumlah ? raw.jumlah : 1);
 
-    if (isNaN(itemId)) continue;
+    let itemData = !isNaN(itemId) ? itemMap.get(itemId) : null;
+    if (!itemData && typeof raw === "object" && raw.kode_visual) {
+      itemData = (allActiveItems || []).find(
+        (x) => x.kode_visual === raw.kode_visual && (!raw.id_grup || x.id_grup === raw.id_grup)
+      );
+      if (itemData) itemId = itemData.id;
+    }
 
-    const itemData = itemMap.get(itemId);
     if (!itemData) {
       return NextResponse.json(
         { pesan: "Opsi yang dipilih tidak valid atau sudah tidak aktif." },
@@ -443,6 +448,7 @@ export async function POST(request) {
     const gr = grupMap.get(itemData.id_grup);
     pilihanRows.push({
       id_pesanan: newPesanan.id,
+      id_item: itemData.id,
       id_grup: itemData.id_grup || (gr ? gr.id : null),
       nama_grup: gr ? gr.nama : "Opsi",
       nama_item: itemData.nama,

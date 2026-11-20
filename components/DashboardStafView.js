@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatTanggalSingkat } from "@/lib/format";
+import { formatTanggalSingkat, formatAngka } from "@/lib/format";
 import PreviewKue from "@/components/PreviewKue";
 
 export default function DashboardStafView({
@@ -169,7 +169,7 @@ export default function DashboardStafView({
                       {b.nama}
                     </span>
                     <span style={{ fontSize: "10px", color: "#b91c1c" }}>
-                      Batas minimum: {b.batas_minimum} {b.satuan}
+                      Batas minimum: {formatAngka(b.batas_minimum)} {b.satuan}
                     </span>
                   </div>
                   <span
@@ -182,7 +182,7 @@ export default function DashboardStafView({
                       borderRadius: "9999px",
                     }}
                   >
-                    Sisa {b.jumlah} {b.satuan}
+                    {Number(b.jumlah) <= 0 ? "Habis" : `Sisa ${formatAngka(b.jumlah)} ${b.satuan}`}
                   </span>
                 </div>
               ))}

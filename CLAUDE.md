@@ -384,17 +384,20 @@ Dekorasi  : Lelehan Krim 12.000 | Lilin 3.000                    [+ item]
 **Detail pesanan** (side drawer di `/dashboard/pesanan`):
 - **Preview kue** dari pilihan pelanggan
 - **Komponen** yang dipilih (grup, item), tulisan di kue, catatan, foto referensi
+- **Kebutuhan Bahan** (admin dan staf): tabel Bahan, Dibutuhkan, Stok saat ini, Status (Cukup / Kurang). Banner merah jika ada bahan kurang, banner hijau jika cukup. Catatan jika ada pilihan tanpa resep (dengan tautan ke Harga & Opsi untuk admin). Tombol **Kurangi Stok** manual (aktif pada status Diterima, Sedang Dibuat, Siap, Dikirim, Selesai; nonaktif untuk Menunggu Pembayaran dan Dibatalkan) dengan dialog konfirmasi rincian pemotongan. Setelah dikurangi, menampilkan waktu pemotongan dan nama pemotong, jumlah yang benar-benar dikurangi, serta tombol **Kembalikan Stok** (dengan konfirmasi). Panel ini tidak menampilkan data harga.
 - **Rincian harga** per komponen, ongkir, total, jumlah DP, jumlah terbayar, sisa (admin saja)
 - **Pembayaran**: daftar pembayaran (jenis, jumlah, metode, bukti, status) dengan tombol **Konfirmasi** dan **Tolak** (admin saja)
 - **Pengiriman**: Ambil di Tempat, atau Kirim beserta alamat dan zona
-- **Status**: tombol aksi sesuai role dan aturan alur di bawah
+- **Status**: tombol aksi sesuai role dan aturan alur di bawah. Pembatalan pesanan yang `stok_dipotong_pada`-nya sudah terisi memunculkan konfirmasi pengembalian stok dengan tombol Kembalikan dan Lewati.
 - **Riwayat**: garis waktu perubahan status (siapa, kapan)
 
 ### Menu Stok
 
-Daftar bahan (tepung, telur, coklat, krim, dst): kolom Nama Bahan, Jumlah, Satuan, Batas Minimum, Status. Bahan yang `jumlah <= batas_minimum` ditandai peringatan (badge merah "Menipis") dan muncul di Dashboard. Admin dan staf bisa **menambah atau mengurangi jumlah** (modal berisi jumlah +/-). Hanya admin yang bisa menambah, mengubah nama/satuan/batas, dan menghapus bahan.
+Daftar bahan (tepung, telur, coklat, krim, dst): kolom Nama Bahan, Sisa Stok, Dibutuhkan Pesanan Aktif (pesanan berstatus Diterima, Sedang Dibuat, dan Siap yang stoknya belum dipotong), Batas Minimum, Status (Aman, Menipis, atau Kurang untuk Pesanan), Penyesuaian Cepat (+Masuk, -Keluar), dan Aksi (Riwayat, Edit, Hapus). Filter status menyediakan opsi: Semua Status, Kurang untuk Pesanan, Menipis, dan Aman. Terdapat 4 kartu statistik: Total Jenis Bahan, Stok Aman & Mencukupi, Bahan Menipis (Perlu Restok), dan Kurang untuk Pesanan Aktif.
 
-Stok **tidak berkurang otomatis** dari pesanan. Pengurangan stok otomatis berdasarkan resep ditunda (lihat "Belum dikerjakan").
+Admin dan staf bisa **menambah atau mengurangi jumlah** lewat tombol Masuk/Keluar (menulis `riwayat_stok` jenis Masuk/Keluar dengan `id_user`). Mengubah jumlah langsung di form edit bahan menulis `riwayat_stok` jenis Koreksi. Hanya admin yang bisa menambah, mengubah nama/satuan/batas, dan menghapus bahan. Tombol **Riwayat** di tiap baris membuka daftar mutasi stok (tanggal, perubahan, stok akhir, jenis, tautan kode pesanan, siapa, keterangan).
+
+Stok **TIDAK PERNAH berkurang otomatis**, termasuk saat status pesanan berubah. Pengurangan stok pesanan dilakukan secara manual oleh staf/admin lewat tombol "Kurangi Stok" pada panel detail pesanan. Lonceng notifikasi dan daftar stok dashboard menghitung bahan yang menipis ATAU kurang untuk pesanan aktif (tiap bahan dihitung satu kali).
 
 ### Menu Laporan (admin)
 
@@ -515,10 +518,16 @@ Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alama
 `id`, `tanggal` (date, unik), `alasan`.
 
 ### pesanan
-`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `dibuat_pada`.
+`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `stok_dipotong_pada` (timestamptz, boleh kosong), `dibuat_pada`.
 
 ### pesanan_pilihan
-Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
+Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_item` (bigint FK ke `opsi_item(id)` on delete set null, boleh kosong), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
+
+### resep_item
+Komposisi bahan untuk opsi kue: `id`, `id_item` (FK `opsi_item` on delete cascade), `id_bahan` (FK `bahan` on delete cascade), `jumlah` (numeric > 0), unik per `(id_item, id_bahan)`.
+
+### riwayat_stok
+Catatan pergerakan inventaris bahan: `id`, `id_bahan` (FK `bahan` on delete cascade), `perubahan` (numeric), `stok_setelah` (numeric), `jenis` (`Masuk` / `Keluar` / `Koreksi` / `Pesanan` / `Pengembalian`), `id_pesanan` (FK `pesanan` on delete set null), `keterangan`, `id_user` (FK `profil`), `dibuat_pada`.
 
 ### pembayaran
 `id`, `id_pesanan` (FK), `jenis` (`DP` / `Pelunasan` / `Lunas`), `jumlah`, `metode` (`Transfer Bank` / `QRIS` / `Tunai di Tempat`), `bukti` (path di Storage, boleh kosong untuk tunai), `status` (`Menunggu Konfirmasi` / `Dikonfirmasi` / `Ditolak`), `id_pengonfirmasi` (FK `profil`, boleh kosong), `dikonfirmasi_pada` (timestamptz, diisi saat admin mengonfirmasi pembayaran, zona waktu `Asia/Jakarta`/UTC), `dibuat_pada`.

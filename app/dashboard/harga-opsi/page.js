@@ -6,6 +6,7 @@ import { formatRupiah } from "@/lib/format";
 import ModalPesan from "@/components/ModalPesan";
 
 export default function HargaOpsiPage() {
+  const [profil, setProfil] = useState(null);
   const [daftarGrup, setDaftarGrup] = useState([]);
   const [daftarItem, setDaftarItem] = useState([]);
   const [sedangMemuat, setSedangMemuat] = useState(true);
@@ -14,6 +15,13 @@ export default function HargaOpsiPage() {
 
   const [editItemId, setEditItemId] = useState(null);
   const [inputHarga, setInputHarga] = useState("");
+
+  const [modalResepBuka, setModalResepBuka] = useState(false);
+  const [itemResepAktif, setItemResepAktif] = useState(null);
+  const [daftarBahan, setDaftarBahan] = useState([]);
+  const [barisResep, setBarisResep] = useState([]);
+  const [sedangMemuatResep, setSedangMemuatResep] = useState(false);
+  const [sedangSimpanResep, setSedangSimpanResep] = useState(false);
 
   const [notifikasi, setNotifikasi] = useState({
     terbuka: false,
@@ -25,6 +33,19 @@ export default function HargaOpsiPage() {
   async function muatData() {
     setSedangMemuat(true);
     const supabase = getSupabaseBrowser();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: prof } = await supabase
+        .from("profil")
+        .select("role, nama")
+        .eq("id", user.id)
+        .single();
+      if (prof) setProfil(prof);
+    }
 
     const { data: grupList, error: errGrup } = await supabase
       .from("grup_opsi")
@@ -123,6 +144,87 @@ export default function HargaOpsiPage() {
     setEditItemId(null);
     setInputHarga("");
 
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan,
+      tipe: "sukses",
+    });
+  }
+
+  async function bukaModalResep(item) {
+    setItemResepAktif(item);
+    setModalResepBuka(true);
+    setSedangMemuatResep(true);
+
+    try {
+      const res = await fetch(`/api/opsi/resep?id_item=${item.id}`);
+      const data = await res.json();
+      if (res.ok) {
+        setDaftarBahan(data.bahan || []);
+        const formatBaris = (data.resep || []).map((r) => ({
+          id_bahan: r.id_bahan,
+          jumlah: r.jumlah,
+        }));
+        setBarisResep(formatBaris);
+      }
+    } catch {
+      setBarisResep([]);
+    } finally {
+      setSedangMemuatResep(false);
+    }
+  }
+
+  function tambahBarisResep() {
+    const bahanTersedia = daftarBahan[0]?.id || "";
+    setBarisResep((prev) => [...prev, { id_bahan: bahanTersedia, jumlah: 1 }]);
+  }
+
+  function ubahBarisResep(idx, field, val) {
+    setBarisResep((prev) =>
+      prev.map((b, i) => (i === idx ? { ...b, [field]: val } : b))
+    );
+  }
+
+  function hapusBarisResep(idx) {
+    setBarisResep((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function simpanResep() {
+    if (!itemResepAktif) return;
+    setSedangSimpanResep(true);
+
+    const formatKirim = barisResep
+      .filter((b) => b.id_bahan && Number(b.jumlah) > 0)
+      .map((b) => ({
+        id_bahan: Number(b.id_bahan),
+        jumlah: Number(b.jumlah),
+      }));
+
+    const res = await fetch("/api/opsi/resep", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_item: itemResepAktif.id,
+        resep: formatKirim,
+      }),
+    });
+
+    const hasil = await res.json();
+    setSedangSimpanResep(false);
+
+    if (!res.ok) {
+      setNotifikasi({
+        terbuka: true,
+        judul: "Peringatan",
+        pesan: hasil.pesan || "Gagal menyimpan resep bahan.",
+        tipe: "error",
+      });
+      return;
+    }
+
+    setModalResepBuka(false);
+    setItemResepAktif(null);
     setNotifikasi({
       terbuka: true,
       judul: "Berhasil",
@@ -365,14 +467,27 @@ export default function HargaOpsiPage() {
                                       </button>
                                     </div>
                                   ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => mulaiEditHarga(item)}
-                                      className="px-3 py-1 rounded-lg border border-[#dfd4bd] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] text-xs font-bold transition cursor-pointer inline-flex items-center space-x-1 shadow-2xs"
-                                    >
-                                      <i className="fa-solid fa-tag text-[10px]" />
-                                      <span>Ubah Harga</span>
-                                    </button>
+                                    <div className="flex items-center justify-end space-x-1.5">
+                                      {profil?.role === "admin" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => bukaModalResep(item)}
+                                          className="px-2.5 py-1 rounded-lg border border-[#dfd4bd] bg-white hover:bg-[#ede2cd] text-[#1d3b2e] text-xs font-bold transition cursor-pointer inline-flex items-center space-x-1 shadow-2xs"
+                                          title="Atur bahan yang dipakai opsi ini"
+                                        >
+                                          <i className="fa-solid fa-wheat-awn text-[10px] text-amber-700" />
+                                          <span>Bahan</span>
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => mulaiEditHarga(item)}
+                                        className="px-3 py-1 rounded-lg border border-[#dfd4bd] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] text-xs font-bold transition cursor-pointer inline-flex items-center space-x-1 shadow-2xs"
+                                      >
+                                        <i className="fa-solid fa-tag text-[10px]" />
+                                        <span>Ubah Harga</span>
+                                      </button>
+                                    </div>
                                   )}
                                 </td>
                               </tr>
@@ -386,6 +501,141 @@ export default function HargaOpsiPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {modalResepBuka && itemResepAktif && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-[#fbf8f1] border border-[#dfd4bd] rounded-3xl p-6 w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#dfd4bd]">
+              <div>
+                <h3 className="text-base font-bold text-[#1d3b2e] flex items-center gap-2">
+                  <i className="fa-solid fa-wheat-awn text-amber-700" />
+                  <span>Bahan yang Dipakai</span>
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Opsi: <span className="font-bold text-[#1d3b2e]">{itemResepAktif.nama}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalResepBuka(false);
+                  setItemResepAktif(null);
+                }}
+                className="w-8 h-8 rounded-full border border-stone-200 bg-white hover:bg-stone-100 text-stone-500 flex items-center justify-center cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm" />
+              </button>
+            </div>
+
+            <div className="py-3">
+              <p className="text-xs text-stone-600 bg-[#ede2cd]/60 border border-[#dfd4bd] rounded-xl p-3 font-medium">
+                Untuk grup yang boleh dipilih banyak, jumlah dikalikan banyaknya pilihan. Isi bahan dasar di grup Ukuran.
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 py-1 pr-1">
+              {sedangMemuatResep ? (
+                <div className="py-8 text-center text-stone-400">
+                  <i className="fa-solid fa-circle-notch fa-spin text-2xl text-amber-600 mb-2" />
+                  <p className="text-xs">Memuat bahan...</p>
+                </div>
+              ) : barisResep.length === 0 ? (
+                <div className="py-8 text-center text-xs text-stone-500 bg-white/70 border border-dashed border-[#dfd4bd] rounded-2xl">
+                  Belum ada bahan yang dikaitkan ke opsi ini.
+                </div>
+              ) : (
+                barisResep.map((baris, idx) => {
+                  const bahanObj = daftarBahan.find((b) => b.id === Number(baris.id_bahan));
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 bg-white p-2.5 rounded-2xl border border-[#dfd4bd]"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <select
+                          value={baris.id_bahan}
+                          onChange={(e) => ubahBarisResep(idx, "id_bahan", e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-[#1d3b2e] bg-[#fbf8f1] outline-none"
+                        >
+                          <option value="" disabled>Pilih Bahan...</option>
+                          {daftarBahan.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.nama} ({b.satuan})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="w-28 flex items-center space-x-1">
+                        <input
+                          type="number"
+                          min="0.001"
+                          step="any"
+                          value={baris.jumlah}
+                          onChange={(e) => ubahBarisResep(idx, "jumlah", e.target.value)}
+                          placeholder="0"
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-center text-[#1d3b2e] bg-[#fbf8f1] outline-none"
+                        />
+                        <span className="text-[11px] font-bold text-stone-500 w-10 truncate">
+                          {bahanObj?.satuan || ""}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => hapusBarisResep(idx)}
+                        className="w-8 h-8 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition cursor-pointer flex-shrink-0"
+                        title="Hapus baris bahan"
+                      >
+                        <i className="fa-solid fa-trash-can text-xs" />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-[#dfd4bd] flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={tambahBarisResep}
+                disabled={sedangMemuatResep || daftarBahan.length === 0}
+                className="px-3 py-2 rounded-xl border border-[#dfd4bd] bg-white hover:bg-stone-50 text-[#1d3b2e] text-xs font-bold transition cursor-pointer inline-flex items-center space-x-1.5 shadow-2xs disabled:opacity-50"
+              >
+                <i className="fa-solid fa-plus text-[10px]" />
+                <span>Tambah Bahan</span>
+              </button>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalResepBuka(false);
+                    setItemResepAktif(null);
+                  }}
+                  disabled={sedangSimpanResep}
+                  className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={simpanResep}
+                  disabled={sedangSimpanResep || sedangMemuatResep}
+                  className="px-5 py-2 rounded-xl bg-[#17382d] hover:bg-[#122e25] text-white text-xs font-bold transition cursor-pointer shadow-xs disabled:opacity-50 inline-flex items-center space-x-1.5"
+                >
+                  {sedangSimpanResep ? (
+                    <>
+                      <i className="fa-solid fa-circle-notch fa-spin text-xs" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Bahan</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

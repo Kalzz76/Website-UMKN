@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { formatTanggalWaktu, formatAngka } from "@/lib/format";
 import ModalPesan from "@/components/ModalPesan";
 
 export default function StokDashboardPage() {
@@ -10,6 +12,7 @@ export default function StokDashboardPage() {
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [profil, setProfil] = useState(null);
   const [daftarBahan, setDaftarBahan] = useState([]);
+  const [kebutuhanAktifMap, setKebutuhanAktifMap] = useState({});
   const [sedangProses, setSedangProses] = useState(false);
 
   const [kataKunciCari, setKataKunciCari] = useState("");
@@ -19,6 +22,11 @@ export default function StokDashboardPage() {
   const [bahanAktif, setBahanAktif] = useState(null);
   const [nilaiSesuaikan, setNilaiSesuaikan] = useState("");
   const [tipeSesuaikan, setTipeSesuaikan] = useState("tambah");
+
+  const [modalRiwayatBuka, setModalRiwayatBuka] = useState(false);
+  const [bahanRiwayatAktif, setBahanRiwayatAktif] = useState(null);
+  const [daftarRiwayat, setDaftarRiwayat] = useState([]);
+  const [sedangMemuatRiwayat, setSedangMemuatRiwayat] = useState(false);
 
   const [modalBahanBuka, setModalBahanBuka] = useState(false);
   const [editBahanId, setEditBahanId] = useState(null);
@@ -42,7 +50,7 @@ export default function StokDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (modalSesuaikanBuka || modalBahanBuka || notifikasi.terbuka) {
+    if (modalSesuaikanBuka || modalBahanBuka || modalRiwayatBuka || notifikasi.terbuka) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -50,7 +58,7 @@ export default function StokDashboardPage() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [modalSesuaikanBuka, modalBahanBuka, notifikasi.terbuka]);
+  }, [modalSesuaikanBuka, modalBahanBuka, modalRiwayatBuka, notifikasi.terbuka]);
 
   async function muatData() {
     setSedangMemuat(true);
@@ -79,12 +87,40 @@ export default function StokDashboardPage() {
       .order("nama", { ascending: true });
 
     if (bList) setDaftarBahan(bList);
+
+    try {
+      const res = await fetch("/api/stok");
+      if (res.ok) {
+        const json = await res.json();
+        setKebutuhanAktifMap(json.kebutuhanAktif || {});
+      }
+    } catch {}
+
     setSedangMemuat(false);
   }
 
   useEffect(() => {
     muatData();
   }, []);
+
+  async function bukaModalRiwayat(bahan) {
+    setBahanRiwayatAktif(bahan);
+    setModalRiwayatBuka(true);
+    setSedangMemuatRiwayat(true);
+    try {
+      const res = await fetch(`/api/stok/riwayat?id_bahan=${bahan.id}`);
+      const json = await res.json();
+      if (res.ok) {
+        setDaftarRiwayat(json.riwayat || []);
+      } else {
+        setDaftarRiwayat([]);
+      }
+    } catch {
+      setDaftarRiwayat([]);
+    } finally {
+      setSedangMemuatRiwayat(false);
+    }
+  }
 
   function bukaModalSesuaikan(bahan, tipe = "tambah") {
     setBahanAktif(bahan);
@@ -250,20 +286,38 @@ export default function StokDashboardPage() {
   const isAdmin = profil?.role === "admin";
 
   const totalBahan = daftarBahan.length;
+  const daftarKurangPesanan = daftarBahan.filter(
+    (b) => Number(b.jumlah) < (Number(kebutuhanAktifMap[b.id]) || 0)
+  );
+  const totalKurangPesanan = daftarKurangPesanan.length;
+
+  const daftarHabis = daftarBahan.filter((b) => Number(b.jumlah) <= 0);
+  const totalHabis = daftarHabis.length;
+
   const daftarMenipis = daftarBahan.filter(
-    (b) => Number(b.jumlah) <= Number(b.batas_minimum)
+    (b) => Number(b.jumlah) > 0 && Number(b.jumlah) <= Number(b.batas_minimum)
   );
   const totalMenipis = daftarMenipis.length;
-  const totalAman = totalBahan - totalMenipis;
+
+  const totalAman = daftarBahan.filter(
+    (b) =>
+      Number(b.jumlah) > Number(b.batas_minimum) &&
+      Number(b.jumlah) >= (Number(kebutuhanAktifMap[b.id]) || 0)
+  ).length;
 
   const bahanTersaring = daftarBahan.filter((b) => {
     const namaCocok = b.nama
       .toLowerCase()
       .includes(kataKunciCari.trim().toLowerCase());
-    const isMenipis = Number(b.jumlah) <= Number(b.batas_minimum);
+    const butuhAktif = Number(kebutuhanAktifMap[b.id]) || 0;
+    const isKurangPesanan = Number(b.jumlah) < butuhAktif;
+    const isHabis = Number(b.jumlah) <= 0;
+    const isMenipis = Number(b.jumlah) > 0 && Number(b.jumlah) <= Number(b.batas_minimum);
 
+    if (filterStatus === "kurang_pesanan") return namaCocok && isKurangPesanan;
+    if (filterStatus === "habis") return namaCocok && isHabis;
     if (filterStatus === "menipis") return namaCocok && isMenipis;
-    if (filterStatus === "aman") return namaCocok && !isMenipis;
+    if (filterStatus === "aman") return namaCocok && !isHabis && !isMenipis && !isKurangPesanan;
     return namaCocok;
   });
 
@@ -291,7 +345,7 @@ export default function StokDashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="content-card p-5 flex items-center space-x-4">
           <div className="w-12 h-12 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-xl flex-shrink-0">
             <i className="fa-solid fa-boxes-stacked"></i>
@@ -320,20 +374,38 @@ export default function StokDashboardPage() {
           </div>
         </div>
 
-        <div className={`content-card p-5 flex items-center space-x-4 ${totalMenipis > 0 ? "border-rose-300 bg-[#fff5f5]" : ""}`}>
+        <div className={`content-card p-5 flex items-center space-x-4 ${totalHabis > 0 || totalMenipis > 0 ? "border-amber-300 bg-[#fffdf5]" : ""}`}>
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 ${
-            totalMenipis > 0
-              ? "bg-rose-100 border border-rose-200 text-rose-700"
+            totalHabis > 0 || totalMenipis > 0
+              ? "bg-amber-100 border border-amber-200 text-amber-800"
               : "bg-[#ede2cd] border border-[#dfd4bd] text-stone-600"
           }`}>
             <i className="fa-solid fa-triangle-exclamation"></i>
           </div>
           <div>
-            <div className={`text-2xl font-black ${totalMenipis > 0 ? "text-rose-700" : "text-stone-700"}`}>
-              {totalMenipis}
+            <div className={`text-2xl font-black ${totalHabis > 0 ? "text-rose-700" : totalMenipis > 0 ? "text-amber-800" : "text-stone-700"}`}>
+              {totalMenipis + totalHabis}
             </div>
             <div className="text-xs font-bold text-stone-500 mt-0.5">
-              Bahan Menipis (Perlu Restok)
+              Bahan Menipis & Habis
+            </div>
+          </div>
+        </div>
+
+        <div className={`content-card p-5 flex items-center space-x-4 ${totalKurangPesanan > 0 ? "border-rose-300 bg-[#fff5f5]" : ""}`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 ${
+            totalKurangPesanan > 0
+              ? "bg-rose-100 border border-rose-200 text-rose-700"
+              : "bg-[#ede2cd] border border-[#dfd4bd] text-stone-600"
+          }`}>
+            <i className="fa-solid fa-cake-candles"></i>
+          </div>
+          <div>
+            <div className={`text-2xl font-black ${totalKurangPesanan > 0 ? "text-rose-700" : "text-stone-700"}`}>
+              {totalKurangPesanan}
+            </div>
+            <div className="text-xs font-bold text-stone-500 mt-0.5">
+              Kurang untuk Pesanan Aktif
             </div>
           </div>
         </div>
@@ -373,6 +445,8 @@ export default function StokDashboardPage() {
               className="h-[38px] px-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e] cursor-pointer shadow-none"
             >
               <option value="semua">Semua Status</option>
+              <option value="kurang_pesanan">Kurang untuk Pesanan</option>
+              <option value="habis">Stok Habis (0)</option>
               <option value="menipis">Stok Menipis Saja</option>
               <option value="aman">Stok Aman Saja</option>
             </select>
@@ -406,15 +480,20 @@ export default function StokDashboardPage() {
                   <th className="py-3 px-4 rounded-l-xl w-14">No.</th>
                   <th className="py-3 px-4">Nama Bahan</th>
                   <th className="py-3 px-4">Sisa Stok</th>
+                  <th className="py-3 px-4">Dibutuhkan Pesanan Aktif</th>
                   <th className="py-3 px-4">Batas Minimum</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-center">Penyesuaian Cepat</th>
-                  <th className="py-3 px-4 text-right rounded-r-xl w-24">Aksi</th>
+                  <th className="py-3 px-4 text-right rounded-r-xl">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ede2cd]">
                 {bahanTersaring.map((b, idx) => {
-                  const menipis = Number(b.jumlah) <= Number(b.batas_minimum);
+                  const butuhAktif = Number(kebutuhanAktifMap[b.id]) || 0;
+                  const kurangPesanan = Number(b.jumlah) < butuhAktif;
+                  const habis = Number(b.jumlah) <= 0;
+                  const menipis = Number(b.jumlah) > 0 && Number(b.jumlah) <= Number(b.batas_minimum);
+
                   return (
                     <tr key={b.id} className="hover:bg-[#f7f2e4]/70 transition">
                       <td className="py-3.5 px-4 font-bold text-stone-600 text-xs">
@@ -428,8 +507,8 @@ export default function StokDashboardPage() {
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-baseline space-x-1.5">
-                          <span className={`text-base font-black ${menipis ? "text-rose-700" : "text-[#1d3b2e]"}`}>
-                            {b.jumlah}
+                          <span className={`text-base font-black ${kurangPesanan || habis ? "text-rose-700" : menipis ? "text-amber-700" : "text-[#1d3b2e]"}`}>
+                            {formatAngka(b.jumlah)}
                           </span>
                           <span className="text-xs font-bold text-stone-500">
                             {b.satuan}
@@ -437,14 +516,35 @@ export default function StokDashboardPage() {
                         </div>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-1 rounded-lg bg-[#ede2cd] text-stone-700 border border-[#dfd4bd] text-xs font-semibold">
-                          Min. {b.batas_minimum} {b.satuan}
+                        <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold ${
+                          butuhAktif > 0
+                            ? kurangPesanan
+                              ? "bg-rose-50 text-rose-800 border-rose-200"
+                              : "bg-[#ede2cd] text-stone-800 border-[#dfd4bd]"
+                            : "bg-stone-50 text-stone-400 border-stone-200"
+                        }`}>
+                          {formatAngka(butuhAktif)} {b.satuan}
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
-                        {menipis ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-[#ede2cd] text-stone-700 border border-[#dfd4bd] text-xs font-semibold">
+                          Min. {formatAngka(b.batas_minimum)} {b.satuan}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {kurangPesanan ? (
                           <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
                             <span className="w-2 h-2 rounded-full bg-rose-600"></span>
+                            <span>Kurang untuk Pesanan</span>
+                          </span>
+                        ) : habis ? (
+                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                            <span className="w-2 h-2 rounded-full bg-rose-600"></span>
+                            <span>Habis</span>
+                          </span>
+                        ) : menipis ? (
+                          <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            <span className="w-2 h-2 rounded-full bg-amber-600"></span>
                             <span>Menipis</span>
                           </span>
                         ) : (
@@ -477,28 +577,37 @@ export default function StokDashboardPage() {
                         </div>
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        {isAdmin ? (
-                          <div className="flex items-center justify-end space-x-1.5">
-                            <button
-                              type="button"
-                              onClick={() => bukaModalEditBahan(b)}
-                              className="w-8 h-8 rounded-lg border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
-                              title="Edit Bahan"
-                            >
-                              <i className="fa-solid fa-pen-to-square text-xs"></i>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleHapusBahan(b)}
-                              className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
-                              title="Hapus Bahan"
-                            >
-                              <i className="fa-solid fa-trash text-xs"></i>
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-stone-400 text-xs">-</span>
-                        )}
+                        <div className="flex items-center justify-end space-x-1.5">
+                          <button
+                            type="button"
+                            onClick={() => bukaModalRiwayat(b)}
+                            className="h-[32px] px-2.5 rounded-xl border border-[#dfd4bd] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs inline-flex items-center space-x-1 transition cursor-pointer shadow-2xs"
+                            title="Lihat Riwayat Stok"
+                          >
+                            <i className="fa-solid fa-clock-rotate-left text-[11px] text-amber-700"></i>
+                            <span>Riwayat</span>
+                          </button>
+                          {isAdmin && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => bukaModalEditBahan(b)}
+                                className="w-8 h-8 rounded-lg border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
+                                title="Edit Bahan"
+                              >
+                                <i className="fa-solid fa-pen-to-square text-xs"></i>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleHapusBahan(b)}
+                                className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
+                                title="Hapus Bahan"
+                              >
+                                <i className="fa-solid fa-trash text-xs"></i>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -540,7 +649,7 @@ export default function StokDashboardPage() {
                 <div className="p-3.5 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] flex items-center justify-between">
                   <span className="text-xs font-bold text-stone-700">Stok Saat Ini:</span>
                   <span className="text-sm font-black text-[#1d3b2e]">
-                    {bahanAktif.jumlah} {bahanAktif.satuan}
+                    {formatAngka(bahanAktif.jumlah)} {bahanAktif.satuan}
                   </span>
                 </div>
 
@@ -734,6 +843,137 @@ export default function StokDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {isMounted && modalRiwayatBuka && bahanRiwayatAktif && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setModalRiwayatBuka(false);
+              setBahanRiwayatAktif(null);
+            }
+          }}
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
+        >
+          <div className="relative bg-[#fbf6e9] border border-[#dcd3c1] rounded-[24px] max-w-3xl w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
+              <div>
+                <h3 className="text-base font-bold text-[#1d3b2e] flex items-center gap-2">
+                  <i className="fa-solid fa-clock-rotate-left text-amber-700" />
+                  <span>Riwayat Stok: {bahanRiwayatAktif.nama}</span>
+                </h3>
+                <p className="text-xs text-stone-600 mt-0.5">
+                  Sisa stok saat ini: <strong className="text-[#1d3b2e]">{formatAngka(bahanRiwayatAktif.jumlah)} {bahanRiwayatAktif.satuan}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalRiwayatBuka(false);
+                  setBahanRiwayatAktif(null);
+                }}
+                className="w-8 h-8 rounded-xl border border-[#e0d5b8] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center cursor-pointer transition"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {sedangMemuatRiwayat ? (
+                <div className="py-12 text-center text-stone-400">
+                  <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-[#ba2b2b]"></i>
+                  <p className="text-xs font-semibold">Memuat riwayat stok...</p>
+                </div>
+              ) : daftarRiwayat.length === 0 ? (
+                <div className="py-12 text-center text-stone-400">
+                  <i className="fa-solid fa-clock-rotate-left text-3xl mb-2 block text-stone-300"></i>
+                  <p className="text-sm font-bold text-stone-700">Belum ada riwayat pergerakan stok untuk bahan ini.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-[#dfd4bd] bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase font-bold sticky top-0 border-b border-[#dfd4bd]">
+                      <tr>
+                        <th className="py-2.5 px-3">Tanggal & Waktu</th>
+                        <th className="py-2.5 px-3 text-center">Perubahan</th>
+                        <th className="py-2.5 px-3 text-center">Stok Akhir</th>
+                        <th className="py-2.5 px-3 text-center">Jenis</th>
+                        <th className="py-2.5 px-3">Pesanan</th>
+                        <th className="py-2.5 px-3">Siapa</th>
+                        <th className="py-2.5 px-3">Keterangan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#ede2cd]">
+                      {daftarRiwayat.map((r) => {
+                        const perubahanNum = Number(r.perubahan);
+                        return (
+                          <tr key={r.id} className="hover:bg-stone-50">
+                            <td className="py-2.5 px-3 text-stone-600 whitespace-nowrap font-medium">
+                              {formatTanggalWaktu(r.dibuat_pada)} WIB
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-bold whitespace-nowrap">
+                              <span className={perubahanNum > 0 ? "text-emerald-700" : perubahanNum < 0 ? "text-rose-700" : "text-stone-700"}>
+                                {perubahanNum > 0 ? `+${formatAngka(perubahanNum)}` : formatAngka(perubahanNum)} {bahanRiwayatAktif.satuan}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-bold text-stone-800 whitespace-nowrap">
+                              {formatAngka(r.stok_setelah)} {bahanRiwayatAktif.satuan}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                r.jenis === "Masuk"
+                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                  : r.jenis === "Keluar" || r.jenis === "Pesanan"
+                                  ? "bg-rose-100 text-rose-800 border-rose-200"
+                                  : r.jenis === "Pengembalian"
+                                  ? "bg-sky-100 text-sky-800 border-sky-200"
+                                  : "bg-amber-100 text-amber-800 border-amber-200"
+                              }`}>
+                                {r.jenis}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              {r.pesanan?.kode_pesanan ? (
+                                <Link
+                                  href={`/dashboard/pesanan?kode=${r.pesanan.kode_pesanan}`}
+                                  className="font-bold text-[#1d3b2e] hover:text-[#ba2b2b] underline"
+                                >
+                                  {r.pesanan.kode_pesanan}
+                                </Link>
+                              ) : (
+                                <span className="text-stone-400">-</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 font-medium text-stone-700 whitespace-nowrap">
+                              {r.profil?.nama || "Sistem"}
+                            </td>
+                            <td className="py-2.5 px-3 text-stone-500 max-w-[200px] truncate" title={r.keterangan || ""}>
+                              {r.keterangan || "-"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-shrink-0 flex items-center justify-end px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
+              <button
+                type="button"
+                onClick={() => {
+                  setModalRiwayatBuka(false);
+                  setBahanRiwayatAktif(null);
+                }}
+                className="h-[40px] px-5 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>,
         document.body

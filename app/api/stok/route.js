@@ -2,6 +2,93 @@ import { NextResponse } from "next/server";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
 
+export async function GET() {
+  const { profil, diizinkan } = await cekRole(["admin", "staf"]);
+  if (!diizinkan || !profil) {
+    return NextResponse.json({ pesan: "Akses ditolak." }, { status: 403 });
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: pesananAktif } = await supabase
+    .from("pesanan")
+    .select("id")
+    .in("status_pesanan", ["Diterima", "Sedang Dibuat", "Siap"])
+    .is("stok_dipotong_pada", null);
+
+  const kebutuhanAktifMap = {};
+
+  if (pesananAktif && pesananAktif.length > 0) {
+    const idPesananList = pesananAktif.map((p) => p.id);
+    const { data: pilihanList } = await supabase
+      .from("pesanan_pilihan")
+      .select("id, id_item, nama_item, nama_grup, kode_visual, jumlah")
+      .in("id_pesanan", idPesananList);
+
+    const validPilihan = pilihanList || [];
+    const butuhLookupItem = validPilihan.some((p) => !p.id_item);
+    if (butuhLookupItem) {
+      const [{ data: allOpsi }, { data: allGrup }] = await Promise.all([
+        supabase.from("opsi_item").select("id, nama, kode_visual, id_grup"),
+        supabase.from("grup_opsi").select("id, nama"),
+      ]);
+
+      const grupMap = new Map((allGrup || []).map((g) => [g.id, g.nama?.trim().toLowerCase()]));
+
+      for (let i = 0; i < validPilihan.length; i++) {
+        const p = validPilihan[i];
+        if (!p.id_item) {
+          const match = (allOpsi || []).find((o) => {
+            const gNama = grupMap.get(o.id_grup);
+            if (gNama !== p.nama_grup?.trim().toLowerCase()) return false;
+            if (p.kode_visual && o.kode_visual && p.kode_visual.trim().toLowerCase() === o.kode_visual.trim().toLowerCase()) {
+              return true;
+            }
+            return o.nama?.trim().toLowerCase() === p.nama_item?.trim().toLowerCase();
+          });
+          if (match) {
+            p.id_item = match.id;
+          }
+        }
+      }
+    }
+
+    const itemIds = Array.from(new Set(validPilihan.map((p) => p.id_item).filter(Boolean)));
+
+    if (itemIds.length > 0) {
+      const { data: resepList } = await supabase
+        .from("resep_item")
+        .select("id_item, id_bahan, jumlah")
+        .in("id_item", itemIds);
+
+      const resepPerItem = new Map();
+      for (let i = 0; i < (resepList || []).length; i++) {
+        const r = resepList[i];
+        if (!resepPerItem.has(r.id_item)) {
+          resepPerItem.set(r.id_item, []);
+        }
+        resepPerItem.get(r.id_item).push(r);
+      }
+
+      for (let i = 0; i < validPilihan.length; i++) {
+        const p = validPilihan[i];
+        const rItems = resepPerItem.get(p.id_item) || [];
+        const qtyPilihan = Number(p.jumlah) || 1;
+
+        for (let j = 0; j < rItems.length; j++) {
+          const r = rItems[j];
+          const totalKebutuhan = Number(r.jumlah) * qtyPilihan;
+          kebutuhanAktifMap[r.id_bahan] = Math.round(((kebutuhanAktifMap[r.id_bahan] || 0) + totalKebutuhan) * 1000) / 1000;
+        }
+      }
+    }
+  }
+
+  return NextResponse.json({
+    kebutuhanAktif: kebutuhanAktifMap,
+  });
+}
+
 export async function POST(request) {
   const { profil, diizinkan } = await cekRole(["admin", "staf"]);
   if (!diizinkan || !profil) {
@@ -17,7 +104,7 @@ export async function POST(request) {
   const { aksi } = body;
 
   if (aksi === "sesuaikan_jumlah") {
-    const { id, perubahan } = body;
+    const { id, perubahan, keterangan } = body;
     if (!id) {
       return NextResponse.json(
         { pesan: "ID bahan tidak valid." },
@@ -58,6 +145,15 @@ export async function POST(request) {
       .from("bahan")
       .update({ jumlah: jumlahBaru })
       .eq("id", id);
+
+    await supabase.from("riwayat_stok").insert({
+      id_bahan: id,
+      perubahan: nilaiPerubahan,
+      stok_setelah: jumlahBaru,
+      jenis: nilaiPerubahan > 0 ? "Masuk" : "Keluar",
+      keterangan: keterangan || (nilaiPerubahan > 0 ? "Stok Masuk" : "Stok Keluar"),
+      id_user: profil.id,
+    });
 
     return NextResponse.json({
       pesan: "Jumlah stok bahan berhasil diperbarui.",
@@ -105,18 +201,33 @@ export async function POST(request) {
       );
     }
 
-    const { error } = await supabase.from("bahan").insert({
-      nama: nama.trim(),
-      satuan: satuan.trim(),
-      jumlah: j,
-      batas_minimum: bm,
-    });
+    const { data: insData, error } = await supabase
+      .from("bahan")
+      .insert({
+        nama: nama.trim(),
+        satuan: satuan.trim(),
+        jumlah: j,
+        batas_minimum: bm,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       return NextResponse.json(
         { pesan: "Gagal menambahkan bahan: " + error.message },
         { status: 500 }
       );
+    }
+
+    if (j > 0 && insData) {
+      await supabase.from("riwayat_stok").insert({
+        id_bahan: insData.id,
+        perubahan: j,
+        stok_setelah: j,
+        jenis: "Masuk",
+        keterangan: "Stok awal bahan",
+        id_user: profil.id,
+      });
     }
 
     return NextResponse.json({
@@ -132,7 +243,7 @@ export async function POST(request) {
       );
     }
 
-    const { id, nama, satuan, batas_minimum } = body;
+    const { id, nama, satuan, batas_minimum, jumlah } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -163,12 +274,36 @@ export async function POST(request) {
       );
     }
 
+    const { data: bLama } = await supabase
+      .from("bahan")
+      .select("jumlah")
+      .eq("id", id)
+      .single();
+
+    if (!bLama) {
+      return NextResponse.json(
+        { pesan: "Bahan tidak ditemukan." },
+        { status: 404 }
+      );
+    }
+
+    const jBaru = jumlah !== undefined ? Number(jumlah) : Number(bLama.jumlah);
+    if (isNaN(jBaru) || jBaru < 0) {
+      return NextResponse.json(
+        { pesan: "Jumlah stok harus angka dan minimal 0." },
+        { status: 400 }
+      );
+    }
+
+    const delta = jBaru - Number(bLama.jumlah);
+
     const { error } = await supabase
       .from("bahan")
       .update({
         nama: nama.trim(),
         satuan: satuan.trim(),
         batas_minimum: bm,
+        jumlah: jBaru,
       })
       .eq("id", id);
 
@@ -177,6 +312,17 @@ export async function POST(request) {
         { pesan: "Gagal memperbarui bahan: " + error.message },
         { status: 500 }
       );
+    }
+
+    if (delta !== 0) {
+      await supabase.from("riwayat_stok").insert({
+        id_bahan: id,
+        perubahan: delta,
+        stok_setelah: jBaru,
+        jenis: "Koreksi",
+        keterangan: "Koreksi stok manual",
+        id_user: profil.id,
+      });
     }
 
     return NextResponse.json({
