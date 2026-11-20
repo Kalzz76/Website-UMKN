@@ -221,6 +221,41 @@ export async function POST(request) {
     return NextResponse.json({ pesan: "Item opsi berhasil ditambahkan." });
   }
 
+  if (aksi === "ubah_harga") {
+    const { id, harga } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { pesan: "ID item tidak valid." },
+        { status: 400 }
+      );
+    }
+
+    const hargaAngka = Number(harga);
+    if (isNaN(hargaAngka) || hargaAngka < 0) {
+      return NextResponse.json(
+        { pesan: "Harga harus berupa angka dan minimal 0." },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("opsi_item")
+      .update({
+        harga: Math.round(hargaAngka),
+      })
+      .eq("id", id);
+
+    if (error) {
+      return NextResponse.json(
+        { pesan: "Gagal mengubah harga item: " + error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ pesan: "Harga item berhasil diperbarui." });
+  }
+
   if (aksi === "edit_item") {
     const { id, nama, harga, aktif, urutan, warna, kode_visual } = body;
 

@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import PreviewKue from "@/components/PreviewKue";
 import { BadgeStatusPesanan, BadgeStatusBayar } from "@/components/BadgeStatus";
+import TombolBayarMidtrans from "@/components/TombolBayarMidtrans";
 import { formatRupiah, formatTanggalIndonesia, formatTanggalWaktu } from "@/lib/format";
 
 export const metadata = {
@@ -393,25 +394,9 @@ export default async function DetailTiketPage(props) {
 
             <div>
               <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">
-                Informasi Pembayaran
+                Pembayaran
               </h3>
-              <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-100 text-xs text-stone-700 space-y-2">
-                <p>
-                  Silakan transfer sesuai tagihan ke rekening resmi toko:
-                </p>
-                <div className="font-semibold text-stone-900">
-                  <span className="block">{pengaturan?.nama_bank || "BCA"}</span>
-                  <span className="text-sm font-extrabold text-rose-700">
-                    {pengaturan?.no_rekening || "1234567890"}
-                  </span>
-                  <span className="block text-[11px] text-stone-500">
-                    a.n. {pengaturan?.atas_nama || "Dapur Manis"}
-                  </span>
-                </div>
-                <p className="text-[11px] text-stone-500">
-                  Setelah transfer, bukti pembayaran dapat dikonfirmasi oleh admin toko.
-                </p>
-              </div>
+              <TombolBayarMidtrans pesanan={pesanan} />
             </div>
           </div>
 

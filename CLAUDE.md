@@ -367,10 +367,8 @@ Dekorasi  : Lelehan Krim 12.000 | Lilin 3.000                    [+ item]
                                                                  [+ grup]
 ```
 
-- Tiap **grup** punya: nama, urutan, `wajib` (pelanggan harus memilih), `jenis_pilihan` (`satu` atau `banyak`), `peran_visual`, dan `peran_dashboard` (`jenis` / `terlaris` / null). Di modal grup, terdapat pilihan "Tampil di dashboard sebagai" (Tidak ditampilkan, Grafik jenis kue (donut), Daftar terlaris) dengan teks bantuan "Item di grup ini yang dihitung di dashboard". Di sisi server, saat satu grup diset ke suatu peran, grup lain yang memegang peran tersebut otomatis dikosongkan (eksklusif). Grup bisa ditambah, diubah, dan dihapus oleh admin.
-- Tiap **item** punya: nama, harga, `aktif` (nonaktif berarti tidak muncul untuk pelanggan, misalnya bahan lagi habis), urutan, `warna` (kode hex, untuk preview), dan `kode_visual`.
-- Grup dan item memakai tombol **Tambah, Edit, Hapus** lewat modal. Hapus memakai konfirmasi.
-- Grup atau item yang sudah dipakai pesanan boleh dihapus karena pesanan menyimpan salinan (lihat aturan harga). Tapi sarankan **nonaktifkan** lewat pesan konfirmasi.
+- Halaman ini difokuskan khusus untuk mengatur tarif dan **harga** setiap item katalog kustomisasi kue (tanpa fitur CRUD penambahan/penghapusan grup dan item), sehingga struktur 9 grup katalog tetap konsisten dengan studio kustomisasi.
+- Admin dapat langsung mengubah harga item dengan mengeklik tombol "Ubah Harga" pada baris item terkait. Perubahan harga tersimpan aman ke database dan langsung berlaku untuk pemesanan baru.
 - Jenis kue (ulang tahun, wedding, cupcake, hampers) cukup dibuat sebagai salah satu **grup opsi** (contoh grup "Jenis Kue" dengan harga dasar). Tidak ada tabel produk terpisah.
 
 **Aturan harga (WAJIB):**
