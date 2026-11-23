@@ -34,8 +34,7 @@ export interface MenuItem {
   harga: number;
   kategori: Exclude<MenuCategoryKey, "semua">;
   kategoriLabel: string;
-  photo: string;
-  fallbackPhoto?: string;
+  photo?: string | null;
   tipe: DessertIllustType;
   ukuran: string;
   rating: number;
@@ -311,6 +310,7 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
   const [sortBy, setSortBy] = useState<SortOptionKey>("populer");
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [addedItemIds, setAddedItemIds] = useState<Record<number, boolean>>({});
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
   const [selectedCake, setSelectedCake] = useState<MenuItem>(() => {
     if (initialSelectedId) {
@@ -405,24 +405,51 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
           <div className="relative rounded-[26px] overflow-hidden shadow-xl border border-[#E8D9C8] flex flex-col justify-between h-[calc(100vh-4.5rem)] max-h-[580px] sm:max-h-[610px] min-h-[460px] bg-[#EDE0D1]">
             {/* Background Live Preview Photo with Cross-fade Animation */}
             <AnimatePresence mode="wait">
-              <motion.img
-                key={selectedCake.id}
-                src={selectedCake.photo}
-                alt={selectedCake.nama}
-                onError={(e) => {
-                  const fb =
-                    selectedCake.fallbackPhoto ||
-                    "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
-                  if (e.currentTarget.src !== fb) {
-                    e.currentTarget.src = fb;
+              {selectedCake.photo && !imgErrors[selectedCake.id] ? (
+                <motion.img
+                  key={selectedCake.id}
+                  src={selectedCake.photo}
+                  alt={selectedCake.nama}
+                  onError={() =>
+                    setImgErrors((prev) => ({
+                      ...prev,
+                      [selectedCake.id]: true,
+                    }))
                   }
-                }}
-                initial={{ opacity: 0.3, scale: 1.04 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0.3, scale: 0.98 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-0 w-full h-full object-cover object-center"
-              />
+                  initial={{ opacity: 0.3, scale: 1.04 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0.3, scale: 0.98 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+              ) : (
+                <div
+                  key={`no-photo-${selectedCake.id}`}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-[#EDE0D1] text-[#8C6D62] p-6 text-center"
+                >
+                  <div className="w-20 h-20 rounded-2xl bg-[#E0D1C1] flex items-center justify-center mb-3 shadow-inner">
+                    <svg
+                      className="w-10 h-10 text-[#8C6D62]/70"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </div>
+                  <span className="font-serif font-bold text-base text-[#381F1B]">
+                    Foto Belum Tersedia
+                  </span>
+                  <span className="text-xs text-[#7D5A50] mt-1">
+                    Foto produk akan tampil setelah diunggah oleh admin.
+                  </span>
+                </div>
+              )}
             </AnimatePresence>
 
             {/* Top Scrim Gradient */}
@@ -675,19 +702,45 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                         <div className="flex items-start gap-3">
                           {/* Cake Photo with Zoom on Hover */}
                           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#EFE2D6] relative">
-                            <img
-                              src={item.photo}
-                              alt={item.nama}
-                              onError={(e) => {
-                                const fb =
-                                  item.fallbackPhoto ||
-                                  "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
-                                if (e.currentTarget.src !== fb) {
-                                  e.currentTarget.src = fb;
+                            {item.photo && !imgErrors[item.id] ? (
+                              <img
+                                src={item.photo}
+                                alt={item.nama}
+                                onError={() =>
+                                  setImgErrors((prev) => ({
+                                    ...prev,
+                                    [item.id]: true,
+                                  }))
                                 }
-                              }}
-                              className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-300"
-                            />
+                                className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-[#F5ECE3] text-[#8C6D62] text-center p-1">
+                                <svg
+                                  className="w-6 h-6 text-[#8C6D62]/60 mb-0.5"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <rect
+                                    x="3"
+                                    y="3"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                    ry="2"
+                                  />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                                <span className="text-[9px] font-semibold text-[#8C6D62] leading-tight">
+                                  Tidak ada foto
+                                </span>
+                              </div>
+                            )}
                             {item.badge && (
                               <span className="absolute bottom-1 left-1 right-1 px-1 py-0.5 rounded bg-black/60 backdrop-blur-xs text-[9px] font-bold text-white text-center truncate">
                                 {item.badge}
