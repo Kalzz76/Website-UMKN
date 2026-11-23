@@ -7,6 +7,40 @@ export const metadata = {
   title: "Dashboard - Cravely Bakery",
 };
 
+async function hitungKueHariIni(supabase, tglHariIni) {
+  const { data: pesananHariIni } = await supabase
+    .from("pesanan")
+    .select("id")
+    .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
+    .eq("tanggal_ambil", tglHariIni);
+
+  if (!pesananHariIni || pesananHariIni.length === 0) return 0;
+  const ids = pesananHariIni.map((p) => p.id);
+
+  const { data: itemsHariIni } = await supabase
+    .from("pesanan_item")
+    .select("id_pesanan, jenis, jumlah")
+    .in("id_pesanan", ids);
+
+  let total = 0;
+  const countedOrders = new Set();
+  if (itemsHariIni && itemsHariIni.length > 0) {
+    for (let i = 0; i < itemsHariIni.length; i++) {
+      const it = itemsHariIni[i];
+      countedOrders.add(it.id_pesanan);
+      total += it.jenis === "Custom" ? 1 : Number(it.jumlah) || 1;
+    }
+  }
+
+  for (let i = 0; i < ids.length; i++) {
+    if (!countedOrders.has(ids[i])) {
+      total += 1;
+    }
+  }
+
+  return total;
+}
+
 export default async function DashboardPage() {
   const { profil } = await cekRole(["admin", "staf"]);
   const role = profil?.role || "staf";
@@ -21,7 +55,7 @@ export default async function DashboardPage() {
     const [
       { data: pengaturan },
       { count: buktiMenungguCount },
-      { count: kueHariIniCount },
+      kueHariIniTotal,
       { data: antreanRaw },
       { data: bahanData },
     ] = await Promise.all([
@@ -34,11 +68,7 @@ export default async function DashboardPage() {
         .from("pembayaran")
         .select("*", { count: "exact", head: true })
         .eq("status", "Menunggu Konfirmasi"),
-      supabase
-        .from("pesanan")
-        .select("*", { count: "exact", head: true })
-        .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
-        .eq("tanggal_ambil", tglHariIni),
+      hitungKueHariIni(supabase, tglHariIni),
       supabase
         .from("pesanan")
         .select("id, kode_pesanan, nama_penerima, tanggal_ambil, jam_ambil, status_pesanan, metode_pengiriman")
@@ -56,7 +86,7 @@ export default async function DashboardPage() {
 
     const ringkasanHero = {
       buktiMenunggu: buktiMenungguCount || 0,
-      kueHariIni: kueHariIniCount || 0,
+      kueHariIni: kueHariIniTotal || 0,
     };
 
     const daftarAntrean = antreanRaw || [];
@@ -147,7 +177,7 @@ export default async function DashboardPage() {
   const [
     { data: pengaturan },
     { count: buktiMenungguCount },
-    { count: kueHariIniCount },
+    kueHariIniTotal,
   ] = await Promise.all([
     supabase
       .from("pengaturan_toko")
@@ -158,11 +188,7 @@ export default async function DashboardPage() {
       .from("pembayaran")
       .select("*", { count: "exact", head: true })
       .eq("status", "Menunggu Konfirmasi"),
-    supabase
-      .from("pesanan")
-      .select("*", { count: "exact", head: true })
-      .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
-      .eq("tanggal_ambil", tglHariIni),
+    hitungKueHariIni(supabase, tglHariIni),
   ]);
 
   const namaToko = pengaturan?.nama_toko || "Cravely Bakery";
@@ -170,7 +196,7 @@ export default async function DashboardPage() {
 
   const ringkasanHero = {
     buktiMenunggu: buktiMenungguCount || 0,
-    kueHariIni: kueHariIniCount || 0,
+    kueHariIni: kueHariIniTotal || 0,
   };
 
   const { data: semuaPesananRaw } = await supabase
@@ -344,13 +370,19 @@ export default async function DashboardPage() {
     .eq("peran_dashboard", "terlaris")
     .maybeSingle();
 
-  const { data: semuaPilihanRaw } = await supabase
-    .from("pesanan_pilihan")
-    .select("id_pesanan, id_grup, nama_grup, nama_item, warna");
+  const [semuaPilihanRes, semuaItemsRes] = await Promise.all([
+    supabase
+      .from("pesanan_pilihan")
+      .select("id_pesanan, id_grup, nama_grup, nama_item, warna"),
+    supabase
+      .from("pesanan_item")
+      .select("id_pesanan, jenis, jumlah")
+  ]);
 
-  const semuaPilihan = (semuaPilihanRaw || []).filter(
+  const semuaPilihan = (semuaPilihanRes.data || []).filter(
     (item) => orderTimeMap[item.id_pesanan] !== undefined
   );
+  const semuaItems = semuaItemsRes.data || [];
 
   const periodeStartMap = {
     hari_ini: tglAwalHariIni,
@@ -359,7 +391,7 @@ export default async function DashboardPage() {
     tahun_ini: tglAwalTahunIni,
   };
 
-  const paletDonut = ["#1e4b3c", "#608d7c", "#b2cfbe", "#8fa58f", "#d9e6dd"];
+  const paletDonut = ["#1e4b3c", "#608d7c", "#b2cfbe", "#8fa58f", "#d9e6dd", "#d97706"];
 
   const donutPerPeriode = {};
   const terlarisPerPeriode = {};
@@ -370,12 +402,21 @@ export default async function DashboardPage() {
     const key = daftarKunciPeriode[k];
     const startTs = periodeStartMap[key];
 
-    if (!grupJenis) {
+    let totalKatalog = 0;
+    for (let m = 0; m < semuaItems.length; m++) {
+      const it = semuaItems[m];
+      const wt = orderTimeMap[it.id_pesanan];
+      if (wt && wt >= startTs && it.jenis === "Siap") {
+        totalKatalog += Number(it.jumlah) || 1;
+      }
+    }
+
+    if (!grupJenis && totalKatalog === 0) {
       donutPerPeriode[key] = {
         adaGrup: false,
         namaGrup: "",
         kosong: true,
-        pesan: "Belum ada grup yang diset sebagai jenis kue di menu Harga & Opsi",
+        pesan: "Belum ada grup yang diset sebagai jenis kue di menu Katalog & Opsi",
         items: [],
         total: 0,
       };
@@ -383,25 +424,32 @@ export default async function DashboardPage() {
       const hitungMap = {};
       let totalPilihan = 0;
 
-      for (let p = 0; p < semuaPilihan.length; p++) {
-        const item = semuaPilihan[p];
-        const waktuPesanan = orderTimeMap[item.id_pesanan];
-        if (waktuPesanan < startTs) continue;
+      if (grupJenis) {
+        for (let p = 0; p < semuaPilihan.length; p++) {
+          const item = semuaPilihan[p];
+          const waktuPesanan = orderTimeMap[item.id_pesanan];
+          if (waktuPesanan < startTs) continue;
 
-        const cocokGrup =
-          (item.id_grup && String(item.id_grup) === String(grupJenis.id)) ||
-          (!item.id_grup && item.nama_grup === grupJenis.nama);
+          const cocokGrup =
+            (item.id_grup && String(item.id_grup) === String(grupJenis.id)) ||
+            (!item.id_grup && item.nama_grup === grupJenis.nama);
 
-        if (cocokGrup) {
-          hitungMap[item.nama_item] = (hitungMap[item.nama_item] || 0) + 1;
-          totalPilihan++;
+          if (cocokGrup) {
+            hitungMap[item.nama_item] = (hitungMap[item.nama_item] || 0) + 1;
+            totalPilihan++;
+          }
         }
+      }
+
+      if (totalKatalog > 0) {
+        hitungMap["Kue Katalog"] = totalKatalog;
+        totalPilihan += totalKatalog;
       }
 
       if (totalPilihan === 0) {
         donutPerPeriode[key] = {
           adaGrup: true,
-          namaGrup: grupJenis.nama,
+          namaGrup: grupJenis?.nama || "Jenis Kue",
           kosong: true,
           pesan: "Belum ada pesanan pada periode ini",
           items: [],
@@ -433,7 +481,7 @@ export default async function DashboardPage() {
 
         donutPerPeriode[key] = {
           adaGrup: true,
-          namaGrup: grupJenis.nama,
+          namaGrup: grupJenis?.nama || "Jenis Kue",
           kosong: false,
           pesan: "",
           items: itemsWithPercent,
@@ -447,7 +495,7 @@ export default async function DashboardPage() {
         adaGrup: false,
         namaGrup: "",
         kosong: true,
-        pesan: "Belum ada grup yang diset sebagai terlaris di menu Harga & Opsi",
+        pesan: "Belum ada grup yang diset sebagai terlaris di menu Katalog & Opsi",
         items: [],
       };
     } else {
@@ -514,14 +562,21 @@ export default async function DashboardPage() {
   let fotoPreviewMap = {};
 
   if (idTerbaruList.length > 0) {
-    const { data: pilihanTerbaruData } = await supabase
-      .from("pesanan_pilihan")
-      .select("id_pesanan, peran_visual, warna, kode_visual")
-      .in("id_pesanan", idTerbaruList);
+    const [pilihanTerbaruData, itemsTerbaruData] = await Promise.all([
+      supabase
+        .from("pesanan_pilihan")
+        .select("id_pesanan, peran_visual, warna, kode_visual")
+        .in("id_pesanan", idTerbaruList),
+      supabase
+        .from("pesanan_item")
+        .select("id_pesanan, jenis, foto_preview, produk(foto)")
+        .in("id_pesanan", idTerbaruList)
+        .order("urutan", { ascending: true })
+    ]);
 
-    if (pilihanTerbaruData) {
-      for (let i = 0; i < pilihanTerbaruData.length; i++) {
-        const item = pilihanTerbaruData[i];
+    if (pilihanTerbaruData.data) {
+      for (let i = 0; i < pilihanTerbaruData.data.length; i++) {
+        const item = pilihanTerbaruData.data[i];
         if (!pilihanTerbaruMap[item.id_pesanan]) {
           pilihanTerbaruMap[item.id_pesanan] = [];
         }
@@ -529,10 +584,38 @@ export default async function DashboardPage() {
       }
     }
 
+    const { data: storagePublik } = supabase.storage.from("publik").getPublicUrl("");
+    const basePublikUrl = storagePublik?.publicUrl ? storagePublik.publicUrl.replace(/\/+$/, "") : "";
     const adminClient = getSupabaseAdmin();
+
+    const itemsByOrder = {};
+    const itemsList = itemsTerbaruData.data || [];
+    for (let i = 0; i < itemsList.length; i++) {
+      const it = itemsList[i];
+      if (!itemsByOrder[it.id_pesanan]) itemsByOrder[it.id_pesanan] = [];
+      itemsByOrder[it.id_pesanan].push(it);
+    }
+
     for (let i = 0; i < daftarTerbaru.length; i++) {
       const p = daftarTerbaru[i];
-      if (p.foto_preview) {
+      const ordItems = itemsByOrder[p.id] || [];
+      if (ordItems.length > 0) {
+        const first = ordItems[0];
+        if (first.jenis === "Custom" && first.foto_preview) {
+          const { data: signed } = await adminClient.storage
+            .from("referensi-kue")
+            .createSignedUrl(first.foto_preview, 3600);
+          if (signed) fotoPreviewMap[p.id] = signed.signedUrl;
+        } else if (first.jenis === "Siap" && first.produk?.foto) {
+          const f = first.produk.foto;
+          fotoPreviewMap[p.id] = f.startsWith("http") ? f : `${basePublikUrl}/${f.replace(/^\/+/, "")}`;
+        } else if (p.foto_preview) {
+          const { data: signed } = await adminClient.storage
+            .from("referensi-kue")
+            .createSignedUrl(p.foto_preview, 3600);
+          if (signed) fotoPreviewMap[p.id] = signed.signedUrl;
+        }
+      } else if (p.foto_preview) {
         const { data: signed } = await adminClient.storage
           .from("referensi-kue")
           .createSignedUrl(p.foto_preview, 3600);

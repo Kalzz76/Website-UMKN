@@ -22,8 +22,8 @@ export default function SidebarDashboard({ profil, namaToko }) {
     ...(isAdmin
       ? [
           {
-            nama: "Harga & Opsi",
-            href: "/dashboard/harga-opsi",
+            nama: "Katalog & Opsi",
+            href: "/dashboard/katalog-opsi",
             ikon: "fa-solid fa-tags",
             persis: false,
           },

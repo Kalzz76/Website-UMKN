@@ -24,6 +24,7 @@ export default function PengaturanPage() {
     jam_tutup: "20:00",
     kuota_harian: 5,
     minimal_hari_pesan: 2,
+    minimal_hari_siap: 1,
     mode_pembayaran: "DP",
     persen_dp: 50,
     batas_bayar_jam: 24,
@@ -100,6 +101,7 @@ export default function PengaturanPage() {
         jam_tutup: toko.jam_tutup?.slice(0, 5) || "20:00",
         kuota_harian: toko.kuota_harian ?? 5,
         minimal_hari_pesan: toko.minimal_hari_pesan ?? 2,
+        minimal_hari_siap: toko.minimal_hari_siap ?? 1,
         mode_pembayaran: toko.mode_pembayaran || "DP",
         persen_dp: toko.persen_dp ?? 50,
         batas_bayar_jam: toko.batas_bayar_jam ?? 24,
@@ -189,6 +191,7 @@ export default function PengaturanPage() {
     formData.append("jam_tutup", formToko.jam_tutup);
     formData.append("kuota_harian", formToko.kuota_harian);
     formData.append("minimal_hari_pesan", formToko.minimal_hari_pesan);
+    formData.append("minimal_hari_siap", formToko.minimal_hari_siap);
     formData.append("mode_pembayaran", formToko.mode_pembayaran);
     formData.append("persen_dp", formToko.persen_dp);
     formData.append("batas_bayar_jam", formToko.batas_bayar_jam);
@@ -758,7 +761,29 @@ export default function PengaturanPage() {
                   className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                 />
                 <span className="text-[11px] text-stone-500 mt-1 block">
-                  Contoh: 2 (pesan minimal 2 hari sebelumnya)
+                  Contoh: 2 (pesan minimal 2 hari sebelumnya untuk kue custom)
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Minimal hari pesan kue katalog
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={formToko.minimal_hari_siap}
+                  onChange={(e) =>
+                    setFormToko({
+                      ...formToko,
+                      minimal_hari_siap: Number(e.target.value),
+                    })
+                  }
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                />
+                <span className="text-[11px] text-stone-500 mt-1 block">
+                  Contoh: 1 (pesan minimal 1 hari sebelumnya untuk kue siap/katalog)
                 </span>
               </div>
             </div>

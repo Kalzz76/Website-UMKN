@@ -207,8 +207,63 @@ export default function DashboardProfilPage() {
         <div className="lg:col-span-4 space-y-4">
           <div className="content-card p-6 text-center space-y-4">
             <div className="relative inline-block mx-auto">
-              <div className="w-20 h-20 rounded-full bg-[#1d3b2e] text-[#f4ecd8] border-2 border-[#dfd4bd] shadow-sm flex items-center justify-center font-black text-2xl mx-auto">
-                {inisial}
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#dfd4bd] shadow-sm bg-[#f8e4d9] mx-auto flex items-center justify-center">
+                <svg
+                  viewBox="0 0 100 100"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                >
+                  <rect width="100" height="100" fill="#f8e4d9" />
+                  <path
+                    d="M20 50 C15 30 30 10 50 10 C70 10 85 30 80 50 C85 65 75 75 75 75 C75 75 65 60 65 55 C35 55 25 75 25 75 C25 75 15 65 20 50 Z"
+                    fill="#2d2226"
+                  />
+                  <path
+                    d="M28 42 C28 65 38 78 50 78 C62 78 72 65 72 42 C72 25 28 25 28 42 Z"
+                    fill="#ffdfd2"
+                  />
+                  <ellipse
+                    cx="36"
+                    cy="56"
+                    rx="5"
+                    ry="3"
+                    fill="#ffb4a2"
+                    opacity="0.8"
+                  />
+                  <ellipse
+                    cx="64"
+                    cy="56"
+                    rx="5"
+                    ry="3"
+                    fill="#ffb4a2"
+                    opacity="0.8"
+                  />
+                  <ellipse cx="40" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
+                  <circle cx="41" cy="46" r="1.5" fill="#ffffff" />
+                  <ellipse cx="60" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
+                  <circle cx="61" cy="46" r="1.5" fill="#ffffff" />
+                  <path
+                    d="M47 62 Q50 65 53 62"
+                    stroke="#b25d5d"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <path
+                    d="M25 35 C32 20 45 15 50 15 C55 15 68 20 75 35 C70 30 65 30 60 38 C55 28 48 26 42 36 C38 28 32 30 25 35 Z"
+                    fill="#3a2e33"
+                  />
+                  <path
+                    d="M38 25 L43 42 L47 28 L53 40 L56 26"
+                    fill="#3a2e33"
+                  />
+                  <path
+                    d="M25 88 C30 76 42 76 50 76 C58 76 70 76 75 88 L85 100 L15 100 Z"
+                    fill="#ffffff"
+                  />
+                  <path d="M46 76 L50 85 L54 76 Z" fill="#2d2226" />
+                </svg>
               </div>
               <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-[10px] text-white">
                 <i className="fa-solid fa-check"></i>

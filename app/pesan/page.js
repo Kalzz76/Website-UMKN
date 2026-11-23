@@ -737,7 +737,7 @@ function stand(pr) {
     [pr * 0.985, 0.012],
     [0, 0.012],
   ].map((p) => new THREE.Vector2(p[0], p[1]));
-  return new THREE.Mesh(new THREE.LatheGeometry(pts, 96), M("#EADDE3", 0.55));
+  return new THREE.Mesh(new THREE.LatheGeometry(pts, 96), M("#FFFDF9", 0.35));
 }
 
 /* ===== ruang dapur isometrik (CakeCraft Studio) ===== */
@@ -814,22 +814,484 @@ function kplant(g, x, y, z, s, pot, leaf, n) {
   }
   g.add(p);
 }
+
+/* ===== Karakter Patissier Imut di Studio Dapur ===== */
+function limb(g, a, b, r, c) {
+  const A = new THREE.Vector3(...a),
+    B = new THREE.Vector3(...b),
+    d = B.clone().sub(A),
+    m = new THREE.Mesh(
+      new THREE.CylinderGeometry(r, r * 0.9, d.length(), 14),
+      KM(c, 0.6)
+    );
+  m.position.copy(A).add(B).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  m.castShadow = true;
+  g.add(m);
+  return m;
+}
+
+function buildGirl() {
+  const g = new THREE.Group(),
+    skin = "#fbe2d4",
+    hair = "#6a3733",
+    wt = "#fffaf6",
+    pk = "#ee8da3",
+    pkD = "#d96f8a",
+    R = 0.78,
+    HY = 3.4,
+    fz = (x, y) => Math.sqrt(Math.max(0.02, R * R - x * x - y * y)) * 0.95;
+
+  function tube(par, pts, rf, col, rough) {
+    const cv = new THREE.CatmullRomCurve3(
+        pts.map((v) => new THREE.Vector3(v[0], v[1], v[2]))
+      ),
+      TS = 24,
+      RS = 16,
+      geo = new THREE.TubeGeometry(cv, TS, 1, RS, false),
+      pa = geo.attributes.position;
+    for (let i = 0; i <= TS; i++) {
+      const t = i / TS,
+        c = cv.getPointAt(t),
+        f = rf(t);
+      for (let j = 0; j <= RS; j++) {
+        const k = i * (RS + 1) + j;
+        pa.setXYZ(
+          k,
+          c.x + (pa.getX(k) - c.x) * f,
+          c.y + (pa.getY(k) - c.y) * f,
+          c.z + (pa.getZ(k) - c.z) * f
+        );
+      }
+    }
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, KM(col, rough));
+    m.castShadow = true;
+    par.add(m);
+    return m;
+  }
+  const slv = (t) =>
+      0.25 - 0.05 * t + 0.05 * Math.pow(Math.max(0, (t - 0.78) / 0.22), 1.5),
+    fr = (t) => 0.1 - 0.025 * t,
+    hr = (t) => Math.max(0.5, 1 - 0.5 * Math.pow(t, 2));
+
+  function hand(par) {
+    const h = new THREE.Group();
+    par.add(h);
+    ks(h, 0.15, skin, 0, 0.14, 0, 1, 1.05, 0.7, 0.6);
+    [
+      [-0.08, 0.8],
+      [-0.03, 1],
+      [0.03, 1],
+      [0.08, 0.8],
+    ].forEach((f, j) => {
+      const m = ks(
+        h,
+        0.05,
+        skin,
+        f[0] * 1.1,
+        0.36 + f[1] * 0.03,
+        0,
+        1,
+        2.2 * f[1] + 0.4,
+        1.1,
+        0.6
+      );
+      m.rotation.z = (j - 1.5) * -0.1;
+    });
+    const t = ks(h, 0.058, skin, 0.16, 0.18, 0.03, 1, 2.1, 1.1, 0.6);
+    t.rotation.z = -0.85;
+    h.scale.setScalar(1.1);
+    return h;
+  }
+
+  /* kaki: kaos kaki putih + sepatu merah */
+  for (const x of [-0.22, 0.22]) {
+    kc(g, 0.1, 0.1, 0.5, wt, x, 0.3, 0, 0.8);
+    ks(g, 0.19, "#b03a48", x, 0.08, 0.1, 1, 0.6, 1.5, 0.4);
+  }
+
+  /* rok pink mengembang + renda putih */
+  kc(g, 0.46, 0.8, 0.95, pk, 0, 1.0, 0, 0.85, 40);
+  const rf = new THREE.Mesh(
+    new THREE.TorusGeometry(0.8, 0.045, 8, 40),
+    KM(wt, 0.8)
+  );
+  rf.rotation.x = Math.PI / 2;
+  rf.position.y = 0.53;
+  g.add(rf);
+  const wb = new THREE.Mesh(
+    new THREE.TorusGeometry(0.45, 0.05, 8, 36),
+    KM(pkD, 0.8)
+  );
+  wb.rotation.x = Math.PI / 2;
+  wb.position.y = 1.5;
+  g.add(wb);
+
+  /* blus putih + bib apron pink dengan saku hati */
+  const to = kc(g, 0.4, 0.46, 1.0, wt, 0, 2.02, 0, 0.85, 28);
+  to.scale.z = 0.85;
+  ks(g, 0.45, wt, 0, 2.5, 0, 1, 0.35, 0.75, 0.85);
+  kb(g, 0.6, 0.8, 0.05, pk, 0, 1.95, 0.38, 0.85);
+  kb(g, 0.62, 0.05, 0.06, pkD, 0, 2.35, 0.38, 0.85);
+  for (const q of [-1, 1]) {
+    tube(
+      g,
+      [
+        [q * 0.24, 2.35, 0.38],
+        [q * 0.26, 2.6, 0.2],
+        [q * 0.28, 2.72, -0.1],
+      ],
+      (t) => 0.05,
+      pk,
+      0.85
+    );
+  }
+  kb(g, 0.28, 0.24, 0.03, wt, 0, 1.8, 0.43, 0.85);
+  for (const q of [-1, 1])
+    ks(g, 0.05, "#e24a6a", q * 0.035, 1.83, 0.46, 1, 1, 0.4, 0.5);
+  const hb = kb(g, 0.075, 0.075, 0.03, "#e24a6a", 0, 1.79, 0.46, 0.5);
+  hb.rotation.z = Math.PI / 4;
+  kc(g, 0.17, 0.19, 0.28, wt, 0, 2.64, 0, 0.8);
+
+  /* lengan kanan (tergantung santai / siap melambai) */
+  const ar = new THREE.Group();
+  ar.position.set(-0.6, 2.45, 0);
+  g.add(ar);
+  ks(ar, 0.27, wt, 0, 0, 0, 1, 1, 1, 0.85);
+  tube(
+    ar,
+    [
+      [0, 0, 0],
+      [-0.1, -0.2, 0.01],
+      [-0.18, -0.4, 0.03],
+    ],
+    slv,
+    wt,
+    0.85
+  );
+  const fa = new THREE.Group();
+  fa.position.set(-0.18, -0.4, 0.03);
+  ar.add(fa);
+  tube(
+    fa,
+    [
+      [0.03, 0.1, 0],
+      [0, 0, 0],
+      [-0.08, -0.45, 0.05],
+      [-0.12, -0.88, 0.12],
+    ],
+    fr,
+    skin,
+    0.6
+  );
+  const wh = new THREE.Group();
+  wh.position.set(-0.12, -0.88, 0.12);
+  fa.add(wh);
+  hand(wh).rotation.z = Math.PI;
+
+  /* lengan kiri */
+  const al = new THREE.Group();
+  al.position.set(0.6, 2.45, 0);
+  g.add(al);
+  ks(al, 0.27, wt, 0, 0, 0, 1, 1, 1, 0.85);
+  tube(
+    al,
+    [
+      [0, 0, 0],
+      [0.1, -0.2, 0.01],
+      [0.18, -0.4, 0.03],
+    ],
+    slv,
+    wt,
+    0.85
+  );
+  const lf = new THREE.Group();
+  lf.position.set(0.18, -0.4, 0.03);
+  al.add(lf);
+  tube(
+    lf,
+    [
+      [-0.03, 0.1, 0],
+      [0, 0, 0],
+      [0.08, -0.45, 0.05],
+      [0.12, -0.88, 0.12],
+    ],
+    fr,
+    skin,
+    0.6
+  );
+  const lw = new THREE.Group();
+  lw.position.set(0.12, -0.88, 0.12);
+  lf.add(lw);
+  hand(lw).rotation.z = Math.PI;
+
+  /* kepala */
+  const hd = new THREE.Group();
+  hd.position.y = HY;
+  g.add(hd);
+  ks(hd, R, skin, 0, 0, 0, 1, 1, 0.95, 0.55);
+  ks(hd, 0.4, skin, 0, -0.36, 0.2, 1, 0.85, 0.9, 0.55);
+  const ey = new THREE.Group();
+  hd.add(ey);
+  for (const q of [-1, 1]) {
+    const x = q * 0.28,
+      y = -0.1,
+      z = fz(x, y);
+    ks(ey, 0.17, "#ffffff", x, y, z - 0.03, 1.05, 1.15, 0.35, 0.3);
+    ks(ey, 0.155, "#6b3a2a", x, y, z, 0.95, 1.15, 0.3, 0.25);
+    ks(ey, 0.1, "#c98a52", x, y - 0.06, z + 0.012, 1.1, 0.5, 0.3, 0.3);
+    ks(ey, 0.085, "#2a1410", x, y, z + 0.025, 1, 1.1, 0.3, 0.2);
+    ks(ey, 0.045, "#ffffff", x + q * 0.05, y + 0.06, z + 0.05, 1, 1, 0.4, 0.2);
+    ks(
+      ey,
+      0.022,
+      "#ffffff",
+      x - q * 0.05,
+      y - 0.07,
+      z + 0.045,
+      1,
+      1,
+      0.4,
+      0.2
+    );
+    const ld = new THREE.Mesh(
+      new THREE.TorusGeometry(0.17, 0.028, 6, 18, Math.PI),
+      KM("#3a1d18", 0.4)
+    );
+    ld.scale.set(1.08, 1, 1);
+    ld.position.set(x, y + 0.01, z + 0.01);
+    ey.add(ld);
+    ks(
+      hd,
+      0.15,
+      "#ff9aa8",
+      q * 0.47,
+      -0.27,
+      fz(0.47, -0.27) - 0.03,
+      1.3,
+      0.6,
+      0.3,
+      0.8
+    );
+    ks(hd, 0.09, skin, q * 0.77, -0.05, 0, 0.5, 1, 0.8, 0.55);
+  }
+  ks(hd, 0.035, "#eebfae", 0, -0.2, fz(0, -0.2) + 0.01, 1, 1.2, 0.8, 0.6);
+  const mo = new THREE.Group();
+  mo.position.set(0, -0.36, fz(0, -0.36) - 0.01);
+  hd.add(mo);
+  const sm = new THREE.Mesh(
+    new THREE.TorusGeometry(0.075, 0.014, 6, 14, Math.PI),
+    KM("#c4505a", 0.5)
+  );
+  sm.rotation.z = Math.PI;
+  sm.position.y = 0.04;
+  mo.add(sm);
+
+  /* rambut panjang coklat manis */
+  ks(hd, R * 1.03, hair, 0, 0.04, -0.22, 1.02, 1, 0.85, 0.5);
+  const bk = kc(g, 0.62, 0.7, 1.5, hair, 0, 2.5, -0.32, 0.5, 28);
+  bk.scale.z = 0.5;
+  const cap = new THREE.Mesh(
+    new THREE.SphereGeometry(R * 1.05, 32, 24, 0, 6.283, 0, 1.35),
+    KM(hair, 0.45)
+  );
+  cap.position.y = 0.02;
+  cap.castShadow = true;
+  hd.add(cap);
+
+  function lock(par, pts, r, tip) {
+    const cv = new THREE.CatmullRomCurve3(
+        pts.map((v) => new THREE.Vector3(v[0], v[1], v[2]))
+      ),
+      TS = 20,
+      RS = 12,
+      geo = new THREE.TubeGeometry(cv, TS, r, RS, false),
+      pa = geo.attributes.position;
+    for (let i = 0; i <= TS; i++) {
+      const t = i / TS,
+        c = cv.getPointAt(t),
+        f = Math.max(tip, 1 - (1 - tip) * Math.pow(t, 1.6));
+      for (let j = 0; j <= RS; j++) {
+        const k = i * (RS + 1) + j;
+        pa.setXYZ(
+          k,
+          c.x + (pa.getX(k) - c.x) * f,
+          c.y + (pa.getY(k) - c.y) * f,
+          c.z + (pa.getZ(k) - c.z) * f
+        );
+      }
+    }
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, KM(hair, 0.45));
+    m.castShadow = true;
+    par.add(m);
+    return m;
+  }
+
+  for (const x of [-0.56, -0.42, -0.28, -0.14, 0, 0.14, 0.28, 0.42, 0.56])
+    lock(
+      hd,
+      [
+        [x * 0.85, 0.72, -0.02],
+        [x * 0.95, 0.52, fz(x, 0.52) + 0.02],
+        [x, 0.32, fz(x, 0.32) + 0.05],
+        [x * 1.02, 0.15, fz(x, 0.15) + 0.05],
+      ],
+      0.13,
+      0.3
+    );
+  for (const q of [-1, 1]) {
+    lock(
+      hd,
+      [
+        [q * 0.66, 0.3, 0.2],
+        [q * 0.77, 0, 0.2],
+        [q * 0.75, -0.3, 0.25],
+        [q * 0.66, -0.5, 0.38],
+      ],
+      0.13,
+      0.25
+    );
+    lock(
+      hd,
+      [
+        [q * 0.6, 0.28, 0.52],
+        [q * 0.64, -0.05, 0.45],
+        [q * 0.6, -0.32, 0.5],
+      ],
+      0.08,
+      0.3
+    );
+    lock(
+      g,
+      [
+        [q * 0.76, HY - 0.3, -0.05],
+        [q * 0.92, HY - 0.9, -0.12],
+        [q * 0.92, HY - 1.45, -0.12],
+        [q * 0.84, HY - 1.95, -0.08],
+      ],
+      0.17,
+      0.75
+    );
+  }
+
+  /* pita pink di atas kepala */
+  const bw = new THREE.Group();
+  bw.position.set(-0.3, 0.78, 0.22);
+  bw.rotation.z = 0.35;
+  hd.add(bw);
+  for (const q of [-1, 1]) {
+    const lp = ks(bw, 0.17, pk, q * 0.2, 0, 0, 1.2, 0.8, 0.5, 0.5);
+    lp.rotation.z = q * 0.25;
+  }
+  ks(bw, 0.08, pkD, 0, 0, 0.04, 1, 1, 0.8, 0.5);
+
+  /* balon "Haii!" */
+  if (typeof document !== "undefined") {
+    try {
+      const cb = document.createElement("canvas");
+      cb.width = 256;
+      cb.height = 160;
+      const c2 = cb.getContext("2d");
+      if (c2) {
+        c2.fillStyle = "#ffffff";
+        c2.strokeStyle = "#ee8da3";
+        c2.lineWidth = 8;
+        c2.lineJoin = "round";
+        c2.beginPath();
+        c2.moveTo(40, 10);
+        c2.arcTo(246, 10, 246, 60, 30);
+        c2.arcTo(246, 112, 200, 112, 30);
+        c2.lineTo(90, 112);
+        c2.lineTo(34, 150);
+        c2.lineTo(60, 112);
+        c2.arcTo(10, 112, 10, 60, 30);
+        c2.arcTo(10, 10, 60, 10, 30);
+        c2.closePath();
+        c2.fill();
+        c2.stroke();
+        c2.fillStyle = "#d96f8a";
+        c2.font = "bold 54px sans-serif";
+        c2.textAlign = "center";
+        c2.textBaseline = "middle";
+        c2.fillText("Haii! 👋", 128, 62);
+        const bub = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: new THREE.CanvasTexture(cb),
+            transparent: true,
+            opacity: 0,
+            depthTest: false,
+          })
+        );
+        bub.position.set(1.3, 4.7, 0);
+        bub.renderOrder = 10;
+        bub.visible = false;
+        g.add(bub);
+        g.userData.bub = bub;
+      }
+    } catch (_) {}
+  }
+
+  g.userData.fa = fa;
+  g.userData.hd = hd;
+  g.userData.ey = ey;
+  g.userData.wh = wh;
+  g.userData.ar = ar;
+  g.userData.al = al;
+  g.userData.mo = mo;
+
+  return g;
+}
+
+function charAnim(t, kitchen) {
+  if (!kitchen) return;
+  const u = kitchen.userData?.girl;
+  if (!u) return;
+  const G = kitchen.userData?.girlG;
+  if (G) {
+    G.rotation.z = Math.sin(t * 0.0015) * 0.025;
+    G.scale.y = 0.9 * (1 + Math.sin(t * 0.003) * 0.01);
+  }
+  const p = (t % 11000) / 3000,
+    e = p < 1 ? Math.max(0, Math.min(1, p / 0.15, (1 - p) / 0.15)) : 0,
+    E = e * e * (3 - 2 * e),
+    sw = Math.sin(t * 0.013);
+  if (u.ar) u.ar.rotation.z = -1.7 * E + Math.sin(t * 0.0018) * 0.03 * (1 - E);
+  if (u.fa) u.fa.rotation.z = -1.5 * E + sw * 0.3 * E + Math.sin(t * 0.004) * 0.05 * (1 - E);
+  if (u.wh) u.wh.rotation.z = sw * 0.35 * E;
+  if (u.al) u.al.rotation.z = Math.sin(t * 0.0017 + 1) * 0.03;
+  if (u.hd) {
+    u.hd.rotation.z = 0.05 + E * 0.08 + Math.sin(t * 0.002) * 0.04;
+    u.hd.rotation.y = Math.sin(t * 0.0013) * 0.12;
+    u.hd.rotation.x = Math.sin(t * 0.0021) * 0.03;
+  }
+  if (u.mo) u.mo.scale.y = 1 + Math.sin(t * 0.004) * 0.1 + Math.abs(sw) * 0.6 * E;
+  if (u.ey) u.ey.scale.y = (t % 3800) < 140 ? 0.12 : 1;
+  if (u.bub) {
+    u.bub.visible = E > 0.01;
+    u.bub.material.opacity = E;
+    const k = 0.6 + 0.4 * E;
+    u.bub.scale.set(1.7 * k, 1.06 * k, 1);
+  }
+}
+
 function buildKitchen() {
   const g = new THREE.Group(),
     F = -3.1,
     CT = -0.7,
-    wood = "#d9a066",
-    cab = "#f1deb9",
-    tp = "#9f8f7f",
-    wl = "#f3e8d6";
+    wood = "#dca168",
+    cab = "#f5ebd8",
+    tp = "#73432a",
+    wl = "#FAF5EC";
 
   // Base platform & tile floor
-  kb(g, 13.4, 0.8, 13.4, "#e8c79c", 0, F - 0.4, 0, 0.8);
+  kb(g, 13.4, 0.8, 13.4, "#ebdcc9", 0, F - 0.4, 0, 0.8);
   const fl = new THREE.Mesh(
     new THREE.PlaneGeometry(11, 11),
     new THREE.MeshStandardMaterial({
-      map: tileTex(6, 6, "#ecdfc6", "#cdbd9a"),
-      roughness: 0.55,
+      map: tileTex(6, 6, "#FAF4EC", "#dacdc0"),
+      roughness: 0.45,
     })
   );
   fl.rotation.x = -Math.PI / 2;
@@ -844,8 +1306,8 @@ function buildKitchen() {
   const bs = new THREE.Mesh(
     new THREE.PlaneGeometry(10.8, 2.9),
     new THREE.MeshStandardMaterial({
-      map: tileTex(12, 3, "#f3eee2", "#d3c9b2"),
-      roughness: 0.5,
+      map: tileTex(12, 3, "#FFFFFF", "#ded2c2"),
+      roughness: 0.35,
     })
   );
   bs.position.set(0, CT + 1.45, -5.39);
@@ -855,14 +1317,24 @@ function buildKitchen() {
   // Range hood & chimney
   const hd = new THREE.Mesh(
     new THREE.CylinderGeometry(0.7, 1.5, 1, 4),
-    KM("#f6f3ec")
+    KM("#FFFFFF", 0.4)
   );
   hd.rotation.y = Math.PI / 4;
   hd.scale.set(1, 1, 0.7);
   hd.position.set(-0.2, CT + 2.8, -4.9);
   hd.castShadow = true;
   backGroup.add(hd);
-  kb(backGroup, 0.9, 1.7, 0.9, "#f6f3ec", -0.2, 3.45, -5.0);
+  kb(backGroup, 0.9, 1.7, 0.9, "#FFFFFF", -0.2, 3.45, -5.0, 0.4);
+
+  // Lampu spot hangat di bawah range hood kompor
+  const hoodLight = new THREE.PointLight(0xffedd0, 0.95, 7, 1.5);
+  hoodLight.position.set(-0.2, CT + 2.1, -4.8);
+  backGroup.add(hoodLight);
+
+  // Lampu hangat di bawah rak dinding
+  const shelfLight = new THREE.PointLight(0xfff2dc, 0.75, 8, 1.6);
+  shelfLight.position.set(3.4, 1.3, -4.9);
+  backGroup.add(shelfLight);
 
   // Floating shelves on back wall with jars & plant
   [1.5, 2.6].forEach((y) => {
@@ -897,11 +1369,11 @@ function buildKitchen() {
   const leftGroup = new THREE.Group();
   kb(leftGroup, 0.6, 7.4, 11.6, tp, -5.8, F + 3.7, -0.3);
   kb(leftGroup, 0.1, 7.2, 11, wl, -5.45, F + 3.6, 0);
-  const bl = new THREE.Mesh(
+    const bl = new THREE.Mesh(
     new THREE.PlaneGeometry(6.8, 2.9),
     new THREE.MeshStandardMaterial({
-      map: tileTex(8, 3, "#f3eee2", "#d3c9b2"),
-      roughness: 0.5,
+      map: tileTex(8, 3, "#FFFFFF", "#ded2c2"),
+      roughness: 0.35,
     })
   );
   bl.rotation.y = Math.PI / 2;
@@ -1018,11 +1490,67 @@ function buildKitchen() {
   kplant(g, 5.0, F, 3.3, 0.85, "#f1ece2", "#4f8a4e", 10);
   kplant(g, 4.9, CT, -4.8, 0.5, "#c97b4a", "#5f9e5a", 7);
 
+  // Lampu gantung cantik di atas meja island (Pendant Lamps)
+  [-1.8, 1.8].forEach((lx) => {
+    const lamp = new THREE.Group();
+    lamp.position.set(lx, 0, 0);
+
+    // Ceiling mount
+    kc(lamp, 0.12, 0.12, 0.05, "#2d2522", 0, 4.25, 0, 0.4);
+    // Kabel gantung ramping
+    kc(lamp, 0.012, 0.012, 1.8, "#2d2522", 0, 3.35, 0, 0.5);
+    // Fitting kuningan mewah
+    kc(lamp, 0.08, 0.12, 0.12, "#d4af37", 0, 2.45, 0, 0.3);
+
+    // Kap lampu kerucut (Burgundy / Rose)
+    const shade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.52, 0.42, 28, 1, true),
+      new THREE.MeshStandardMaterial({
+        color: "#A36361",
+        roughness: 0.35,
+        side: THREE.DoubleSide,
+      })
+    );
+    shade.position.set(0, 2.3, 0);
+    shade.castShadow = true;
+    lamp.add(shade);
+
+    // Ring dalam keemasan reflektif
+    kc(lamp, 0.5, 0.5, 0.03, "#ffdf99", 0, 2.1, 0, 0.3);
+
+    // Bohlam menyala terang & hangat
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xfff6d6 })
+    );
+    bulb.position.set(0, 2.15, 0);
+    lamp.add(bulb);
+
+    // Sumber cahaya lampu hangat menerangi kue & meja
+    const pLight = new THREE.PointLight(0xfff0d0, 1.35, 14, 1.4);
+    pLight.position.set(0, 1.95, 0);
+    lamp.add(pLight);
+
+    g.add(lamp);
+  });
+
+  // Karakter cewek patissier imut di dapur studio
+  const gr = buildGirl();
+  gr.position.set(2.6, F, -3);
+  gr.rotation.y = 0.785;
+  gr.scale.setScalar(0.9);
+  g.add(gr);
+  g.userData.girl = gr.userData;
+  g.userData.girlG = gr;
+
   g.userData.backGroup = backGroup;
   g.userData.leftGroup = leftGroup;
 
   g.traverse((o) => {
-    if (o.isMesh) o.receiveShadow = true;
+    if (o.isMesh) {
+      o.castShadow = false;
+      o.receiveShadow = false;
+    }
   });
   return g;
 }
@@ -2169,6 +2697,8 @@ export default function PesanPage() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 150);
@@ -2213,6 +2743,7 @@ export default function PesanPage() {
     threeStateRef.current.kitchen = kitchen;
     threeStateRef.current.hemi = hemi;
     threeStateRef.current.dl = dl;
+    threeStateRef.current.dl2 = dl2;
     threeStateRef.current.isStudio = false;
 
     function handleResize() {
@@ -2245,6 +2776,7 @@ export default function PesanPage() {
             const k = Math.max(1, (2.6 * R + 1.8) / 6.8);
             kitchen.userData.island.scale.set(k, 1, k);
           }
+          charAnim(t, kitchen);
         }
         scene.background = null;
         root.position.set(0, 0, 0);
@@ -2254,15 +2786,28 @@ export default function PesanPage() {
           camera.fov = 24;
           camera.updateProjectionMatrix();
         }
-        if (hemi.intensity !== 0.5) hemi.intensity = 0.5;
-        if (dl.intensity !== 0.5) {
-          dl.intensity = 0.5;
-          dl.position.set(6, 14, 9);
+        if (hemi.intensity !== 1.1) {
+          hemi.intensity = 1.1;
+          hemi.color.setHex(0xfffaee);
+          hemi.groundColor.setHex(0xf2e4d5);
+        }
+        if (dl.castShadow) {
+          dl.castShadow = false;
+        }
+        if (dl.intensity !== 1.05) {
+          dl.intensity = 1.05;
+          dl.color.setHex(0xfffaea);
+          dl.position.set(7, 16, 10);
           const sc = dl.shadow.camera;
           sc.left = sc.bottom = -11;
           sc.right = sc.top = 11;
           sc.far = 60;
           sc.updateProjectionMatrix();
+        }
+        if (ts.dl2 && ts.dl2.intensity !== 0.65) {
+          ts.dl2.intensity = 0.65;
+          ts.dl2.color.setHex(0xfff3e6);
+          ts.dl2.position.set(-8, 9, -5);
         }
 
         const szData = VISUAL_SIZE[stateRef.current.size] || { d: 14 };
@@ -2287,15 +2832,28 @@ export default function PesanPage() {
           camera.fov = 35;
           camera.updateProjectionMatrix();
         }
-        if (hemi.intensity !== 0.72) hemi.intensity = 0.72;
-        if (dl.intensity !== 0.7) {
-          dl.intensity = 0.7;
+        if (hemi.intensity !== 0.75) {
+          hemi.intensity = 0.75;
+          hemi.color.setHex(0xffffff);
+          hemi.groundColor.setHex(0xf3c9d6);
+        }
+        if (!dl.castShadow) {
+          dl.castShadow = true;
+        }
+        if (dl.intensity !== 0.75) {
+          dl.intensity = 0.75;
+          dl.color.setHex(0xffffff);
           dl.position.set(3, 6, 5);
           const sc = dl.shadow.camera;
           sc.left = sc.bottom = -5;
           sc.right = sc.top = 5;
           sc.far = 20;
           sc.updateProjectionMatrix();
+        }
+        if (ts.dl2 && ts.dl2.intensity !== 0.25) {
+          ts.dl2.intensity = 0.25;
+          ts.dl2.color.setHex(0xffd6e0);
+          ts.dl2.position.set(-4, 2, -3);
         }
 
         camera.position.set(
@@ -4173,7 +4731,7 @@ export default function PesanPage() {
         className="bc"
         viewBox={`0 0 ${x} 64`}
         preserveAspectRatio="none"
-        fill="#17382d"
+        fill="#3B2326"
         aria-hidden="true"
         style={{
           width: "100%",
@@ -4203,10 +4761,10 @@ export default function PesanPage() {
       <div className="hd">
         <div className="in">
           <Link href="/" className="logo">
-            <span style={{ fontSize: "38px" }}>🧁</span>
+            <span style={{ fontSize: "34px" }}>🧁</span>
             <div>
-              <b>{pengaturan?.nama_toko || "CakeCraft"}</b>
-              <small>Make Your Cake, Your Way</small>
+              <b>{pengaturan?.nama_toko || "CRAVELY"}</b>
+              <small>PATISSERIE & CAKE ATELIER</small>
             </div>
           </Link>
           <nav>
@@ -4914,10 +5472,10 @@ export default function PesanPage() {
                     marginTop: "16px",
                     padding: "16px",
                     borderRadius: "16px",
-                    background: "#183b2d",
-                    color: "#ffffff",
-                    border: "1.5px dashed rgba(255, 255, 255, 0.25)",
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                    background: "#FFFDF7",
+                    color: "#3B2326",
+                    border: "1.5px dashed #CDBFAA",
+                    boxShadow: "0 4px 12px rgba(163, 99, 97, 0.08)",
                   }}
                 >
                   <div
@@ -4928,7 +5486,7 @@ export default function PesanPage() {
                       marginBottom: "8px",
                     }}
                   >
-                    <b style={{ fontSize: "13px", color: "#ff7b7b" }}>
+                    <b style={{ fontSize: "13px", color: "#A36361" }}>
                       {S.pay === "qris"
                         ? "📌 QRIS Resmi Cravely Bakery"
                         : S.pay === "cash"
@@ -4942,10 +5500,10 @@ export default function PesanPage() {
                           fontWeight: 700,
                           padding: "3px 10px",
                           borderRadius: "10px",
-                          background: "rgba(255, 255, 255, 0.12)",
-                          border: "1px solid rgba(255, 255, 255, 0.2)",
-                          color: "#f2c230",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                          background: "#F1DBD0",
+                          border: "1px solid #D3A29D",
+                          color: "#A36361",
+                          boxShadow: "0 1px 3px rgba(163, 99, 97, 0.1)",
                         }}
                       >
                         Batas: {pengaturan?.batas_bayar_jam || 24} Jam
@@ -4956,7 +5514,7 @@ export default function PesanPage() {
                     <div
                       style={{
                         fontSize: "13px",
-                        color: "#ffffff",
+                        color: "#3B2326",
                         lineHeight: "1.6",
                       }}
                     >
@@ -4965,7 +5523,7 @@ export default function PesanPage() {
                       </div>
                       <div>
                         No. Rekening:{" "}
-                        <b style={{ letterSpacing: "1px", color: "#f2c230" }}>
+                        <b style={{ letterSpacing: "1px", color: "#A36361" }}>
                           {pengaturan?.no_rekening || "1234567890"}
                         </b>
                       </div>
@@ -5035,7 +5593,7 @@ export default function PesanPage() {
                   <div
                     style={{
                       fontSize: "11.5px",
-                      color: "#c2d6ca",
+                      color: "#7A5E60",
                       marginTop: "8px",
                       fontWeight: 600,
                     }}
@@ -5132,7 +5690,7 @@ export default function PesanPage() {
                           {r[1] > 0 ? (
                             formatRupiah(r[1])
                           ) : (
-                            <span style={{ color: "#557064", fontWeight: 600 }}>
+                            <span style={{ color: "#ADB697", fontWeight: 700 }}>
                               Termasuk
                             </span>
                           )}
@@ -5141,7 +5699,7 @@ export default function PesanPage() {
                           {r[1] > 0 ? (
                             formatRupiah(r[1])
                           ) : (
-                            <span style={{ color: "#557064", fontWeight: 600 }}>
+                            <span style={{ color: "#ADB697", fontWeight: 700 }}>
                               Termasuk
                             </span>
                           )}
@@ -5179,7 +5737,7 @@ export default function PesanPage() {
                     <div
                       style={{
                         fontWeight: 800,
-                        color: "#ba2b2b",
+                        color: "#A36361",
                         marginBottom: "8px",
                         fontSize: "14px",
                       }}
@@ -5191,7 +5749,7 @@ export default function PesanPage() {
                     <div
                       className="cb"
                       style={{
-                        color: S.pay === "bank" ? "#ba2b2b" : "#6f7d75",
+                        color: S.pay === "bank" ? "#A36361" : "#7A5E60",
                         fontWeight: S.pay === "bank" ? 800 : 600,
                       }}
                     >
@@ -5201,7 +5759,7 @@ export default function PesanPage() {
                     <div
                       className="cb"
                       style={{
-                        color: S.pay === "qris" ? "#ba2b2b" : "#6f7d75",
+                        color: S.pay === "qris" ? "#A36361" : "#7A5E60",
                         fontWeight: S.pay === "qris" ? 800 : 600,
                       }}
                     >
@@ -5211,7 +5769,7 @@ export default function PesanPage() {
                       <div
                         className="cb"
                         style={{
-                          color: S.pay === "cash" ? "#ba2b2b" : "#6f7d75",
+                          color: S.pay === "cash" ? "#A36361" : "#7A5E60",
                           fontWeight: S.pay === "cash" ? 800 : 600,
                         }}
                       >
@@ -5222,16 +5780,16 @@ export default function PesanPage() {
                       style={{
                         marginTop: "10px",
                         paddingTop: "8px",
-                        borderTop: "1.5px dashed #d8cca6",
+                        borderTop: "1.5px dashed #CDBFAA",
                         fontSize: "12px",
-                        color: "#17382d",
+                        color: "#3B2326",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                       }}
                     >
                       <span>Bayar Sekarang:</span>
-                      <b style={{ fontSize: "14px", color: "#ba2b2b" }}>
+                      <b style={{ fontSize: "14px", color: "#A36361" }}>
                         {formatRupiah(jumlahDpSekarang)}
                       </b>
                     </div>
@@ -5242,7 +5800,7 @@ export default function PesanPage() {
                     <div
                       style={{
                         fontSize: "12.5px",
-                        color: "#17382d",
+                        color: "#3B2326",
                         lineHeight: "1.5",
                       }}
                     >
@@ -5265,7 +5823,7 @@ export default function PesanPage() {
                           style={{
                             marginTop: "4px",
                             fontStyle: "italic",
-                            color: "#4f6559",
+                            color: "#7A5E60",
                           }}
                         >
                           &ldquo;{S.f.notes}&rdquo;

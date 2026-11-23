@@ -87,7 +87,7 @@ toko-kue/
 │   │   ├── dashboard.css                CSS dashboard referensi (semua class dipertahankan, tanpa komentar)
 │   │   ├── layout.js                    sidebar & topbar sesuai role
 │   │   ├── page.js                      ringkasan dashboard admin & staf
-│   │   ├── harga-opsi/page.js           admin
+│   │   ├── katalog-opsi/page.js         admin
 │   │   ├── pesanan/page.js              admin + staf
 │   │   ├── pesanan/[kode]/page.js       admin + staf
 │   │   ├── stok/page.js                 admin + staf
@@ -122,7 +122,7 @@ toko-kue/
 | ----------------------------------------------------- | :---: | :-----------: | :-------: |
 | Lihat landing page, kustomisasi, dan preview          | Ya    | Ya            | Ya        |
 | Membuat pesanan, bayar, lihat pesanan sendiri         | Tidak | Tidak         | Ya        |
-| Harga & Opsi                                          | Ya    | Tidak         | Tidak     |
+| Katalog & Opsi                                        | Ya    | Tidak         | Tidak     |
 | Daftar dan detail pesanan semua pelanggan             | Ya    | Ya (terbatas) | Tidak     |
 | Ubah status produksi (Sedang Dibuat, Siap)            | Ya    | Ya            | Tidak     |
 | Konfirmasi pembayaran, Dikirim, Selesai, Batalkan     | Ya    | Tidak         | Tidak     |
@@ -282,7 +282,7 @@ Halaman `/pesan` menggunakan Studio Kue 3D interaktif berbasis Three.js dengan p
 - **Sidebar**:
   - Dipindahkan apa adanya sesuai struktur referensi (`.sidebar`, `.sidebar-top-gap`, `.nav-menu`, `.nav-link`, `.sidebar-bottom-gap`). Latar belakang menggunakan `#17382d` dan gambar latar `/assets/images/admin-sidebar.png`.
   - **Menu Navigasi dikembalikan ke menu sebelumnya** (jangan diubah menjadi Produk / Pelanggan):
-    - **Menu Admin:** Dashboard (`/dashboard`), Harga & Opsi (`/dashboard/harga-opsi`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`), Laporan (`/dashboard/laporan`), Pengaturan (`/dashboard/pengaturan`), Akun (`/dashboard/akun`).
+    - **Menu Admin:** Dashboard (`/dashboard`), Katalog & Opsi (`/dashboard/katalog-opsi`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`), Laporan (`/dashboard/laporan`), Pengaturan (`/dashboard/pengaturan`), Akun (`/dashboard/akun`).
     - **Menu Staf Produksi:** Dashboard (`/dashboard`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`).
   - **Fitur Buka/Tutup Sidebar**: Saat sidebar ditutup (tombol toggle di topbar diklik), **sidebar jangan tertutup/hilang seluruhnya**. Sidebar menyusut menjadi mode ringkas (collapsed) di mana **ikon menu tetap tampil** sehingga pengguna tetap bisa melihat dan mengeklik menu lewat ikonnya (teks label menu disembunyikan).
 - **Topbar**:
@@ -299,7 +299,7 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 1. **Sidebar Murni Kode**:
    - `position: fixed`, tinggi penuh layar (`top: 0`, `bottom: 0`), latar warna polos `var(--bg-sidebar)`. Tanpa gambar latar (`admin-sidebar.png` dihapus).
    - Bagian atas: logo kecil ikon `fa-cake-candles` dan nama toko dari `pengaturan_toko` dengan font `Dancing Script`.
-   - Tengah: navigasi menu ber-scrollbar tipis. Menu admin: Dashboard, Harga & Opsi, Pesanan, Stok, Laporan, Pengaturan, Akun. Menu staf: Dashboard, Pesanan, Stok. Menu aktif memakai `var(--bg-sidebar-active)` dan `var(--text-sidebar-active)`.
+   - Tengah: navigasi menu ber-scrollbar tipis. Menu admin: Dashboard, Katalog & Opsi, Pesanan, Stok, Laporan, Pengaturan, Akun. Menu staf: Dashboard, Pesanan, Stok. Menu aktif memakai `var(--bg-sidebar-active)` dan `var(--text-sidebar-active)`.
    - Bawah: tulisan "Make Life Sweeter" dengan ikon hati, font `Satisfy`, disembunyikan jika tinggi layar terbatas atau sidebar diciutkan.
    - Tombol buka-tutup: saat diciutkan, sidebar mengecil menjadi bar ikon 72px (label dan kutipan bawah disembunyikan, ikon memiliki title tooltip). Konten menyesuaikan lebar dengan transisi dan memicu resize `chart.js`. Status disimpan di `localStorage` dengan blok `try/catch`. Pada layar <= 800px menjadi laci (drawer) dengan overlay.
 
@@ -354,7 +354,7 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 11. **Aturan Gambar**:
     - Semua gambar dari URL luar (Unsplash) DILARANG. Foto diganti bulatan warna opsi atau preview SVG (`PreviewKue`). Latar kartu memakai gambar lokal `/assets/images/`.
 
-### Menu Harga & Opsi (satu menu untuk semua pengaturan harga)
+### Menu Katalog & Opsi (pengaturan produk katalog dan opsi kustomisasi)
 
 Satu halaman, isinya **grup opsi**, dan tiap grup punya daftar item beserta harganya. Tidak ada menu terpisah untuk rasa, ukuran, dan lainnya.
 
@@ -375,7 +375,7 @@ Dekorasi  : Lelehan Krim 12.000 | Stroberi 10.000 | Mixed Berry 15.000 ...      
 - **Total dihitung di server**, bukan di browser. Browser boleh menghitung untuk tampilan, tetapi saat pesanan dibuat server menghitung ulang dari database dan mengabaikan harga dari browser.
 - Total kue = jumlah harga semua item terpilih. Server menolak kalau: ada item yang tidak aktif atau tidak ada, grup `wajib` belum dipilih, atau grup `jenis_pilihan = satu` berisi lebih dari satu item.
 - Total bayar = total kue + ongkir (kalau dikirim). Ongkir diambil dari tabel `zona_ongkir`, bukan dari input browser.
-- **Nama, harga, warna, dan kode visual tiap item disalin ke `pesanan_pilihan` saat pesanan dibuat.** Mengubah harga di Harga & Opsi tidak boleh mengubah pesanan yang sudah ada.
+- **Nama, harga, warna, dan kode visual tiap item disalin ke `pesanan_pilihan` saat pesanan dibuat.** Mengubah harga di Katalog & Opsi tidak boleh mengubah pesanan yang sudah ada.
 
 ### Menu Pesanan
 
@@ -384,7 +384,7 @@ Dekorasi  : Lelehan Krim 12.000 | Stroberi 10.000 | Mixed Berry 15.000 ...      
 **Detail pesanan** (side drawer di `/dashboard/pesanan`):
 - **Preview kue** dari pilihan pelanggan
 - **Komponen** yang dipilih (grup, item), tulisan di kue, catatan, foto referensi
-- **Kebutuhan Bahan** (admin dan staf): tabel Bahan, Dibutuhkan, Stok saat ini, Status (Cukup / Kurang). Banner merah jika ada bahan kurang, banner hijau jika cukup. Catatan jika ada pilihan tanpa resep (dengan tautan ke Harga & Opsi untuk admin). Tombol **Kurangi Stok** manual (aktif pada status Diterima, Sedang Dibuat, Siap, Dikirim, Selesai; nonaktif untuk Menunggu Pembayaran dan Dibatalkan) dengan dialog konfirmasi rincian pemotongan. Setelah dikurangi, menampilkan waktu pemotongan dan nama pemotong, jumlah yang benar-benar dikurangi, serta tombol **Kembalikan Stok** (dengan konfirmasi). Panel ini tidak menampilkan data harga.
+- **Kebutuhan Bahan** (admin dan staf): tabel Bahan, Dibutuhkan, Stok saat ini, Status (Cukup / Kurang). Banner merah jika ada bahan kurang, banner hijau jika cukup. Catatan jika ada pilihan tanpa resep (dengan tautan ke Katalog & Opsi untuk admin). Tombol **Kurangi Stok** manual (aktif pada status Diterima, Sedang Dibuat, Siap, Dikirim, Selesai; nonaktif untuk Menunggu Pembayaran dan Dibatalkan) dengan dialog konfirmasi rincian pemotongan. Setelah dikurangi, menampilkan waktu pemotongan dan nama pemotong, jumlah yang benar-benar dikurangi, serta tombol **Kembalikan Stok** (dengan konfirmasi). Panel ini tidak menampilkan data harga.
 - **Rincian harga** per komponen, ongkir, total, jumlah DP, jumlah terbayar, sisa (admin saja)
 - **Pembayaran**: daftar pembayaran (jenis, jumlah, metode, bukti, status) dengan tombol **Konfirmasi** dan **Tolak** (admin saja)
 - **Pengiriman**: Ambil di Tempat, atau Kirim beserta alamat dan zona
@@ -503,7 +503,16 @@ Dibuat lewat **file SQL di `supabase/migrations/`** dan data awal lewat `seed.sq
 `id` (uuid, sama dengan `auth.users.id`), `nama`, `no_wa`, `role` (`admin` / `staf` / `pelanggan`, default `pelanggan`), `aktif` (boolean, default true), `dibuat_pada`. Dibuat otomatis lewat trigger saat ada pendaftaran baru di `auth.users`.
 
 ### pengaturan_toko
-Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
+Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `minimal_hari_siap` (default 1), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
+
+### produk
+Kue katalog siap pesan: `id` (bigint identity), `nama`, `deskripsi`, `harga` (integer, rupiah), `foto` (text, path di bucket publik), `aktif` (boolean, default true), `urutan` (integer, default 0), `dibuat_pada`. RLS: publik membaca produk aktif, admin mengelola penuh.
+
+### keranjang_item
+Keranjang belanja terpadu di database: `id` (bigint identity), `id_pelanggan` (uuid FK `profil` on delete cascade), `jenis` (`'Custom'` atau `'Siap'`), `id_produk` (bigint FK `produk` on delete cascade, boleh kosong), `jumlah` (integer default 1, 1-20), `pilihan` (jsonb daftar `{id_item, jumlah}`), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (path text), `dibuat_pada`. Check: jenis Siap wajib punya `id_produk`; jenis Custom wajib punya `pilihan` dan `jumlah = 1`. Maksimal 20 baris per pelanggan, maksimal 10 kue custom. RLS: pelanggan membaca dan menghapus barisnya sendiri.
+
+### pesanan_item
+Rincian item dalam pesanan: `id` (bigint identity), `id_pesanan` (bigint FK `pesanan` on delete cascade), `jenis` (`'Custom'` atau `'Siap'`), `id_produk` (bigint FK `produk` on delete set null), `nama_item` dan `harga_satuan` (salinan saat checkout; untuk Custom `harga_satuan = total kue itu`), `jumlah` (integer default 1), `subtotal` (integer), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom`, `urutan` (integer default 1). RLS: pelanggan membaca item miliknya.
 
 ### grup_opsi
 `id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / `bentuk` / `stiker` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
@@ -521,7 +530,7 @@ Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alama
 `id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `stok_dipotong_pada` (timestamptz, boleh kosong), `dibuat_pada`.
 
 ### pesanan_pilihan
-Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_item` (bigint FK ke `opsi_item(id)` on delete set null, boleh kosong), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
+Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_pesanan_item` (bigint FK `pesanan_item` on delete cascade, boleh kosong), `id_item` (bigint FK ke `opsi_item(id)` on delete set null, boleh kosong), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
 
 ### resep_item
 Komposisi bahan untuk opsi kue: `id`, `id_item` (FK `opsi_item` on delete cascade), `id_bahan` (FK `bahan` on delete cascade), `jumlah` (numeric > 0), unik per `(id_item, id_bahan)`.
@@ -539,9 +548,52 @@ Catatan pergerakan inventaris bahan: `id`, `id_bahan` (FK `bahan` on delete casc
 `id`, `id_pesanan` (FK), `keterangan` (contoh `Diterima → Sedang Dibuat`), `id_user` (FK `profil`, boleh kosong untuk aksi otomatis), `dibuat_pada`.
 
 ### Storage (Supabase)
-- `referensi-kue` (privat): foto referensi pelanggan
-- `bukti-bayar` (privat): bukti pembayaran
-- `publik` (publik): gambar QRIS
+- `referensi-kue` (privat): foto snapshot 3D preview, bentuk kustom, dan gambar kustom. Diunggah ke path `keranjang/{id_pelanggan}/...` saat masih di keranjang, lalu dipindahkan ke `pesanan/{kode_pesanan}/...` saat checkout.
+- `bukti-bayar` (privat): bukti transfer pelanggan
+- `publik` (publik): gambar QRIS toko dan foto produk kue katalog (`produk/...`)
+
+## Alur Keranjang dan Checkout Terpadu
+
+Semua kue (kue katalog siap pesan dan kue custom studio) masuk ke dalam SATU keranjang dan dibayar bersamaan dalam SATU pesanan.
+
+1. **Penyimpanan Keranjang**:
+   - Keranjang disimpan di database pada tabel `keranjang_item`, bukan di browser/localStorage.
+   - Login wajib saat menambah ke keranjang. Tamu diarahkan ke `/masuk?ke=...`.
+   - Kue katalog: jumlah 1 sampai 20. Jika produk yang sama ditambah lagi, jumlahnya digabung otomatis.
+   - Kue custom studio: 1 desain = 1 kue (jumlah selalu 1), tidak bisa diedit di keranjang, hanya bisa dihapus.
+   - Batas maksimal: 20 baris keranjang dan 10 kue custom per pelanggan.
+
+2. **Aturan Checkout**:
+   - Satu tanggal dan jam untuk seluruh pesanan. Tanggal minimal = yang paling lama dari seluruh item di keranjang (kue custom memakai `minimal_hari_pesan`, kue katalog memakai `minimal_hari_siap`).
+   - Kuota harian dapur dihitung per kue custom. Pesanan yang hanya berisi kue katalog tidak memakai kuota harian.
+   - Ongkos kirim dihitung sekali per pesanan dari zona ongkir aktif (Rp 0 untuk Ambil di Toko).
+   - Mode DP atau Lunas dihitung dari total seluruh item. Seluruh harga dihitung ulang oleh server dari database (harga dari browser diabaikan).
+   - Metode pembayaran hanya Transfer Bank atau QRIS.
+   - Saat checkout berhasil: file foto dipindahkan dari `keranjang/{id_pelanggan}/` ke `pesanan/{kode_pesanan}/`, data pesanan disimpan ke `pesanan`, `pesanan_item`, `pesanan_pilihan`, dan keranjang dikosongkan. Jika ada kegagalan, rollback dilakukan dan keranjang tidak dikosongkan.
+
+3. **Pembersihan Otomatis**:
+   - Cron job `/api/cron/bersihkan-keranjang` menghapus item keranjang yang tidak dicheckout lebih dari 30 hari beserta berkasnya di Storage.
+
+## Kontrak POST /api/keranjang (Untuk Studio Custom Cake)
+
+Endpoint untuk memasukkan kue kustom studio ke keranjang terpadu.
+
+- **URL**: `/api/keranjang`
+- **Metode**: `POST`
+- **Header**: Wajib login (session cookie Supabase).
+- **Format Body**: `multipart/form-data`
+  - `jenis`: `"Custom"` (string wajib)
+  - `pilihan`: JSON string berupa daftar item opsi terpilih, format: `[{"id_item": 1, "jumlah": 1}, ...]`
+  - `tulisan_kue`: string teks tulisan di atas kue (opsional)
+  - `catatan`: string catatan khusus pemesan (opsional)
+  - `desain_json`: JSON string struktur desain 3D (template, stiker, teks dekorasi)
+  - `foto_preview`: File gambar (JPG/PNG, max 2 MB) hasil snapshot 3D kue
+  - `foto_bentuk_kustom`: File gambar (JPG/PNG, max 2 MB) jika memilih opsi bentuk kustom
+  - `foto_gambar_kustom`: File gambar (JPG/PNG, max 2 MB) jika memilih opsi gambar kustom
+- **Respon Sukses (200)**:
+  `{ "sukses": true, "pesan": "Kue custom berhasil ditambahkan ke keranjang.", "id_item": 123 }`
+- **Respon Error (400/401/409)**:
+  `{ "pesan": "Pesan error bahasa Indonesia" }`
 
 Unggahan lewat Route Handler (`FormData`), validasi jenis `jpg`/`jpeg`/`png` dan ukuran maksimal 2 MB, nama file dibuat unik. File lama dihapus saat diganti.
 
@@ -570,7 +622,7 @@ Kerjakan bertahap. Setelah tiap tahap, pastikan project bisa dijalankan (`npm ru
 
 1. **Fondasi**: buat project Next.js + Tailwind, hubungkan Supabase, semua file migration dan `seed.sql`, trigger `profil`, bucket Storage, `lib/` dasar (client, format, cek role).
 2. **Autentikasi dan kerangka**: halaman masuk dan daftar, `middleware.js`, layout dashboard dengan sidebar per role, modal pesan, akun admin pertama.
-3. **Admin: Harga & Opsi dan Pengaturan**: grup dan item opsi, pengaturan toko, zona ongkir, tanggal tutup.
+3. **Admin: Katalog & Opsi dan Pengaturan**: grup dan item opsi, produk katalog, pengaturan toko, zona ongkir, tanggal tutup.
 4. **Preview kue**: komponen `PreviewKue` (versi SVG 2D) dan uji dengan data opsi dari seed.
 5. **Alur pemesanan pelanggan**: kustomisasi, tanggal dan kuota, pengiriman, perhitungan harga di server, pembuatan pesanan, tiket QR.
 6. **Pembayaran**: unggah bukti, konfirmasi admin, mode DP atau Lunas, status bayar.

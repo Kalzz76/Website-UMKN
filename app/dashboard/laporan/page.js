@@ -84,19 +84,38 @@ export default function LaporanDashboardPage() {
 
     const opsiGrupMap = {};
     if (pesananIds.length > 0) {
-      const { data: pilList } = await supabase
-        .from("pesanan_pilihan")
-        .select("nama_grup, nama_item")
-        .in("id_pesanan", pesananIds);
+      const [pilRes, itemRes] = await Promise.all([
+        supabase
+          .from("pesanan_pilihan")
+          .select("nama_grup, nama_item")
+          .in("id_pesanan", pesananIds),
+        supabase
+          .from("pesanan_item")
+          .select("jenis, nama_item, jumlah")
+          .in("id_pesanan", pesananIds)
+      ]);
 
-      if (pilList) {
-        for (let i = 0; i < pilList.length; i++) {
-          const row = pilList[i];
+      const pilList = pilRes.data || [];
+      for (let i = 0; i < pilList.length; i++) {
+        const row = pilList[i];
+        if (row.nama_grup && row.nama_item) {
           if (!opsiGrupMap[row.nama_grup]) {
             opsiGrupMap[row.nama_grup] = {};
           }
           opsiGrupMap[row.nama_grup][row.nama_item] =
             (opsiGrupMap[row.nama_grup][row.nama_item] || 0) + 1;
+        }
+      }
+
+      const itList = itemRes.data || [];
+      for (let i = 0; i < itList.length; i++) {
+        const it = itList[i];
+        if (it.jenis === "Siap" && it.nama_item) {
+          if (!opsiGrupMap["Kue Katalog"]) {
+            opsiGrupMap["Kue Katalog"] = {};
+          }
+          opsiGrupMap["Kue Katalog"][it.nama_item] =
+            (opsiGrupMap["Kue Katalog"][it.nama_item] || 0) + (Number(it.jumlah) || 1);
         }
       }
     }
