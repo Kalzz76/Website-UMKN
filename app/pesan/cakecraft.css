@@ -391,6 +391,67 @@
   box-shadow: 0 4px 12px rgba(163, 99, 97, 0.05);
 }
 
+.cakecraft-studio .opt .badge-tag {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  background: linear-gradient(135deg, #A36361 0%, #9E3B42 100%);
+  color: #FFFDF9;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2.5px 7px;
+  border-radius: 99px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 6px rgba(163, 99, 97, 0.25);
+  pointer-events: none;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.cakecraft-studio .cat-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 14px;
+  margin-bottom: 8px;
+  scrollbar-width: none;
+}
+
+.cakecraft-studio .cat-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cakecraft-studio .cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #7A5E60;
+  background: #FFFBF7;
+  border: 1.5px solid #ECDAD2;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(163, 99, 97, 0.05);
+}
+
+.cakecraft-studio .cat-pill:hover {
+  border-color: #D3A29D;
+  background: #FFF4F0;
+  color: #A36361;
+  transform: translateY(-1px);
+}
+
+.cakecraft-studio .cat-pill.on {
+  background: linear-gradient(135deg, #A36361 0%, #8E2A3E 100%);
+  color: #FFFFFF;
+  border-color: #8E2A3E;
+  box-shadow: 0 4px 12px rgba(142, 42, 62, 0.28);
+}
+
 .cakecraft-studio .opt:hover {
   transform: translateY(-2px);
   border-color: #D3A29D;

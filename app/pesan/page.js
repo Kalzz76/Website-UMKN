@@ -78,13 +78,31 @@ const STEPS = [
   ["Review Pesanan", "💌"],
 ];
 
+const MENU_CATEGORIES = [
+  { key: "semua", label: "Semua", icon: "✨" },
+  { key: "ultah", label: "Kue Ulang Tahun", icon: "🎂" },
+  { key: "tart", label: "Kue Tart", icon: "🥧" },
+  { key: "cupcake", label: "Cupcake", icon: "🧁" },
+  { key: "cookies", label: "Cookies", icon: "🍪" },
+  { key: "roti", label: "Roti Manis", icon: "🥐" },
+];
+
 const TPL = [
   {
-    n: "Strawberry Dream",
-    d: "Vanilla, selai stroberi, stroberi segar",
+    id: 1,
+    n: "Strawberry Shortcake",
+    cat: "ultah",
+    catLabel: "Kue Ulang Tahun",
+    d: "Sponge vanila super lembut, chantilly cream & stroberi Lembang",
+    badge: "Terlaris",
+    price: 110000,
+    itemType: "cake",
     s: {
+      shape: "round",
       size: "small",
+      flavor: "vanilla",
       fill: "jam",
+      icing: "#FFFDF9",
       deco: { drip: true, straw: true },
       items: [
         {
@@ -92,8 +110,8 @@ const TPL = [
           t: "text",
           text: "Happy Birthday!",
           font: "Baloo 2",
-          px: 32,
-          color: "#5b2a1b",
+          px: 28,
+          color: "#9E3B42",
           align: "center",
           fx: "normal",
         },
@@ -101,20 +119,33 @@ const TPL = [
     },
   },
   {
-    n: "Choco Berry",
-    d: "Cokelat, ganache, mixed berry",
+    id: 2,
+    n: "Chocolate Fudge Cake",
+    cat: "tart",
+    catLabel: "Kue Tart",
+    d: "Cokelat Belgia 70% intens, ganache lumer berkilau",
+    badge: "Favorit",
+    price: 120000,
+    itemType: "cake",
     s: {
+      shape: "round",
       size: "medium",
       flavor: "choco",
       fill: "ganache",
-      icing: "#6b3d2a",
+      icing: "#4A2B20",
       deco: { drip: true, berry: true },
       items: [],
     },
   },
   {
-    n: "Velvet Love",
-    d: "Kue hati red velvet, cream cheese",
+    id: 3,
+    n: "Red Velvet Rose Cake",
+    cat: "ultah",
+    catLabel: "Kue Ulang Tahun",
+    d: "Kue hati red velvet, cream cheese New Zealand & kelopak mawar",
+    badge: "Signature",
+    price: 125000,
+    itemType: "cake",
     s: {
       shape: "heart",
       size: "small",
@@ -122,6 +153,193 @@ const TPL = [
       fill: "cheese",
       icing: "#FFF8F0",
       deco: { flower: true, drip: true },
+      items: [],
+    },
+  },
+  {
+    id: 4,
+    n: "Vintage Coquette Cake",
+    cat: "ultah",
+    catLabel: "Kue Ulang Tahun",
+    d: "Kue piping pita Lambeth estetik, mawar & mutiara",
+    badge: "Viral di Bandung",
+    price: 110000,
+    itemType: "cake",
+    s: {
+      shape: "round",
+      size: "medium",
+      flavor: "vanilla",
+      fill: "cream",
+      icing: "#F8D7E0",
+      deco: { drip: true, flower: true, straw: true },
+      items: [
+        {
+          id: 1,
+          t: "text",
+          text: "Vintage Coquette",
+          font: "Baloo 2",
+          px: 26,
+          color: "#8E4A56",
+          align: "center",
+          fx: "normal",
+        },
+      ],
+    },
+  },
+  {
+    id: 5,
+    n: "Vanilla Bliss Earl Grey",
+    cat: "tart",
+    catLabel: "Kue Tart",
+    d: "Infusi teh Earl Grey bergamot, krim vanila & mawar kering",
+    badge: "Artisan Tart",
+    price: 100000,
+    itemType: "tart",
+    tartVariant: "earlgrey",
+    s: {
+      shape: "round",
+      size: "small",
+      flavor: "vanilla",
+      fill: "cream",
+      icing: "#F4EDE2",
+      deco: { flower: true, drip: false },
+      items: [],
+    },
+  },
+  {
+    id: 6,
+    n: "Tiramisu Pandan Suji",
+    cat: "tart",
+    catLabel: "Kue Tart",
+    d: "Pandan suji wangi alami, mascarpone cream & drizzle kakao",
+    badge: "Resep Warisan",
+    price: 120000,
+    itemType: "tart",
+    tartVariant: "pandan",
+    s: {
+      shape: "round",
+      size: "medium",
+      flavor: "vanilla",
+      fill: "cheese",
+      icing: "#E0ECDA",
+      deco: { drip: true },
+      items: [],
+    },
+  },
+  {
+    id: 7,
+    n: "The Rose Garden Tart",
+    cat: "tart",
+    catLabel: "Kue Tart",
+    d: "Tart almond renyah dengan custard mawar & aneka buah berry",
+    badge: "Signature",
+    price: 135000,
+    itemType: "tart",
+    tartVariant: "rosegarden",
+    s: {
+      shape: "round",
+      size: "medium",
+      flavor: "vanilla",
+      fill: "cream",
+      icing: "#FFF2E6",
+      deco: { flower: true, berry: true },
+      items: [],
+    },
+  },
+  {
+    id: 8,
+    n: "Berry Peach Cupcake",
+    cat: "cupcake",
+    catLabel: "Cupcake",
+    d: "Cupcake mentega lembut, mahkota krim persik & berry segar",
+    badge: "Artisan Cupcake",
+    price: 45000,
+    itemType: "cupcake",
+    cupcakeVariant: "peach",
+    s: {
+      shape: "round",
+      size: "mini",
+      flavor: "vanilla",
+      fill: "cream",
+      icing: "#FFD8BE",
+      deco: { berry: true },
+      items: [],
+    },
+  },
+  {
+    id: 9,
+    n: "Cinnamon Mint Cupcake",
+    cat: "cupcake",
+    catLabel: "Cupcake",
+    d: "Rempah kayu manis hangat, krim mint segar & stick kayu manis",
+    badge: "Chef Pick",
+    price: 45000,
+    itemType: "cupcake",
+    cupcakeVariant: "mint",
+    s: {
+      shape: "round",
+      size: "mini",
+      flavor: "choco",
+      fill: "cream",
+      icing: "#BEE3CB",
+      deco: {},
+      items: [],
+    },
+  },
+  {
+    id: 10,
+    n: "Choco Butter Cookies Box",
+    cat: "cookies",
+    catLabel: "Cookies",
+    d: "Kue kering butter Wijsman berpadu choco chips renyah gurih",
+    badge: "Favorit Camilan",
+    price: 65000,
+    itemType: "cookies",
+    s: {
+      shape: "round",
+      size: "mini",
+      flavor: "choco",
+      fill: "cream",
+      icing: "#EAE0D6",
+      deco: {},
+      items: [],
+    },
+  },
+  {
+    id: 11,
+    n: "Artisan Brioche & Roti Manis",
+    cat: "roti",
+    catLabel: "Roti Manis",
+    d: "Brioche Prancis mentega lembut, dipanggang hangat segar",
+    badge: "Pagi Hangat",
+    price: 38000,
+    itemType: "brioche",
+    s: {
+      shape: "round",
+      size: "small",
+      flavor: "vanilla",
+      fill: "cream",
+      icing: "#E6BA80",
+      deco: {},
+      items: [],
+    },
+  },
+  {
+    id: 12,
+    n: "Sundae Berry & Glazed Donuts",
+    cat: "roti",
+    catLabel: "Roti Manis",
+    d: "Donat kentang glaze mawar merah muda & es krim strawberry",
+    badge: "Menu Akhir Pekan",
+    price: 55000,
+    itemType: "donut",
+    s: {
+      shape: "round",
+      size: "small",
+      flavor: "vanilla",
+      fill: "jam",
+      icing: "#EA6585",
+      deco: { straw: true },
       items: [],
     },
   },
@@ -143,6 +361,12 @@ function getDefState() {
     pay: "bank",
     payScheme: "dp",
     f: {},
+    itemType: "cake",
+    tartVariant: null,
+    cupcakeVariant: null,
+    namaItem: null,
+    kategoriItem: null,
+    hargaItem: null,
   };
 }
 
@@ -738,6 +962,335 @@ function stand(pr) {
     [0, 0.012],
   ].map((p) => new THREE.Vector2(p[0], p[1]));
   return new THREE.Mesh(new THREE.LatheGeometry(pts, 96), M("#FFFDF9", 0.35));
+}
+
+/* ===== 3D Model Khusus: Cupcake, Tart, Cookies, Roti Manis ===== */
+function build3DCupcake(add, M, MB, stand, S) {
+  add(stand(1.3));
+  const g = new THREE.Group();
+
+  // Paper Liner
+  const isMint = S.cupcakeVariant === "mint";
+  const linerGeo = new THREE.CylinderGeometry(0.82, 0.58, 0.9, 32, 1, false);
+  const linerMat = M(isMint ? "#E8F4EC" : "#FAF2E8", 0.75);
+  const liner = new THREE.Mesh(linerGeo, linerMat);
+  liner.position.y = 0.45;
+  g.add(liner);
+
+  // Liner ribs
+  const ribGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.9, 8);
+  const ribMat = M("#D8C5B0", 0.6);
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
+    const rm = new THREE.Mesh(ribGeo, ribMat);
+    const rad = 0.7;
+    rm.position.set(Math.cos(a) * rad, 0.45, Math.sin(a) * rad);
+    rm.rotation.z = Math.cos(a) * 0.13;
+    rm.rotation.x = -Math.sin(a) * 0.13;
+    g.add(rm);
+  }
+
+  // Sponge Dome
+  const spongeGeo = new THREE.SphereGeometry(0.8, 24, 16);
+  spongeGeo.scale(1, 0.55, 1);
+  const spongeColor = S.flavor === "choco" ? "#4A2B1D" : "#C99450";
+  const sponge = new THREE.Mesh(spongeGeo, M(spongeColor, 0.82));
+  sponge.position.y = 0.62;
+  g.add(sponge);
+
+  // Buttercream Frosting Swirls
+  const swirlColor = isMint ? "#BCE5CD" : "#FFCDB0";
+  const swirlMat = M(swirlColor, 0.38);
+
+  const t1 = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.26, 16, 32), swirlMat);
+  t1.rotation.x = Math.PI / 2;
+  t1.position.y = 0.88;
+  g.add(t1);
+
+  const t2 = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.22, 16, 32), swirlMat);
+  t2.rotation.x = Math.PI / 2;
+  t2.position.y = 1.16;
+  g.add(t2);
+
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.48, 24), swirlMat);
+  cone.position.y = 1.42;
+  g.add(cone);
+
+  const peak = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), swirlMat);
+  peak.position.y = 1.62;
+  g.add(peak);
+
+  // Toppings
+  if (isMint) {
+    // Cinnamon stick
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.9, 12), M("#683515", 0.7));
+    stick.position.set(0.12, 1.65, 0.08);
+    stick.rotation.set(0.3, 0.2, 0.45);
+    g.add(stick);
+    // Mint leaf
+    const leafGeo = new THREE.SphereGeometry(0.16, 12, 8);
+    leafGeo.scale(0.3, 1, 0.6);
+    const leaf1 = new THREE.Mesh(leafGeo, M("#448F46", 0.4));
+    leaf1.position.set(-0.16, 1.62, 0.05);
+    leaf1.rotation.set(-0.4, 0.6, -0.6);
+    g.add(leaf1);
+  } else {
+    // Peach slice
+    const peach = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), M("#FA7E52", 0.45));
+    peach.scale.set(0.4, 1.1, 0.7);
+    peach.position.set(0.1, 1.64, 0);
+    peach.rotation.set(0.2, 0.4, 0.5);
+    g.add(peach);
+
+    // Fresh berries
+    const berryMat = M("#B81C38", 0.3);
+    const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), berryMat);
+    b1.position.set(-0.14, 1.58, 0.1);
+    g.add(b1);
+    const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), M("#25273C", 0.35));
+    b2.position.set(-0.06, 1.68, -0.12);
+    g.add(b2);
+  }
+
+  add(g);
+}
+
+function build3DTart(add, M, MB, stand, S) {
+  add(stand(2.0));
+  const g = new THREE.Group();
+
+  // Fluted Tart Crust Shell
+  const crustMat = M("#C8944B", 0.7);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(1.52, 1.4, 0.42, 64), crustMat);
+  base.position.y = 0.21;
+  g.add(base);
+
+  // Scalloped / fluted pie crust rim
+  const fluteGeo = new THREE.SphereGeometry(0.08, 10, 8);
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 18) {
+    const fl = new THREE.Mesh(fluteGeo, crustMat);
+    fl.position.set(Math.cos(a) * 1.5, 0.4, Math.sin(a) * 1.5);
+    g.add(fl);
+  }
+
+  // Filling
+  let fillCol = "#FFF4E2";
+  let fillRoughness = 0.35;
+  if (S.tartVariant === "earlgrey") {
+    fillCol = "#E8DAC6";
+  } else if (S.tartVariant === "pandan") {
+    fillCol = "#FFFDF5";
+  }
+  const fillMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.42, 1.42, 0.12, 48), M(fillCol, fillRoughness));
+  fillMesh.position.y = 0.38;
+  g.add(fillMesh);
+
+  // Tart Variant Decorations
+  if (S.tartVariant === "rosegarden") {
+    const strawGeo = new THREE.ConeGeometry(0.2, 0.35, 12);
+    const strawMat = M("#DF253A", 0.25);
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+      const st = new THREE.Mesh(strawGeo, strawMat);
+      st.rotation.x = Math.PI;
+      st.position.set(Math.cos(a) * 1.05, 0.52, Math.sin(a) * 1.05);
+      g.add(st);
+    }
+    const blueMat = M("#271F36", 0.28);
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+      const bl = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), blueMat);
+      bl.position.set(Math.cos(a + 0.38) * 0.65, 0.48, Math.sin(a + 0.38) * 0.65);
+      g.add(bl);
+    }
+    const roseMat = M("#EA8DA2", 0.4);
+    for (let i = 0; i < 5; i++) {
+      const pet = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), roseMat);
+      pet.scale.set(0.3, 0.8, 0.9);
+      const ang = (i * Math.PI * 2) / 5;
+      pet.rotation.set(0.4, ang, 0.2);
+      pet.position.set(Math.cos(ang) * 0.12, 0.54, Math.sin(ang) * 0.12);
+      g.add(pet);
+    }
+  } else if (S.tartVariant === "pandan") {
+    const pandanLayer = new THREE.Mesh(new THREE.CylinderGeometry(1.42, 1.42, 0.08, 48), M("#86BF6C", 0.65));
+    pandanLayer.position.y = 0.31;
+    g.add(pandanLayer);
+
+    const rosettaGeo = new THREE.SphereGeometry(0.16, 12, 10);
+    rosettaGeo.scale(1, 0.65, 1);
+    const creamMat = M("#FFFDF2", 0.4);
+    for (let x = -0.8; x <= 0.8; x += 0.4) {
+      for (let z = -0.8; z <= 0.8; z += 0.4) {
+        if (x * x + z * z < 1.1) {
+          const ros = new THREE.Mesh(rosettaGeo, creamMat);
+          ros.position.set(x, 0.48, z);
+          g.add(ros);
+        }
+      }
+    }
+  } else {
+    const rosetteGeo = new THREE.SphereGeometry(0.18, 12, 10);
+    rosetteGeo.scale(1, 0.65, 1);
+    const creamMat = M("#F6EFE6", 0.4);
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+      const ros = new THREE.Mesh(rosetteGeo, creamMat);
+      ros.position.set(Math.cos(a) * 0.95, 0.48, Math.sin(a) * 0.95);
+      g.add(ros);
+    }
+    const petalMat = M("#A8334E", 0.5);
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      const pet = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.14), petalMat);
+      pet.position.set(Math.cos(a) * 0.5, 0.46, Math.sin(a) * 0.5);
+      pet.rotation.set(0.1, a * 1.5, 0.1);
+      g.add(pet);
+    }
+  }
+
+  add(g);
+}
+
+function build3DCookies(add, M, MB, stand, S) {
+  add(stand(1.5));
+  const g = new THREE.Group();
+
+  // Transparent Acrylic / Glass Canister
+  const glassMat = M("#EBF4F9", 0.15, { transparent: true, opacity: 0.38 });
+  const glassBody = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.92, 1.35, 36), glassMat);
+  glassBody.position.y = 0.72;
+  g.add(glassBody);
+
+  // Gold Lid
+  const goldMat = M("#D4AF37", 0.28, { metalness: 0.7 });
+  const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.97, 0.97, 0.16, 36), goldMat);
+  lid.position.y = 1.45;
+  g.add(lid);
+
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), goldMat);
+  knob.position.y = 1.58;
+  g.add(knob);
+
+  // Velvet Ribbon Band
+  const ribbonMat = M("#8E2A3E", 0.55);
+  const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.935, 0.935, 0.12, 36), ribbonMat);
+  ribbon.position.y = 1.32;
+  g.add(ribbon);
+
+  // Stacked Chocolate Chip Cookies inside
+  const cookieMat = M("#C99653", 0.75);
+  const chipMat = M("#381F13", 0.6);
+  const cookieGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.1, 20);
+
+  const cookiePos = [
+    [-0.25, 0.12, -0.15, 0.1, 0.2],
+    [0.28, 0.14, 0.12, -0.1, 0.4],
+    [-0.15, 0.26, 0.22, 0.2, -0.3],
+    [0.18, 0.32, -0.2, -0.15, 0.5],
+    [-0.22, 0.46, -0.1, 0.05, 0.1],
+    [0.2, 0.54, 0.16, -0.2, -0.1],
+    [-0.05, 0.68, 0.05, 0.15, 0.3],
+    [0.08, 0.82, -0.08, -0.1, -0.4],
+    [-0.1, 0.96, 0.1, 0.25, 0.2],
+  ];
+
+  cookiePos.forEach(([x, y, z, rx, rz]) => {
+    const ck = new THREE.Mesh(cookieGeo, cookieMat);
+    ck.position.set(x, y, z);
+    ck.rotation.set(rx, 0.3, rz);
+    g.add(ck);
+
+    for (let c = 0; c < 4; c++) {
+      const chip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), chipMat);
+      const ca = (c * Math.PI) / 2 + 0.3;
+      chip.position.set(
+        x + Math.cos(ca) * 0.2,
+        y + 0.06,
+        z + Math.sin(ca) * 0.2
+      );
+      g.add(chip);
+    }
+  });
+
+  add(g);
+}
+
+function build3DRotiManis(add, M, MB, stand, S) {
+  add(stand(1.7));
+  const g = new THREE.Group();
+
+  if (S.itemType === "brioche") {
+    const briocheMat = M("#BD6E22", 0.35);
+    const bCenter = new THREE.Mesh(new THREE.SphereGeometry(0.68, 24, 20), briocheMat);
+    bCenter.scale.set(1.1, 0.85, 1.05);
+    bCenter.position.set(0, 0.55, 0);
+    g.add(bCenter);
+
+    const bLeft = new THREE.Mesh(new THREE.SphereGeometry(0.58, 24, 20), briocheMat);
+    bLeft.scale.set(1, 0.8, 0.95);
+    bLeft.position.set(-0.72, 0.48, 0);
+    g.add(bLeft);
+
+    const bRight = new THREE.Mesh(new THREE.SphereGeometry(0.58, 24, 20), briocheMat);
+    bRight.scale.set(1, 0.8, 0.95);
+    bRight.position.set(0.72, 0.48, 0);
+    g.add(bRight);
+
+    const almondMat = M("#FFF5E4", 0.5);
+    for (let i = 0; i < 18; i++) {
+      const fl = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.08), almondMat);
+      const ax = (Math.sin(i * 1.7) * 0.75);
+      const az = (Math.cos(i * 2.3) * 0.45);
+      fl.position.set(ax, 0.88 + (i % 3) * 0.03, az);
+      fl.rotation.set(0.2, i * 0.4, 0.1);
+      g.add(fl);
+    }
+  } else {
+    // Sundae Berry & Glazed Donuts
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.3, 0.08, 36), M("#FFFDF8", 0.3));
+    plate.position.y = 0.05;
+    g.add(plate);
+
+    const donutDough = M("#D28E4A", 0.6);
+    const d1 = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.24, 20, 36), donutDough);
+    d1.rotation.x = Math.PI / 2;
+    d1.position.set(0.25, 0.28, 0.1);
+    g.add(d1);
+
+    const pinkGlazeMat = M("#EE6586", 0.25);
+    const g1 = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.22, 16, 36, Math.PI * 1.8), pinkGlazeMat);
+    g1.rotation.x = Math.PI / 2;
+    g1.position.set(0.25, 0.32, 0.1);
+    g.add(g1);
+
+    const sprColors = ["#FFFFFF", "#FFEA79", "#6FE3E8", "#FF8DA1"];
+    for (let i = 0; i < 16; i++) {
+      const spColor = sprColors[i % sprColors.length];
+      const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6), M(spColor, 0.3));
+      const ang = (i * Math.PI * 2) / 16;
+      sp.position.set(
+        0.25 + Math.cos(ang) * 0.56,
+        0.44,
+        0.1 + Math.sin(ang) * 0.56
+      );
+      sp.rotation.set(0, (i * 0.5) % Math.PI, Math.PI / 2);
+      g.add(sp);
+    }
+
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.22, 0.75, 24), M("#EAF2F8", 0.15, { transparent: true, opacity: 0.4 }));
+    cup.position.set(-0.65, 0.45, -0.1);
+    g.add(cup);
+
+    const swirl = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.55, 20), M("#FFD8E2", 0.35));
+    swirl.position.set(-0.65, 0.9, -0.1);
+    g.add(swirl);
+
+    const cherry = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), M("#B00E26", 0.2));
+    cherry.position.set(-0.65, 1.22, -0.1);
+    g.add(cherry);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 6), M("#3C2210", 0.5));
+    stem.position.set(-0.61, 1.34, -0.08);
+    stem.rotation.z = 0.4;
+    g.add(stem);
+  }
+
+  add(g);
 }
 
 /* ===== ruang dapur isometrik (CakeCraft Studio) ===== */
@@ -2447,6 +3000,7 @@ export default function PesanPage() {
   const [maxStep, setMaxStep] = useState(0);
   const [mode, setMode] = useState("custom");
   const [tplI, setTplI] = useState(null);
+  const [menuCat, setMenuCat] = useState("semua");
   const [cartCount, setCartCount] = useState(1);
   const [openC, setOpenC] = useState(-1);
   const [tool, setTool] = useState("draw");
@@ -3095,6 +3649,23 @@ export default function PesanPage() {
       gs.position.y = -0.699;
       gs.receiveShadow = true;
       cake.add(gs);
+    }
+
+    if (S.itemType === "cupcake") {
+      build3DCupcake(add, M, MB, stand, S);
+      return;
+    }
+    if (S.itemType === "tart") {
+      build3DTart(add, M, MB, stand, S);
+      return;
+    }
+    if (S.itemType === "cookies") {
+      build3DCookies(add, M, MB, stand, S);
+      return;
+    }
+    if (S.itemType === "brioche" || S.itemType === "donut") {
+      build3DRotiManis(add, M, MB, stand, S);
+      return;
     }
 
     const itemFlav = daftarItem.find(
@@ -3838,9 +4409,16 @@ export default function PesanPage() {
       } catch {}
       const targetIdx = tplI !== null ? tplI : 0;
       setTplI(targetIdx);
+      const targetItem = TPL[targetIdx] || TPL[0];
       const nextS = {
         ...getDefState(),
-        ...TPL[targetIdx].s,
+        ...targetItem.s,
+        itemType: targetItem.itemType || "cake",
+        tartVariant: targetItem.tartVariant,
+        cupcakeVariant: targetItem.cupcakeVariant,
+        namaItem: targetItem.n,
+        kategoriItem: targetItem.catLabel,
+        hargaItem: targetItem.price,
         f: S.f,
       };
       setS(nextS);
@@ -4205,13 +4783,24 @@ export default function PesanPage() {
   const persenDp = pengaturan?.persen_dp || 50;
   const isDpActive =
     pengaturan?.mode_pembayaran !== "Lunas" && S.payScheme !== "lunas";
-  const totalBiayaPesanan = rincianHarga.total_bayar;
+  const selectedTemplate = mode === "tpl" && tplI !== null ? TPL[tplI] : null;
+  const totalBiayaPesanan = selectedTemplate?.price
+    ? selectedTemplate.price + getOngkir()
+    : rincianHarga.total_bayar;
   const jumlahDpSekarang = isDpActive
     ? Math.round((totalBiayaPesanan * persenDp) / 100)
     : totalBiayaPesanan;
   const sisaPelunasan = totalBiayaPesanan - jumlahDpSekarang;
 
   function getLineItems() {
+    if (mode === "tpl" && tplI !== null && TPL[tplI]) {
+      const it = TPL[tplI];
+      return [
+        [it.n, it.price, 0, false],
+        [`Kategori: ${it.catLabel}`, 0, 0, true],
+        [`Komposisi: ${it.d}`, 0, 0, true],
+      ];
+    }
     const items = getPilihanItemsList();
     const rows = [];
     const mapItem = new Map();
@@ -4709,6 +5298,95 @@ export default function PesanPage() {
     );
   }
 
+  function renderPastrySVG(item) {
+    const type = item.itemType || "cake";
+    if (type === "cupcake") {
+      const isMint = item.cupcakeVariant === "mint";
+      const swirlCol = isMint ? "#BCE5CD" : "#FFCDB0";
+      return (
+        <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
+          <path d="M30 46 L36 74 Q50 78 64 74 L70 46 Z" fill="#FBF3EA" stroke="#DCCABB" strokeWidth="2" />
+          <path d="M38 48 L42 74" stroke="#E6D6C7" strokeWidth="1.5" />
+          <path d="M50 48 L50 75" stroke="#E6D6C7" strokeWidth="1.5" />
+          <path d="M62 48 L58 74" stroke="#E6D6C7" strokeWidth="1.5" />
+          <ellipse cx="50" cy="46" rx="22" ry="7" fill={isMint ? "#4A2B1D" : "#C99450"} />
+          <path d="M26 44 Q50 20 74 44 Q50 35 26 44 Z" fill={swirlCol} />
+          <ellipse cx="50" cy="32" rx="16" ry="8" fill={swirlCol} />
+          <circle cx="50" cy="22" r="7" fill={swirlCol} />
+          {isMint ? (
+            <g>
+              <line x1="52" y1="26" x2="62" y2="10" stroke="#683515" strokeWidth="4" strokeLinecap="round" />
+              <circle cx="44" cy="18" r="4.5" fill="#448F46" />
+            </g>
+          ) : (
+            <g>
+              <circle cx="44" cy="18" r="5" fill="#FA7E52" />
+              <circle cx="54" cy="18" r="4" fill="#B81C38" />
+            </g>
+          )}
+        </svg>
+      );
+    }
+    if (type === "tart") {
+      return (
+        <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
+          <ellipse cx="50" cy="56" rx="38" ry="14" fill="#B37E38" />
+          <ellipse cx="50" cy="52" rx="37" ry="13" fill="#C8944B" />
+          <ellipse cx="50" cy="48" rx="33" ry="10" fill={item.s?.icing || "#FFF4E2"} />
+          <circle cx="50" cy="46" r="6" fill="#DF253A" />
+          <circle cx="38" cy="48" r="5" fill="#271F36" />
+          <circle cx="62" cy="48" r="5" fill="#DF253A" />
+          <circle cx="44" cy="44" r="3.5" fill="#EA8DA2" />
+          <circle cx="56" cy="44" r="3.5" fill="#271F36" />
+        </svg>
+      );
+    }
+    if (type === "cookies") {
+      return (
+        <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
+          <rect x="30" y="28" width="40" height="46" rx="6" fill="#EBF4F9" stroke="#C2DCED" strokeWidth="2" opacity="0.85" />
+          <rect x="28" y="22" width="44" height="8" rx="3" fill="#D4AF37" />
+          <circle cx="50" cy="19" r="4" fill="#D4AF37" />
+          <rect x="30" y="32" width="40" height="6" fill="#8E2A3E" />
+          <circle cx="43" cy="50" r="10" fill="#C99653" />
+          <circle cx="57" cy="58" r="9" fill="#B88542" />
+          <circle cx="40" cy="48" r="1.8" fill="#381F13" />
+          <circle cx="45" cy="53" r="1.8" fill="#381F13" />
+          <circle cx="55" cy="56" r="1.8" fill="#381F13" />
+        </svg>
+      );
+    }
+    if (type === "brioche") {
+      return (
+        <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
+          <ellipse cx="50" cy="62" rx="36" ry="10" fill="#E8D5C4" />
+          <circle cx="50" cy="45" r="16" fill="#BD6E22" />
+          <circle cx="34" cy="48" r="13" fill="#BD6E22" />
+          <circle cx="66" cy="48" r="13" fill="#BD6E22" />
+          <ellipse cx="50" cy="40" rx="12" ry="7" fill="#DFA058" opacity="0.6" />
+          <ellipse cx="34" cy="44" rx="9" ry="5" fill="#DFA058" opacity="0.6" />
+          <ellipse cx="66" cy="44" rx="9" ry="5" fill="#DFA058" opacity="0.6" />
+        </svg>
+      );
+    }
+    if (type === "donut") {
+      return (
+        <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
+          <ellipse cx="50" cy="58" rx="32" ry="14" fill="#D28E4A" />
+          <ellipse cx="50" cy="54" rx="30" ry="12" fill="#EE6586" />
+          <ellipse cx="50" cy="54" rx="10" ry="5" fill="#FAF4EE" />
+          <line x1="38" y1="52" x2="42" y2="52" stroke="#FFF" strokeWidth="2" strokeLinecap="round" />
+          <line x1="58" y1="52" x2="62" y2="52" stroke="#FFEA79" strokeWidth="2" strokeLinecap="round" />
+          <line x1="48" y1="60" x2="52" y2="60" stroke="#6FE3E8" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="68" cy="30" r="6" fill="#B00E26" />
+          <path d="M68 24 Q72 16 75 18" stroke="#3C2210" strokeWidth="2" fill="none" />
+        </svg>
+      );
+    }
+    if (item.s?.shape === "heart") return renderShapeSVG("heart");
+    return renderCakeSVG(item.s?.size || "small", FLAV_COLORS[item.s?.flavor] || "#fbefd5", item.s?.icing || "#f6b4c2");
+  }
+
   function renderBarcodeSVG(seed) {
     const bars = [];
     const s = String(seed || "CRAVELY-BAKERY-2026");
@@ -4832,7 +5510,7 @@ export default function PesanPage() {
                   <span className="ti">🎂</span>
                   <div>
                     <h1>Pilih Jenis Kue</h1>
-                    <p>Buat sendiri dari nol, atau pilih template siap pakai.</p>
+                    <p>Buat kue sendiri dari nol, atau pilih jenis kue dari menu Cravely.</p>
                   </div>
                 </div>
                 <div className="g2c">
@@ -4842,55 +5520,78 @@ export default function PesanPage() {
                   >
                     <span className="mi">🎨</span>
                     <b>Custom Sendiri</b>
-                    <span>Atur ukuran, bentuk, rasa, dekorasi, dan desain.</span>
+                    <span>Atur ukuran, bentuk, rasa, dekorasi, dan desain dari nol.</span>
                   </button>
                   <button
                     className={`mode ${mode === "tpl" ? "on" : ""}`}
                     onClick={() => handleModeChange("tpl")}
                   >
-                    <span className="mi">⚡</span>
-                    <b>Template Siap Pakai</b>
-                    <span>Tidak mau repot? Pilih satu, langsung review.</span>
+                    <span className="mi">✨</span>
+                    <b>Koleksi Menu Cravely</b>
+                    <span>Pilihan lengkap: Kue Ultah, Tart, Cupcake, Cookies, & Roti.</span>
                   </button>
                 </div>
 
                 {mode === "tpl" ? (
                   <>
-                    <div className="lb">Pilih template</div>
+                    <div className="lb">Pilih Kue dari Menu Cravely</div>
+
+                    {/* Filter Kategori Menu */}
+                    <div className="cat-tabs">
+                      {MENU_CATEGORIES.map((c) => (
+                        <button
+                          key={c.key}
+                          type="button"
+                          className={`cat-pill ${menuCat === c.key ? "on" : ""}`}
+                          onClick={() => setMenuCat(c.key)}
+                        >
+                          <span>{c.icon}</span>
+                          <span>{c.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="grid">
                       {TPL.map((t, idx) => {
+                        if (menuCat !== "semua" && t.cat !== menuCat) return null;
                         const isSelected = tplI === idx;
                         return (
                           <button
                             key={idx}
                             className={`opt ${isSelected ? "on" : ""}`}
+                            style={{ position: "relative" }}
                             onClick={() => {
                               setTplI(idx);
                               const nextS = {
                                 ...getDefState(),
                                 ...t.s,
+                                itemType: t.itemType || "cake",
+                                tartVariant: t.tartVariant,
+                                cupcakeVariant: t.cupcakeVariant,
+                                namaItem: t.n,
+                                kategoriItem: t.catLabel,
+                                hargaItem: t.price,
                                 f: S.f,
                               };
                               setS(nextS);
                               snap(nextS);
                             }}
                           >
-                            {t.s.shape === "heart"
-                              ? renderShapeSVG("heart")
-                              : renderCakeSVG(
-                                  t.s.size || "small",
-                                  "#fbefd5",
-                                  t.s.icing || "#f6b4c2"
-                                )}
+                            {t.badge && (
+                              <span className="badge-tag">{t.badge}</span>
+                            )}
+                            {renderPastrySVG(t)}
                             <b>{t.n}</b>
                             <small>{t.d}</small>
+                            <em style={{ fontStyle: "normal", fontWeight: 800, color: "var(--cherry, #8E2A3E)", marginTop: "6px" }}>
+                              {formatRupiah(t.price)}
+                            </em>
                           </button>
                         );
                       })}
                     </div>
                     <div className="tip">
-                      Template dipesan apa adanya, jadi langkah ukuran sampai
-                      desain dilewati. Mau atur sendiri? Pilih Custom Sendiri.
+                      Semua kue dan pastry dari menu diracik dengan resep terbaik chef dan siap diantar. Mau kustomisasi kue sendiri dari nol? Pilih Custom Sendiri.
                     </div>
                   </>
                 ) : (
@@ -5885,8 +6586,8 @@ export default function PesanPage() {
 
               {hasWebGL && (isStudioView || isFullscreen) && (
                 <div className="hud">
-                  <b>{formatRupiah(rincianHarga?.total_kue || rincianHarga?.total_bayar || 0)}</b>
-                  <span>Custom Cake · Cravely Bakery</span>
+                  <b>{formatRupiah(selectedTemplate?.price || rincianHarga?.total_kue || rincianHarga?.total_bayar || 0)}</b>
+                  <span>{selectedTemplate ? `${selectedTemplate.n} · Cravely Bakery` : "Custom Cake · Cravely Bakery"}</span>
                 </div>
               )}
               {hasWebGL && (isStudioView || isFullscreen) && (
@@ -6175,7 +6876,9 @@ export default function PesanPage() {
                     Ringkasan Pesanan
                   </h3>
                   <div className="sum">
-                    {S.shape === "round" || S.shape === "custom"
+                    {mode === "tpl" && tplI !== null
+                      ? renderPastrySVG(TPL[tplI])
+                      : S.shape === "round" || S.shape === "custom"
                       ? renderCakeSVG(
                           S.size,
                           "#fbefd5",
@@ -6189,11 +6892,14 @@ export default function PesanPage() {
                           : "Custom Cake"}
                       </h3>
                       <p>
-                        {S.shape} · {S.size.toUpperCase()} (diameter{" "}
-                        {VISUAL_SIZE[S.size]?.d || 14} cm)
+                        {mode === "tpl" && tplI !== null
+                          ? `${TPL[tplI].catLabel} · ${TPL[tplI].d}`
+                          : `${S.shape} · ${S.size.toUpperCase()} (diameter ${VISUAL_SIZE[S.size]?.d || 14} cm)`}
                       </p>
                       <p>
-                        {S.flavor} · {S.fill}
+                        {mode === "tpl" && tplI !== null
+                          ? `Harga Resmi: ${formatRupiah(TPL[tplI].price)}`
+                          : `${S.flavor} · ${S.fill}`}
                       </p>
                     </div>
                     <button
@@ -6212,7 +6918,7 @@ export default function PesanPage() {
                   </div>
                   <div className="tot">
                     <span>Total Harga</span>
-                    <span>{formatRupiah(rincianHarga.total_bayar)}</span>
+                    <span>{formatRupiah(totalBiayaPesanan)}</span>
                   </div>
                 </div>
               ) : null}
