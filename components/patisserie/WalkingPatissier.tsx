@@ -132,7 +132,7 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
 
       // Character head screen coords for gentle gaze & proximity waving
       const charScreenX = rect.left + (posXRef.current / 100) * rect.width;
-      const charScreenY = rect.bottom - 145;
+      const charScreenY = rect.bottom - Math.min(340, rect.height * 0.42);
       const dx = e.clientX - charScreenX;
       const dy = e.clientY - charScreenY;
 
@@ -140,7 +140,7 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
         x: Math.max(-1, Math.min(1, dx / 280)),
         y: Math.max(-1, Math.min(1, dy / 240)),
       };
-      isNearCharRef.current = Math.hypot(dx, dy) < 175;
+      isNearCharRef.current = Math.hypot(dx, dy) < 220;
     };
 
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
@@ -188,7 +188,7 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
             const side = nextSin >= 0 ? 1 : -1;
             if (side !== lastStepSideRef.current && Math.abs(speedRef.current) > 6) {
               lastStepSideRef.current = side;
-              spawnBurst(1, 'puff', -facingRef.current * 14, 72);
+              spawnBurst(1, 'puff', -facingRef.current * 16, 150);
             }
           }
         } else {
@@ -233,14 +233,14 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
     setClickLineIndex(nextIdx);
     setCustomBubble(PATISSIER_CLICK_LINES[nextIdx]);
     setIsHopping(true);
-    spawnBurst(6, 'heart', 0, -40);
+    spawnBurst(6, 'heart', 0, -95);
 
     window.setTimeout(() => setIsHopping(false), 520);
     if (bubbleTimerRef.current) window.clearTimeout(bubbleTimerRef.current);
     bubbleTimerRef.current = window.setTimeout(() => setCustomBubble(null), 3200);
   };
 
-  // Keep si Adek peacefully quiet unless explicitly clicked (still shows cute silent mood on zone hover!)
+  // Keep the patissier peacefully quiet unless explicitly clicked
   const zoneInfo = activeZone ? ZONE_REACTIONS[activeZone] : null;
   const activeBubbleText = customBubble;
   const mood: 'happy' | 'excited' | 'cozy' | 'wave' = isHopping
@@ -254,16 +254,16 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
   const isSmilingEyes = isHopping || mood === 'excited' || (mood === 'wave' && !frame.isWalking);
   const isWaving = !frame.isWalking && (mood === 'wave' || isHopping || frame.isNear);
 
-  // Compute limb kinematics from walk phase
+  // Compute limb kinematics from walk phase (graceful adult stride)
   const stride = frame.isWalking ? Math.sin(frame.walkPhase) : 0;
-  const bounceY = frame.isWalking ? -Math.abs(Math.sin(frame.walkPhase)) * 7.5 : 0;
-  const legLeftAngle = stride * 21;
-  const legRightAngle = -stride * 21;
-  const armLeftAngle = -stride * 17;
-  const armRightAngle = isWaving ? -48 + Math.sin(Date.now() * 0.012) * 14 : stride * 17;
-  const bodyLean = frame.isWalking ? 3.2 : 0;
-  const hairTrail = frame.isWalking ? -6 - Math.abs(stride) * 4 : 0;
-  const shadowScale = isHopping ? 0.72 : frame.isWalking ? 0.92 - Math.abs(stride) * 0.1 : 1;
+  const bounceY = frame.isWalking ? -Math.abs(Math.sin(frame.walkPhase)) * 6.5 : 0;
+  const legLeftAngle = stride * 15;
+  const legRightAngle = -stride * 15;
+  const armLeftAngle = -stride * 13;
+  const armRightAngle = isWaving ? -44 + Math.sin(Date.now() * 0.011) * 12 : stride * 13;
+  const bodyLean = frame.isWalking ? 2.4 : 0;
+  const hairTrail = frame.isWalking ? -4.5 - Math.abs(stride) * 3.5 : 0;
+  const shadowScale = isHopping ? 0.78 : frame.isWalking ? 0.94 - Math.abs(stride) * 0.08 : 1;
 
   // Keep speech bubble safely inside horizontal bounds
   const bubbleAlignClass =
@@ -279,11 +279,11 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
 
   return (
     <div
-      className="pointer-events-none absolute bottom-[1.2%] z-30 select-none will-change-transform"
+      className="pointer-events-none absolute bottom-[0.6%] z-30 select-none will-change-transform"
       style={{
         left: `${frame.x}%`,
         transform: 'translateX(-50%)',
-        width: 'clamp(132px, 12.8vw, 196px)',
+        width: 'clamp(165px, min(20vw, 29dvh), 275px)',
       }}
     >
       {/* Floating Coquette Speech Bubble */}
@@ -382,12 +382,12 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
         className="pointer-events-auto relative w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-cherry rounded-full group"
       >
         <svg
-          viewBox="0 0 220 275"
-          className="w-full h-auto overflow-visible drop-shadow-[0_8px_14px_rgba(61,43,40,0.22)]"
+          viewBox="0 0 220 385"
+          className="w-full h-auto overflow-visible drop-shadow-[0_10px_18px_rgba(61,43,40,0.24)]"
         >
           <defs>
             <radialGradient id="patBlush" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#F59AB0" stopOpacity="0.68" />
+              <stop offset="0%" stopColor="#F59AB0" stopOpacity="0.58" />
               <stop offset="100%" stopColor="#F59AB0" stopOpacity="0" />
             </radialGradient>
             <linearGradient id="patHair" x1="0" y1="0" x2="0" y2="1">
@@ -402,20 +402,20 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
             </linearGradient>
             <linearGradient id="patApron" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#B86268" />
-              <stop offset="100%" stopColor="#93454B" />
+              <stop offset="100%" stopColor="#8F3F46" />
             </linearGradient>
             <linearGradient id="patDress" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#F6DCE0" />
-              <stop offset="100%" stopColor="#E6B8BF" />
+              <stop offset="100%" stopColor="#E4B3BC" />
             </linearGradient>
           </defs>
 
           {/* Soft Floor Contact Shadow */}
           <ellipse
             cx="110"
-            cy="261"
-            rx={38 * shadowScale}
-            ry={8.5 * shadowScale}
+            cy="370"
+            rx={44 * shadowScale}
+            ry={9 * shadowScale}
             fill="#4A2E28"
             opacity="0.22"
           />
@@ -424,434 +424,445 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
           <g
             transform={`translate(110, ${bounceY.toFixed(1)}) scale(${frame.facing}, 1) translate(-110, 0)`}
           >
-            {/* Flowing Back Hair (sways gently behind her while walking) */}
-            <g transform={`rotate(${hairTrail.toFixed(1)} 110 88)`}>
-              {/* Twin Soft Wavy Pigtails / Back Volume */}
+            {/* Long Flowing Wavy Hair Back (sways gently while walking) */}
+            <g transform={`rotate(${hairTrail.toFixed(1)} 110 76)`}>
               <path
-                d="M66 90 C44 108 38 144 50 176 C58 192 72 194 78 180 C84 166 78 136 82 110 Z"
+                d="M78 72 C64 98 60 144 66 196 C70 212 80 220 92 216 L128 216 C140 220 150 212 154 196 C160 144 156 98 142 72 Z"
                 fill="url(#patHair)"
                 stroke="#3E231D"
-                strokeWidth="1.8"
+                strokeWidth="1.7"
                 strokeLinejoin="round"
               />
+              {/* Soft Wavy Side Strands */}
               <path
-                d="M154 90 C176 108 182 144 170 176 C162 192 148 194 142 180 C136 166 142 136 138 110 Z"
-                fill="url(#patHair)"
-                stroke="#3E231D"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-              {/* Back Center Hair */}
-              <path
-                d="M68 88 C62 128 66 168 78 186 L142 186 C154 168 158 128 152 88 Z"
+                d="M74 102 C62 128 60 162 72 190 C78 176 80 144 82 114 Z"
                 fill="#523028"
+                opacity="0.65"
               />
-              {/* Cute Little Ribbon Ties on Twin Curls */}
-              <circle cx="62" cy="118" r="4.5" fill="#EFA7B8" stroke="#9E3B42" strokeWidth="1.4" />
-              <circle cx="158" cy="118" r="4.5" fill="#EFA7B8" stroke="#9E3B42" strokeWidth="1.4" />
+              <path
+                d="M146 102 C158 128 160 162 148 190 C142 176 140 144 138 114 Z"
+                fill="#523028"
+                opacity="0.65"
+              />
             </g>
 
-            {/* ==================== LEGS & MARY-JANE SHOES ==================== */}
+            {/* ==================== LONG ADULT LEGS & LOW-HEEL MARY-JANE SHOES ==================== */}
             {/* Left Leg */}
-            <g transform={`rotate(${legLeftAngle.toFixed(1)} 97 204)`}>
-              <rect x="90" y="198" width="14" height="24" rx="6" fill="#FEE4D1" />
-              {/* Cream Knee-High Sock */}
+            <g transform={`rotate(${legLeftAngle.toFixed(1)} 98 242)`}>
+              {/* Thigh, Knee & Slender Calf */}
               <path
-                d="M89.5 218 H104.5 L103.5 246 H90.5 Z"
+                d="M91 236 H106 L104.5 292 C104 312 102 330 101.5 348 H94.5 C93.5 330 92 312 91.5 292 Z"
+                fill="#FDE2CE"
+                stroke="#DFB59D"
+                strokeWidth="1.2"
+              />
+              {/* Subtle Knee Highlight */}
+              <ellipse cx="98" cy="291" rx="3.8" ry="2.2" fill="#F4C7AE" opacity="0.55" />
+              {/* Refined Cream Ankle Sock */}
+              <path
+                d="M93.5 334 H102.5 L102 354 H94 Z"
                 fill="#FFFDF9"
                 stroke="#E4CBC2"
-                strokeWidth="1.4"
+                strokeWidth="1.2"
               />
-              {/* Tiny Pink Sock Bow */}
-              <path d="M97 220 L92 217 L93 223 Z M97 220 L102 217 L101 223 Z" fill="#EFA7B8" />
-              {/* Burgundy Mary-Jane Shoe */}
+              <path d="M93.5 336 Q98 339 102.5 336" fill="none" stroke="#EFA7B8" strokeWidth="1.5" />
+              {/* Elegant Burgundy Low-Heel Mary-Jane Shoe */}
               <path
-                d="M88 244 H105 C111 244 114 250 112 255 C110 259 93 259 88 256 C85 253 86 247 88 244 Z"
+                d="M91.5 352 H104 C112 352 118 357 117 363 C115.5 367 101 367.5 92 365.5 C88.5 364 89 356 91.5 352 Z"
                 fill="#8E3B46"
                 stroke="#5A232B"
                 strokeWidth="1.5"
               />
-              <path d="M90 247 Q98 251 105 247" fill="none" stroke="#FFFDF9" strokeWidth="2" />
-              <ellipse cx="105" cy="251" rx="3" ry="1.4" fill="#F8C8CF" opacity="0.7" />
+              {/* Small Classic Block Heel */}
+              <rect x="90" y="363" width="6.5" height="4.5" rx="1.2" fill="#5A232B" />
+              {/* Dainty Ankle Strap */}
+              <path d="M92.5 354 Q99 357.5 105 354" fill="none" stroke="#FFFDF9" strokeWidth="1.8" />
+              <ellipse cx="109" cy="359" rx="3.2" ry="1.4" fill="#F8C8CF" opacity="0.65" />
             </g>
 
             {/* Right Leg */}
-            <g transform={`rotate(${legRightAngle.toFixed(1)} 123 204)`}>
-              <rect x="116" y="198" width="14" height="24" rx="6" fill="#FEE4D1" />
-              {/* Cream Knee-High Sock */}
+            <g transform={`rotate(${legRightAngle.toFixed(1)} 122 242)`}>
+              {/* Thigh, Knee & Slender Calf */}
               <path
-                d="M115.5 218 H130.5 L129.5 246 H116.5 Z"
+                d="M114 236 H129 L128.5 292 C128 312 126.5 330 125.5 348 H118.5 C118 330 116 312 115.5 292 Z"
+                fill="#FDE2CE"
+                stroke="#DFB59D"
+                strokeWidth="1.2"
+              />
+              {/* Subtle Knee Highlight */}
+              <ellipse cx="122" cy="291" rx="3.8" ry="2.2" fill="#F4C7AE" opacity="0.55" />
+              {/* Refined Cream Ankle Sock */}
+              <path
+                d="M117.5 334 H126.5 L126 354 H118 Z"
                 fill="#FFFDF9"
                 stroke="#E4CBC2"
-                strokeWidth="1.4"
+                strokeWidth="1.2"
               />
-              {/* Tiny Pink Sock Bow */}
-              <path d="M123 220 L118 217 L119 223 Z M123 220 L128 217 L127 223 Z" fill="#EFA7B8" />
-              {/* Burgundy Mary-Jane Shoe */}
+              <path d="M117.5 336 Q122 339 126.5 336" fill="none" stroke="#EFA7B8" strokeWidth="1.5" />
+              {/* Elegant Burgundy Low-Heel Mary-Jane Shoe */}
               <path
-                d="M114 244 H131 C137 244 140 250 138 255 C136 259 119 259 114 256 C111 253 112 247 114 244 Z"
+                d="M115.5 352 H128 C136 352 142 357 141 363 C139.5 367 125 367.5 116 365.5 C112.5 364 113 356 115.5 352 Z"
                 fill="#8E3B46"
                 stroke="#5A232B"
                 strokeWidth="1.5"
               />
-              <path d="M116 247 Q124 251 131 247" fill="none" stroke="#FFFDF9" strokeWidth="2" />
-              <ellipse cx="131" cy="251" rx="3" ry="1.4" fill="#F8C8CF" opacity="0.7" />
+              {/* Small Classic Block Heel */}
+              <rect x="114" y="363" width="6.5" height="4.5" rx="1.2" fill="#5A232B" />
+              {/* Dainty Ankle Strap */}
+              <path d="M116.5 354 Q123 357.5 129 354" fill="none" stroke="#FFFDF9" strokeWidth="1.8" />
+              <ellipse cx="133" cy="359" rx="3.2" ry="1.4" fill="#F8C8CF" opacity="0.65" />
             </g>
 
-            {/* ==================== BODY, PUFFY BLOUSE & COQUETTE APRON ==================== */}
-            <g transform={`rotate(${bodyLean.toFixed(1)} 110 198)`}>
-              {/* Left Arm (holding a cute mini pastel strawberry macaron!) */}
-              <g transform={`rotate(${armLeftAngle.toFixed(1)} 80 142)`}>
-                {/* Puffy Cream Sleeve */}
+            {/* ==================== GRACEFUL BODY, BLOUSE & COQUETTE MIDI APRON ==================== */}
+            <g transform={`rotate(${bodyLean.toFixed(1)} 110 236)`}>
+              {/* Left Arm (holding a delicate pastel strawberry macaron) */}
+              <g transform={`rotate(${armLeftAngle.toFixed(1)} 82 128)`}>
+                {/* Soft Puff Cream Sleeve */}
                 <ellipse
-                  cx="74"
-                  cy="148"
-                  rx="14"
-                  ry="16"
+                  cx="76"
+                  cy="137"
+                  rx="13.5"
+                  ry="17"
                   fill="#FFF9F1"
                   stroke="#D8B3A8"
-                  strokeWidth="1.6"
+                  strokeWidth="1.5"
                 />
-                {/* Lower Arm */}
+                {/* Slender Upper & Lower Arm */}
                 <path
-                  d="M71 160 Q65 174 68 185"
+                  d="M74 152 Q67 176 70 202"
                   fill="none"
-                  stroke="#FEE4D1"
-                  strokeWidth="10"
+                  stroke="#FDE2CE"
+                  strokeWidth="9.5"
                   strokeLinecap="round"
                 />
-                <circle cx="68" cy="187" r="6.5" fill="#FEE4D1" stroke="#DFB49C" strokeWidth="1.2" />
-                {/* Cute Mini Pink Macaron Charm in Hand */}
-                <g transform="translate(59, 184) rotate(-14)">
-                  <ellipse cx="0" cy="-3.5" rx="7" ry="4" fill="#F29DB0" stroke="#9E3B42" strokeWidth="1" />
-                  <rect x="-6.5" y="-1" width="13" height="3" rx="1.5" fill="#FFFDF9" />
-                  <ellipse cx="0" cy="3.5" rx="7" ry="3.8" fill="#F29DB0" stroke="#9E3B42" strokeWidth="1" />
+                <circle cx="70" cy="205" r="6" fill="#FDE2CE" stroke="#DFB49C" strokeWidth="1.2" />
+                {/* Cute Mini Pink Macaron in Hand */}
+                <g transform="translate(60, 201) rotate(-14)">
+                  <ellipse cx="0" cy="-3.5" rx="7.5" ry="4" fill="#F29DB0" stroke="#9E3B42" strokeWidth="1" />
+                  <rect x="-7" y="-1" width="14" height="3" rx="1.5" fill="#FFFDF9" />
+                  <ellipse cx="0" cy="3.5" rx="7.5" ry="3.8" fill="#F29DB0" stroke="#9E3B42" strokeWidth="1" />
                 </g>
               </g>
 
-              {/* Right Arm (Waves Warmly When Greeting!) */}
-              <g transform={`rotate(${armRightAngle.toFixed(1)} 140 142)`}>
+              {/* Right Arm (Waves Warmly When Greeting) */}
+              <g transform={`rotate(${armRightAngle.toFixed(1)} 138 128)`}>
                 <ellipse
-                  cx="146"
-                  cy="148"
-                  rx="14"
-                  ry="16"
+                  cx="144"
+                  cy="137"
+                  rx="13.5"
+                  ry="17"
                   fill="#FFF9F1"
                   stroke="#D8B3A8"
-                  strokeWidth="1.6"
+                  strokeWidth="1.5"
                 />
                 <path
-                  d="M149 160 Q156 174 152 185"
+                  d="M146 152 Q153 176 150 202"
                   fill="none"
-                  stroke="#FEE4D1"
-                  strokeWidth="10"
+                  stroke="#FDE2CE"
+                  strokeWidth="9.5"
                   strokeLinecap="round"
                 />
-                <circle cx="152" cy="187" r="6.5" fill="#FEE4D1" stroke="#DFB49C" strokeWidth="1.2" />
+                <circle cx="150" cy="205" r="6" fill="#FDE2CE" stroke="#DFB49C" strokeWidth="1.2" />
               </g>
 
-              {/* Cream Scalloped Lace Petticoat Under Skirt */}
+              {/* Cream Scalloped Lace Petticoat Under Midi Skirt */}
               <path
-                d="M74 205 Q83 214 92 205 Q101 214 110 205 Q119 214 128 205 Q137 214 146 205 L142 194 H78 Z"
+                d="M66 250 Q77 259 88 250 Q99 259 110 250 Q121 259 132 250 Q143 259 154 250 L149 238 H71 Z"
                 fill="#FFFDF9"
                 stroke="#E4C8BE"
                 strokeWidth="1.3"
               />
 
-              {/* Soft Blush Pleated Dress Skirt */}
+              {/* Soft Blush Pleated A-Line Midi Dress Skirt */}
               <path
-                d="M84 166 H136 L151 205 Q110 214 69 205 Z"
+                d="M88 174 H132 L157 248 Q110 258 63 248 Z"
                 fill="url(#patDress)"
                 stroke="#C99297"
                 strokeWidth="1.6"
                 strokeLinejoin="round"
               />
+              {/* Soft Skirt Pleat Lines */}
+              <path d="M96 184 L82 246 M110 184 L110 248 M124 184 L138 246" stroke="#D39AA2" strokeWidth="1" opacity="0.45" />
 
-              {/* Cream Blouse Torso */}
+              {/* Fitted Cream Blouse Torso */}
               <path
-                d="M84 134 Q110 128 136 134 L138 168 H82 Z"
+                d="M82 122 Q110 116 138 122 L133 176 H87 Z"
                 fill="#FFF9F1"
                 stroke="#D8B3A8"
                 strokeWidth="1.6"
               />
 
-              {/* Scalloped Peter Pan Collar */}
+              {/* Refined Scalloped Collar */}
               <path
-                d="M93 134 Q101 146 110 138 Q119 146 127 134"
+                d="M94 121 Q102 133 110 125 Q118 133 126 121"
                 fill="#FFFDF9"
                 stroke="#D8B3A8"
-                strokeWidth="1.5"
+                strokeWidth="1.4"
               />
 
-              {/* Burgundy Coquette Patissier Apron */}
+              {/* Burgundy Coquette Patissier Apron (Bib + Flared Skirt) */}
               <path
-                d="M89 148 H131 L141 201 Q110 208 79 201 Z"
+                d="M91 136 H129 L131 174 L146 242 Q110 250 74 242 L89 174 Z"
                 fill="url(#patApron)"
                 stroke="#76343A"
                 strokeWidth="1.6"
+                strokeLinejoin="round"
               />
+              {/* Apron Waistband */}
+              <rect x="87" y="170" width="46" height="7" rx="3" fill="#8B3B42" stroke="#6E2E34" strokeWidth="1.2" />
               {/* Apron Cream Lace Hem Scallops */}
               <path
-                d="M81 199 Q88 205 95 200 Q102 206 110 201 Q118 206 125 200 Q132 205 139 199"
+                d="M77 240 Q85 246 93 241 Q101 247 110 242 Q119 247 127 241 Q135 246 143 240"
                 fill="none"
                 stroke="#FFF8F0"
-                strokeWidth="2.4"
+                strokeWidth="2.3"
                 strokeLinecap="round"
               />
               {/* Apron Straps */}
-              <rect x="92" y="133" width="6.5" height="17" rx="3" fill="#F8E2DC" stroke="#9E3B42" strokeWidth="1.2" />
-              <rect x="121.5" y="133" width="6.5" height="17" rx="3" fill="#F8E2DC" stroke="#9E3B42" strokeWidth="1.2" />
+              <rect x="93" y="120" width="6" height="18" rx="2.8" fill="#F8E2DC" stroke="#9E3B42" strokeWidth="1.2" />
+              <rect x="121" y="120" width="6" height="18" rx="2.8" fill="#F8E2DC" stroke="#9E3B42" strokeWidth="1.2" />
 
               {/* Sweet Apron Pocket with Heart & Mini Brass Whisk */}
               <path
-                d="M97 173 H123 V186 Q110 194 97 186 Z"
+                d="M96 196 H124 V214 Q110 223 96 214 Z"
                 fill="#FFFDF9"
                 stroke="#E2B9B6"
                 strokeWidth="1.4"
               />
               {/* Mini Whisk peeking from pocket */}
-              <line x1="117" y1="174" x2="122" y2="163" stroke="#C59B62" strokeWidth="2" strokeLinecap="round" />
-              <ellipse cx="123" cy="160" rx="3.2" ry="5" transform="rotate(24 123 160)" fill="none" stroke="#C59B62" strokeWidth="1.3" />
+              <line x1="118" y1="197" x2="124" y2="184" stroke="#C59B62" strokeWidth="2" strokeLinecap="round" />
+              <ellipse cx="125" cy="181" rx="3.2" ry="5.2" transform="rotate(24 125 181)" fill="none" stroke="#C59B62" strokeWidth="1.3" />
               {/* Tiny Cherry Heart on Pocket */}
               <path
-                d="M108 184 C103.5 180.5 103 176.5 106 176.5 C107.2 176.5 108 177.8 108 177.8 C108 177.8 108.8 176.5 110 176.5 C113 176.5 112.5 180.5 108 184 Z"
+                d="M108 211 C103.5 207.5 103 203.5 106 203.5 C107.2 203.5 108 204.8 108 204.8 C108 204.8 108.8 203.5 110 203.5 C113 203.5 112.5 207.5 108 211 Z"
                 fill="#9E3B42"
               />
 
-              {/* Coquette Ribbon Bow at Waist / Neckline */}
-              <g transform="translate(110, 141)">
-                <path d="M0 0 C-9 -6 -15 -1 -10 4 C-7 7 -2 3 0 0 Z" fill="#EFA7B8" stroke="#9E3B42" strokeWidth="1.3" />
-                <path d="M0 0 C9 -6 15 -1 10 4 C7 7 2 3 0 0 Z" fill="#EFA7B8" stroke="#9E3B42" strokeWidth="1.3" />
-                <path d="M-1 2 L-6 11 M1 2 L6 11" stroke="#9E3B42" strokeWidth="1.6" strokeLinecap="round" />
+              {/* Coquette Ribbon Bow at Waistline */}
+              <g transform="translate(110, 174)">
+                <path d="M0 0 C-10 -6 -16 -1 -11 5 C-8 8 -2 3 0 0 Z" fill="#EFA7B8" stroke="#9E3B42" strokeWidth="1.3" />
+                <path d="M0 0 C10 -6 16 -1 11 5 C8 8 2 3 0 0 Z" fill="#EFA7B8" stroke="#9E3B42" strokeWidth="1.3" />
+                <path d="M-1 2 L-7 14 M1 2 L7 14" stroke="#9E3B42" strokeWidth="1.6" strokeLinecap="round" />
                 <circle cx="0" cy="0" r="2.8" fill="#9E3B42" />
               </g>
 
-              {/* Soft Neck */}
-              <rect x="103" y="120" width="14" height="16" rx="6" fill="#F8D6BF" />
+              {/* Slender Neck */}
+              <rect x="103.5" y="101" width="13" height="22" rx="6" fill="#F8D6BF" />
 
-              {/* ==================== HEAD & KAWAII COQUETTE EXPRESSION ==================== */}
-              <g transform={`rotate(${(frame.headTilt * frame.facing).toFixed(1)} 110 124)`}>
-                {/* Cute Ears with Tiny Pearl Earrings */}
-                <circle cx="67" cy="91" r="7" fill="#F9D9C4" stroke="#E0B69E" strokeWidth="1.2" />
-                <circle cx="67" cy="97" r="2.4" fill="#FFFDF9" stroke="#D3A29D" strokeWidth="1" />
-                <circle cx="153" cy="91" r="7" fill="#F9D9C4" stroke="#E0B69E" strokeWidth="1.2" />
-                <circle cx="153" cy="97" r="2.4" fill="#FFFDF9" stroke="#D3A29D" strokeWidth="1" />
+              {/* ==================== REFINED ADULT HEAD & EXPRESSION ==================== */}
+              <g transform={`rotate(${(frame.headTilt * frame.facing).toFixed(1)} 110 106)`}>
+                {/* Ears with Dainty Pearl Drop Earrings */}
+                <circle cx="77" cy="76" r="5.5" fill="#F9D9C4" stroke="#E0B69E" strokeWidth="1.1" />
+                <circle cx="77" cy="82.5" r="2.2" fill="#FFFDF9" stroke="#D3A29D" strokeWidth="1" />
+                <circle cx="143" cy="76" r="5.5" fill="#F9D9C4" stroke="#E0B69E" strokeWidth="1.1" />
+                <circle cx="143" cy="82.5" r="2.2" fill="#FFFDF9" stroke="#D3A29D" strokeWidth="1" />
 
-                {/* Soft Rounded Storybook Face */}
+                {/* Graceful Oval Adult Face */}
                 <path
-                  d="M70 84 C70 50 86 42 110 42 C134 42 150 50 150 84 C150 112 133 125 110 125 C87 125 70 112 70 84 Z"
+                  d="M79 71 C79 44 92 36 110 36 C128 36 141 44 141 71 C141 93 127 106 110 106 C93 106 79 93 79 71 Z"
                   fill="#FEE7D6"
                   stroke="#DFB59D"
-                  strokeWidth="1.6"
+                  strokeWidth="1.5"
                 />
 
                 {/* Soft Rosy Watercolor Cheek Blush */}
-                <ellipse cx="84" cy="99" rx="13" ry="7.5" fill="url(#patBlush)" />
-                <ellipse cx="136" cy="99" rx="13" ry="7.5" fill="url(#patBlush)" />
-                <circle cx="81" cy="98" r="1.4" fill="#FFFDF9" opacity="0.7" />
-                <circle cx="139" cy="98" r="1.4" fill="#FFFDF9" opacity="0.7" />
+                <ellipse cx="90" cy="84" rx="9.5" ry="5.2" fill="url(#patBlush)" />
+                <ellipse cx="130" cy="84" rx="9.5" ry="5.2" fill="url(#patBlush)" />
 
                 {/* Gentle Expressive Eyebrows */}
                 <path
-                  d="M84 74 Q92 70 100 73"
+                  d="M89 64 Q96 60.5 103 63"
                   fill="none"
                   stroke="#6A4137"
-                  strokeWidth="2.1"
+                  strokeWidth="1.9"
                   strokeLinecap="round"
                 />
                 <path
-                  d="M120 73 Q128 70 136 74"
+                  d="M117 63 Q124 60.5 131 64"
                   fill="none"
                   stroke="#6A4137"
-                  strokeWidth="2.1"
+                  strokeWidth="1.9"
                   strokeLinecap="round"
                 />
 
-                {/* ==================== CUTE NON-CREEPY EYES ==================== */}
+                {/* ==================== WARM EXPRESSIVE EYES ==================== */}
                 {isBlinking ? (
-                  /* Gentle Natural Blink */
-                  <g stroke="#4A2B24" strokeWidth="2.6" strokeLinecap="round" fill="none">
-                    <path d="M84 88 Q92 93 100 88" />
-                    <path d="M120 88 Q128 93 136 88" />
+                  <g stroke="#4A2B24" strokeWidth="2.3" strokeLinecap="round" fill="none">
+                    <path d="M89 75 Q96 79 103 75" />
+                    <path d="M117 75 Q124 79 131 75" />
                   </g>
                 ) : isSmilingEyes ? (
-                  /* Joyful Happy ^ ^ Crescent Eyes */
                   <g>
                     <path
-                      d="M83 90 Q92 80 101 90"
+                      d="M89 76 Q96 68 103 76"
                       fill="none"
                       stroke="#4A2B24"
-                      strokeWidth="3"
+                      strokeWidth="2.6"
                       strokeLinecap="round"
                     />
                     <path
-                      d="M119 90 Q128 80 137 90"
+                      d="M117 76 Q124 68 131 76"
                       fill="none"
                       stroke="#4A2B24"
-                      strokeWidth="3"
+                      strokeWidth="2.6"
                       strokeLinecap="round"
                     />
-                    {/* Cute Happy Cheek Sparkles */}
-                    <path d="M74 84 L75.5 87.5 L79 89 L75.5 90.5 L74 94 L72.5 90.5 L69 89 L72.5 87.5 Z" fill="#E3A857" />
-                    <path d="M146 84 L147.5 87.5 L151 89 L147.5 90.5 L146 94 L144.5 90.5 L141 89 L144.5 87.5 Z" fill="#E3A857" />
+                    {/* Gentle Happy Sparkles */}
+                    <path d="M82 72 L83.2 74.8 L86 76 L83.2 77.2 L82 80 L80.8 77.2 L78 76 L80.8 74.8 Z" fill="#E3A857" />
+                    <path d="M138 72 L139.2 74.8 L142 76 L139.2 77.2 L138 80 L136.8 77.2 L134 76 L136.8 74.8 Z" fill="#E3A857" />
                   </g>
                 ) : (
-                  /* Glossy Warm Espresso Kawaii Eyes (Soft, Warm, Friendly!) */
                   <g>
                     {/* Left Eye */}
                     <g>
-                      <ellipse cx="92" cy="88" rx="8.5" ry="9.2" fill="#FFFDF9" />
-                      <g transform={`translate(${localGazeX.toFixed(2)}, ${localGazeY.toFixed(2)})`}>
-                        <ellipse cx="92" cy="88.5" rx="6.8" ry="7.8" fill="url(#patEyeIris)" />
-                        <ellipse cx="92" cy="92.5" rx="4.2" ry="2.4" fill="#B57562" opacity="0.65" />
-                        <circle cx="92" cy="88" r="3.4" fill="#2E1915" />
-                        {/* Bright Sparkling Catchlights */}
-                        <circle cx="89.4" cy="84.8" r="2.6" fill="#FFFFFF" />
-                        <circle cx="94.8" cy="91.2" r="1.25" fill="#FFF6F0" />
+                      <ellipse cx="96" cy="75" rx="6.8" ry="7.2" fill="#FFFDF9" />
+                      <g transform={`translate(${(localGazeX * 0.85).toFixed(2)}, ${(localGazeY * 0.85).toFixed(2)})`}>
+                        <ellipse cx="96" cy="75.3" rx="5.3" ry="6" fill="url(#patEyeIris)" />
+                        <ellipse cx="96" cy="78.4" rx="3.2" ry="1.8" fill="#B57562" opacity="0.65" />
+                        <circle cx="96" cy="75" r="2.6" fill="#2E1915" />
+                        <circle cx="94" cy="72.6" r="2" fill="#FFFFFF" />
+                        <circle cx="98.2" cy="77.4" r="1" fill="#FFF6F0" />
                       </g>
-                      {/* Lush Soft Eyelashes */}
                       <path
-                        d="M82 85 Q92 76 101 85"
+                        d="M88 73 Q96 66 103.5 73"
                         fill="none"
                         stroke="#442721"
-                        strokeWidth="2.8"
+                        strokeWidth="2.4"
                         strokeLinecap="round"
                       />
-                      <path d="M83 84 L79.5 81.5" stroke="#442721" strokeWidth="1.9" strokeLinecap="round" />
+                      <path d="M89 72 L85.8 69.8" stroke="#442721" strokeWidth="1.6" strokeLinecap="round" />
                     </g>
 
                     {/* Right Eye */}
                     <g>
-                      <ellipse cx="128" cy="88" rx="8.5" ry="9.2" fill="#FFFDF9" />
-                      <g transform={`translate(${localGazeX.toFixed(2)}, ${localGazeY.toFixed(2)})`}>
-                        <ellipse cx="128" cy="88.5" rx="6.8" ry="7.8" fill="url(#patEyeIris)" />
-                        <ellipse cx="128" cy="92.5" rx="4.2" ry="2.4" fill="#B57562" opacity="0.65" />
-                        <circle cx="128" cy="88" r="3.4" fill="#2E1915" />
-                        {/* Bright Sparkling Catchlights */}
-                        <circle cx="125.4" cy="84.8" r="2.6" fill="#FFFFFF" />
-                        <circle cx="130.8" cy="91.2" r="1.25" fill="#FFF6F0" />
+                      <ellipse cx="124" cy="75" rx="6.8" ry="7.2" fill="#FFFDF9" />
+                      <g transform={`translate(${(localGazeX * 0.85).toFixed(2)}, ${(localGazeY * 0.85).toFixed(2)})`}>
+                        <ellipse cx="124" cy="75.3" rx="5.3" ry="6" fill="url(#patEyeIris)" />
+                        <ellipse cx="124" cy="78.4" rx="3.2" ry="1.8" fill="#B57562" opacity="0.65" />
+                        <circle cx="124" cy="75" r="2.6" fill="#2E1915" />
+                        <circle cx="122" cy="72.6" r="2" fill="#FFFFFF" />
+                        <circle cx="126.2" cy="77.4" r="1" fill="#FFF6F0" />
                       </g>
-                      {/* Lush Soft Eyelashes */}
                       <path
-                        d="M119 85 Q128 76 138 85"
+                        d="M116.5 73 Q124 66 132 73"
                         fill="none"
                         stroke="#442721"
-                        strokeWidth="2.8"
+                        strokeWidth="2.4"
                         strokeLinecap="round"
                       />
-                      <path d="M137 84 L140.5 81.5" stroke="#442721" strokeWidth="1.9" strokeLinecap="round" />
+                      <path d="M131 72 L134.2 69.8" stroke="#442721" strokeWidth="1.6" strokeLinecap="round" />
                     </g>
                   </g>
                 )}
 
-                {/* Tiny Cute Nose */}
+                {/* Delicate Nose */}
                 <path
-                  d="M109 96 Q110.5 98.2 108.8 99.2"
+                  d="M109.5 81 Q111 83.2 109.3 84.5"
                   fill="none"
                   stroke="#D39D84"
-                  strokeWidth="1.6"
+                  strokeWidth="1.4"
                   strokeLinecap="round"
                 />
 
-                {/* Sweet Warm Mouth */}
+                {/* Warm Smile */}
                 {isSmilingEyes ? (
                   <g>
                     <path
-                      d="M103 104 Q110 113 117 104 Z"
+                      d="M103.5 90 Q110 97.5 116.5 90 Z"
                       fill="#C9646F"
                       stroke="#933C46"
-                      strokeWidth="1.4"
+                      strokeWidth="1.3"
                       strokeLinejoin="round"
                     />
-                    <path d="M106 108 Q110 111 114 108" fill="#F29DAA" />
+                    <path d="M106 93 Q110 95.5 114 93" fill="#F29DAA" />
                   </g>
                 ) : (
                   <path
-                    d="M104 105 Q110 110.5 116 105"
+                    d="M104 91 Q110 95.5 116 91"
                     fill="none"
                     stroke="#A35058"
-                    strokeWidth="2.2"
+                    strokeWidth="2"
                     strokeLinecap="round"
                   />
                 )}
 
-                {/* Fluffy Curtain Bangs & Side Hair Locks */}
+                {/* Soft Curtain Bangs & Elegant Crown Hair */}
                 <path
-                  d="M66 90 C63 54 80 34 110 34 C140 34 157 54 154 90 C148 72 140 62 132 69 C125 58 117 58 111 72 C106 58 96 58 88 70 C80 62 72 72 66 90 Z"
+                  d="M75 76 C73 46 87 30 110 30 C133 30 147 46 145 76 C140 62 133 54 126 60 C121 50 114 50 110 61 C106 50 99 50 94 60 C87 54 80 62 75 76 Z"
                   fill="url(#patHair)"
                   stroke="#3E231D"
-                  strokeWidth="1.7"
+                  strokeWidth="1.6"
                   strokeLinejoin="round"
                 />
-                {/* Face-Framing Side Locks */}
+                {/* Graceful Face-Framing Side Locks */}
                 <path
-                  d="M69 78 C64 94 64 112 72 122 C76 112 75 94 74 82 Z"
+                  d="M78 65 C73 82 72 104 79 118 C83 105 83 84 82 70 Z"
                   fill="#663E34"
                 />
                 <path
-                  d="M151 78 C156 94 156 112 148 122 C144 112 145 94 146 82 Z"
+                  d="M142 65 C147 82 148 104 141 118 C137 105 137 84 138 70 Z"
                   fill="#663E34"
                 />
                 {/* Soft Glossy Hair Highlights */}
                 <path
-                  d="M84 52 Q96 44 106 49"
+                  d="M90 45 Q100 38 108 42"
                   fill="none"
                   stroke="#A87465"
-                  strokeWidth="3"
+                  strokeWidth="2.6"
                   strokeLinecap="round"
                   opacity="0.65"
                 />
                 <path
-                  d="M118 49 Q128 45 136 53"
+                  d="M115 42 Q123 39 130 46"
                   fill="none"
                   stroke="#A87465"
-                  strokeWidth="2.6"
+                  strokeWidth="2.3"
                   strokeLinecap="round"
                   opacity="0.6"
                 />
 
-                {/* Coquette Scalloped Lace Patissier Headband */}
+                {/* Refined Scalloped Lace Patissier Headband */}
                 <path
-                  d="M72 56 Q110 26 148 56 Q142 46 134 50 Q126 40 118 44 Q110 35 102 44 Q94 40 86 50 Q78 46 72 56 Z"
+                  d="M80 48 Q110 24 140 48 Q135 40 128 43 Q122 35 116 38 Q110 31 104 38 Q98 35 92 43 Q85 40 80 48 Z"
                   fill="#FFFDF9"
                   stroke="#D8B3A8"
-                  strokeWidth="1.5"
+                  strokeWidth="1.4"
                   strokeLinejoin="round"
                 />
                 <path
-                  d="M76 54 Q110 32 144 54"
+                  d="M83 46 Q110 29 137 46"
                   fill="none"
                   stroke="#EFA7B8"
-                  strokeWidth="2.6"
+                  strokeWidth="2.2"
                   strokeLinecap="round"
                 />
 
                 {/* Signature Coquette Satin Ribbon Bow on Headband */}
-                <g transform="translate(133, 41) rotate(22)">
+                <g transform="translate(128, 36) rotate(20)">
                   <path
-                    d="M0,0 C-13,-13 -24,-4 -15,7 C-10,11 -2,4 0,0 Z"
+                    d="M0,0 C-10,-10 -19,-3 -12,6 C-8,9 -2,3 0,0 Z"
                     fill="#F8D8DC"
                     stroke="#9E3B42"
-                    strokeWidth="2"
+                    strokeWidth="1.7"
                     strokeLinejoin="round"
                   />
                   <path
-                    d="M0,0 C13,-13 24,-4 15,7 C10,11 2,4 0,0 Z"
+                    d="M0,0 C10,-10 19,-3 12,6 C8,9 2,3 0,0 Z"
                     fill="#F8D8DC"
                     stroke="#9E3B42"
-                    strokeWidth="2"
+                    strokeWidth="1.7"
                     strokeLinejoin="round"
                   />
                   <path
-                    d="M-2,2 Q-9,13 -14,20 L-7,19 Q-3,11 0,3 Z"
+                    d="M-1.5,2 Q-7,11 -11,17 L-5.5,16 Q-2,9 0,3 Z"
                     fill="#9E3B42"
                   />
                   <path
-                    d="M2,2 Q9,13 14,20 L7,19 Q3,11 0,3 Z"
+                    d="M1.5,2 Q7,11 11,17 L5.5,16 Q2,9 0,3 Z"
                     fill="#9E3B42"
                   />
-                  <circle cx="0" cy="0" r="4.4" fill="#FFFDF9" stroke="#9E3B42" strokeWidth="2" />
-                  <circle cx="0" cy="0" r="1.8" fill="#EFA7B8" />
+                  <circle cx="0" cy="0" r="3.6" fill="#FFFDF9" stroke="#9E3B42" strokeWidth="1.7" />
+                  <circle cx="0" cy="0" r="1.5" fill="#EFA7B8" />
                 </g>
               </g>
             </g>
