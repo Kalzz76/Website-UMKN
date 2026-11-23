@@ -4,11 +4,14 @@ import { AnimatePresence, motion, useInView } from 'motion/react';
 import {
   ArrowUpRight,
   Award,
+  Calendar,
   Check,
   Flame,
   Heart,
   MapPin,
+  Phone,
   Sparkles,
+  User,
   X,
 } from 'lucide-react';
 import { formatRupiah, type ViewType } from './patisserieData';
@@ -908,96 +911,144 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
         </div>
       </section>
 
-      {/* ==================== 9. RESERVASI & PESAN CEPAT (DARK WALNUT BAND BEFORE FOOTER) ==================== */}
+      {/* ==================== 9. RESERVASI & PESAN CEPAT (LUXURY BOUTIQUE CARD) ==================== */}
       <section
         aria-label="Reservasi dan Pemesanan Cepat Cravely"
-        className="py-16 sm:py-20 px-4 sm:px-8 bg-kayuGelap text-ivory border-t-2 border-kuningan/55"
+        className="py-16 sm:py-24 px-4 sm:px-8 bg-gradient-to-b from-[#2A1814] via-[#3D2520] to-[#241310] text-ivory border-t-2 border-[#C59B62]/60 relative overflow-hidden"
       >
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-kuningan mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Cravely Bandung</span>
+        {/* Subtle Warm Background Glow */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-25"
+          style={{
+            backgroundImage:
+              'radial-gradient(ellipse at 50% 30%, #E8A5AC 0%, transparent 65%), radial-gradient(ellipse at 50% 100%, #C59B62 0%, transparent 70%)',
+          }}
+        />
+
+        <div className="max-w-3xl mx-auto relative z-10">
+          {/* Header */}
+          <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#FFFDF9]/10 border border-[#C59B62]/50 text-[11px] font-bold uppercase tracking-[0.22em] text-[#E5C590] mb-3 backdrop-blur-xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#E5C590]" />
+              <span>Butik &amp; Atelier Bandung</span>
+            </div>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#FFFDF9] tracking-tight">
+              Reservasi &amp; Pesan Cepat
+            </h2>
+            <p className="text-xs sm:text-sm text-[#F6DED5] mt-2.5 leading-relaxed">
+              Amankan meja dine-in hangat, titip kloter chiffon pagi sebelum kehabisan, atau jadwalkan konsultasi Custom Cake untuk momen istimewa Anda.
+            </p>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#FFFDF9]">
-            Reservasi &amp; Pesan Cepat
-          </h2>
-          <p className="text-xs sm:text-sm text-blush/82 mt-2">
-            Amankan meja dine-in, titip kloter chiffon pagi, atau jadwalkan konsultasi Custom Cake
-            untuk acara spesial Anda.
-          </p>
 
           {!resSubmitted ? (
-            <form onSubmit={handleReservationSubmit} className="mt-8 space-y-4 text-left">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <input
-                  type="text"
-                  required
-                  value={resNama}
-                  onChange={(e) => setResNama(e.target.value)}
-                  placeholder="Nama Lengkap *"
-                  aria-label="Nama Lengkap"
-                  className="w-full px-4 py-3 rounded-xl bg-white/8 border border-kuningan/35 text-sm text-ivory placeholder:text-ivory/45 focus:outline-none focus:border-blush focus:bg-white/12 transition"
-                />
-                <input
-                  type="text"
-                  required
-                  value={resWa}
-                  onChange={(e) => setResWa(e.target.value)}
-                  placeholder="Nomor WhatsApp *"
-                  aria-label="Nomor WhatsApp"
-                  className="w-full px-4 py-3 rounded-xl bg-white/8 border border-kuningan/35 text-sm text-ivory placeholder:text-ivory/45 focus:outline-none focus:border-blush focus:bg-white/12 transition"
-                />
-                <input
-                  type="text"
-                  value={resJumlah}
-                  onChange={(e) => setResJumlah(e.target.value)}
-                  placeholder="Keperluan (misal: 2 Orang / 1 Whole Cake)"
-                  aria-label="Keperluan atau Jumlah"
-                  className="w-full px-4 py-3 rounded-xl bg-white/8 border border-kuningan/35 text-sm text-ivory placeholder:text-ivory/45 focus:outline-none focus:border-blush focus:bg-white/12 transition"
-                />
-                <input
-                  type="date"
-                  value={resTanggal}
-                  onChange={(e) => setResTanggal(e.target.value)}
-                  aria-label="Tanggal Kunjungan atau Pengambilan"
-                  className="w-full px-4 py-3 rounded-xl bg-white/8 border border-kuningan/35 text-sm text-ivory focus:outline-none focus:border-blush focus:bg-white/12 transition [color-scheme:dark]"
-                />
-              </div>
+            <div className="rounded-3xl bg-[#FFFDF9] border-2 border-[#C59B62]/70 shadow-[0_24px_55px_rgba(20,8,6,0.45)] p-6 sm:p-9 text-[#3D2B28]">
+              <div className="border border-dashed border-[#D9B37C]/60 rounded-2xl p-5 sm:p-7 bg-[#FDFAF6]">
+                <form onSubmit={handleReservationSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Nama Lengkap */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-[#9E3B42]" />
+                        <span>Nama Lengkap *</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={resNama}
+                        onChange={(e) => setResNama(e.target.value)}
+                        placeholder="Contoh: Aurelia Putri"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D9B37C]/60 text-sm text-[#3D2B28] placeholder:text-[#A89088] focus:outline-none focus:border-[#9E3B42] focus:ring-2 focus:ring-[#E8A5AC]/40 shadow-xs transition"
+                      />
+                    </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full py-3.5 px-6 rounded-full bg-[#DFBFA1] hover:bg-blush text-kayuGelap font-bold text-xs sm:text-sm tracking-wide shadow-lg transition-colors"
-                >
-                  Kirim Reservasi
-                </button>
+                    {/* Nomor WhatsApp */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-[#9E3B42]" />
+                        <span>Nomor WhatsApp *</span>
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={resWa}
+                        onChange={(e) => setResWa(e.target.value)}
+                        placeholder="Contoh: 0812-3456-7890"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D9B37C]/60 text-sm text-[#3D2B28] placeholder:text-[#A89088] focus:outline-none focus:border-[#9E3B42] focus:ring-2 focus:ring-[#E8A5AC]/40 shadow-xs transition"
+                      />
+                    </div>
+
+                    {/* Keperluan */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
+                        <Heart className="w-3.5 h-3.5 text-[#9E3B42]" />
+                        <span>Keperluan Acara</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={resJumlah}
+                        onChange={(e) => setResJumlah(e.target.value)}
+                        placeholder="Misal: Dine-in 2 Orang / Titip 1 Chiffon"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D9B37C]/60 text-sm text-[#3D2B28] placeholder:text-[#A89088] focus:outline-none focus:border-[#9E3B42] focus:ring-2 focus:ring-[#E8A5AC]/40 shadow-xs transition"
+                      />
+                    </div>
+
+                    {/* Tanggal */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#9E3B42]" />
+                        <span>Tanggal Kunjungan / Ambil</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={resTanggal}
+                        onChange={(e) => setResTanggal(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D9B37C]/60 text-sm text-[#3D2B28] focus:outline-none focus:border-[#9E3B42] focus:ring-2 focus:ring-[#E8A5AC]/40 shadow-xs transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-3">
+                    <button
+                      type="submit"
+                      className="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-[#9E3B42] via-[#B23A48] to-[#9E3B42] hover:brightness-105 active:scale-[0.99] text-white font-serif font-bold text-sm tracking-wider shadow-[0_8px_22px_rgba(158,59,66,0.38)] border border-[#E8A5AC]/40 flex items-center justify-center gap-2 transition cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 text-[#FDE5E7]" />
+                      <span>Kirim Reservasi Sekarang</span>
+                    </button>
+                    <p className="text-center text-[11px] text-[#8C6D62] mt-2.5">
+                      * Tim kami akan segera mengonfirmasi ketersediaan meja &amp; jadwal melalui WhatsApp resmi Cravely.
+                    </p>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
           ) : (
-            <div className="mt-8 p-6 rounded-2xl bg-white/8 border border-kuningan/55 space-y-3">
-              <div className="w-10 h-10 rounded-full bg-blush text-kayuGelap mx-auto flex items-center justify-center">
-                <Check className="w-5 h-5" />
+            <div className="rounded-3xl bg-[#FFFDF9] border-2 border-[#C59B62]/80 shadow-[0_24px_55px_rgba(20,8,6,0.45)] p-8 sm:p-10 text-center text-[#3D2B28] space-y-4">
+              <div className="w-14 h-14 rounded-full bg-[#EAF2E1] border-2 border-[#7D9F67] text-[#42662C] mx-auto flex items-center justify-center shadow-sm">
+                <Check className="w-7 h-7 stroke-[2.5]" />
               </div>
-              <h3 className="font-serif text-xl font-bold text-[#FFFDF9]">
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#3D2B28]">
                 Reservasi Berhasil Dicatat!
               </h3>
-              <p className="text-xs sm:text-sm text-ivory/80 leading-relaxed">
-                Terima kasih <b>{resNama}</b>. Tim Cravely akan segera menghubungi WhatsApp{' '}
-                <b>{resWa}</b> untuk konfirmasi jadwal Anda.
+              <p className="text-xs sm:text-sm text-[#6B473C] max-w-md mx-auto leading-relaxed">
+                Terima kasih, <b>{resNama}</b>. Rincian pesanan telah kami simpan. Barista &amp; patissier Cravely akan segera menghubungi WhatsApp <b>{resWa}</b> untuk konfirmasi akhir.
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setResNama('');
-                  setResWa('');
-                  setResJumlah('');
-                  setResTanggal('');
-                  setResSubmitted(false);
-                }}
-                className="px-5 py-2 rounded-full bg-white/12 hover:bg-white/20 text-ivory text-xs font-bold transition"
-              >
-                Buat Reservasi Lain
-              </button>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResNama('');
+                    setResWa('');
+                    setResJumlah('');
+                    setResTanggal('');
+                    setResSubmitted(false);
+                  }}
+                  className="px-6 py-2.5 rounded-full bg-[#F5ECE2] hover:bg-[#EBDDD0] text-[#5A3B33] text-xs font-bold border border-[#D9B37C]/60 transition"
+                >
+                  Buat Reservasi Lain
+                </button>
+              </div>
             </div>
           )}
         </div>

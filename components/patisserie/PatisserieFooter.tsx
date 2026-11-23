@@ -1,9 +1,10 @@
 "use client";
 import React from 'react';
-import { Clock, Mail, MapPin, Phone } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, Mail, MapPin, Phone, ChefHat, Sparkles, Heart } from 'lucide-react';
 import type { ViewType } from './patisserieData';
 
-const InstagramIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
+const InstagramIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -21,231 +22,185 @@ const InstagramIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-
 );
 
 interface PatisserieFooterProps {
-  onNavigate: (view: ViewType) => void;
-  onOpenHampers: () => void;
-  onExitShop: () => void;
+  onNavigate?: (view: ViewType) => void;
+  onOpenHampers?: () => void;
+  onExitShop?: () => void;
 }
 
-export const PatisserieFooter: React.FC<PatisserieFooterProps> = ({
-  onNavigate,
-  onOpenHampers,
-  onExitShop,
-}) => {
+export const PatisserieFooter: React.FC<PatisserieFooterProps> = () => {
   return (
-    <footer className="bg-kayuGelap text-ivory border-t-[3px] border-kuningan/70 relative overflow-hidden">
-      {/* Subtle Top Scalloped Lace Accent */}
+    <footer className="bg-gradient-to-b from-[#251410] via-[#1F0E0C] to-[#120705] text-[#FFFDF9] border-t-2 border-[#C59B62]/80 relative overflow-hidden">
+      {/* Decorative Top Golden Ribbon Trim */}
       <div
         aria-hidden="true"
-        className="w-full h-1.5 bg-gradient-to-r from-kayu via-kuningan/70 to-kayu opacity-75"
+        className="w-full h-1 bg-gradient-to-r from-[#8E6A36] via-[#F3DAAC] to-[#8E6A36] opacity-80"
       />
 
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12 sm:py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-9 lg:gap-8">
-          {/* Column 1: Brand & Story */}
-          <div className="lg:col-span-4 space-y-3.5">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
+          {/* Column 1: Brand & Philosophy */}
+          <div className="lg:col-span-4 space-y-4">
             <div>
-              <span className="font-script text-3xl text-blush block leading-none">
+              <span className="font-script text-3xl sm:text-4xl text-[#E8A5AC] block leading-none">
                 Baked with Love
               </span>
-              <h2 className="font-coquette text-lg sm:text-xl font-bold text-ivory tracking-wider mt-1">
-                Cravely
+              <h2 className="font-coquette text-2xl font-bold tracking-wider text-[#FFFDF9] mt-1.5 flex items-center gap-2">
+                <span>Cravely</span>
+                <span className="text-[10px] font-sans uppercase tracking-[0.25em] px-2 py-0.5 rounded-full bg-[#C59B62]/20 border border-[#C59B62]/50 text-[#F0D5A8]">
+                  Patisserie
+                </span>
               </h2>
             </div>
-            <p className="text-xs sm:text-sm text-ivory/78 leading-relaxed">
-              Patisserie rumahan di jantung kota Bandung sejak 2018. Kami memanggang
-              cupcake, whole cake berpita, dan kue custom 3D segar setiap hari menggunakan
-              mentega pilihan, buah beri segar, dan krim lembut buatan sendiri.
+            <p className="text-xs sm:text-sm text-[#E6D4CC] leading-relaxed">
+              Patisserie rumahan di jantung kota Bandung sejak 2018. Kami memanggang cupcake lembut, chiffon pandan wangi, kue ulang tahun berpita, dan kreasi Custom Cake 3D segar setiap hari dengan resep mentega murni pilihan.
             </p>
-            <div className="pt-1 flex items-center gap-4 text-xs text-blush/90 font-semibold">
-              <span>100% Bahan Segar</span>
-              <span aria-hidden="true">·</span>
-              <span>Halal &amp; Homemade</span>
+            <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#F3DAAC]">
+              <span className="px-2.5 py-1 rounded-full bg-white/5 border border-[#C59B62]/30 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-[#E8A5AC]" />
+                100% Bahan Segar
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-white/5 border border-[#C59B62]/30 flex items-center gap-1">
+                <Heart className="w-3 h-3 text-[#E8A5AC]" />
+                Halal &amp; Homemade
+              </span>
             </div>
           </div>
 
-          {/* Column 2: Alamat Toko Lengkap & Jam Buka */}
+          {/* Column 2: Alamat Toko & Jam Operasional */}
           <div className="lg:col-span-4 space-y-4">
-            <h3 className="font-coquette text-xs sm:text-sm font-bold tracking-widest text-kuningan uppercase">
-              Alamat Toko &amp; Jam Buka
+            <h3 className="font-serif text-sm font-bold tracking-widest text-[#E5C590] uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E5C590]" />
+              <span>Butik &amp; Jam Buka</span>
             </h3>
-            <div className="space-y-3 text-xs sm:text-sm text-ivory/85">
-              <div className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-kuningan shrink-0 mt-0.5" />
+
+            <div className="p-4 rounded-2xl bg-white/[0.04] border border-[#C59B62]/25 space-y-3.5 text-xs sm:text-sm">
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg bg-[#C59B62]/15 border border-[#C59B62]/40 text-[#E5C590] flex items-center justify-center shrink-0 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                </div>
                 <div>
-                  <p className="font-bold text-ivory">Butik &amp; Kafe Utama Bandung</p>
-                  <p className="text-ivory/80 leading-relaxed mt-0.5">
-                    Jl. Melati Manis No. 18, Kel. Citarum, Kec. Bandung Wetan,
-                    Kota Bandung, Jawa Barat 40115
+                  <p className="font-bold text-[#FFFDF9]">Butik &amp; Kafe Utama Bandung</p>
+                  <p className="text-[#DAC8BF] text-xs leading-relaxed mt-0.5">
+                    Jl. Melati Manis No. 18, Citarum, Kec. Bandung Wetan, Kota Bandung, 40115
                   </p>
-                  <p className="text-[11px] text-blush/85 mt-1">
-                    Seberang Taman Melati Heritage · 3 menit dari Gedung Sate (Area Dine-in &amp; Parkir Tersedia)
+                  <p className="text-[11px] text-[#E8A5AC] mt-1 font-semibold">
+                    (Seberang Taman Melati · Area Dine-in &amp; Parkir)
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-kuningan shrink-0 mt-0.5" />
-                <div className="space-y-0.5 text-ivory/80">
-                  <p>
-                    <strong className="text-ivory">Senin – Jumat:</strong> 08.00 – 20.00 WIB
-                  </p>
-                  <p>
-                    <strong className="text-ivory">Sabtu – Minggu &amp; Libur:</strong> 08.00 – 21.00 WIB
-                  </p>
+              <div className="border-t border-white/10 pt-3 flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg bg-[#C59B62]/15 border border-[#C59B62]/40 text-[#E5C590] flex items-center justify-center shrink-0 mt-0.5">
+                  <Clock className="w-3.5 h-3.5" />
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[#DAC8BF]">Senin – Jumat:</span>
+                    <span className="font-bold text-[#FFFDF9] tabular-nums">08.00 – 20.00 WIB</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[#DAC8BF]">Sabtu – Minggu:</span>
+                    <span className="font-bold text-[#E5C590] tabular-nums">08.00 – 21.00 WIB</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Column 3: Kontak & Layanan */}
+          {/* Column 3: Kontak & Pesanan */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="font-coquette text-xs sm:text-sm font-bold tracking-widest text-kuningan uppercase">
-              Kontak Kami
+            <h3 className="font-serif text-sm font-bold tracking-widest text-[#E5C590] uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E5C590]" />
+              <span>Kontak Kami</span>
             </h3>
-            <ul className="space-y-2.5 text-xs sm:text-sm text-ivory/80">
+
+            <ul className="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <a
                   href="https://wa.me/6281234567890"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 hover:text-blush transition"
+                  className="flex items-center gap-2.5 text-[#DAC8BF] hover:text-[#FFFDF9] transition group"
                 >
-                  <Phone className="w-3.5 h-3.5 text-kuningan shrink-0" />
-                  <span>+62 812-3456-7890</span>
+                  <span className="w-6 h-6 rounded-md bg-white/5 border border-[#C59B62]/30 flex items-center justify-center text-[#E5C590] group-hover:bg-[#9E3B42] group-hover:border-[#9E3B42] group-hover:text-white transition">
+                    <Phone className="w-3 h-3" />
+                  </span>
+                  <span>WhatsApp Toko</span>
                 </a>
               </li>
               <li>
                 <a
                   href="mailto:halo@cravely.id"
-                  className="inline-flex items-center gap-2 hover:text-blush transition"
+                  className="flex items-center gap-2.5 text-[#DAC8BF] hover:text-[#FFFDF9] transition group"
                 >
-                  <Mail className="w-3.5 h-3.5 text-kuningan shrink-0" />
+                  <span className="w-6 h-6 rounded-md bg-white/5 border border-[#C59B62]/30 flex items-center justify-center text-[#E5C590] group-hover:bg-[#9E3B42] group-hover:border-[#9E3B42] group-hover:text-white transition">
+                    <Mail className="w-3 h-3" />
+                  </span>
                   <span>halo@cravely.id</span>
                 </a>
               </li>
-              <li className="inline-flex items-center gap-2">
-                <InstagramIcon className="w-3.5 h-3.5 text-kuningan shrink-0" />
-                <span>@cravely.bdg</span>
+              <li>
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 text-[#DAC8BF] hover:text-[#FFFDF9] transition group"
+                >
+                  <span className="w-6 h-6 rounded-md bg-white/5 border border-[#C59B62]/30 flex items-center justify-center text-[#E5C590] group-hover:bg-[#9E3B42] group-hover:border-[#9E3B42] group-hover:text-white transition">
+                    <InstagramIcon className="w-3 h-3" />
+                  </span>
+                  <span>@cravely.bdg</span>
+                </a>
               </li>
             </ul>
-            <p className="text-[11px] text-ivory/65 leading-relaxed pt-1">
-              Menerima pesanan custom cake minimal H-2 &amp; pengantaran khusus area Bandung Raya.
+
+            <p className="text-[11px] text-[#DAC8BF]/80 leading-relaxed pt-1">
+              Melayani pesanan custom cake H-2 &amp; pengantaran langsung khusus Bandung Raya.
             </p>
           </div>
 
-          {/* Column 4: Navigasi Toko */}
+          {/* Column 4: Navigasi Halaman Toko (Rute Bersih) */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="font-coquette text-xs sm:text-sm font-bold tracking-widest text-kuningan uppercase">
-              Jelajahi
+            <h3 className="font-serif text-sm font-bold tracking-widest text-[#E5C590] uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E5C590]" />
+              <span>Jelajahi</span>
             </h3>
-            <ul className="space-y-2 text-xs sm:text-sm text-ivory/80">
+
+            <ul className="space-y-2 text-xs sm:text-sm text-[#DAC8BF]">
               <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('toko')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Ruang Cafe Interaktif
-                </button>
+                <Link href="/" className="hover:text-[#E8A5AC] hover:translate-x-1 inline-block transition">
+                  Home (Halaman Utama)
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('etalase')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Etalase Kue Ultah &amp; Chiffon
-                </button>
+                <Link href="/toko" className="hover:text-[#E8A5AC] hover:translate-x-1 inline-block transition">
+                  Ruang Toko &amp; Kafe
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('katalog')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Menu Kue Lengkap &amp; Harga
-                </button>
+                <Link href="/menu" className="hover:text-[#E8A5AC] hover:translate-x-1 inline-block transition">
+                  Daftar Menu &amp; Harga
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('custom')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Studio Custom Cake 3D
-                </button>
+                <Link href="/pesan" className="hover:text-[#E8A5AC] hover:translate-x-1 inline-flex items-center gap-1.5 text-[#E8A5AC] font-bold transition">
+                  <ChefHat className="w-3.5 h-3.5" />
+                  <span>Cake Studio 3D</span>
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('kasir')}
-                  className="hover:text-blush transition text-left"
-                >
+                <Link href="/kasir" className="hover:text-[#E8A5AC] hover:translate-x-1 inline-block transition">
                   Meja Kasir &amp; Keranjang
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('dokumentasi')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Dokumentasi &amp; Promo
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('lokasi')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Lokasi &amp; Peta Toko
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('pengaduan')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Kritik &amp; Saran
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('contact')}
-                  className="hover:text-blush transition text-left"
-                >
-                  Contact Person
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={onOpenHampers}
-                  className="hover:text-blush transition text-left"
-                >
-                  Cookies &amp; Hampers Pita
-                </button>
-              </li>
-              <li className="pt-1">
-                <button
-                  type="button"
-                  onClick={onExitShop}
-                  className="text-kuningan hover:text-blush underline underline-offset-4 text-xs font-bold transition"
-                >
-                  Keluar ke Depan Toko
-                </button>
+                </Link>
               </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom Copyright Row */}
-        <div className="mt-10 pt-5 border-t border-kuningan/25 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] sm:text-xs text-ivory/60">
-          <span>© 2026 Cravely Bandung. Seluruh hak cipta dilindungi.</span>
-          <span>Cravely Patisserie · Jl. Melati Manis No. 18, Bandung Wetan</span>
+        <div className="mt-12 pt-6 border-t border-[#C59B62]/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#DAC8BF]/70">
+          <span>© 2026 Cravely Patisserie &amp; Cake Atelier. Seluruh hak cipta dilindungi.</span>
+          <span className="text-[#E5C590]/80">Bandung, Jawa Barat · Made with Love &amp; Pure Butter</span>
         </div>
       </div>
     </footer>

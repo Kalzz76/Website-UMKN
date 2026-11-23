@@ -5,6 +5,7 @@ import type { CafeZone, ViewType } from './patisserieData';
 
 interface CafeSceneProps {
   startInside: boolean;
+  alwaysInside?: boolean;
   onEnteredChange: (isInside: boolean) => void;
   onNavigate: (view: ViewType) => void;
   onOpenInfo: () => void;
@@ -12,6 +13,7 @@ interface CafeSceneProps {
 
 export const CafeScene: React.FC<CafeSceneProps> = ({
   startInside,
+  alwaysInside = false,
   onEnteredChange,
   onNavigate,
   onOpenInfo,
@@ -25,13 +27,14 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
   const [spotlightIdx, setSpotlightIdx] = useState(0);
 
   // Silky-smooth two-way scroll-linked parallax progress: 0 = outside street, 1 = inside café
-  const progressRef = useRef(startInside ? 1 : 0);
-  const targetProgressRef = useRef(startInside ? 1 : 0);
+  const isInsideInitial = alwaysInside || startInside;
+  const progressRef = useRef(isInsideInitial ? 1 : 0);
+  const targetProgressRef = useRef(isInsideInitial ? 1 : 0);
   const mouseTargetRef = useRef({ x: 0, y: 0 });
   const mouseSmoothRef = useRef({ x: 0, y: 0 });
-  const lastEnteredRef = useRef(startInside);
+  const lastEnteredRef = useRef(isInsideInitial);
   const [parallaxState, setParallaxState] = useState({
-    progress: startInside ? 1 : 0,
+    progress: isInsideInitial ? 1 : 0,
     mx: 0,
     my: 0,
   });
@@ -44,6 +47,14 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
 
   // On initial mount (e.g. returning from Etalase/Kasir/Custom), position cleanly inside or outside
   useEffect(() => {
+    if (alwaysInside) {
+      progressRef.current = 1;
+      targetProgressRef.current = 1;
+      lastEnteredRef.current = true;
+      setParallaxState((prev) => ({ ...prev, progress: 1 }));
+      onEnteredChange(true);
+      return;
+    }
     const range = getScrollRange();
     if (startInside) {
       window.scrollTo({ top: range, behavior: 'instant' });
@@ -58,7 +69,7 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
       lastEnteredRef.current = false;
       setParallaxState((prev) => ({ ...prev, progress: 0 }));
     }
-  }, [startInside]);
+  }, [startInside, alwaysInside, onEnteredChange]);
 
   // Natural gentle blinking for Teteh Kasir behind the counter
   useEffect(() => {
@@ -102,6 +113,8 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
 
   // Continuous two-way scroll listener (scroll DOWN to walk inside, scroll UP to walk back outside!)
   useEffect(() => {
+    if (alwaysInside) return;
+
     const syncScrollProgress = () => {
       const range = getScrollRange();
       const raw = Math.max(0, Math.min(1, window.scrollY / range));
@@ -115,7 +128,7 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
       window.removeEventListener('scroll', syncScrollProgress);
       window.removeEventListener('resize', syncScrollProgress);
     };
-  }, []);
+  }, [alwaysInside]);
 
   // Smooth 60fps damped interpolation loop for buttery scroll & mouse parallax
   useEffect(() => {
@@ -193,7 +206,7 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
   const p = parallaxState.progress;
   const mx = parallaxState.mx;
   const my = parallaxState.my;
-  const showExteriorOverlay = p < 0.992;
+  const showExteriorOverlay = !alwaysInside && p < 0.992;
 
   // Ease curves
   const doorPhase = Math.min(1, p / 0.48); // doors open smoothly in first 48%
@@ -700,7 +713,11 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
       </svg>
 
       {/* ==================== CONTINUOUS TWO-WAY STICKY SCROLL PARALLAX STAGE ==================== */}
-      <div ref={stageRef} className="relative w-full bg-ivory" style={{ height: '240vh' }}>
+      <div
+        ref={stageRef}
+        className="relative w-full bg-ivory"
+        style={{ height: alwaysInside ? '100dvh' : '240vh' }}
+      >
         <div
           ref={cafeContainerRef}
           className="sticky top-0 h-[100dvh] w-full overflow-hidden select-none"

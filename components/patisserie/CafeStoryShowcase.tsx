@@ -909,23 +909,6 @@ export const CafeStoryShowcase: React.FC<CafeStoryShowcaseProps> = ({
                       Semoga setiap harapan manismu terkabul. Gulir ke bawah untuk menjelajahi
                       cerita dapur, menu populer, proses pembuatan, dan reservasi Cravely.
                     </p>
-                    <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => onNavigate('katalog')}
-                        className="px-4 py-1.5 rounded-full bg-cherry hover:bg-burgundy text-white text-xs font-bold shadow-sm transition-colors whitespace-nowrap"
-                      >
-                        Pesan Kue Sekarang
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleScrollToStagePoint(0)}
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-ink/62 hover:text-cherry transition-colors whitespace-nowrap"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        <span>Nyalakan Lilin</span>
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
