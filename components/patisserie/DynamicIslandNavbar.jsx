@@ -8,46 +8,32 @@ import {
   ChefHat,
   ShoppingBag,
   User,
-  Sparkles,
-  Store,
-  UtensilsCrossed,
   ChevronDown,
   ChevronUp,
-  X,
 } from "lucide-react";
 import { usePatisserieCart } from "@/lib/patisserieCart";
-import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 
 export function DynamicIslandNavbar({ showEntered = true }) {
   const pathname = usePathname();
   const { totalQty } = usePatisserieCart();
   const [userSession, setUserSession] = useState(null);
-  const [storeName, setStoreName] = useState("Cravely");
   const [isExpanded, setIsExpanded] = useState(false);
   const leaveTimeoutRef = useRef(null);
 
   useEffect(() => {
-    async function checkAuthAndStore() {
+    async function checkAuth() {
       try {
+        const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
         const supabase = getSupabaseBrowser();
         const {
           data: { session },
         } = await supabase.auth.getSession();
         setUserSession(session);
-
-        const { data: storeData } = await supabase
-          .from("pengaturan_toko")
-          .select("nama_toko")
-          .eq("id", 1)
-          .maybeSingle();
-        if (storeData && storeData.nama_toko) {
-          setStoreName(storeData.nama_toko.split(" ")[0]);
-        }
       } catch (err) {
         // Fallback gracefully
       }
     }
-    checkAuthAndStore();
+    checkAuth();
   }, []);
 
   // Tutup navbar otomatis setiap berpindah halaman (URL berubah)
@@ -70,35 +56,26 @@ export function DynamicIslandNavbar({ showEntered = true }) {
   const handleMouseLeave = () => {
     leaveTimeoutRef.current = setTimeout(() => {
       setIsExpanded(false);
-    }, 400);
+    }, 380);
   };
 
-  // Deteksi info halaman aktif untuk status KETUTUP (Dynamic Island Title)
-  const getPageInfo = () => {
-    if (pathname.startsWith("/toko")) {
-      return { title: "Toko", icon: Store };
-    }
-    if (pathname.startsWith("/menu")) {
-      return { title: "Menu", icon: UtensilsCrossed };
-    }
-    if (pathname.startsWith("/pesan")) {
-      return { title: "Cake Studio", icon: ChefHat };
-    }
-    if (pathname.startsWith("/kasir")) {
-      return { title: "Kasir", icon: ShoppingBag };
-    }
+  // Deteksi judul halaman aktif untuk status KETUTUP (Tanpa icon sparkle)
+  const getPageTitle = () => {
+    if (pathname.startsWith("/toko")) return "Toko";
+    if (pathname.startsWith("/menu")) return "Menu";
+    if (pathname.startsWith("/pesan")) return "Cake Studio";
+    if (pathname.startsWith("/kasir")) return "Kasir";
     if (
       pathname.startsWith("/profil") ||
       pathname.startsWith("/masuk") ||
       pathname.startsWith("/daftar")
     ) {
-      return { title: "Akun", icon: User };
+      return "Akun";
     }
-    return { title: "Home", icon: Sparkles };
+    return "Home";
   };
 
-  const pageInfo = getPageInfo();
-  const PageIcon = pageInfo.icon;
+  const activeTitle = getPageTitle();
 
   const navLinks = [
     { label: "Home", href: "/", active: pathname === "/" },
@@ -109,7 +86,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
   return (
     <nav
       aria-label="Dynamic Island Navbar"
-      className="fixed z-50 left-1/2 -translate-x-1/2 top-3 sm:top-4 pointer-events-auto max-w-[calc(100vw-1.5rem)]"
+      className="fixed z-50 left-1/2 -translate-x-1/2 top-3 sm:top-4 pointer-events-auto max-w-[calc(100vw-1.5rem)] will-change-transform"
       style={{
         transform: showEntered
           ? "translate(-50%, 0) scale(1)"
@@ -123,37 +100,39 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     >
       <motion.div
         layout
-        transition={{ type: "spring", stiffness: 440, damping: 32 }}
-        className="bg-[#FFFDF9]/96 backdrop-blur-2xl border-2 border-[#C59B62]/85 text-[#3D2B28] shadow-[0_16px_45px_rgba(45,20,15,0.30),0_4px_14px_rgba(0,0,0,0.08)] rounded-full overflow-hidden transition-colors"
+        transition={{
+          layout: { type: "spring", stiffness: 380, damping: 28, mass: 0.7 },
+          opacity: { duration: 0.18 },
+        }}
+        className="bg-[#FFFDF9]/96 backdrop-blur-2xl border-2 border-[#C59B62]/85 text-[#3D2B28] shadow-[0_16px_45px_rgba(45,20,15,0.28),0_4px_14px_rgba(0,0,0,0.08)] rounded-full overflow-hidden will-change-transform"
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout" initial={false}>
           {!isExpanded ? (
             /* ==================== 1. STATUS KETUTUP (COMPACT DYNAMIC ISLAND) ==================== */
             <motion.button
               key="collapsed-island"
               type="button"
               onClick={() => setIsExpanded(true)}
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, scale: 0.94 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 hover:bg-[#F8EFE4]/80 transition cursor-pointer select-none whitespace-nowrap"
-              title="Arahkan kursor atau klik untuk membuka menu"
+              title="Klik atau arahkan kursor untuk membuka menu"
             >
-              {/* Pulsing Gem Dot */}
+              {/* Amber Indicator Dot */}
               <span className="w-2.5 h-2.5 rounded-full bg-[#B8925A] shadow-[0_0_8px_#C59B62] animate-pulse shrink-0" />
 
-              {/* Brand Name */}
+              {/* Brand Name "Cravely" Saja */}
               <span className="font-coquette font-bold text-xs sm:text-sm tracking-wider text-[#3D2B28]">
-                {storeName}
+                Cravely
               </span>
 
               <span className="text-[#C59B62] font-bold text-xs">·</span>
 
-              {/* Active Page Name (Berubah sesuai halaman) */}
-              <span className="font-serif font-extrabold text-xs sm:text-sm text-[#9E3B42] flex items-center gap-1.5">
-                <PageIcon className="w-3.5 h-3.5 text-[#9E3B42] shrink-0" />
-                <span>{pageInfo.title}</span>
+              {/* Active Page Name (Tanpa logo sparkle) */}
+              <span className="font-serif font-extrabold text-xs sm:text-sm text-[#9E3B42]">
+                {activeTitle}
               </span>
 
               {/* Cart Badge jika ada item */}
@@ -171,11 +150,11 @@ export function DynamicIslandNavbar({ showEntered = true }) {
             /* ==================== 2. STATUS TERBUKA (EXPANDED NAVIGATION ROW) ==================== */
             <motion.div
               key="expanded-island"
-              initial={{ opacity: 0, scale: 0.96 }}
+              initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.22 }}
-              className="flex items-center gap-2 sm:gap-3 px-3.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap"
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="flex items-center gap-2 sm:gap-3 px-3.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap select-none"
             >
               {/* Brand Logo Pill */}
               <Link
@@ -184,7 +163,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:bg-[#F5ECE2] transition font-coquette font-bold text-xs sm:text-sm tracking-widest text-[#3D2B28] shrink-0 whitespace-nowrap"
               >
                 <span className="w-2.5 h-2.5 rounded-full bg-[#B8925A] shadow-[0_0_8px_#C59B62] animate-pulse shrink-0" />
-                <span>{storeName}</span>
+                <span>Cravely</span>
               </Link>
 
               {/* Vertical Divider */}
@@ -279,7 +258,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 <button
                   type="button"
                   onClick={() => setIsExpanded(false)}
-                  className="w-6 h-6 rounded-full hover:bg-[#F5ECE2] text-[#8C6D62] hover:text-[#3D2B28] flex items-center justify-center transition shrink-0"
+                  className="w-6 h-6 rounded-full hover:bg-[#F5ECE2] text-[#8C6D62] hover:text-[#3D2B28] flex items-center justify-center transition shrink-0 cursor-pointer"
                   title="Tutup Menu"
                 >
                   <ChevronUp className="w-3.5 h-3.5" />

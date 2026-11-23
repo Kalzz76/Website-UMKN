@@ -445,7 +445,7 @@ export const ZONE_REACTIONS: Record<
     mood: 'cozy',
   },
   plakat: {
-    text: 'Selamat datang di Cravely Patisserie Bandung sejak 2018!',
+    text: 'Selamat datang di Cravely sejak 2018!',
     mood: 'wave',
   },
 };
@@ -455,7 +455,7 @@ export const PATISSIER_CLICK_LINES = [
   'Coba klik Etalase Kaca tengah untuk mengintip Kue Ultah & Chiffon Cake dari dekat~',
   'Lihat pintu Kitchen Room di sebelah kanan? Di dalam sana kamu bisa bikin Custom Cake 3D!',
   'Teteh di meja kasir ramah banget lho, yuk mampir kalau sudah pilih kue~',
-  'Terima kasih sudah mampir ke Cravely Bandung!',
+  'Terima kasih sudah mampir ke Cravely!',
 ];
 
 export function formatRupiah(angka: number): string {

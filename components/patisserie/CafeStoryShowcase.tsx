@@ -903,7 +903,7 @@ export const CafeStoryShowcase: React.FC<CafeStoryShowcaseProps> = ({
                   />
                   <div className="relative z-10 space-y-2">
                     <span className="font-script text-3xl sm:text-4xl text-cherry block leading-none">
-                      Cravely Bandung
+                      Cravely
                     </span>
                     <p className="font-serif text-[14.5px] sm:text-[16px] text-ink/88 leading-relaxed max-w-md mx-auto">
                       Semoga setiap harapan manismu terkabul. Gulir ke bawah untuk menjelajahi

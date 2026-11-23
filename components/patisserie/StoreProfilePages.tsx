@@ -194,7 +194,7 @@ export const DokumentasiView: React.FC<DokumentasiViewProps> = ({
             <span>Kembali ke Home</span>
           </button>
           <span className="text-xs font-bold text-cherry tracking-wide">
-            Dokumentasi Nyata Cravely <span aria-hidden="true">·</span> Bandung
+            Dokumentasi Nyata Cravely
           </span>
         </div>
 
@@ -286,7 +286,7 @@ export const DokumentasiView: React.FC<DokumentasiViewProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-5">
             <div>
               <p className="text-xs font-bold text-cherry tracking-wide">
-                Penawaran Khusus Pelanggan <span aria-hidden="true">·</span> Cravely Bandung
+                Penawaran Khusus Pelanggan <span aria-hidden="true">·</span> Cravely
               </p>
               <h2 className="font-coquette text-xl sm:text-2xl font-bold text-ink mt-0.5">
                 Promo Toko Kue Bulan Ini
@@ -510,7 +510,7 @@ export const LokasiView: React.FC<SharedNavProps> = ({ onNavigate }) => {
                       Alamat Lengkap Toko
                     </span>
                     <h2 className="font-coquette text-base font-bold text-ink mt-0.5">
-                      Cravely Patisserie Bandung
+                      Cravely
                     </h2>
                     <p className="text-xs sm:text-sm text-ink/85 mt-1 leading-relaxed">
                       Jl. Melati Manis No. 18, Kel. Citarum, Kec. Bandung Wetan, Kota Bandung, Jawa
@@ -589,7 +589,7 @@ export const LokasiView: React.FC<SharedNavProps> = ({ onNavigate }) => {
             </div>
             <div className="relative flex-1 min-h-[360px] bg-blush/30">
               <iframe
-                title="Peta Lokasi Cravely Patisserie Bandung"
+                title="Peta Lokasi Cravely"
                 src="https://maps.google.com/maps?q=Citarum%2C%20Bandung%20Wetan%2C%20Kota%20Bandung&t=&z=15&ie=UTF8&iwloc=&output=embed"
                 className="w-full h-full min-h-[360px] border-0"
                 loading="lazy"
@@ -737,7 +737,7 @@ export const PengaduanView: React.FC<PengaduanViewProps> = ({ onNavigate, onNoti
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <span className="text-[11px] text-ink/65">
-                  Setiap masukan ditinjau langsung oleh tim pengelola Cravely Patisserie Bandung.
+                  Setiap masukan ditinjau langsung oleh tim pengelola Cravely.
                 </span>
                 <button
                   type="submit"
@@ -817,7 +817,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ onNavigate, onCopy }) 
             Contact Person Cravely
           </h1>
           <p className="text-xs sm:text-sm text-ink/75 mt-2">
-            Hubungi kontak resmi Cravely Patisserie Bandung untuk menanyakan stok etalase harian,
+            Hubungi kontak resmi Cravely untuk menanyakan stok etalase harian,
             jadwal pengiriman, maupun konsultasi Custom Cake.
           </p>
         </div>
