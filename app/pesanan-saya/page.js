@@ -39,12 +39,19 @@ export default async function PesananSayaPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
             <Link
               href="/"
               className="text-xs font-semibold px-4 py-2 rounded-full border border-stone-200 text-stone-700 hover:bg-stone-50 transition"
             >
               Beranda
+            </Link>
+            <Link
+              href="/profil"
+              className="text-xs font-semibold px-4 py-2 rounded-full border border-stone-200 text-stone-700 hover:bg-stone-50 transition inline-flex items-center gap-1.5"
+            >
+              <i className="fa-regular fa-user text-rose-600"></i>
+              <span>Profil Saya</span>
             </Link>
             <TombolKeluar />
           </div>

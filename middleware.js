@@ -44,7 +44,7 @@ export async function middleware(request) {
 
   const path = request.nextUrl.pathname;
 
-  if (!user && (path.startsWith("/dashboard") || path.startsWith("/pesanan-saya"))) {
+  if (!user && (path.startsWith("/dashboard") || path.startsWith("/pesanan-saya") || path.startsWith("/profil"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/masuk";
     url.searchParams.set("ke", path);

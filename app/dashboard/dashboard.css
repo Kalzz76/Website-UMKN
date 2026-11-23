@@ -968,7 +968,7 @@
 
 .row-bottom-cards {
   display: grid;
-  grid-template-columns: 1fr 1.55fr;
+  grid-template-columns: 1.08fr 1.12fr;
   gap: 16px;
 }
 
@@ -1177,15 +1177,16 @@
 .donut-body-wrap {
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 16px;
   height: 145px;
+  padding: 0 2px;
 }
 
 .donut-chart-holder {
   position: relative;
-  width: 125px;
-  height: 125px;
+  width: 110px;
+  height: 110px;
   flex-shrink: 0;
 }
 
@@ -1199,7 +1200,7 @@
 }
 
 .donut-number-val {
-  font-size: 15.5px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--color-text-main);
   line-height: 1.1;
@@ -1215,14 +1216,17 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding-right: 4px;
 }
 
 .legend-row-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  font-size: 11px;
+  gap: 8px;
+  font-size: 12px;
 }
 
 .legend-bullet-text {
@@ -1232,11 +1236,12 @@
   color: #384e43;
   font-weight: 600;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .legend-dot-circle {
-  width: 7.5px;
-  height: 7.5px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -1244,6 +1249,8 @@
 .legend-val-num {
   font-weight: 700;
   color: var(--color-text-main);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .orders-flow-list {
@@ -1256,30 +1263,33 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: 12px;
-  transition: background 0.2s;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #fbf8f1;
+  border: 1px solid #ede2cd;
+  transition: all 0.2s;
   gap: 12px;
   text-decoration: none;
   color: inherit;
 }
 
 .order-flow-row:hover {
-  background: #f7faf7;
+  background: #f5eedf;
+  border-color: #dfd4bd;
+  transform: translateY(-1px);
 }
 
 .order-thumb-meta {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 140px;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .order-preview-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   overflow: hidden;
   background: #edf2ee;
   flex-shrink: 0;
@@ -1291,12 +1301,12 @@
 .order-code-time {
   display: flex;
   flex-direction: column;
-  white-space: nowrap;
+  min-width: 0;
 }
 
 .order-code-title {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 800;
   color: var(--color-text-main);
   white-space: nowrap;
 }
@@ -1307,25 +1317,31 @@
   white-space: nowrap;
 }
 
-.order-status-pill {
-  padding: 4px 13px;
-  border-radius: 9999px;
-  font-size: 10px;
-  font-weight: 700;
-  text-align: center;
-  min-width: 74px;
+.order-right-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   flex-shrink: 0;
-  white-space: nowrap;
 }
 
 .order-price-val {
   font-size: 12.5px;
   font-weight: 800;
   color: var(--color-text-main);
-  min-width: 85px;
   text-align: right;
-  flex-shrink: 0;
   white-space: nowrap;
+  line-height: 1.2;
+}
+
+.order-status-pill {
+  padding: 2.5px 9px;
+  border-radius: 9999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .vertical-promo-card {
@@ -1422,6 +1438,13 @@
   }
   .vertical-promo-card {
     min-height: 200px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .row-middle-cards,
+  .row-bottom-cards {
+    grid-template-columns: 1fr;
   }
 }
 

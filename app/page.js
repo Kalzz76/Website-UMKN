@@ -1,478 +1,908 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  BookOpen,
+  CakeSlice,
+  ChefHat,
+  Home,
+  LogOut,
+  Menu,
+  ShoppingBag,
+  Store,
+  User,
+  LayoutDashboard,
+  X,
+} from "lucide-react";
+import {
+  HAMPERS_ITEMS,
+  formatRupiah,
+} from "@/components/patisserie/patisserieData";
+import { CafeScene } from "@/components/patisserie/CafeScene";
+import { CafeStoryShowcase } from "@/components/patisserie/CafeStoryShowcase";
+import { EtalaseShowcaseView } from "@/components/patisserie/EtalaseShowcaseView";
+import { DessertsMenuView } from "@/components/patisserie/DessertsMenuView";
+import { KasirView } from "@/components/patisserie/KasirView";
+import { PipingBagCursor } from "@/components/patisserie/PipingBagCursor";
+import { PatisserieFooter } from "@/components/patisserie/PatisserieFooter";
+import { PromoWelcomeModal } from "@/components/patisserie/PromoWelcomeModal";
+import {
+  ContactView,
+  DokumentasiView,
+  LokasiView,
+  PengaduanView,
+} from "@/components/patisserie/StoreProfilePages";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 
-export default function Home() {
+export default function HomePage() {
+  const router = useRouter();
+
+  const [entered, setEntered] = useState(false);
+  const [cafeStartInside, setCafeStartInside] = useState(false);
+  const [activeView, setActiveView] = useState("toko");
+  const [selectedMenuId, setSelectedMenuId] = useState(null);
+  const [cart, setCart] = useState([
+    {
+      id: "initial-raspberry",
+      nama: "Raspberry Lemonade Cake",
+      harga: 185000,
+      qty: 1,
+      tipe: "cake-raspberry",
+    },
+  ]);
+
+  const [customerName, setCustomerName] = useState("");
+  const [pickupDate, setPickupDate] = useState("");
+  const [hampersOpen, setHampersOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [areaSidebarOpen, setAreaSidebarOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState(null);
+
+  // Supabase Auth and Store data
+  const [userSession, setUserSession] = useState(null);
   const [toko, setToko] = useState({
-    nama_toko: "Dapur Manis Custom Cake",
-    alamat: "Jl. Melati No. 12, Jakarta Selatan",
+    nama_toko: "Cravely Patisserie",
+    alamat: "Jl. Melati No. 18, Bandung",
     no_wa: "081234567890",
     jam_operasional: "Senin - Minggu: 08.00 - 20.00",
   });
 
-  useEffect(() => {
-    async function muatToko() {
-      const supabase = getSupabaseBrowser();
-      const { data } = await supabase
-        .from("pengaturan_toko")
-        .select("nama_toko, alamat, no_wa, jam_operasional")
-        .eq("id", 1)
-        .maybeSingle();
+  const promoShownOnceRef = useRef(false);
+  const toastTimerRef = useRef(null);
 
-      if (data && data.nama_toko) {
-        setToko(data);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const supabase = getSupabaseBrowser();
+        const { data: storeData } = await supabase
+          .from("pengaturan_toko")
+          .select("nama_toko, alamat, no_wa, jam_operasional")
+          .eq("id", 1)
+          .maybeSingle();
+
+        if (storeData && storeData.nama_toko) {
+          setToko(storeData);
+        }
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setUserSession(session);
+      } catch (err) {
+        console.error("Gagal memuat pengaturan toko / sesi auth:", err);
       }
     }
-    muatToko();
+    loadData();
   }, []);
+
+  const showToast = useCallback((msg) => {
+    setToastMsg(msg);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToastMsg(null), 2600);
+  }, []);
+
+  const handleCopyText = useCallback(
+    (text, label) => {
+      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => showToast(`${label} disalin: ${text}`))
+          .catch(() => showToast(`${label}: ${text}`));
+      } else {
+        showToast(`${label}: ${text}`);
+      }
+    },
+    [showToast]
+  );
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
+    if (entered && activeView === "toko" && !promoShownOnceRef.current) {
+      promoShownOnceRef.current = true;
+      setPromoOpen(true);
+    }
+  }, [entered, activeView]);
 
-    const preferKurangGerak = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+  useEffect(() => {
+    if (activeView === "toko") {
+      setAreaSidebarOpen(false);
+    }
+  }, [activeView]);
 
-    if (!preferKurangGerak) {
-      const elemenStory = gsap.utils.toArray(".adegan-story");
-      elemenStory.forEach((el) => {
-        gsap.fromTo(
-          el,
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 80%",
-              toggleActions: "play none none reverse",
-            },
-          }
-        );
-      });
+  useEffect(() => {
+    if (!areaSidebarOpen) return;
+    const handleKey = (e) => {
+      if (e.key === "Escape") setAreaSidebarOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [areaSidebarOpen]);
+
+  const showAreaShortcut = entered && activeView !== "toko";
+  const totalQty = useMemo(() => cart.reduce((s, it) => s + it.qty, 0), [cart]);
+  const totalPrice = useMemo(() => cart.reduce((s, it) => s + it.harga * it.qty, 0), [cart]);
+
+  const handleNavigate = (view) => {
+    setMobileMenuOpen(false);
+    setAreaSidebarOpen(false);
+
+    // KETENTUAN USER: /pesan JANGAN DISENTUH!
+    // Ketika user mengklik 'custom' (Studio Custom Cake / Kitchen 3D), arahkan ke rute /pesan
+    if (view === "custom") {
+      router.push("/pesan");
+      return;
     }
 
-    return () => {
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-    };
-  }, []);
+    setEntered(true);
+    if (view === "toko") {
+      setCafeStartInside(true);
+      if (activeView === "toko") {
+        const targetTop = Math.round(window.innerHeight * 1.4);
+        window.scrollTo({ top: targetTop, behavior: "smooth" });
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    setActiveView(view);
+  };
 
-  const noWaBersih = (toko.no_wa || "081234567890").replace(/\D/g, "");
+  const handleOpenAboutUs = () => {
+    setMobileMenuOpen(false);
+    setAreaSidebarOpen(false);
+    setEntered(true);
+    setCafeStartInside(true);
+    if (activeView !== "toko") {
+      setActiveView("toko");
+      window.setTimeout(() => {
+        const el = document.getElementById("about-us");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 280);
+    } else {
+      const el = document.getElementById("about-us");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
-  const adeganPerjalanan = [
-    {
-      nomor: "01",
-      judulBaris1: "Langkah Pertama: Tentukan Fondasi",
-      judulBaris2: "Pilihan Rasa & Ukuran yang Pas",
-      deskripsi:
-        "Mulai petualangan rasa kue Anda. Pilih dari cake coklat legit, vanilla harum, pandan wangi, hingga red velvet lembut. Sesuaikan ukuran porsi mulai dari 15 cm untuk perayaan intim hingga ukuran bertingkat untuk pesta megah.",
-      kartuJudul: "Rasa & Dimensi",
-      kartuPoin: [
-        "Bolu lembut dengan resep otentik",
-        "Pilihan diameter 15 cm, 20 cm, hingga 25 cm",
-        "Dapat memilih single tier maupun multi-tier",
-      ],
-      svg: (
-        <svg viewBox="0 0 240 180" className="w-full h-auto max-w-[220px] mx-auto drop-shadow-sm">
-          <ellipse cx="120" cy="140" rx="80" ry="24" fill="#fbcfe8" />
-          <path d="M 40 140 C 40 155, 200 155, 200 140 L 200 105 C 200 120, 40 120, 40 105 Z" fill="#f472b6" />
-          <ellipse cx="120" cy="105" rx="80" ry="24" fill="#fbcfe8" />
-          <ellipse cx="120" cy="85" rx="55" ry="18" fill="#fed7aa" />
-          <path d="M 65 85 C 65 98, 175 98, 175 85 L 175 55 C 175 68, 65 68, 65 55 Z" fill="#fb923c" />
-          <ellipse cx="120" cy="55" rx="55" ry="18" fill="#fef3c7" />
-          <circle cx="120" cy="38" r="8" fill="#e11d48" />
-          <path d="M 119 30 Q 121 24 125 22" stroke="#15803d" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-    {
-      nomor: "02",
-      judulBaris1: "Kreasikan Karakter Unik",
-      judulBaris2: "Sentuhan Hiasan & Tulisan Spesial",
-      deskripsi:
-        "Berikan jiwa pada kue Anda. Tentukan warna lelehan krim lembut, taburan coklat chip, buah strawberry segar, atau lilin perayaan. Ketik ucapan atau doa tulus yang langsung terpampang nyata di atas preview kue.",
-      kartuJudul: "Dekorasi Personal",
-      kartuPoin: [
-        "Live Preview 2D mengikuti pilihan Anda",
-        "Pilihan warna buttercream & topping variatif",
-        "Pesan tulisan kustom di permukaan kue",
-      ],
-      svg: (
-        <svg viewBox="0 0 240 180" className="w-full h-auto max-w-[220px] mx-auto drop-shadow-sm">
-          <ellipse cx="120" cy="135" rx="75" ry="24" fill="#e2e8f0" />
-          <rect x="45" y="80" width="150" height="55" rx="16" fill="#f5f5f4" />
-          <ellipse cx="120" cy="80" rx="75" ry="24" fill="#fecdd3" />
-          <path d="M 45 80 Q 60 100 75 80 Q 90 100 105 80 Q 120 100 135 80 Q 150 100 165 80 Q 180 100 195 80" stroke="#f43f5e" strokeWidth="5" fill="none" strokeLinecap="round" />
-          <circle cx="75" cy="65" r="7" fill="#ef4444" />
-          <circle cx="120" cy="60" r="7" fill="#ef4444" />
-          <circle cx="165" cy="65" r="7" fill="#ef4444" />
-          <rect x="117" y="32" width="6" height="24" fill="#fbbf24" rx="2" />
-          <ellipse cx="120" cy="26" rx="4" ry="7" fill="#f97316" />
-        </svg>
-      ),
-    },
-    {
-      nomor: "03",
-      judulBaris1: "Atur Waktu Perayaan",
-      judulBaris2: "Pilih Tanggal & Cara Pengambilan",
-      deskripsi:
-        "Tentukan jadwal momen istimewa Anda. Ambil pesanan langsung di toko kami saat hangat, atau nikmati layanan pengantaran aman langsung ke depan gerbang rumah Anda sesuai zona ongkir yang jelas.",
-      kartuJudul: "Jadwal & Kuota Terjamin",
-      kartuPoin: [
-        "Sistem kuota harian agar mutu terjaga",
-        "Pilihan jam pengambilan per jam",
-        "Ambil sendiri di toko atau kirim ke alamat",
-      ],
-      svg: (
-        <svg viewBox="0 0 240 180" className="w-full h-auto max-w-[220px] mx-auto drop-shadow-sm">
-          <rect x="40" y="30" width="95" height="110" rx="16" fill="#ffffff" stroke="#e7e5e4" strokeWidth="4" />
-          <rect x="40" y="30" width="95" height="30" rx="16" fill="#e11d48" />
-          <circle cx="65" cy="24" r="5" fill="#78716c" />
-          <circle cx="110" cy="24" r="5" fill="#78716c" />
-          <rect x="55" y="75" width="16" height="16" rx="4" fill="#cbd5e1" />
-          <rect x="80" y="75" width="16" height="16" rx="4" fill="#e11d48" />
-          <rect x="105" y="75" width="16" height="16" rx="4" fill="#cbd5e1" />
-          <rect x="55" y="102" width="16" height="16" rx="4" fill="#cbd5e1" />
-          <rect x="80" y="102" width="16" height="16" rx="4" fill="#cbd5e1" />
-          <g transform="translate(130, 85)">
-            <rect x="0" y="10" width="65" height="35" rx="8" fill="#0284c7" />
-            <rect x="45" y="18" width="22" height="27" rx="5" fill="#0369a1" />
-            <circle cx="16" cy="46" r="9" fill="#334155" />
-            <circle cx="54" cy="46" r="9" fill="#334155" />
-          </g>
-        </svg>
-      ),
-    },
-    {
-      nomor: "04",
-      judulBaris1: "Dipanggang Penuh Dedikasi",
-      judulBaris2: "Diramu Hangat di Dapur Kami",
-      deskripsi:
-        "Tanpa bahan pengawet dan tanpa stok beku. Setelah pembayaran Anda terkonfirmasi, chef dapur kami meracik adonan segar menggunakan bahan-bahan bersertifikasi kualitas terbaik tepat sebelum jadwal pengambilan.",
-      kartuJudul: "Standar Dapur Manis",
-      kartuPoin: [
-        "100% bahan segar tanpa pengawet",
-        "Kebersihan dapur dan peralatan terjaga",
-        "Dikerjakan dengan teliti sesuai pesanan",
-      ],
-      svg: (
-        <svg viewBox="0 0 240 180" className="w-full h-auto max-w-[220px] mx-auto drop-shadow-sm">
-          <rect x="35" y="30" width="170" height="120" rx="16" fill="#1e293b" />
-          <rect x="55" y="48" width="130" height="70" rx="10" fill="#ea580c" opacity="0.9" />
-          <ellipse cx="120" cy="85" rx="42" ry="16" fill="#78350f" />
-          <ellipse cx="120" cy="80" rx="35" ry="12" fill="#fb923c" />
-          <circle cx="75" cy="133" r="6" fill="#64748b" />
-          <circle cx="120" cy="133" r="6" fill="#64748b" />
-          <circle cx="165" cy="133" r="6" fill="#64748b" />
-          <path d="M 105 32 Q 108 20 115 15" stroke="#f97316" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-          <path d="M 125 32 Q 128 20 135 15" stroke="#f97316" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        </svg>
-      ),
-    },
-    {
-      nomor: "05",
-      judulBaris1: "Kue Sempurna Telah Siap",
-      judulBaris2: "Disertai Tiket QR & Box Eksklusif",
-      deskripsi:
-        "Kue dikemas dalam kotak pelindung premium yang kokoh dan aman dari guncangan. Pelanggan cukup menunjukkan kode QR digital tiket pesanan untuk serah terima yang cepat dan menyenangkan.",
-      kartuJudul: "Momen Spesial Tiba",
-      kartuPoin: [
-        "Box packaging tebal transparan berpita",
-        "Tiket QR digital untuk verifikasi cepat",
-        "Siap menceriakan pesta dan keluarga Anda",
-      ],
-      svg: (
-        <svg viewBox="0 0 240 180" className="w-full h-auto max-w-[220px] mx-auto drop-shadow-sm">
-          <rect x="55" y="65" width="130" height="85" rx="14" fill="#ffe4e6" stroke="#f43f5e" strokeWidth="4" />
-          <line x1="120" y1="65" x2="120" y2="150" stroke="#f43f5e" strokeWidth="5" />
-          <line x1="55" y1="105" x2="185" y2="105" stroke="#f43f5e" strokeWidth="5" />
-          <ellipse cx="98" cy="52" rx="18" ry="12" fill="#fb7185" />
-          <ellipse cx="142" cy="52" rx="18" ry="12" fill="#fb7185" />
-          <circle cx="120" cy="54" r="8" fill="#e11d48" />
-          <g transform="translate(170, 35)">
-            <rect x="0" y="0" width="36" height="36" rx="6" fill="#ffffff" stroke="#e11d48" strokeWidth="2" />
-            <rect x="5" y="5" width="10" height="10" fill="#e11d48" />
-            <rect x="21" y="5" width="10" height="10" fill="#e11d48" />
-            <rect x="5" y="21" width="10" height="10" fill="#e11d48" />
-            <rect x="18" y="18" width="6" height="6" fill="#e11d48" />
-          </g>
-        </svg>
-      ),
-    },
-  ];
+  const handleGoToMenuWithCake = (menuId) => {
+    setSelectedMenuId(menuId);
+    handleNavigate("katalog");
+  };
+
+  const handleExitShop = () => {
+    setMobileMenuOpen(false);
+    setAreaSidebarOpen(false);
+    if (activeView === "toko") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      setCafeStartInside(false);
+      setActiveView("toko");
+      setEntered(false);
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  };
+
+  const handleAddToCart = (item) => {
+    setCart((prev) => {
+      const existingIdx = prev.findIndex((c) => c.nama === item.nama);
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          qty: updated[existingIdx].qty + 1,
+        };
+        return updated;
+      }
+      return [
+        ...prev,
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          nama: item.nama,
+          harga: item.harga,
+          qty: 1,
+          tipe: item.tipe,
+        },
+      ];
+    });
+    showToast(`Masuk keranjang: ${item.nama}`);
+  };
+
+  const handleUpdateQty = (index, delta) => {
+    setCart((prev) => {
+      const next = [...prev];
+      const nextQty = next[index].qty + delta;
+      if (nextQty <= 0) {
+        next.splice(index, 1);
+      } else {
+        next[index] = { ...next[index], qty: nextQty };
+      }
+      return next;
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-amber-50 text-stone-800 selection:bg-rose-100 selection:text-rose-900">
-      <header className="sticky top-4 z-40 px-4">
-        <nav className="max-w-4xl mx-auto px-6 py-3.5 bg-white/90 backdrop-blur rounded-full shadow-sm border border-stone-200/60 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-full bg-rose-600 text-white flex items-center justify-center text-sm shadow-sm">
-              <i className="fa-solid fa-cake-candles"></i>
-            </div>
-            <span className="font-extrabold text-stone-900 text-sm tracking-tight">
-              {toko.nama_toko || "Dapur Manis"}
-            </span>
-          </Link>
+    <div className="min-h-screen bg-ivory text-ink selection:bg-blush selection:text-cherry">
+      {/* ==================== COMPACT TOP-LEFT AREA TOKO ICON ==================== */}
+      <AnimatePresence>
+        {showAreaShortcut && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, x: -24, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -20, scale: 0.9 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            onClick={() => setAreaSidebarOpen((prev) => !prev)}
+            aria-label={areaSidebarOpen ? "Tutup menu Area Toko" : "Buka menu Area Toko"}
+            aria-expanded={areaSidebarOpen}
+            title="Area Toko & Keluar"
+            className="fixed left-3 sm:left-4 z-[60] w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bingkai-papan-menu text-ivory hover:text-blush flex items-center justify-center transition-colors"
+            style={{
+              top: "calc(env(safe-area-inset-top, 0px) + 1.1rem)",
+            }}
+          >
+            {areaSidebarOpen ? <X className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+          </motion.button>
+        )}
+      </AnimatePresence>
 
-          <div className="hidden md:flex items-center space-x-6 text-xs font-semibold text-stone-600">
-            <Link href="#perjalanan" className="hover:text-rose-600 transition">
-              Perjalanan Kue
+      {/* ==================== LEFT SLIDE-OUT DRAWER: AREA TOKO & NAVIGASI ==================== */}
+      <AnimatePresence>
+        {showAreaShortcut && areaSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            onClick={() => setAreaSidebarOpen(false)}
+            className="fixed inset-0 z-[58] bg-kayuGelap/50 backdrop-blur-[2px]"
+          >
+            <motion.aside
+              aria-label="Navigasi Area Toko"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="h-full w-72 max-w-[82vw] bg-gradient-to-b from-[#5A3B33] to-[#3E2721] text-ivory border-r-2 border-kuningan/80 shadow-2xl flex flex-col justify-between p-5 pt-20"
+            >
+              <div className="space-y-5 overflow-y-auto no-scrollbar">
+                <div className="pb-3 border-b border-kuningan/35 flex items-center justify-between">
+                  <div>
+                    <span className="font-script text-2xl text-blush block leading-none">
+                      {toko.nama_toko || "Cravely Patisserie"}
+                    </span>
+                    <h2 className="font-coquette text-xs font-bold tracking-widest uppercase text-kuningan mt-1">
+                      Area Toko
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAreaSidebarOpen(false)}
+                    aria-label="Tutup panel Area Toko"
+                    className="w-8 h-8 rounded-full bg-kayuGelap/80 hover:bg-cherry text-ivory border border-kuningan/50 flex items-center justify-center transition"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {[
+                    { key: "toko", label: "Ruang Cafe (Home)", icon: Home },
+                    { key: "etalase", label: "Etalase Kue", icon: CakeSlice },
+                    { key: "katalog", label: "Daftar Menu", icon: BookOpen },
+                    { key: "custom", label: "Pesan Custom Cake", icon: ChefHat },
+                    { key: "kasir", label: "Meja Kasir", icon: ShoppingBag },
+                  ].map((item) => {
+                    const IconComp = item.icon;
+                    const isCurrent = activeView === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => handleNavigate(item.key)}
+                        className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-3 transition ${
+                          isCurrent
+                            ? "bg-cherry text-white border border-blush/40 shadow-sm"
+                            : "bg-kayuGelap/55 hover:bg-kayuGelap text-ivory/90 hover:text-blush border border-kuningan/25"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2.5">
+                          <IconComp className="w-4 h-4 text-kuningan shrink-0" />
+                          <span>{item.label}</span>
+                        </span>
+                        {item.key === "kasir" && (
+                          <span className="px-2 py-0.5 rounded-full bg-ivory text-cherry text-[10px] font-extrabold tabular-nums">
+                            {totalQty}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Akses Cepat Transaksi & Akun */}
+                <div className="pt-3 border-t border-kuningan/30 space-y-2">
+                  <Link
+                    href="/pesan"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-blush/20 hover:bg-blush/30 text-blush border border-kuningan/40 flex items-center gap-2.5 transition"
+                  >
+                    <ChefHat className="w-4 h-4 text-kuningan" />
+                    <span>Pesan Custom Cake</span>
+                  </Link>
+                  <Link
+                    href="/pesanan-saya"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-kayuGelap/55 hover:bg-kayuGelap text-ivory/90 border border-kuningan/25 flex items-center gap-2.5 transition"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-kuningan" />
+                    <span>Pesanan Saya</span>
+                  </Link>
+                  {userSession ? (
+                    <Link
+                      href="/profil"
+                      className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-kayuGelap/55 hover:bg-kayuGelap text-ivory/90 border border-kuningan/25 flex items-center gap-2.5 transition"
+                    >
+                      <User className="w-4 h-4 text-kuningan" />
+                      <span>Akun Saya</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/masuk"
+                      className="w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-cherry/80 hover:bg-cherry text-white border border-blush/30 flex items-center gap-2.5 transition"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Masuk / Daftar</span>
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              {/* Pinned Exit Button */}
+              <div className="pt-4 border-t border-kuningan/35 space-y-2">
+                <button
+                  type="button"
+                  onClick={handleExitShop}
+                  className="w-full px-4 py-2.5 rounded-xl bg-kayuGelap hover:bg-cherry text-blush hover:text-white border border-kuningan/60 text-xs font-bold flex items-center justify-center gap-2 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Keluar ke Depan Pintu</span>
+                </button>
+              </div>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ==================== HANGING WOODEN & BRASS MENU BAR ==================== */}
+      <nav
+        aria-label="Navigasi Papan Menu"
+        className={`fixed z-50 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          showAreaShortcut
+            ? "left-[calc(50%+1.65rem)] sm:left-1/2 w-[calc(100%-4.5rem)] sm:w-[calc(100%-8.5rem)] max-w-5xl"
+            : "left-1/2 w-[calc(100%-1rem)] max-w-6xl"
+        }`}
+        style={{
+          top: "calc(env(safe-area-inset-top, 0px) + 0.4rem)",
+          transform: entered ? "translate(-50%, 0)" : "translate(-50%, -215%)",
+          pointerEvents: entered ? "auto" : "none",
+        }}
+      >
+        <div className="flex justify-around max-w-xl mx-auto px-8">
+          <span className="rantai-kuningan" />
+          <span className="rantai-kuningan" />
+          <span className="rantai-kuningan" />
+        </div>
+
+        {/* Main Hanging Wooden Board */}
+        <div className="bingkai-papan-menu text-ivory rounded-2xl px-3.5 sm:px-5 py-2.5 flex items-center justify-between gap-2">
+          {/* Brand */}
+          <button
+            type="button"
+            onClick={() => handleNavigate("toko")}
+            className="flex items-center gap-2 font-coquette font-bold text-xs sm:text-sm tracking-widest whitespace-nowrap shrink-0 text-ivory hover:text-blush transition"
+          >
+            <span className="w-2 h-2 rounded-full bg-kuningan inline-block" aria-hidden="true" />
+            <span>{toko.nama_toko ? toko.nama_toko.split(" ")[0] : "Cravely"}</span>
+          </button>
+
+          {/* Primary Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-4 xl:gap-5 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => handleNavigate("toko")}
+              className={`whitespace-nowrap shrink-0 transition ${
+                activeView === "toko"
+                  ? "text-blush underline underline-offset-4"
+                  : "text-ivory/90 hover:text-blush"
+              }`}
+            >
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavigate("etalase")}
+              className={`whitespace-nowrap shrink-0 transition ${
+                activeView === "etalase"
+                  ? "text-blush underline underline-offset-4"
+                  : "text-ivory/90 hover:text-blush"
+              }`}
+            >
+              Etalase 3D
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavigate("katalog")}
+              className={`whitespace-nowrap shrink-0 transition ${
+                activeView === "katalog"
+                  ? "text-blush underline underline-offset-4"
+                  : "text-ivory/90 hover:text-blush"
+              }`}
+            >
+              Daftar Menu
+            </button>
+
+            {/* Link Custom Cake Langsung ke /pesan (tidak disentuh) */}
+            <Link
+              href="/pesan"
+              className="px-3 py-1 rounded-full bg-cherry/80 hover:bg-cherry text-white border border-blush/40 whitespace-nowrap shrink-0 transition shadow-sm"
+            >
+              Pesan Custom Cake
             </Link>
-            <Link href="#cara-pesan" className="hover:text-rose-600 transition">
-              Cara Pesan
-            </Link>
-            <Link href="#kontak" className="hover:text-rose-600 transition">
-              Lokasi & Kontak
-            </Link>
+
+            <button
+              type="button"
+              onClick={handleOpenAboutUs}
+              className="whitespace-nowrap shrink-0 text-ivory/90 hover:text-blush transition"
+            >
+              About Us
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavigate("dokumentasi")}
+              className={`whitespace-nowrap shrink-0 transition ${
+                activeView === "dokumentasi"
+                  ? "text-blush underline underline-offset-4"
+                  : "text-ivory/90 hover:text-blush"
+              }`}
+            >
+              Dokumentasi
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavigate("lokasi")}
+              className={`whitespace-nowrap shrink-0 transition ${
+                activeView === "lokasi"
+                  ? "text-blush underline underline-offset-4"
+                  : "text-ivory/90 hover:text-blush"
+              }`}
+            >
+              Lokasi Toko
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNavigate("contact")}
+              className={`whitespace-nowrap shrink-0 transition ${
+                activeView === "contact"
+                  ? "text-blush underline underline-offset-4"
+                  : "text-ivory/90 hover:text-blush"
+              }`}
+            >
+              Kontak
+            </button>
           </div>
 
-          <div className="flex items-center space-x-2.5">
+          {/* Right Controls: Pesanan Saya, Akun/Login, Kasir, Mobile Menu */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Link
               href="/pesanan-saya"
-              className="hidden sm:inline-block text-xs font-semibold px-4 py-2 rounded-full border border-stone-200 text-stone-700 hover:bg-stone-50 transition"
+              className="hidden sm:inline-flex items-center px-2.5 py-1.5 rounded-full bg-blush/20 hover:bg-blush/35 border border-kuningan/70 text-blush hover:text-white text-[11px] font-bold whitespace-nowrap transition"
             >
               Pesanan Saya
             </Link>
-            <Link
-              href="/pesan"
-              className="text-xs font-semibold px-5 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition"
-            >
-              Pesan Sekarang
-            </Link>
-          </div>
-        </nav>
-      </header>
 
-      <section className="pt-16 pb-20 px-4 text-center">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-rose-100 text-rose-700 text-xs font-bold">
-            <i className="fa-solid fa-wand-magic-sparkles"></i>
-            <span>Kustomisasi Interaktif • Live Preview Kue</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-stone-900 leading-[1.15] tracking-tight">
-            Kue Impian untuk Momen
-            <span className="block text-rose-600 mt-1">Paling Istimewa Anda</span>
-          </h1>
-
-          <p className="text-sm sm:text-base text-stone-600 max-w-xl mx-auto leading-relaxed">
-            Rancang kue custom Anda secara bertahap dengan mudah. Tentukan rasa favorit, pilih ukuran, atur lelehan krim dan tulisan ucapan, lalu nikmati hasilnya tepat di hari perayaan.
-          </p>
-
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/pesan"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-full font-bold bg-rose-600 hover:bg-rose-500 text-white text-sm shadow-md transition"
-            >
-              Mulai Pesan Kue Sekarang
-            </Link>
-            <Link
-              href="#perjalanan"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-full font-semibold bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 text-sm transition"
-            >
-              Lihat Perjalanan Kue
-            </Link>
-          </div>
-        </div>
-
-        <div className="max-w-2xl mx-auto mt-12 bg-white rounded-3xl p-6 sm:p-8 border border-stone-100 shadow-sm flex items-center justify-center">
-          <svg viewBox="0 0 400 180" className="w-full h-auto max-w-md drop-shadow-sm">
-            <rect x="50" y="80" width="300" height="80" rx="16" fill="#fff1f2" stroke="#fecdd3" strokeWidth="3" />
-            <path d="M 30 80 L 200 20 L 370 80 Z" fill="#e11d48" />
-            <path d="M 50 80 Q 75 95 100 80 Q 125 95 150 80 Q 175 95 200 80 Q 225 95 250 80 Q 275 95 300 80 Q 325 95 350 80" stroke="#ffe4e6" strokeWidth="8" fill="none" strokeLinecap="round" />
-            <rect x="80" y="100" width="70" height="50" rx="8" fill="#ffffff" stroke="#fda4af" strokeWidth="2" />
-            <circle cx="115" cy="120" r="12" fill="#f43f5e" />
-            <rect x="250" y="100" width="70" height="50" rx="8" fill="#ffffff" stroke="#fda4af" strokeWidth="2" />
-            <circle cx="285" cy="120" r="12" fill="#fb923c" />
-            <rect x="180" y="95" width="40" height="65" rx="6" fill="#ffffff" stroke="#fda4af" strokeWidth="2" />
-            <circle cx="212" cy="125" r="3" fill="#e11d48" />
-          </svg>
-        </div>
-      </section>
-
-      <section id="perjalanan" className="py-16 px-4">
-        <div className="max-w-4xl mx-auto space-y-16">
-          <div className="text-center space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-600">
-              Scroll Storytelling
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-              Perjalanan Sebuah Kue Custom
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-              Simak bagaimana rancangan manis Anda diolah dari sebutir ide hingga hadir menyemarakkan acara.
-            </p>
-          </div>
-
-          <div className="space-y-16 relative">
-            {adeganPerjalanan.map((adegan, idx) => (
-              <div
-                key={idx}
-                className="adegan-story bg-white rounded-3xl shadow-sm border border-stone-100 p-6 sm:p-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-center"
+            {userSession ? (
+              <Link
+                href="/profil"
+                className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-kayuGelap hover:bg-black/40 border border-kuningan/60 text-ivory text-[11px] font-bold whitespace-nowrap transition"
               >
-                <div className="md:col-span-5 bg-stone-50/80 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-                  <span className="text-4xl font-black text-rose-200 self-start">
-                    {adegan.nomor}
-                  </span>
-                  <div className="my-3">{adegan.svg}</div>
-                </div>
+                <User className="w-3 h-3 text-kuningan" />
+                <span>Akun</span>
+              </Link>
+            ) : (
+              <Link
+                href="/masuk"
+                className="hidden md:inline-flex items-center px-2.5 py-1.5 rounded-full bg-kayuGelap hover:bg-black/40 border border-kuningan/60 text-ivory text-[11px] font-bold whitespace-nowrap transition"
+              >
+                Masuk
+              </Link>
+            )}
 
-                <div className="md:col-span-7 space-y-4 text-left">
-                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 leading-tight">
-                    {adegan.judulBaris1}
-                    <span className="block text-rose-600">{adegan.judulBaris2}</span>
-                  </h3>
+            <button
+              type="button"
+              onClick={() => handleNavigate("kasir")}
+              className="px-3 py-1.5 bg-cherry hover:bg-burgundy text-white rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap shadow-sm border border-blush/30 transition flex items-center gap-1.5"
+            >
+              <span>Kasir</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-ivory text-cherry text-[11px] font-extrabold tabular-nums">
+                {totalQty}
+              </span>
+            </button>
 
-                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                    {adegan.deskripsi}
-                  </p>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label={mobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+              aria-expanded={mobileMenuOpen}
+              className="lg:hidden px-3 py-1.5 rounded-full bg-kayuGelap border border-kuningan/80 text-ivory text-xs font-bold inline-flex items-center gap-1.5"
+            >
+              <span>Menu</span>
+              {mobileMenuOpen ? <X className="w-3.5 h-3.5" /> : <Menu className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
 
-                  <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100 space-y-2 text-xs">
-                    <span className="font-bold text-stone-800 block">
-                      {adegan.kartuJudul}
-                    </span>
-                    {adegan.kartuPoin.map((pt, pIdx) => (
-                      <div key={pIdx} className="flex items-center space-x-2 text-stone-600">
-                        <i className="fa-solid fa-circle-check text-rose-500 text-[11px]"></i>
-                        <span>{pt}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        {/* Responsive Mobile Drawer */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden mt-2 bg-[#FFFDF9] text-ink rounded-2xl border-2 border-kuningan shadow-2xl p-4 space-y-3"
+            >
+              <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("toko")}
+                  className="p-2.5 rounded-xl bg-ivory hover:bg-blush text-left border border-dusty/50 transition"
+                >
+                  Home (Ruang Cafe)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("etalase")}
+                  className="p-2.5 rounded-xl bg-ivory hover:bg-blush text-left border border-dusty/50 transition"
+                >
+                  Etalase 3D
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("katalog")}
+                  className="p-2.5 rounded-xl bg-ivory hover:bg-blush text-left border border-dusty/50 transition"
+                >
+                  Daftar Menu
+                </button>
+                <Link
+                  href="/pesan"
+                  className="p-2.5 rounded-xl bg-cherry text-white text-left border border-cherry transition block"
+                >
+                  Pesan Custom Cake 🎂
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleOpenAboutUs}
+                  className="p-2.5 rounded-xl bg-ivory hover:bg-blush text-left border border-dusty/50 transition"
+                >
+                  About Us
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("dokumentasi")}
+                  className="p-2.5 rounded-xl bg-ivory hover:bg-blush text-left border border-dusty/50 transition"
+                >
+                  Dokumentasi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("lokasi")}
+                  className="p-2.5 rounded-xl bg-ivory hover:bg-blush text-left border border-dusty/50 transition"
+                >
+                  Lokasi Toko
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("contact")}
+                  className="p-2.5 rounded-xl bg-ivory hover:bg-blush text-left border border-dusty/50 transition"
+                >
+                  Contact Person
+                </button>
               </div>
-            ))}
+              <div className="pt-2 border-t border-dusty/40 flex flex-wrap gap-2 text-[11px] font-bold">
+                <Link
+                  href="/pesanan-saya"
+                  className="px-3 py-1.5 rounded-full bg-ivory border border-dusty text-ink"
+                >
+                  Pesanan Saya
+                </Link>
+                {userSession ? (
+                  <Link
+                    href="/profil"
+                    className="px-3 py-1.5 rounded-full bg-ivory border border-dusty text-ink"
+                  >
+                    Akun Saya
+                  </Link>
+                ) : (
+                  <Link
+                    href="/masuk"
+                    className="px-3 py-1.5 rounded-full bg-cherry text-white"
+                  >
+                    Masuk Akun
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("kasir")}
+                  className="px-3 py-1.5 rounded-full bg-blush/70 text-cherry ml-auto"
+                >
+                  Meja Kasir ({totalQty})
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+
+      {/* ==================== MAIN VIEWS ==================== */}
+      <AnimatePresence mode="wait">
+        {activeView === "toko" && (
+          <div key="view-toko">
+            <CafeScene
+              startInside={cafeStartInside}
+              onEnteredChange={setEntered}
+              onNavigate={handleNavigate}
+              onOpenInfo={() => setInfoOpen(true)}
+            />
+            <CafeStoryShowcase
+              onNavigate={handleNavigate}
+              onGoToMenuWithCake={handleGoToMenuWithCake}
+              onNotify={showToast}
+            />
           </div>
-        </div>
-      </section>
+        )}
 
-      <section id="cara-pesan" className="py-16 px-4 bg-white border-y border-stone-200/60">
-        <div className="max-w-4xl mx-auto space-y-10 text-center">
-          <div className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-600">
-              Alur Cepat
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-              4 Langkah Mudah Pemesanan
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-              Tak perlu antre di toko. Cukup selesaikan pesanan Anda dalam hitungan menit lewat HP.
-            </p>
-          </div>
+        {activeView === "etalase" && (
+          <EtalaseShowcaseView
+            key="view-etalase"
+            onNavigate={handleNavigate}
+            onGoToMenuWithCake={handleGoToMenuWithCake}
+          />
+        )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-            <div className="p-5 rounded-2xl bg-stone-50 border border-stone-100 space-y-2">
-              <span className="w-8 h-8 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center">
-                1
-              </span>
-              <h4 className="font-bold text-sm text-stone-900">Kustomisasi</h4>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                Pilih ukuran, varian rasa adonan, warna krim, hiasan, dan tulisan di kue.
-              </p>
-            </div>
+        {activeView === "katalog" && (
+          <DessertsMenuView
+            key="view-katalog"
+            initialSelectedId={selectedMenuId}
+            totalQty={totalQty}
+            totalPrice={totalPrice}
+            onAddToCart={handleAddToCart}
+            onNavigate={handleNavigate}
+          />
+        )}
 
-            <div className="p-5 rounded-2xl bg-stone-50 border border-stone-100 space-y-2">
-              <span className="w-8 h-8 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center">
-                2
-              </span>
-              <h4 className="font-bold text-sm text-stone-900">Tentukan Jadwal</h4>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                Pilih tanggal dan jam ketersediaan kuota. Pilih ambil di toko atau diantar.
-              </p>
-            </div>
+        {activeView === "kasir" && (
+          <KasirView
+            key="view-kasir"
+            cart={cart}
+            customerName={customerName}
+            pickupDate={pickupDate}
+            onCustomerNameChange={setCustomerName}
+            onPickupDateChange={setPickupDate}
+            onUpdateQty={handleUpdateQty}
+            onNavigate={handleNavigate}
+            onNotify={showToast}
+          />
+        )}
 
-            <div className="p-5 rounded-2xl bg-stone-50 border border-stone-100 space-y-2">
-              <span className="w-8 h-8 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center">
-                3
-              </span>
-              <h4 className="font-bold text-sm text-stone-900">Pembayaran</h4>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                Kirim pembayaran DP atau pelunasan via transfer bank atau QRIS resmi.
-              </p>
-            </div>
+        {activeView === "dokumentasi" && (
+          <DokumentasiView
+            key="view-dokumentasi"
+            onNavigate={handleNavigate}
+            onGoToMenuWithCake={handleGoToMenuWithCake}
+          />
+        )}
 
-            <div className="p-5 rounded-2xl bg-stone-50 border border-stone-100 space-y-2">
-              <span className="w-8 h-8 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center justify-center">
-                4
-              </span>
-              <h4 className="font-bold text-sm text-stone-900">Dapatkan Tiket QR</h4>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                Dapatkan tiket pesanan dengan kode QR untuk memantau status pembuatan kue.
-              </p>
-            </div>
-          </div>
+        {activeView === "lokasi" && <LokasiView key="view-lokasi" onNavigate={handleNavigate} />}
 
-          <div className="pt-2">
-            <Link
-              href="/pesan"
-              className="inline-block px-8 py-3.5 rounded-full font-bold bg-rose-600 hover:bg-rose-500 text-white text-xs transition shadow-sm"
+        {activeView === "pengaduan" && (
+          <PengaduanView key="view-pengaduan" onNavigate={handleNavigate} onNotify={showToast} />
+        )}
+
+        {activeView === "contact" && (
+          <ContactView key="view-contact" onNavigate={handleNavigate} onCopy={handleCopyText} />
+        )}
+      </AnimatePresence>
+
+      {/* ==================== COMPLETE PATISSERIE FOOTER ==================== */}
+      <PatisserieFooter
+        onNavigate={handleNavigate}
+        onOpenHampers={() => setHampersOpen(true)}
+        onExitShop={handleExitShop}
+      />
+
+      {/* ==================== POPUP PROMO WELCOME ==================== */}
+      <PromoWelcomeModal
+        open={promoOpen}
+        onClose={() => setPromoOpen(false)}
+        onCopyCode={handleCopyText}
+      />
+
+      {/* ==================== MODAL HAMPERS & KUE KERING ==================== */}
+      <AnimatePresence>
+        {hampersOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setHampersOpen(false)}
+            className="fixed inset-0 z-[75] bg-ink/55 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.93, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#FFFDF9] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border-2 border-cherry/50"
             >
-              Mulai Pesan Kue Sekarang
-            </Link>
-          </div>
-        </div>
-      </section>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-cherry tracking-wide">Rak Kue Kering</span>
+                <button
+                  type="button"
+                  onClick={() => setHampersOpen(false)}
+                  aria-label="Tutup modal hampers"
+                  className="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <h3 className="font-coquette text-xl font-bold text-ink">
+                Toples Cookies &amp; Hampers
+              </h3>
+              <div className="space-y-3">
+                {HAMPERS_ITEMS.map((item) => (
+                  <div
+                    key={item.nama}
+                    className="p-3.5 rounded-2xl bg-ivory border border-dusty/60 flex items-center justify-between gap-3"
+                  >
+                    <div>
+                      <p className="text-sm font-bold text-ink">{item.nama}</p>
+                      <p className="text-[11px] text-ink/65 mt-0.5">{item.desc}</p>
+                      <p className="text-xs text-cherry font-extrabold mt-1 tabular-nums">
+                        {formatRupiah(item.harga)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleAddToCart({ nama: item.nama, harga: item.harga, tipe: item.tipe });
+                        setHampersOpen(false);
+                      }}
+                      className="px-3.5 py-1.5 rounded-full bg-cherry hover:bg-burgundy text-white text-xs font-bold whitespace-nowrap transition"
+                    >
+                      + Kasir
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <section id="kontak" className="py-16 px-4">
-        <div className="max-w-4xl mx-auto bg-stone-900 text-stone-200 rounded-3xl p-8 sm:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          <div className="space-y-4">
-            <div className="inline-flex items-center space-x-2 text-rose-400 text-xs font-bold uppercase tracking-wider">
-              <i className="fa-solid fa-location-dot"></i>
-              <span>Kunjungi Dapur Kami</span>
-            </div>
-            <h3 className="text-2xl font-black text-white">
-              {toko.nama_toko || "Dapur Manis Custom Cake"}
-            </h3>
-            <p className="text-xs text-stone-400 leading-relaxed">
-              {toko.alamat || "Jl. Melati No. 12, Jakarta Selatan"}
-            </p>
-            <div className="pt-2 text-xs text-stone-300 space-y-1">
-              <p>
-                <i className="fa-regular fa-clock text-rose-400 mr-2"></i>
-                {toko.jam_operasional || "Setiap Hari: 08.00 - 20.00 WIB"}
-              </p>
-              <p>
-                <i className="fa-brands fa-whatsapp text-emerald-400 mr-2"></i>
-                WhatsApp: {toko.no_wa || "081234567890"}
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center md:text-right space-y-4">
-            <p className="text-sm font-medium text-stone-300">
-              Ada pertanyaan khusus atau ingin konsultasi desain kue kustom dalam jumlah banyak?
-            </p>
-            <a
-              href={`https://wa.me/${noWaBersih}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-2 px-6 py-3 rounded-full font-bold bg-emerald-600 hover:bg-emerald-500 text-white text-xs transition shadow-md"
+      {/* ==================== MODAL INFO TOKO ==================== */}
+      <AnimatePresence>
+        {infoOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setInfoOpen(false)}
+            className="fixed inset-0 z-[75] bg-ink/55 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.93, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#FFFDF9] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border-2 border-cherry/50"
             >
-              <i className="fa-brands fa-whatsapp text-base"></i>
-              <span>Hubungi Dapur via WhatsApp</span>
-            </a>
-          </div>
-        </div>
-      </section>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-cherry tracking-wide">Tentang Toko</span>
+                <button
+                  type="button"
+                  onClick={() => setInfoOpen(false)}
+                  aria-label="Tutup modal info toko"
+                  className="w-8 h-8 rounded-full bg-ivory border border-khaki text-ink flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <h3 className="font-coquette text-xl font-bold text-ink">
+                {toko.nama_toko || "Cravely Patisserie"}
+              </h3>
+              <p className="text-sm text-ink/75 leading-relaxed">
+                Patisserie rumahan yang menyajikan kue etalase segar harian dengan hiasan
+                pita coquette dan layanan desain kue custom sesuai impian acaramu.
+              </p>
+              <div className="bg-ivory rounded-2xl p-4 border border-dusty/50 space-y-1.5 text-xs">
+                <p>
+                  <b>Alamat:</b> {toko.alamat || "Jl. Melati No. 18, Bandung"}
+                </p>
+                <p>
+                  <b>Jam Buka:</b> {toko.jam_operasional || "08.00–20.00 WIB"}
+                </p>
+                <p>
+                  <b>WhatsApp:</b> {toko.no_wa || "081234567890"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInfoOpen(false);
+                    setPromoOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-full bg-blush text-cherry text-xs font-bold hover:bg-dusty/40 transition"
+                >
+                  Lihat Promo 20%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInfoOpen(false);
+                    handleNavigate("lokasi");
+                  }}
+                  className="px-4 py-2 rounded-full bg-cherry text-white text-xs font-bold hover:bg-burgundy transition"
+                >
+                  Buka Peta Lokasi
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <footer className="py-8 px-4 border-t border-stone-200 text-center text-xs text-stone-500">
-        <p>© 2026 {toko.nama_toko || "Dapur Manis Custom Cake"}. Seluruh hak cipta dilindungi.</p>
-      </footer>
+      {/* ==================== TOAST NOTIFICATION ==================== */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -18, scale: 0.96 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed top-24 right-5 z-[90] bg-kayu text-ivory border border-kuningan px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-xl"
+          >
+            {toastMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <a
-        href={`https://wa.me/${noWaBersih}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-xl transition hover:scale-105"
-        title="Chat WhatsApp"
-      >
-        <i className="fa-brands fa-whatsapp"></i>
-      </a>
+      {/* ==================== CUSTOM PIPING BAG CURSOR ==================== */}
+      <PipingBagCursor />
     </div>
   );
 }

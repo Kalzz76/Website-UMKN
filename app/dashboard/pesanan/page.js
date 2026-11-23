@@ -1192,14 +1192,14 @@ export default function PesananDashboardPage() {
                 Cari Pesanan
               </label>
               <div className="relative">
+                <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-xs pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Kode pesanan / nama..."
                   value={kataKunci}
                   onChange={(e) => setKataKunci(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-stone-200 outline-none focus:border-rose-500 bg-white"
+                  className="w-full h-[38px] pl-10 pr-3 text-xs rounded-xl border border-stone-200 outline-none focus:border-[#ba2b2b] bg-white text-stone-800 placeholder:text-stone-400"
                 />
-                <i className="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-stone-400 text-xs" />
               </div>
             </div>
 
@@ -1213,7 +1213,7 @@ export default function PesananDashboardPage() {
                   setFilterStatus(e.target.value);
                   setHalaman(1);
                 }}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-stone-200 outline-none focus:border-rose-500 bg-white"
+                className="w-full h-[38px] px-3 text-xs rounded-xl border border-stone-200 outline-none focus:border-[#ba2b2b] bg-white cursor-pointer"
               >
                 <option value="">Semua Status</option>
                 <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
@@ -1237,14 +1237,14 @@ export default function PesananDashboardPage() {
                   setFilterTanggal(e.target.value);
                   setHalaman(1);
                 }}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-stone-200 outline-none focus:border-rose-500 bg-white"
+                className="w-full h-[38px] px-3 text-xs rounded-xl border border-stone-200 outline-none focus:border-[#ba2b2b] bg-white"
               />
             </div>
 
             <div className="flex items-center space-x-2">
               <button
                 type="submit"
-                className="flex-1 py-2 px-4 bg-[#ba2b2b] hover:bg-[#a62525] text-white font-bold rounded-xl text-xs transition cursor-pointer"
+                className="flex-1 h-[38px] px-4 bg-[#ba2b2b] hover:bg-[#a62525] text-white font-bold rounded-xl text-xs transition cursor-pointer"
               >
                 Filter
               </button>
@@ -1252,7 +1252,7 @@ export default function PesananDashboardPage() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="py-2 px-3 border border-stone-200 hover:bg-stone-50 text-stone-600 font-semibold rounded-xl text-xs transition cursor-pointer"
+                  className="h-[38px] px-3 border border-stone-200 hover:bg-stone-50 text-stone-600 font-semibold rounded-xl text-xs transition cursor-pointer"
                   title="Reset Filter"
                 >
                   <i className="fa-solid fa-rotate-left" />

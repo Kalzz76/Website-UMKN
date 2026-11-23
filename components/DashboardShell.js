@@ -200,6 +200,16 @@ export default function DashboardShell({
         </svg>
       ),
     },
+    {
+      nama: "Profil",
+      href: "/dashboard/profil",
+      ikon: (
+        <svg viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      ),
+    },
   ];
 
   const menuStaf = [
@@ -254,6 +264,16 @@ export default function DashboardShell({
         </svg>
       ),
     },
+    {
+      nama: "Profil",
+      href: "/dashboard/profil",
+      ikon: (
+        <svg viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      ),
+    },
   ];
 
   const listMenu = role === "admin" ? menuAdmin : menuStaf;
@@ -291,6 +311,11 @@ export default function DashboardShell({
     infoHalaman = {
       judul: "Kelola Akun",
       subjudul: "Atur hak akses staf produksi dan administrator toko.",
+    };
+  } else if (pathname.startsWith("/dashboard/profil")) {
+    infoHalaman = {
+      judul: "Profil Saya",
+      subjudul: `Kelola data diri, nomor WhatsApp, dan kata sandi akun ${role === "admin" ? "Administrator" : "Staf Produksi"}.`,
     };
   }
 
@@ -573,6 +598,14 @@ export default function DashboardShell({
 
               {dropdownBuka && (
                 <div className="profile-dropdown-menu">
+                  <Link
+                    href="/dashboard/profil"
+                    className="profile-dropdown-item"
+                    onClick={() => setDropdownBuka(false)}
+                  >
+                    <i className="fa-regular fa-id-badge"></i>
+                    <span>Profil Saya</span>
+                  </Link>
                   <button
                     type="button"
                     className="profile-dropdown-item danger"

@@ -192,29 +192,31 @@ export default function DashboardAdminView({
           {
             data: dataValues,
             backgroundColor: backgroundColors,
-            borderWidth: 3,
-            borderColor: "#ffffff",
+            borderWidth: dataValues.length > 1 ? 2 : 0,
+            borderColor: "#fbf8f1",
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: "72%",
+        cutout: "74%",
         plugins: {
           legend: { display: false },
           tooltip: {
             backgroundColor: "#17382d",
             bodyFont: { family: "Plus Jakarta Sans", size: 11, weight: "600" },
             cornerRadius: 8,
+            displayColors: false,
             callbacks: {
+              title: () => "",
               label: function (ctxItem) {
                 const nilai = ctxItem.raw || 0;
                 const persen =
                   donutInfo.total > 0
                     ? Math.round((nilai / donutInfo.total) * 100)
                     : 0;
-                return ` ${ctxItem.label}: ${nilai} (${persen}%)`;
+                return `${ctxItem.label}: ${nilai} (${persen}%)`;
               },
             },
           },
@@ -662,16 +664,18 @@ export default function DashboardAdminView({
                           </span>
                         </div>
                       </div>
-                      <span
-                        className={`order-status-pill ${getBadgeStatusClass(
-                          p.status_pesanan
-                        )}`}
-                      >
-                        {p.status_pesanan}
-                      </span>
-                      <span className="order-price-val">
-                        {formatRupiah(p.total_bayar)}
-                      </span>
+                      <div className="order-right-meta">
+                        <span className="order-price-val">
+                          {formatRupiah(p.total_bayar)}
+                        </span>
+                        <span
+                          className={`order-status-pill ${getBadgeStatusClass(
+                            p.status_pesanan
+                          )}`}
+                        >
+                          {p.status_pesanan}
+                        </span>
+                      </div>
                     </Link>
                   ))}
                 </div>

@@ -1,0 +1,8 @@
+{
+  "name": "Dapur Kue Manis",
+  "description": "Coquette Patisserie & Custom Cake 3D interaktif dengan karakter patissier lucu yang berjalan mengikuti kursor, etalase desserts berpita, dan meja racik kue 3D.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
