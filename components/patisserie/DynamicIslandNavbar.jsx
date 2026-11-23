@@ -17,6 +17,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
   const pathname = usePathname();
   const { totalQty } = usePatisserieCart();
   const [userSession, setUserSession] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const leaveTimeoutRef = useRef(null);
 
@@ -29,6 +30,14 @@ export function DynamicIslandNavbar({ showEntered = true }) {
           data: { session },
         } = await supabase.auth.getSession();
         setUserSession(session);
+        if (session?.user?.id) {
+          const { data: profil } = await supabase
+            .from("profil")
+            .select("role")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          setUserRole(profil?.role || "pelanggan");
+        }
       } catch (err) {
         // Fallback gracefully
       }
@@ -63,8 +72,12 @@ export function DynamicIslandNavbar({ showEntered = true }) {
   const getPageTitle = () => {
     if (pathname.startsWith("/toko")) return "Toko";
     if (pathname.startsWith("/menu")) return "Menu";
+    if (pathname.startsWith("/user") || pathname.startsWith("/pesanan-saya")) {
+      return "Dashboard";
+    }
     if (pathname.startsWith("/pesan")) return "Cake Studio";
     if (pathname.startsWith("/kasir")) return "Kasir";
+    if (pathname.startsWith("/dashboard")) return "Dashboard";
     if (
       pathname.startsWith("/profil") ||
       pathname.startsWith("/masuk") ||
@@ -74,6 +87,15 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     }
     return "Home";
   };
+
+  const dashboardHref =
+    userRole === "admin" || userRole === "staf" ? "/dashboard" : "/user";
+  const dashboardTitle =
+    userRole === "admin"
+      ? "Dashboard Admin"
+      : userRole === "staf"
+        ? "Dashboard Petugas"
+        : "Dashboard Pelanggan";
 
   const activeTitle = getPageTitle();
 
@@ -233,15 +255,26 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                   </span>
                 </Link>
 
-                {/* Akun */}
+                {/* Akun / Dashboard */}
                 {userSession ? (
                   <Link
-                    href="/profil"
+                    href={dashboardHref}
                     onClick={() => setIsExpanded(false)}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5ECE2] hover:bg-[#EBDDD0] border border-[#D9B37C]/60 text-[#3D2B28] flex items-center justify-center transition shrink-0"
-                    title="Profil Saya"
+                    className={`px-2.5 h-7 sm:h-8 rounded-full border text-xs font-bold flex items-center gap-1.5 transition shrink-0 whitespace-nowrap ${
+                      pathname.startsWith("/user") || pathname.startsWith("/dashboard")
+                        ? "bg-[#9E3B42] text-white border-transparent"
+                        : "bg-[#F5ECE2] hover:bg-[#EBDDD0] border-[#D9B37C]/60 text-[#3D2B28]"
+                    }`}
+                    title={dashboardTitle}
                   >
-                    <User className="w-3.5 h-3.5 text-[#B8925A]" />
+                    <User
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        pathname.startsWith("/user") || pathname.startsWith("/dashboard")
+                          ? "text-white"
+                          : "text-[#B8925A]"
+                      }`}
+                    />
+                    <span className="hidden sm:inline">Dashboard</span>
                   </Link>
                 ) : (
                   <Link

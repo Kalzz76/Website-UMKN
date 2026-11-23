@@ -256,7 +256,7 @@ export default function WizardPesan({
       }
 
       sessionStorage.removeItem("draf_pesanan");
-      router.push(`/pesanan-saya/${data.kode_pesanan}`);
+      router.push(`/user/${data.kode_pesanan}`);
     } catch {
       setMemuat(false);
       setDaftarError(["Gagal terhubung ke server. Silakan coba lagi."]);

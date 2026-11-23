@@ -212,11 +212,11 @@ export default function ProfilUserPage() {
               Beranda
             </Link>
             <Link
-              href="/pesanan-saya"
+              href="/user"
               className="text-xs font-semibold px-4 py-2 rounded-full border border-stone-200 text-stone-700 hover:bg-stone-50 transition inline-flex items-center gap-1.5"
             >
-              <i className="fa-solid fa-box-open text-rose-600"></i>
-              <span>Pesanan Saya</span>
+              <i className="fa-solid fa-border-all text-rose-600"></i>
+              <span>Dashboard Saya</span>
             </Link>
             <TombolKeluar />
           </div>
@@ -299,7 +299,7 @@ export default function ProfilUserPage() {
 
               <div className="pt-3 border-t border-stone-100 grid grid-cols-2 gap-2 text-center">
                 <Link
-                  href="/pesanan-saya"
+                  href="/user"
                   className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-100 hover:bg-amber-100/70 transition block"
                 >
                   <div className="text-lg font-black text-stone-900">
@@ -311,7 +311,7 @@ export default function ProfilUserPage() {
                 </Link>
 
                 <Link
-                  href="/pesanan-saya"
+                  href="/user"
                   className="p-2.5 rounded-xl bg-rose-50/70 border border-rose-100 hover:bg-rose-100/70 transition block"
                 >
                   <div className="text-lg font-black text-rose-700">

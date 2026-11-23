@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import ModalPesan from "@/components/ModalPesan";
 
 export default function DaftarPage() {
@@ -45,39 +44,32 @@ export default function DaftarPage() {
     }
 
     setMemuat(true);
-    const supabase = getSupabaseBrowser();
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password: password,
-      options: {
-        data: {
+    try {
+      const res = await fetch("/api/daftar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           nama: nama.trim(),
           no_wa: noWa.trim(),
-        },
-      },
-    });
+          email: email.trim(),
+          password: password,
+        }),
+      });
+      const data = await res.json();
 
-    if (error) {
-      setMemuat(false);
-      let pesanError = "Terjadi kesalahan saat pendaftaran.";
-      if (error.message && error.message.includes("User already registered")) {
-        pesanError = "Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.";
-      } else if (
-        !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-        process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder") ||
-        error.message.includes("Failed to fetch")
-      ) {
-        pesanError = "Koneksi ke Supabase belum terhubung. Pastikan kredensial di file .env.local sudah diisi dengan URL dan Anon Key proyek Supabase Anda.";
-      } else if (error.message) {
-        pesanError = `Terjadi kesalahan saat pendaftaran: ${error.message}`;
+      if (!res.ok) {
+        setMemuat(false);
+        setDaftarError([data.pesan || "Terjadi kesalahan saat pendaftaran."]);
+        return;
       }
-      setDaftarError([pesanError]);
-      return;
-    }
 
-    setMemuat(false);
-    setModalSukses(true);
+      setMemuat(false);
+      setModalSukses(true);
+    } catch (err) {
+      setMemuat(false);
+      setDaftarError(["Terjadi gangguan jaringan. Silakan coba kembali."]);
+    }
   }
 
   function handleTutupModal() {
