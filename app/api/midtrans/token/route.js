@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabaseServer";
+import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { buatSnapToken } from "@/lib/midtrans";
 
 export async function POST(request) {
   try {
+    const supabaseUser = await getSupabaseServer();
+    const {
+      data: { user },
+    } = await supabaseUser.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { pesan: "Silakan masuk terlebih dahulu." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { kode_pesanan, jenis_bayar = "Lunas" } = body;
 
@@ -26,6 +38,22 @@ export async function POST(request) {
       return NextResponse.json(
         { pesan: "Pesanan tidak ditemukan." },
         { status: 404 }
+      );
+    }
+
+    const { data: prof } = await supabase
+      .from("profil")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const isAdminOrStaf = prof && (prof.role === "admin" || prof.role === "staf");
+    const isOwner = pesanan.id_pelanggan === user.id;
+
+    if (!isAdminOrStaf && !isOwner) {
+      return NextResponse.json(
+        { pesan: "Akses ditolak. Pesanan ini bukan milik Anda." },
+        { status: 403 }
       );
     }
 

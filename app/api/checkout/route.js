@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta, hitungTanggalMinimal } from "@/lib/format";
 import { hitungPesanan } from "@/lib/hitungHarga";
+import { jamBukaTutupUntukTanggal } from "@/lib/jam";
 
 export async function POST(request) {
   const supabaseUser = await getSupabaseServer();
@@ -120,10 +121,10 @@ export async function POST(request) {
   }
 
   let customCount = 0;
-  let siapCount = 0;
+  let katalogCount = 0;
   for (let i = 0; i < keranjang.length; i++) {
     if (keranjang[i].jenis === "Custom") customCount++;
-    else siapCount++;
+    else katalogCount++;
   }
 
   if (customCount > 10) {
@@ -145,7 +146,7 @@ export async function POST(request) {
   const produkNonaktif = [];
   for (let i = 0; i < keranjang.length; i++) {
     const item = keranjang[i];
-    if (item.jenis === "Siap") {
+    if (item.jenis === "Katalog" || item.jenis === "Siap") {
       const p = produkMap.get(Number(item.id_produk));
       if (!p || !p.aktif) {
         produkNonaktif.push(p ? p.nama : `Produk ID #${item.id_produk}`);
@@ -221,18 +222,20 @@ export async function POST(request) {
     .single();
 
   const minimalHariCustom = pengaturan?.minimal_hari_pesan ?? 2;
-  const minimalHariSiap = pengaturan?.minimal_hari_siap ?? 1;
+  const minimalHariKatalog = pengaturan?.minimal_hari_katalog ?? pengaturan?.minimal_hari_siap ?? 1;
   const kuotaHarian = pengaturan?.kuota_harian ?? 5;
-  const jamBuka = (pengaturan?.jam_buka || "08:00").slice(0, 5);
-  const jamTutup = (pengaturan?.jam_tutup || "20:00").slice(0, 5);
+
+  const jamKhusus = jamBukaTutupUntukTanggal(tanggal_ambil, pengaturan);
+  const jamBuka = jamKhusus.buka;
+  const jamTutup = jamKhusus.tutup;
 
   let minimalHari = minimalHariCustom;
-  if (customCount > 0 && siapCount > 0) {
-    minimalHari = Math.max(minimalHariCustom, minimalHariSiap);
-  } else if (customCount > 0 && siapCount === 0) {
+  if (customCount > 0 && katalogCount > 0) {
+    minimalHari = Math.max(minimalHariCustom, minimalHariKatalog);
+  } else if (customCount > 0 && katalogCount === 0) {
     minimalHari = minimalHariCustom;
-  } else if (customCount === 0 && siapCount > 0) {
-    minimalHari = minimalHariSiap;
+  } else if (customCount === 0 && katalogCount > 0) {
+    minimalHari = minimalHariKatalog;
   }
 
   const tanggalMinimal = hitungTanggalMinimal(minimalHari);
@@ -413,8 +416,8 @@ export async function POST(request) {
         .from("pesanan_item")
         .insert({
           id_pesanan: pesananBaru.id,
-          jenis: r.jenis,
-          id_produk: r.jenis === "Siap" ? r.id_produk : null,
+          jenis: r.jenis === "Siap" ? "Katalog" : r.jenis,
+          id_produk: (r.jenis === "Katalog" || r.jenis === "Siap") ? r.id_produk : null,
           nama_item: r.nama,
           harga_satuan: r.harga_satuan,
           jumlah: r.jumlah,

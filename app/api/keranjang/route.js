@@ -389,7 +389,7 @@ export async function POST(request) {
       }
 
       const existing = (keranjangLama || []).find(
-        (it) => it.jenis === "Siap" && Number(it.id_produk) === id_produk
+        (it) => (it.jenis === "Katalog" || it.jenis === "Siap") && Number(it.id_produk) === id_produk
       );
 
       if (existing) {
@@ -417,7 +417,7 @@ export async function POST(request) {
           .from("keranjang_item")
           .insert({
             id_pelanggan: user.id,
-            jenis: "Siap",
+            jenis: "Katalog",
             id_produk: id_produk,
             jumlah: jumlah,
           })
@@ -432,9 +432,9 @@ export async function POST(request) {
     }
   } else {
     const body = await request.json();
-    const jenis = body.jenis || "Siap";
+    const jenis = body.jenis || "Katalog";
 
-    if (jenis === "Siap") {
+    if (jenis === "Katalog" || jenis === "Siap") {
       const id_produk = Number(body.id_produk);
       const jumlah = Math.max(1, Math.min(20, Number(body.jumlah || 1)));
 
@@ -460,7 +460,7 @@ export async function POST(request) {
       }
 
       const existing = (keranjangLama || []).find(
-        (it) => it.jenis === "Siap" && Number(it.id_produk) === id_produk
+        (it) => (it.jenis === "Katalog" || it.jenis === "Siap") && Number(it.id_produk) === id_produk
       );
 
       if (existing) {
@@ -488,7 +488,7 @@ export async function POST(request) {
           .from("keranjang_item")
           .insert({
             id_pelanggan: user.id,
-            jenis: "Siap",
+            jenis: "Katalog",
             id_produk: id_produk,
             jumlah: jumlah,
           })
@@ -548,7 +548,7 @@ export async function PATCH(request) {
     );
   }
 
-  if (item.jenis !== "Siap") {
+  if (item.jenis !== "Katalog" && item.jenis !== "Siap") {
     return NextResponse.json(
       { pesan: "Kue custom hanya berjumlah 1 dan tidak dapat diubah jumlahnya." },
       { status: 400 }

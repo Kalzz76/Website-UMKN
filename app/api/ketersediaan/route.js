@@ -1,29 +1,40 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta, hitungTanggalMinimal } from "@/lib/format";
+import { jamBukaTutupUntukTanggal } from "@/lib/jam";
 
-export async function GET() {
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const tanggalParam = searchParams.get("tanggal");
+
   const supabaseUser = await getSupabaseServer();
   const supabase = getSupabaseAdmin();
 
   const { data: toko } = await supabase
     .from("pengaturan_toko")
-    .select("jam_buka, jam_tutup, kuota_harian, minimal_hari_pesan, minimal_hari_siap")
+    .select("jam_buka, jam_tutup, jam_buka_senin_jumat, jam_tutup_senin_jumat, jam_buka_sabtu_minggu, jam_tutup_sabtu_minggu, kuota_harian, minimal_hari_pesan, minimal_hari_katalog, minimal_hari_siap")
     .eq("id", 1)
     .single();
 
   const minimalHariCustom = toko?.minimal_hari_pesan ?? 2;
-  const minimalHariSiap = toko?.minimal_hari_siap ?? 1;
+  const minimalHariKatalog = toko?.minimal_hari_katalog ?? toko?.minimal_hari_siap ?? 1;
   const kuotaHarian = toko?.kuota_harian ?? 5;
-  const jamBuka = (toko?.jam_buka || "08:00").slice(0, 5);
-  const jamTutup = (toko?.jam_tutup || "20:00").slice(0, 5);
+
+  let jamBuka = (toko?.jam_buka_senin_jumat || toko?.jam_buka || "08:00").slice(0, 5);
+  let jamTutup = (toko?.jam_tutup_senin_jumat || toko?.jam_tutup || "20:00").slice(0, 5);
+
+  if (tanggalParam) {
+    const jamKhusus = jamBukaTutupUntukTanggal(tanggalParam, toko);
+    jamBuka = jamKhusus.buka;
+    jamTutup = jamKhusus.tutup;
+  }
 
   const {
     data: { user },
   } = await supabaseUser.auth.getUser();
 
   let adaCustom = false;
-  let adaSiap = false;
+  let adaKatalog = false;
   let customCountDiKeranjang = 0;
 
   if (user) {
@@ -38,19 +49,19 @@ export async function GET() {
           adaCustom = true;
           customCountDiKeranjang += 1;
         } else {
-          adaSiap = true;
+          adaKatalog = true;
         }
       }
     }
   }
 
   let minimalHari = minimalHariCustom;
-  if (adaCustom && adaSiap) {
-    minimalHari = Math.max(minimalHariCustom, minimalHariSiap);
-  } else if (adaCustom && !adaSiap) {
+  if (adaCustom && adaKatalog) {
+    minimalHari = Math.max(minimalHariCustom, minimalHariKatalog);
+  } else if (adaCustom && !adaKatalog) {
     minimalHari = minimalHariCustom;
-  } else if (!adaCustom && adaSiap) {
-    minimalHari = minimalHariSiap;
+  } else if (!adaCustom && adaKatalog) {
+    minimalHari = minimalHariKatalog;
   }
 
   const tanggalMinimal = hitungTanggalMinimal(minimalHari);
@@ -95,7 +106,7 @@ export async function GET() {
   }
 
   const tanggalPenuh = [];
-  if (!adaSiap || adaCustom || !user) {
+  if (!adaKatalog || adaCustom || !user) {
     const tambahCustom = customCountDiKeranjang > 0 ? customCountDiKeranjang : 1;
     for (const tgl in customPerTanggal) {
       if (customPerTanggal[tgl] + (adaCustom ? tambahCustom - 1 : 0) >= kuotaHarian) {
@@ -110,9 +121,16 @@ export async function GET() {
     tanggal_penuh: tanggalPenuh,
     jam_buka: jamBuka,
     jam_tutup: jamTutup,
+    jam_buka_senin_jumat: (toko?.jam_buka_senin_jumat || toko?.jam_buka || "08:00").slice(0, 5),
+    jam_tutup_senin_jumat: (toko?.jam_tutup_senin_jumat || toko?.jam_tutup || "20:00").slice(0, 5),
+    jam_buka_sabtu_minggu: (toko?.jam_buka_sabtu_minggu || toko?.jam_buka || "08:00").slice(0, 5),
+    jam_tutup_sabtu_minggu: (toko?.jam_tutup_sabtu_minggu || toko?.jam_tutup || "20:00").slice(0, 5),
     minimal_hari_pesan: minimalHari,
+    minimal_hari_custom: minimalHariCustom,
+    minimal_hari_katalog: minimalHariKatalog,
     kuota_harian: kuotaHarian,
     ada_custom: adaCustom,
-    ada_siap: adaSiap,
+    ada_katalog: adaKatalog,
+    ada_siap: adaKatalog,
   });
 }

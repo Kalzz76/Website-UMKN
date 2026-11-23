@@ -368,7 +368,7 @@ export function CheckoutView() {
   }
 
   const kueCustomList = keranjang.filter((it) => it.jenis === "Custom");
-  const kueKatalogList = keranjang.filter((it) => it.jenis === "Siap");
+  const kueKatalogList = keranjang.filter((it) => it.jenis === "Katalog" || it.jenis === "Siap");
 
   if (sedangMemuat) {
     return (

@@ -156,7 +156,7 @@ export default function PesananDashboardPage() {
             if (first.jenis === "Custom" && first.foto_preview) {
               pathsToSign.push(first.foto_preview);
               pathToOrderMap[first.foto_preview] = p.id;
-            } else if (first.jenis === "Siap" && first.produk?.foto) {
+            } else if ((first.jenis === "Katalog" || first.jenis === "Siap") && first.produk?.foto) {
               const f = first.produk.foto;
               if (f.startsWith("http://") || f.startsWith("https://")) {
                 thumbObj[p.id] = f;

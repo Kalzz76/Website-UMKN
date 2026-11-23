@@ -6,8 +6,8 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("produk")
-    .select("*")
-    .order("dibuat_pada", { ascending: false })
+    .select("id, nama, deskripsi, harga, foto, aktif, urutan, id_kategori, komposisi, porsi, label_teks, unggulan, kategori_produk(nama)")
+    .order("urutan", { ascending: true })
     .order("id", { ascending: false });
 
   if (error) {
@@ -27,7 +27,22 @@ export async function GET() {
         fotoUrl = `${baseUrl}/${cleanPath}`;
       }
     }
-    return { ...p, fotoUrl };
+    return {
+      id: p.id,
+      nama: p.nama,
+      deskripsi: p.deskripsi,
+      harga: p.harga,
+      foto: p.foto,
+      fotoUrl,
+      aktif: p.aktif,
+      urutan: p.urutan,
+      id_kategori: p.id_kategori || null,
+      kategori: p.kategori_produk?.nama || "",
+      komposisi: p.komposisi || "",
+      porsi: p.porsi || "",
+      label_teks: p.label_teks || "",
+      unggulan: Boolean(p.unggulan),
+    };
   });
 
   return NextResponse.json({ sukses: true, data: daftar });
@@ -51,6 +66,13 @@ export async function POST(request) {
     const urutan = Number(formData.get("urutan") || 0);
     const aktif = formData.get("aktif") !== "false";
     const file = formData.get("foto");
+
+    const idKategoriRaw = formData.get("id_kategori");
+    const id_kategori = idKategoriRaw && !isNaN(Number(idKategoriRaw)) ? Number(idKategoriRaw) : null;
+    const komposisi = (formData.get("komposisi") || "").trim();
+    const porsi = (formData.get("porsi") || "").trim();
+    const label_teks = (formData.get("label_teks") || "").trim();
+    const unggulan = formData.get("unggulan") === "true" || formData.get("unggulan") === true;
 
     if (!nama || !nama.trim()) {
       return NextResponse.json({ pesan: "Nama produk wajib diisi." }, { status: 400 });
@@ -91,6 +113,11 @@ export async function POST(request) {
         harga: Math.round(harga),
         urutan: Math.round(urutan),
         aktif: Boolean(aktif),
+        id_kategori,
+        komposisi,
+        porsi,
+        label_teks,
+        unggulan,
       };
       if (fotoPath) {
         updateData.foto = fotoPath;
@@ -101,14 +128,20 @@ export async function POST(request) {
       }
       return NextResponse.json({ sukses: true, pesan: "Produk berhasil diperbarui." });
     } else {
-      const { error } = await supabase.from("produk").insert({
+      const insertData = {
         nama: nama.trim(),
         deskripsi: deskripsi.trim(),
         harga: Math.round(harga),
         urutan: Math.round(urutan),
         aktif: Boolean(aktif),
         foto: fotoPath,
-      });
+        id_kategori,
+        komposisi,
+        porsi,
+        label_teks,
+        unggulan,
+      };
+      const { error } = await supabase.from("produk").insert(insertData);
       if (error) {
         return NextResponse.json({ pesan: "Gagal menambah produk: " + error.message }, { status: 500 });
       }
