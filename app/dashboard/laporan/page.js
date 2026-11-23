@@ -110,7 +110,7 @@ export default function LaporanDashboardPage() {
       const itList = itemRes.data || [];
       for (let i = 0; i < itList.length; i++) {
         const it = itList[i];
-        if (it.jenis === "Siap" && it.nama_item) {
+        if ((it.jenis === "Katalog" || it.jenis === "Siap") && it.nama_item) {
           if (!opsiGrupMap["Kue Katalog"]) {
             opsiGrupMap["Kue Katalog"] = {};
           }

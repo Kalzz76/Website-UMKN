@@ -100,12 +100,16 @@ toko-kue/
 │       ├── pembayaran/route.js          unggah bukti bayar
 │       ├── pembayaran/[id]/route.js     konfirmasi atau tolak
 │       ├── opsi/route.js                simpan grup dan item opsi
+│       ├── produk/route.js              katalog produk kue
+│       ├── kategori-produk/route.js     kategori produk katalog
+│       ├── tarif-jarak/route.js         tarif ongkir berundak
+│       ├── ongkir/route.js              hitung jarak dan ongkir
 │       ├── stok/route.js
 │       ├── pengaturan/route.js
 │       ├── akun/route.js
 │       └── cron/batalkan-pesanan/route.js
 ├── components/                          PreviewKue.js, WizardPesan.js, BadgeStatus.js, dll
-├── lib/                                 supabaseBrowser.js, supabaseServer.js, format.js, cekRole.js
+├── lib/                                 supabaseBrowser.js, supabaseServer.js, format.js, cekRole.js, jam.js, ongkir.js
 ├── middleware.js                        arahkan yang belum login dari /dashboard dan /pesanan-saya
 ├── supabase/
 │   ├── migrations/                      file .sql berurutan
@@ -511,19 +515,23 @@ Dibuat lewat **file SQL di `supabase/migrations/`** dan data awal lewat `seed.sq
 `id` (uuid, sama dengan `auth.users.id`), `nama`, `no_wa`, `role` (`admin` / `staf` / `pelanggan`, default `pelanggan`), `aktif` (boolean, default true), `dibuat_pada`. Dibuat otomatis lewat trigger saat ada pendaftaran baru di `auth.users`.
 
 ### pengaturan_toko
-Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `minimal_hari_siap` (default 1), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`, `lat_toko` (numeric, boleh kosong), `lng_toko` (numeric, boleh kosong), `faktor_jalan` (numeric default 1.3), `maks_jarak_kirim_km` (numeric default 20).
+### pengaturan_toko
+Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `jam_buka_senin_jumat`, `jam_tutup_senin_jumat`, `jam_buka_sabtu_minggu`, `jam_tutup_sabtu_minggu`, `email`, `instagram`, `tautan_peta`, `deskripsi_footer`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `minimal_hari_siap` (default 1), `minimal_hari_katalog` (default 1), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`, `lat_toko` (numeric, boleh kosong), `lng_toko` (numeric, boleh kosong), `faktor_jalan` (numeric default 1.3), `maks_jarak_kirim_km` (numeric default 20).
 
-### tarif_jarak
-Tarif ongkir berundak berbasis jarak toko ke titik pengantaran (dipakai `/checkout`): `id` (bigint identity), `jarak_maks_km` (numeric unik, > 0), `tarif` (integer, >= 0), `aktif` (boolean default true). RLS: publik membaca tarif aktif, penulisan lewat server admin.
+### kategori_produk
+Kategori produk kue katalog: `id` (bigint identity), `nama` (text, unik), `urutan` (integer, default 0), `aktif` (boolean, default true). RLS: publik membaca kategori aktif, admin mengelola penuh.
 
 ### produk
-Kue katalog siap pesan: `id` (bigint identity), `nama`, `deskripsi`, `harga` (integer, rupiah), `foto` (text, path di bucket publik), `aktif` (boolean, default true), `urutan` (integer, default 0), `dibuat_pada`. RLS: publik membaca produk aktif, admin mengelola penuh.
+Kue katalog siap pesan: `id` (bigint identity), `nama`, `id_kategori` (FK `kategori_produk` on delete set null), `deskripsi`, `komposisi`, `porsi`, `label_teks`, `unggulan` (boolean, default false), `harga` (integer, rupiah), `foto` (text, path di bucket publik), `aktif` (boolean, default true), `urutan` (integer, default 0), `dibuat_pada`. RLS: publik membaca produk aktif, admin mengelola penuh.
 
 ### keranjang_item
-Keranjang belanja terpadu di database: `id` (bigint identity), `id_pelanggan` (uuid FK `profil` on delete cascade), `jenis` (`'Custom'` atau `'Siap'`), `id_produk` (bigint FK `produk` on delete cascade, boleh kosong), `jumlah` (integer default 1, 1-20), `pilihan` (jsonb daftar `{id_item, jumlah}`), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (path text), `dibuat_pada`. Check: jenis Siap wajib punya `id_produk`; jenis Custom wajib punya `pilihan` dan `jumlah = 1`. Maksimal 20 baris per pelanggan, maksimal 10 kue custom. RLS: pelanggan membaca dan menghapus barisnya sendiri.
+Keranjang belanja terpadu di database: `id` (bigint identity), `id_pelanggan` (uuid FK `profil` on delete cascade), `jenis` (`'Custom'` atau `'Katalog'`), `id_produk` (bigint FK `produk` on delete cascade, boleh kosong), `jumlah` (integer default 1, 1-20), `pilihan` (jsonb daftar `{id_item, jumlah}`), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (path text), `dibuat_pada`. Check: jenis Katalog wajib punya `id_produk`; jenis Custom wajib punya `pilihan` dan `jumlah = 1`. Maksimal 20 baris per pelanggan, maksimal 10 kue custom. RLS: pelanggan membaca dan menghapus barisnya sendiri.
 
 ### pesanan_item
-Rincian item dalam pesanan: `id` (bigint identity), `id_pesanan` (bigint FK `pesanan` on delete cascade), `jenis` (`'Custom'` atau `'Siap'`), `id_produk` (bigint FK `produk` on delete set null), `nama_item` dan `harga_satuan` (salinan saat checkout; untuk Custom `harga_satuan = total kue itu`), `jumlah` (integer default 1), `subtotal` (integer), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom`, `urutan` (integer default 1). RLS: pelanggan membaca item miliknya.
+Rincian item dalam pesanan: `id` (bigint identity), `id_pesanan` (bigint FK `pesanan` on delete cascade), `jenis` (`'Custom'` atau `'Katalog'`), `id_produk` (bigint FK `produk` on delete set null), `nama_item` dan `harga_satuan` (salinan saat checkout; untuk Custom `harga_satuan = total kue itu`), `jumlah` (integer default 1), `subtotal` (integer), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom`, `urutan` (integer default 1). RLS: pelanggan membaca item miliknya.
+
+### tarif_jarak
+Tarif ongkos kirim bertingkat berbasis radius jarak: `id` (bigint identity), `jarak_maks_km` (numeric > 0, unik), `tarif` (integer >= 0), `aktif` (boolean, default true). RLS: publik membaca tarif aktif, admin mengelola penuh.
 
 ### grup_opsi
 `id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / `bentuk` / `stiker` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
@@ -575,11 +583,11 @@ Semua kue (kue katalog siap pesan dan kue custom studio) masuk ke dalam SATU ker
    - Batas maksimal: 20 baris keranjang dan 10 kue custom per pelanggan.
 
 2. **Aturan Checkout**:
-   - Satu tanggal dan jam untuk seluruh pesanan. Tanggal minimal = yang paling lama dari seluruh item di keranjang (kue custom memakai `minimal_hari_pesan`, kue katalog memakai `minimal_hari_siap`).
+   - Satu tanggal dan jam untuk seluruh pesanan. Tanggal minimal = yang paling lama dari seluruh item di keranjang (kue custom memakai `minimal_hari_pesan`, kue katalog memakai `minimal_hari_katalog`).
    - Kuota harian dapur dihitung per kue custom. Pesanan yang hanya berisi kue katalog tidak memakai kuota harian.
-   - Ongkos kirim dihitung sekali per pesanan dari zona ongkir aktif (Rp 0 untuk Ambil di Toko).
-   - Mode DP atau Lunas dihitung dari total seluruh item. Seluruh harga dihitung ulang oleh server dari database (harga dari browser diabaikan).
-   - Metode pembayaran hanya Transfer Bank atau QRIS.
+   - Ongkos kirim dihitung dari tarif jarak berundak (`tarif_jarak`) berdasarkan radius dan faktor jalan. Zona ongkir lama dipertahankan untuk kompatibilitas `/pesan`. Rp 0 untuk Ambil di Toko.
+   - Mode DP: DP hanya dihitung dari subtotal kue Custom. Kue katalog dan ongkir dibayar penuh 100% di awal.
+   - Metode pembayaran hanya Transfer Bank atau QRIS. Tunai di Tempat hanya untuk pelunasan saat ambil di toko.
    - Saat checkout berhasil: file foto dipindahkan dari `keranjang/{id_pelanggan}/` ke `pesanan/{kode_pesanan}/`, data pesanan disimpan ke `pesanan`, `pesanan_item`, `pesanan_pilihan`, dan keranjang dikosongkan. Jika ada kegagalan, rollback dilakukan dan keranjang tidak dikosongkan.
 
 3. **Pembersihan Otomatis**:

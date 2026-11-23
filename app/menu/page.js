@@ -94,7 +94,7 @@ export default function MenuPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          jenis: "Siap",
+          jenis: "Katalog",
           id_produk: item.id,
           jumlah: 1,
         }),

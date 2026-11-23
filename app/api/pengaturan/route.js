@@ -1,6 +1,54 @@
 import { NextResponse } from "next/server";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
+import { validasiKoordinat } from "@/lib/ongkir";
+
+function formatJamValid(str) {
+  if (!str || typeof str !== "string") return false;
+  const regex = /^([01]\d|2[0-3]):[0-5]\d$/;
+  return regex.test(str.slice(0, 5));
+}
+
+function jamLebihBesar(buka, tutup) {
+  const b = buka.slice(0, 5);
+  const t = tutup.slice(0, 5);
+  return t > b;
+}
+
+export async function GET() {
+  const supabase = getSupabaseAdmin();
+  const { data: toko, error } = await supabase
+    .from("pengaturan_toko")
+    .select("*")
+    .eq("id", 1)
+    .single();
+
+  if (error) {
+    return NextResponse.json(
+      { pesan: "Gagal memuat pengaturan toko: " + error.message },
+      { status: 500 }
+    );
+  }
+
+  const { data: zonaList } = await supabase
+    .from("zona_ongkir")
+    .select("*")
+    .order("id", { ascending: true });
+
+  const { data: tanggalTutupList } = await supabase
+    .from("tanggal_tutup")
+    .select("*")
+    .order("tanggal", { ascending: true });
+
+  return NextResponse.json({
+    sukses: true,
+    data: {
+      ...toko,
+      zona: zonaList || [],
+      tanggal_tutup: tanggalTutupList || [],
+    },
+  });
+}
 
 export async function POST(request) {
   const { profil, diizinkan } = await cekRole(["admin"]);
@@ -20,17 +68,42 @@ export async function POST(request) {
     const alamat = formData.get("alamat") || "";
     const no_wa = formData.get("no_wa") || "";
     const jam_operasional = formData.get("jam_operasional") || "";
-    const jam_buka = formData.get("jam_buka") || "08:00";
-    const jam_tutup = formData.get("jam_tutup") || "20:00";
+
+    let jam_buka_senin_jumat = formData.get("jam_buka_senin_jumat") || formData.get("jam_buka") || "08:00";
+    let jam_tutup_senin_jumat = formData.get("jam_tutup_senin_jumat") || formData.get("jam_tutup") || "20:00";
+    let jam_buka_sabtu_minggu = formData.get("jam_buka_sabtu_minggu") || formData.get("jam_buka") || "08:00";
+    let jam_tutup_sabtu_minggu = formData.get("jam_tutup_sabtu_minggu") || formData.get("jam_tutup") || "20:00";
+
+    jam_buka_senin_jumat = jam_buka_senin_jumat.slice(0, 5);
+    jam_tutup_senin_jumat = jam_tutup_senin_jumat.slice(0, 5);
+    jam_buka_sabtu_minggu = jam_buka_sabtu_minggu.slice(0, 5);
+    jam_tutup_sabtu_minggu = jam_tutup_sabtu_minggu.slice(0, 5);
+
+    const email = (formData.get("email") || "").trim();
+    const instagram = (formData.get("instagram") || "").trim();
+    const tautan_peta = (formData.get("tautan_peta") || "").trim();
+    const deskripsi_footer = (formData.get("deskripsi_footer") || "").trim();
+
     const kuota_harian = Number(formData.get("kuota_harian"));
     const minimal_hari_pesan = Number(formData.get("minimal_hari_pesan"));
-    const minimal_hari_siap = Number(formData.get("minimal_hari_siap") || 1);
+    const minimal_hari_katalog = Number(
+      formData.get("minimal_hari_katalog") || formData.get("minimal_hari_siap") || 1
+    );
     const mode_pembayaran = formData.get("mode_pembayaran") || "DP";
     const persen_dp = Number(formData.get("persen_dp"));
     const batas_bayar_jam = Number(formData.get("batas_bayar_jam"));
     const nama_bank = formData.get("nama_bank") || "";
     const no_rekening = formData.get("no_rekening") || "";
     const atas_nama = formData.get("atas_nama") || "";
+
+    const latRaw = formData.get("lat_toko");
+    const lngRaw = formData.get("lng_toko");
+    const lat_toko = latRaw !== null && latRaw !== "" && !isNaN(Number(latRaw)) ? Number(latRaw) : null;
+    const lng_toko = lngRaw !== null && lngRaw !== "" && !isNaN(Number(lngRaw)) ? Number(lngRaw) : null;
+
+    const faktor_jalan = Number(formData.get("faktor_jalan") || 1.3);
+    const maks_jarak_kirim_km = Number(formData.get("maks_jarak_kirim_km") || 20);
+
     const hapus_qris = formData.get("hapus_qris") === "true";
     const file_qris = formData.get("file_qris");
     const lat_toko_raw = formData.get("lat_toko");
@@ -68,6 +141,34 @@ export async function POST(request) {
       );
     }
 
+    if (!formatJamValid(jam_buka_senin_jumat) || !formatJamValid(jam_tutup_senin_jumat)) {
+      return NextResponse.json(
+        { pesan: "Format jam Senin-Jumat harus berupa HH:MM." },
+        { status: 400 }
+      );
+    }
+
+    if (!jamLebihBesar(jam_buka_senin_jumat, jam_tutup_senin_jumat)) {
+      return NextResponse.json(
+        { pesan: "Jam tutup Senin-Jumat harus lebih besar dari jam buka." },
+        { status: 400 }
+      );
+    }
+
+    if (!formatJamValid(jam_buka_sabtu_minggu) || !formatJamValid(jam_tutup_sabtu_minggu)) {
+      return NextResponse.json(
+        { pesan: "Format jam Sabtu-Minggu harus berupa HH:MM." },
+        { status: 400 }
+      );
+    }
+
+    if (!jamLebihBesar(jam_buka_sabtu_minggu, jam_tutup_sabtu_minggu)) {
+      return NextResponse.json(
+        { pesan: "Jam tutup Sabtu-Minggu harus lebih besar dari jam buka." },
+        { status: 400 }
+      );
+    }
+
     if (isNaN(kuota_harian) || kuota_harian < 1) {
       return NextResponse.json(
         { pesan: "Kuota harian minimal 1 pesanan." },
@@ -77,7 +178,14 @@ export async function POST(request) {
 
     if (isNaN(minimal_hari_pesan) || minimal_hari_pesan < 0) {
       return NextResponse.json(
-        { pesan: "Minimal hari pesan tidak boleh negatif." },
+        { pesan: "Minimal hari pesan custom tidak boleh negatif." },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(minimal_hari_katalog) || minimal_hari_katalog < 0) {
+      return NextResponse.json(
+        { pesan: "Minimal hari pesan katalog tidak boleh negatif." },
         { status: 400 }
       );
     }
@@ -101,6 +209,29 @@ export async function POST(request) {
         { pesan: "Batas waktu pembayaran minimal 1 jam." },
         { status: 400 }
       );
+    }
+
+    if (isNaN(faktor_jalan) || faktor_jalan < 1) {
+      return NextResponse.json(
+        { pesan: "Faktor jalan minimal 1.0." },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(maks_jarak_kirim_km) || maks_jarak_kirim_km <= 0) {
+      return NextResponse.json(
+        { pesan: "Maksimal jarak kirim harus berupa angka lebih dari 0." },
+        { status: 400 }
+      );
+    }
+
+    if (lat_toko !== null || lng_toko !== null) {
+      if (lat_toko === null || lng_toko === null || !validasiKoordinat(lat_toko, lng_toko)) {
+        return NextResponse.json(
+          { pesan: "Koordinat pin toko tidak valid untuk wilayah Indonesia." },
+          { status: 400 }
+        );
+      }
     }
 
     const { data: pengaturanLama } = await supabase
@@ -173,31 +304,48 @@ export async function POST(request) {
       gambar_qris_path = publicUrlData.publicUrl;
     }
 
-    const { error: errUpdate } = await supabase
+    const payloadSimpan = {
+      id: 1,
+      nama_toko: nama_toko.trim(),
+      alamat: alamat.trim(),
+      no_wa: no_wa.trim(),
+      jam_operasional: jam_operasional.trim(),
+      jam_buka: jam_buka_senin_jumat,
+      jam_tutup: jam_tutup_senin_jumat,
+      jam_buka_senin_jumat,
+      jam_tutup_senin_jumat,
+      jam_buka_sabtu_minggu,
+      jam_tutup_sabtu_minggu,
+      email,
+      instagram,
+      tautan_peta,
+      deskripsi_footer,
+      kuota_harian,
+      minimal_hari_pesan,
+      minimal_hari_katalog,
+      mode_pembayaran,
+      persen_dp,
+      batas_bayar_jam,
+      nama_bank: nama_bank.trim(),
+      no_rekening: no_rekening.trim(),
+      atas_nama: atas_nama.trim(),
+      gambar_qris: gambar_qris_path,
+      lat_toko,
+      lng_toko,
+      faktor_jalan,
+      maks_jarak_kirim_km,
+    };
+
+    let { error: errUpdate } = await supabase
       .from("pengaturan_toko")
-      .upsert({
-        id: 1,
-        nama_toko: nama_toko.trim(),
-        alamat: alamat.trim(),
-        no_wa: no_wa.trim(),
-        jam_operasional: jam_operasional.trim(),
-        jam_buka,
-        jam_tutup,
-        kuota_harian,
-        minimal_hari_pesan,
-        minimal_hari_siap: isNaN(minimal_hari_siap) ? 1 : minimal_hari_siap,
-        mode_pembayaran,
-        persen_dp,
-        batas_bayar_jam,
-        nama_bank: nama_bank.trim(),
-        no_rekening: no_rekening.trim(),
-        atas_nama: atas_nama.trim(),
-        gambar_qris: gambar_qris_path,
-        lat_toko,
-        lng_toko,
-        faktor_jalan,
-        maks_jarak_kirim_km,
-      });
+      .upsert(payloadSimpan);
+
+    if (errUpdate && errUpdate.message && errUpdate.message.includes("minimal_hari_katalog")) {
+      delete payloadSimpan.minimal_hari_katalog;
+      payloadSimpan.minimal_hari_siap = minimal_hari_katalog;
+      const resFallback = await supabase.from("pengaturan_toko").upsert(payloadSimpan);
+      errUpdate = resFallback.error;
+    }
 
     if (errUpdate) {
       return NextResponse.json(

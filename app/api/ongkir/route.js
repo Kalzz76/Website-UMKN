@@ -25,17 +25,21 @@ export async function POST(request) {
     );
   }
 
-  const { lat, lng } = body;
+  const rawLat = body.lat !== undefined ? body.lat : body.lat_tujuan;
+  const rawLng = body.lng !== undefined ? body.lng : body.lng_tujuan;
 
-  if (!validasiKoordinat(lat, lng)) {
+  if (rawLat === undefined || rawLng === undefined || !validasiKoordinat(rawLat, rawLng)) {
     return NextResponse.json(
       { pesan: "Koordinat lokasi tidak valid atau di luar wilayah Indonesia." },
       { status: 400 }
     );
   }
 
+  const latTujuan = Number(rawLat);
+  const lngTujuan = Number(rawLng);
+
   const supabase = getSupabaseAdmin();
-  const { data: pengaturan } = await supabase
+  const { data: toko } = await supabase
     .from("pengaturan_toko")
     .select("lat_toko, lng_toko, faktor_jalan, maks_jarak_kirim_km")
     .eq("id", 1)
@@ -43,32 +47,49 @@ export async function POST(request) {
 
   const { data: daftarTarif } = await supabase
     .from("tarif_jarak")
-    .select("jarak_maks_km, tarif, aktif")
+    .select("id, jarak_maks_km, tarif, aktif")
     .eq("aktif", true)
     .order("jarak_maks_km", { ascending: true });
 
-  const latToko = pengaturan?.lat_toko !== null && pengaturan?.lat_toko !== undefined ? Number(pengaturan.lat_toko) : null;
-  const lngToko = pengaturan?.lng_toko !== null && pengaturan?.lng_toko !== undefined ? Number(pengaturan.lng_toko) : null;
+  const latToko = toko?.lat_toko !== null && toko?.lat_toko !== undefined ? Number(toko.lat_toko) : null;
+  const lngToko = toko?.lng_toko !== null && toko?.lng_toko !== undefined ? Number(toko.lng_toko) : null;
   const tarifAktif = daftarTarif || [];
-  const maksKm = pengaturan?.maks_jarak_kirim_km !== null && pengaturan?.maks_jarak_kirim_km !== undefined ? Number(pengaturan.maks_jarak_kirim_km) : null;
+  const maksKm = toko?.maks_jarak_kirim_km !== null && toko?.maks_jarak_kirim_km !== undefined ? Number(toko.maks_jarak_kirim_km) : null;
 
   if (latToko === null || lngToko === null || !validasiKoordinat(latToko, lngToko) || tarifAktif.length === 0) {
     return NextResponse.json({
+      status: "tokoBelumDiatur",
+      pesan: "Lokasi pengiriman toko belum dikonfigurasi oleh admin.",
       jarak_km: 0,
       ongkir: 0,
-      status: "tokoBelumDiatur",
       maks_km: maksKm,
+      maks_jarak_km: maksKm,
+      estimasi: true,
     });
   }
 
-  const faktor = pengaturan?.faktor_jalan ? Number(pengaturan.faktor_jalan) : 1.3;
-  const jarak_km = hitungJarakJalanKm(latToko, lngToko, Number(lat), Number(lng), faktor);
+  const faktor = toko?.faktor_jalan ? Number(toko.faktor_jalan) : 1.3;
+  const jarak_km = hitungJarakJalanKm(latToko, lngToko, latTujuan, lngTujuan, faktor);
   const hasil = cariTarif(jarak_km, tarifAktif, maksKm);
 
+  if (hasil.status === "diluarJangkauan") {
+    return NextResponse.json({
+      status: "diluarJangkauan",
+      jarak_km,
+      ongkir: 0,
+      maks_km: maksKm,
+      maks_jarak_km: maksKm,
+      estimasi: true,
+      pesan: `Alamat tujuan berada sejauh ${jarak_km} km, di luar jangkauan pengiriman maksimal.`,
+    });
+  }
+
   return NextResponse.json({
+    status: hasil.status,
     jarak_km,
     ongkir: hasil.tarif,
-    status: hasil.status,
     maks_km: maksKm,
+    maks_jarak_km: maksKm,
+    estimasi: true,
   });
 }

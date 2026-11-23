@@ -6,7 +6,7 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("tarif_jarak")
-    .select("*")
+    .select("id, jarak_maks_km, tarif, aktif")
     .order("jarak_maks_km", { ascending: true });
 
   if (error) {
@@ -20,10 +20,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const { profil, diizinkan } = await cekRole(["admin"]);
-  if (!diizinkan || !profil) {
+  const { diizinkan } = await cekRole(["admin"]);
+  if (!diizinkan) {
     return NextResponse.json(
-      { pesan: "Akses ditolak. Hanya admin yang boleh mengelola tarif jarak." },
+      { pesan: "Akses ditolak. Hanya admin." },
       { status: 403 }
     );
   }
@@ -38,6 +38,66 @@ export async function POST(request) {
     );
   }
 
+  const supabase = getSupabaseAdmin();
+  const aksi = body.aksi || "tambah";
+
+  if (aksi === "ubah") {
+    return laksanakanUbah(supabase, body);
+  }
+
+  if (aksi === "hapus") {
+    return laksanakanHapus(supabase, body);
+  }
+
+  return laksanakanTambah(supabase, body);
+}
+
+export async function PUT(request) {
+  const { diizinkan } = await cekRole(["admin"]);
+  if (!diizinkan) {
+    return NextResponse.json(
+      { pesan: "Akses ditolak. Hanya admin." },
+      { status: 403 }
+    );
+  }
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { pesan: "Data request tidak valid." },
+      { status: 400 }
+    );
+  }
+
+  const supabase = getSupabaseAdmin();
+  return laksanakanUbah(supabase, body);
+}
+
+export async function DELETE(request) {
+  const { diizinkan } = await cekRole(["admin"]);
+  if (!diizinkan) {
+    return NextResponse.json(
+      { pesan: "Akses ditolak. Hanya admin." },
+      { status: 403 }
+    );
+  }
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    const url = new URL(request.url);
+    const qId = url.searchParams.get("id");
+    if (qId) body = { id: Number(qId) };
+  }
+
+  const supabase = getSupabaseAdmin();
+  return laksanakanHapus(supabase, body);
+}
+
+async function laksanakanTambah(supabase, body) {
   const jarak_maks_km = Number(body.jarak_maks_km);
   const tarif = Number(body.tarif);
   const aktif = body.aktif === undefined ? true : Boolean(body.aktif);
@@ -56,7 +116,6 @@ export async function POST(request) {
     );
   }
 
-  const supabase = getSupabaseAdmin();
   const { data: ada } = await supabase
     .from("tarif_jarak")
     .select("id")
@@ -88,30 +147,13 @@ export async function POST(request) {
   }
 
   return NextResponse.json({
+    sukses: true,
     pesan: "Tarif jarak berhasil ditambahkan.",
     data: baru,
   });
 }
 
-export async function PUT(request) {
-  const { profil, diizinkan } = await cekRole(["admin"]);
-  if (!diizinkan || !profil) {
-    return NextResponse.json(
-      { pesan: "Akses ditolak. Hanya admin yang boleh mengelola tarif jarak." },
-      { status: 403 }
-    );
-  }
-
-  let body = {};
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { pesan: "Data request tidak valid." },
-      { status: 400 }
-    );
-  }
-
+async function laksanakanUbah(supabase, body) {
   const id = Number(body.id);
   const jarak_maks_km = Number(body.jarak_maks_km);
   const tarif = Number(body.tarif);
@@ -138,7 +180,6 @@ export async function PUT(request) {
     );
   }
 
-  const supabase = getSupabaseAdmin();
   const { data: ada } = await supabase
     .from("tarif_jarak")
     .select("id")
@@ -172,29 +213,13 @@ export async function PUT(request) {
   }
 
   return NextResponse.json({
+    sukses: true,
     pesan: "Tarif jarak berhasil diperbarui.",
     data: updated,
   });
 }
 
-export async function DELETE(request) {
-  const { profil, diizinkan } = await cekRole(["admin"]);
-  if (!diizinkan || !profil) {
-    return NextResponse.json(
-      { pesan: "Akses ditolak. Hanya admin yang boleh mengelola tarif jarak." },
-      { status: 403 }
-    );
-  }
-
-  let body = {};
-  try {
-    body = await request.json();
-  } catch {
-    const url = new URL(request.url);
-    const qId = url.searchParams.get("id");
-    if (qId) body = { id: Number(qId) };
-  }
-
+async function laksanakanHapus(supabase, body) {
   const id = Number(body.id);
   if (!id) {
     return NextResponse.json(
@@ -203,7 +228,6 @@ export async function DELETE(request) {
     );
   }
 
-  const supabase = getSupabaseAdmin();
   const { error } = await supabase.from("tarif_jarak").delete().eq("id", id);
 
   if (error) {
@@ -213,5 +237,8 @@ export async function DELETE(request) {
     );
   }
 
-  return NextResponse.json({ pesan: "Tarif jarak berhasil dihapus." });
+  return NextResponse.json({
+    sukses: true,
+    pesan: "Tarif jarak berhasil dihapus.",
+  });
 }

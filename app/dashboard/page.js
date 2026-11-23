@@ -406,7 +406,7 @@ export default async function DashboardPage() {
     for (let m = 0; m < semuaItems.length; m++) {
       const it = semuaItems[m];
       const wt = orderTimeMap[it.id_pesanan];
-      if (wt && wt >= startTs && it.jenis === "Siap") {
+      if (wt && wt >= startTs && (it.jenis === "Katalog" || it.jenis === "Siap")) {
         totalKatalog += Number(it.jumlah) || 1;
       }
     }
@@ -606,7 +606,7 @@ export default async function DashboardPage() {
             .from("referensi-kue")
             .createSignedUrl(first.foto_preview, 3600);
           if (signed) fotoPreviewMap[p.id] = signed.signedUrl;
-        } else if (first.jenis === "Siap" && first.produk?.foto) {
+        } else if ((first.jenis === "Katalog" || first.jenis === "Siap") && first.produk?.foto) {
           const f = first.produk.foto;
           fotoPreviewMap[p.id] = f.startsWith("http") ? f : `${basePublikUrl}/${f.replace(/^\/+/, "")}`;
         } else if (p.foto_preview) {
