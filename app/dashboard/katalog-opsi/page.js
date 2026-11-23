@@ -817,25 +817,34 @@ export default function KatalogOpsiPage() {
       )}
 
       {modalProdukBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="bg-[#fbf8f1] rounded-3xl max-w-lg w-full p-6 border border-[#dfd4bd] shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#dfd4bd]">
-              <h3 className="text-base font-bold text-[#1d3b2e]">
-                {editProdukId ? "Ubah Kue Katalog" : "Tambah Kue Katalog"}
-              </h3>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+            onClick={() => setModalProdukBuka(false)}
+          />
+          <div className="relative bg-[#FFFDF9] rounded-3xl max-w-lg w-full p-6 sm:p-7 border border-[#dfd4bd] shadow-2xl space-y-4 my-auto z-10">
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#dfd4bd]">
+              <div>
+                <h3 className="text-base font-bold text-[#1d3b2e]">
+                  {editProdukId ? "Ubah Kue Katalog" : "Tambah Kue Katalog"}
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Lengkapi informasi kue katalog untuk etalase dan menu toko.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setModalProdukBuka(false)}
-                className="w-8 h-8 rounded-full hover:bg-[#ede2cd] text-stone-500 flex items-center justify-center transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-[#ede2cd] text-stone-500 hover:text-stone-800 flex items-center justify-center transition cursor-pointer"
               >
-                <i className="fa-solid fa-xmark" />
+                <i className="fa-solid fa-xmark text-sm" />
               </button>
             </div>
 
             <form onSubmit={handleSimpanProduk} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Nama Produk *
+                <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                  Nama Produk <span className="text-rose-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -843,27 +852,27 @@ export default function KatalogOpsiPage() {
                   value={formProduk.nama}
                   onChange={(e) => setFormProduk({ ...formProduk, nama: e.target.value })}
                   placeholder="Contoh: Strawberry Shortcake"
-                  className="w-full h-9 px-3 rounded-xl border border-stone-300 bg-white text-xs text-stone-800 outline-none focus:border-[#ba2b2b]"
+                  className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Deskripsi
+                <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                  Deskripsi Kue
                 </label>
                 <textarea
                   rows={2}
                   value={formProduk.deskripsi}
                   onChange={(e) => setFormProduk({ ...formProduk, deskripsi: e.target.value })}
-                  placeholder="Deskripsi singkat kue..."
-                  className="w-full p-2.5 rounded-xl border border-stone-300 bg-white text-xs text-stone-800 outline-none focus:border-[#ba2b2b]"
+                  placeholder="Deskripsi singkat kue, rasa, dan keunggulan..."
+                  className="w-full p-3 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Harga (Rp) *
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                    Harga (Rp) <span className="text-rose-600">*</span>
                   </label>
                   <input
                     type="number"
@@ -871,71 +880,92 @@ export default function KatalogOpsiPage() {
                     required
                     value={formProduk.harga}
                     onChange={(e) => setFormProduk({ ...formProduk, harga: Number(e.target.value) })}
-                    className="w-full h-9 px-3 rounded-xl border border-stone-300 bg-white text-xs text-stone-800 outline-none focus:border-[#ba2b2b] lining-nums"
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition lining-nums"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Urutan
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                    Urutan Tampil
                   </label>
                   <input
                     type="number"
                     value={formProduk.urutan}
                     onChange={(e) => setFormProduk({ ...formProduk, urutan: Number(e.target.value) })}
-                    className="w-full h-9 px-3 rounded-xl border border-stone-300 bg-white text-xs text-stone-800 outline-none focus:border-[#ba2b2b]"
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Foto Produk (Maks 2 MB, JPG/PNG)
+                <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                  Foto Produk <span className="text-stone-400 font-normal">(Maks 2 MB, format JPG/PNG/WebP)</span>
                 </label>
                 <div className="flex items-center gap-3">
-                  {previewFotoProduk && (
-                    <div className="w-14 h-14 rounded-xl border border-[#dfd4bd] bg-white overflow-hidden flex-shrink-0">
+                  {previewFotoProduk ? (
+                    <div className="relative w-16 h-16 rounded-2xl border-2 border-[#17382d]/25 bg-white overflow-hidden flex-shrink-0 shadow-sm group">
                       <img
                         src={previewFotoProduk}
                         alt="Preview"
                         className="w-full h-full object-cover"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFileFotoProduk(null);
+                          setPreviewFotoProduk(null);
+                        }}
+                        className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-[11px] font-bold cursor-pointer"
+                        title="Hapus foto"
+                      >
+                        <i className="fa-solid fa-trash-can mr-1 text-[10px]" />
+                        Hapus
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-[#dfd4bd] bg-[#fbf8f1] flex flex-col items-center justify-center text-stone-400 flex-shrink-0">
+                      <i className="fa-solid fa-image text-lg mb-0.5 text-stone-400" />
+                      <span className="text-[9px] font-semibold text-stone-400">Kosong</span>
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    onChange={handlePilihFotoProduk}
-                    className="text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#17382d] file:text-white hover:file:bg-[#122e25] cursor-pointer"
-                  />
+                  <label className="flex-1 px-4 py-3 rounded-2xl border border-dashed border-[#c5b497] hover:border-[#17382d] bg-white hover:bg-[#fbf8f1] cursor-pointer transition flex items-center justify-center gap-2 text-xs font-semibold text-[#17382d] shadow-2xs">
+                    <i className="fa-solid fa-cloud-arrow-up text-sm" />
+                    <span className="truncate">{fileFotoProduk ? fileFotoProduk.name : "Pilih File Foto..."}</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={handlePilihFotoProduk}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 pt-1">
+              <label htmlFor="produk-aktif" className="flex items-center gap-2.5 pt-1 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   id="produk-aktif"
                   checked={formProduk.aktif}
                   onChange={(e) => setFormProduk({ ...formProduk, aktif: e.target.checked })}
-                  className="w-4 h-4 rounded text-rose-600 focus:ring-0 cursor-pointer"
+                  className="w-4 h-4 rounded text-[#17382d] accent-[#17382d] cursor-pointer"
                 />
-                <label htmlFor="produk-aktif" className="text-xs font-bold text-stone-700 select-none cursor-pointer">
-                  Produk Aktif (Tampil di menu/katalog publik)
-                </label>
-              </div>
+                <span className="text-xs font-medium text-stone-700">
+                  Produk Aktif <span className="text-stone-400 font-normal">(Tampil di menu dan katalog toko)</span>
+                </span>
+              </label>
 
-              <div className="pt-3 border-t border-[#dfd4bd] flex justify-end space-x-2">
+              <div className="pt-3.5 border-t border-[#dfd4bd] flex justify-end items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setModalProdukBuka(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-100 text-stone-600 text-xs font-semibold transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={sedangSimpanProduk}
-                  className="px-5 py-2 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 inline-flex items-center space-x-1"
+                  className="px-5 py-2.5 rounded-xl bg-[#ba2b2b] hover:bg-[#9f2323] text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-2 shadow-md hover:shadow-lg"
                 >
                   {sedangSimpanProduk ? (
                     <>
@@ -943,7 +973,10 @@ export default function KatalogOpsiPage() {
                       <span>Menyimpan...</span>
                     </>
                   ) : (
-                    <span>Simpan Produk</span>
+                    <>
+                      <i className="fa-solid fa-check text-xs" />
+                      <span>Simpan Produk</span>
+                    </>
                   )}
                 </button>
               </div>
@@ -953,8 +986,12 @@ export default function KatalogOpsiPage() {
       )}
 
       {modalHapusBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="bg-[#fbf8f1] rounded-3xl max-w-sm w-full p-6 border border-[#dfd4bd] shadow-xl space-y-4">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+            onClick={() => setModalHapusBuka(false)}
+          />
+          <div className="relative bg-[#FFFDF9] rounded-3xl max-w-sm w-full p-6 border border-[#dfd4bd] shadow-2xl space-y-4 my-auto z-10">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl">
               <i className="fa-solid fa-triangle-exclamation" />
             </div>
@@ -968,7 +1005,7 @@ export default function KatalogOpsiPage() {
               <button
                 type="button"
                 onClick={() => setModalHapusBuka(false)}
-                className="flex-1 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 text-xs font-semibold cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-100 text-stone-600 text-xs font-semibold cursor-pointer transition"
               >
                 Batal
               </button>
@@ -976,7 +1013,7 @@ export default function KatalogOpsiPage() {
                 type="button"
                 disabled={sedangHapusProduk}
                 onClick={eksekusiHapusProduk}
-                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 {sedangHapusProduk ? "Menghapus..." : "Ya, Hapus"}
               </button>
@@ -986,9 +1023,16 @@ export default function KatalogOpsiPage() {
       )}
 
       {modalResepBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="bg-[#fbf8f1] rounded-3xl max-w-lg w-full p-6 border border-[#dfd4bd] shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#dfd4bd]">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+            onClick={() => {
+              setModalResepBuka(false);
+              setItemResepAktif(null);
+            }}
+          />
+          <div className="relative bg-[#FFFDF9] rounded-3xl max-w-lg w-full p-6 sm:p-7 border border-[#dfd4bd] shadow-2xl space-y-4 my-auto z-10">
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#dfd4bd]">
               <div>
                 <h3 className="text-base font-bold text-[#1d3b2e]">
                   Resep Bahan: {itemResepAktif?.nama}
@@ -1003,7 +1047,7 @@ export default function KatalogOpsiPage() {
                   setModalResepBuka(false);
                   setItemResepAktif(null);
                 }}
-                className="w-8 h-8 rounded-full hover:bg-[#ede2cd] text-stone-500 flex items-center justify-center transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-[#ede2cd] text-stone-500 hover:text-stone-800 flex items-center justify-center transition cursor-pointer"
               >
                 <i className="fa-solid fa-xmark" />
               </button>
