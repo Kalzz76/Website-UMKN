@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ChefHat,
@@ -15,12 +15,17 @@ import { usePatisserieCart } from "@/lib/patisserieCart";
 
 export function DynamicIslandNavbar({ showEntered = true }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { totalQty } = usePatisserieCart();
   const [userSession, setUserSession] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [userName, setUserName] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const leaveTimeoutRef = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function checkAuth() {
       try {
         const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
@@ -28,20 +33,66 @@ export function DynamicIslandNavbar({ showEntered = true }) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
         setUserSession(session);
-      } catch (err) {
-        // Fallback gracefully
-      }
+
+        if (session?.user?.id) {
+          const { data: profil } = await supabase
+            .from("profil")
+            .select("nama, role")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (isMounted) {
+            if (profil?.role) setUserRole(profil.role);
+            if (profil?.nama) setUserName(profil.nama);
+          }
+        } else {
+          setUserRole(null);
+          setUserName("");
+        }
+      } catch {}
     }
+
     checkAuth();
+
+    let authSubscription = null;
+    import("@/lib/supabaseBrowser").then(({ getSupabaseBrowser }) => {
+      const supabase = getSupabaseBrowser();
+      const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (!isMounted) return;
+        setUserSession(session);
+        if (session?.user?.id) {
+          const { data: profil } = await supabase
+            .from("profil")
+            .select("nama, role")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          if (isMounted) {
+            if (profil?.role) setUserRole(profil.role);
+            if (profil?.nama) setUserName(profil.nama);
+          }
+        } else {
+          setUserRole(null);
+          setUserName("");
+        }
+      });
+      authSubscription = data?.subscription;
+    });
+
+    return () => {
+      isMounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
   }, []);
 
-  // Tutup navbar otomatis setiap berpindah halaman (URL berubah)
   useEffect(() => {
     setIsExpanded(false);
   }, [pathname]);
 
-  // Bersihkan timeout saat unmount
   useEffect(() => {
     return () => {
       if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
@@ -59,7 +110,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     }, 380);
   };
 
-  // Deteksi judul halaman aktif untuk status KETUTUP (Tanpa icon sparkle)
   const getPageTitle = () => {
     if (pathname.startsWith("/toko")) return "Toko";
     if (pathname.startsWith("/menu")) return "Menu";
@@ -67,6 +117,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     if (pathname.startsWith("/kasir")) return "Kasir";
     if (
       pathname.startsWith("/profil") ||
+      pathname.startsWith("/dashboard/profil") ||
       pathname.startsWith("/masuk") ||
       pathname.startsWith("/daftar")
     ) {
@@ -82,6 +133,43 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     { label: "Toko", href: "/toko", active: pathname.startsWith("/toko") },
     { label: "Menu", href: "/menu", active: pathname.startsWith("/menu") },
   ];
+
+  const profileHref = !userSession
+    ? "/masuk"
+    : userRole === "admin" || userRole === "staf"
+    ? "/dashboard/profil"
+    : "/profil";
+
+  const handleProfileClick = async (e) => {
+    setIsExpanded(false);
+    if (!userSession) return;
+    if (userRole === "admin" || userRole === "staf") {
+      return;
+    }
+    if (userRole === "pelanggan") {
+      return;
+    }
+    e.preventDefault();
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
+      const supabase = getSupabaseBrowser();
+      const { data: profil } = await supabase
+        .from("profil")
+        .select("nama, role")
+        .eq("id", userSession.user.id)
+        .maybeSingle();
+      const role = profil?.role || "pelanggan";
+      setUserRole(role);
+      if (profil?.nama) setUserName(profil.nama);
+      if (role === "admin" || role === "staf") {
+        router.push("/dashboard/profil");
+      } else {
+        router.push("/profil");
+      }
+    } catch {
+      router.push("/profil");
+    }
+  };
 
   return (
     <nav
@@ -108,7 +196,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
       >
         <AnimatePresence mode="popLayout" initial={false}>
           {!isExpanded ? (
-            /* ==================== 1. STATUS KETUTUP (COMPACT DYNAMIC ISLAND) ==================== */
             <motion.button
               key="collapsed-island"
               type="button"
@@ -118,24 +205,20 @@ export function DynamicIslandNavbar({ showEntered = true }) {
               exit={{ opacity: 0, scale: 0.94 }}
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 hover:bg-[#F8EFE4]/80 transition cursor-pointer select-none whitespace-nowrap"
-              title="Klik atau arahkan kursor untuk membuka menu"
+              title="Buka menu navigasi"
             >
-              {/* Amber Indicator Dot */}
               <span className="w-2.5 h-2.5 rounded-full bg-[#B8925A] shadow-[0_0_8px_#C59B62] animate-pulse shrink-0" />
 
-              {/* Brand Name "Cravely" Saja */}
               <span className="font-coquette font-bold text-xs sm:text-sm tracking-wider text-[#3D2B28]">
                 Cravely
               </span>
 
               <span className="text-[#C59B62] font-bold text-xs">·</span>
 
-              {/* Active Page Name (Tanpa logo sparkle) */}
               <span className="font-serif font-extrabold text-xs sm:text-sm text-[#9E3B42]">
                 {activeTitle}
               </span>
 
-              {/* Cart Badge jika ada item */}
               {totalQty > 0 && (
                 <span className="ml-0.5 px-2 py-0.5 rounded-full bg-[#9E3B42] text-white text-[10px] font-extrabold tabular-nums shadow-xs flex items-center gap-1">
                   <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
@@ -143,11 +226,9 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 </span>
               )}
 
-              {/* Chevron Down Indicator */}
               <ChevronDown className="w-3.5 h-3.5 text-[#8C6D62] shrink-0 ml-0.5" />
             </motion.button>
           ) : (
-            /* ==================== 2. STATUS TERBUKA (EXPANDED NAVIGATION ROW) ==================== */
             <motion.div
               key="expanded-island"
               initial={{ opacity: 0, scale: 0.97 }}
@@ -156,7 +237,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-2 sm:gap-3 px-3.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap select-none"
             >
-              {/* Brand Logo Pill */}
               <Link
                 href="/"
                 onClick={() => setIsExpanded(false)}
@@ -166,10 +246,8 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 <span>Cravely</span>
               </Link>
 
-              {/* Vertical Divider */}
               <div className="h-4 w-px bg-[#D9B37C]/60 shrink-0" />
 
-              {/* Navigation Links: Home, Toko, Menu */}
               <div className="flex items-center gap-1 text-xs font-semibold whitespace-nowrap shrink-0">
                 {navLinks.map((link) => (
                   <Link
@@ -187,10 +265,8 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 ))}
               </div>
 
-              {/* Vertical Divider */}
               <div className="h-4 w-px bg-[#D9B37C]/60 shrink-0" />
 
-              {/* Cake Studio (CTA ke /pesan) */}
               <Link
                 href="/pesan"
                 onClick={() => setIsExpanded(false)}
@@ -204,9 +280,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 <span>Cake Studio</span>
               </Link>
 
-              {/* Right Controls: Kasir & Akun */}
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {/* Kasir Pill */}
                 <Link
                   href="/kasir"
                   onClick={() => setIsExpanded(false)}
@@ -233,15 +307,69 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                   </span>
                 </Link>
 
-                {/* Akun */}
                 {userSession ? (
                   <Link
-                    href="/profil"
-                    onClick={() => setIsExpanded(false)}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5ECE2] hover:bg-[#EBDDD0] border border-[#D9B37C]/60 text-[#3D2B28] flex items-center justify-center transition shrink-0"
+                    href={profileHref}
+                    onClick={handleProfileClick}
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border border-[#D9B37C]/80 shadow-xs flex items-center justify-center transition shrink-0 hover:scale-105 bg-[#f8e4d9]"
                     title="Profil Saya"
                   >
-                    <User className="w-3.5 h-3.5 text-[#B8925A]" />
+                    <svg
+                      viewBox="0 0 100 100"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-full h-full object-cover shrink-0 select-none pointer-events-none"
+                    >
+                      <rect width="100" height="100" fill="#f8e4d9" />
+                      <path
+                        d="M20 50 C15 30 30 10 50 10 C70 10 85 30 80 50 C85 65 75 75 75 75 C75 75 65 60 65 55 C35 55 25 75 25 75 C25 75 15 65 20 50 Z"
+                        fill="#2d2226"
+                      />
+                      <path
+                        d="M28 42 C28 65 38 78 50 78 C62 78 72 65 72 42 C72 25 28 25 28 42 Z"
+                        fill="#ffdfd2"
+                      />
+                      <ellipse
+                        cx="36"
+                        cy="56"
+                        rx="5"
+                        ry="3"
+                        fill="#ffb4a2"
+                        opacity="0.8"
+                      />
+                      <ellipse
+                        cx="64"
+                        cy="56"
+                        rx="5"
+                        ry="3"
+                        fill="#ffb4a2"
+                        opacity="0.8"
+                      />
+                      <ellipse cx="40" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
+                      <circle cx="41" cy="46" r="1.5" fill="#ffffff" />
+                      <ellipse cx="60" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
+                      <circle cx="61" cy="46" r="1.5" fill="#ffffff" />
+                      <path
+                        d="M47 62 Q50 65 53 62"
+                        stroke="#b25d5d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                      <path
+                        d="M25 35 C32 20 45 15 50 15 C55 15 68 20 75 35 C70 30 65 30 60 38 C55 28 48 26 42 36 C38 28 32 30 25 35 Z"
+                        fill="#3a2e33"
+                      />
+                      <path
+                        d="M38 25 L43 42 L47 28 L53 40 L56 26"
+                        fill="#3a2e33"
+                      />
+                      <path
+                        d="M25 88 C30 76 42 76 50 76 C58 76 70 76 75 88 L85 100 L15 100 Z"
+                        fill="#ffffff"
+                      />
+                      <path d="M46 76 L50 85 L54 76 Z" fill="#2d2226" />
+                    </svg>
                   </Link>
                 ) : (
                   <Link
@@ -254,7 +382,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                   </Link>
                 )}
 
-                {/* Tombol Tutup / Collapse */}
                 <button
                   type="button"
                   onClick={() => setIsExpanded(false)}

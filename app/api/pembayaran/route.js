@@ -17,7 +17,16 @@ export async function POST(request) {
   const supabase = getSupabaseAdmin();
   const formData = await request.formData();
 
-  const id_pesanan = Number(formData.get("id_pesanan"));
+  let id_pesanan = Number(formData.get("id_pesanan"));
+  const kode_pesanan = formData.get("kode_pesanan");
+  if (!id_pesanan && kode_pesanan) {
+    const { data: p } = await supabase
+      .from("pesanan")
+      .select("id")
+      .eq("kode_pesanan", kode_pesanan)
+      .single();
+    if (p) id_pesanan = p.id;
+  }
   const jenis = formData.get("jenis") || "DP";
   const jumlah = Number(formData.get("jumlah"));
   const metode = formData.get("metode") || "Transfer Bank";

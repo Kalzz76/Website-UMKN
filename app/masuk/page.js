@@ -42,7 +42,14 @@ function FormMasuk() {
 
     if (error) {
       setMemuat(false);
-      setDaftarError(["Email atau kata sandi salah. Silakan periksa kembali."]);
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("email not confirmed")) {
+        setDaftarError([
+          "Email akun Anda belum terverifikasi. Silakan cek kotak masuk email atau hubungi admin toko.",
+        ]);
+      } else {
+        setDaftarError(["Email atau kata sandi salah. Silakan periksa kembali."]);
+      }
       return;
     }
 
@@ -74,7 +81,7 @@ function FormMasuk() {
     if (tujuan && tujuan.startsWith("/")) {
       router.push(tujuan);
     } else {
-      router.push("/pesanan-saya");
+      router.push("/user");
     }
     router.refresh();
   }

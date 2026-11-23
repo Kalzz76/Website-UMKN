@@ -1,0 +1,137 @@
+import { NextResponse } from "next/server";
+import { cekRole } from "@/lib/cekRole";
+import { getSupabaseAdmin } from "@/lib/supabaseServer";
+
+export async function GET() {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("produk")
+    .select("*")
+    .order("dibuat_pada", { ascending: false })
+    .order("id", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ pesan: "Gagal memuat produk: " + error.message }, { status: 500 });
+  }
+
+  const { data: storageData } = supabase.storage.from("publik").getPublicUrl("");
+  const baseUrl = storageData?.publicUrl ? storageData.publicUrl.replace(/\/+$/, "") : "";
+
+  const daftar = (data || []).map((p) => {
+    let fotoUrl = null;
+    if (p.foto) {
+      if (p.foto.startsWith("http://") || p.foto.startsWith("https://")) {
+        fotoUrl = p.foto;
+      } else {
+        const cleanPath = p.foto.replace(/^\/+/, "");
+        fotoUrl = `${baseUrl}/${cleanPath}`;
+      }
+    }
+    return { ...p, fotoUrl };
+  });
+
+  return NextResponse.json({ sukses: true, data: daftar });
+}
+
+export async function POST(request) {
+  const { diizinkan } = await cekRole(["admin"]);
+  if (!diizinkan) {
+    return NextResponse.json({ pesan: "Akses ditolak. Hanya admin." }, { status: 403 });
+  }
+
+  const contentType = request.headers.get("content-type") || "";
+  const supabase = getSupabaseAdmin();
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await request.formData();
+    const id = formData.get("id");
+    const nama = formData.get("nama");
+    const deskripsi = formData.get("deskripsi") || "";
+    const harga = Number(formData.get("harga"));
+    const urutan = Number(formData.get("urutan") || 0);
+    const aktif = formData.get("aktif") !== "false";
+    const file = formData.get("foto");
+
+    if (!nama || !nama.trim()) {
+      return NextResponse.json({ pesan: "Nama produk wajib diisi." }, { status: 400 });
+    }
+    if (isNaN(harga) || harga < 0) {
+      return NextResponse.json({ pesan: "Harga harus berupa angka valid." }, { status: 400 });
+    }
+
+    let fotoPath = null;
+    if (file && typeof file === "object" && file.size > 0) {
+      const allowed = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+      if (!allowed.includes(file.type)) {
+        return NextResponse.json({ pesan: "Format foto harus JPG atau PNG." }, { status: 400 });
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        return NextResponse.json({ pesan: "Ukuran foto maksimal 2 MB." }, { status: 400 });
+      }
+
+      const ext = file.name ? file.name.split(".").pop().toLowerCase() : "jpg";
+      const fileName = `produk/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      const { error: upErr } = await supabase.storage
+        .from("publik")
+        .upload(fileName, buffer, { contentType: file.type, upsert: true });
+
+      if (upErr) {
+        return NextResponse.json({ pesan: "Gagal mengunggah foto: " + upErr.message }, { status: 500 });
+      }
+      fotoPath = fileName;
+    }
+
+    if (id) {
+      const updateData = {
+        nama: nama.trim(),
+        deskripsi: deskripsi.trim(),
+        harga: Math.round(harga),
+        urutan: Math.round(urutan),
+        aktif: Boolean(aktif),
+      };
+      if (fotoPath) {
+        updateData.foto = fotoPath;
+      }
+      const { error } = await supabase.from("produk").update(updateData).eq("id", id);
+      if (error) {
+        return NextResponse.json({ pesan: "Gagal memperbarui produk: " + error.message }, { status: 500 });
+      }
+      return NextResponse.json({ sukses: true, pesan: "Produk berhasil diperbarui." });
+    } else {
+      const { error } = await supabase.from("produk").insert({
+        nama: nama.trim(),
+        deskripsi: deskripsi.trim(),
+        harga: Math.round(harga),
+        urutan: Math.round(urutan),
+        aktif: Boolean(aktif),
+        foto: fotoPath,
+      });
+      if (error) {
+        return NextResponse.json({ pesan: "Gagal menambah produk: " + error.message }, { status: 500 });
+      }
+      return NextResponse.json({ sukses: true, pesan: "Produk berhasil ditambahkan." });
+    }
+  }
+
+  const body = await request.json();
+  const { aksi, id } = body;
+
+  if (aksi === "hapus" && id) {
+    const { data: p } = await supabase.from("produk").select("foto").eq("id", id).maybeSingle();
+    if (p?.foto) {
+      try {
+        await supabase.storage.from("publik").remove([p.foto]);
+      } catch {}
+    }
+    const { error } = await supabase.from("produk").delete().eq("id", id);
+    if (error) {
+      return NextResponse.json({ pesan: "Gagal menghapus produk: " + error.message }, { status: 500 });
+    }
+    return NextResponse.json({ sukses: true, pesan: "Produk berhasil dihapus." });
+  }
+
+  return NextResponse.json({ pesan: "Aksi tidak dikenali." }, { status: 400 });
+}

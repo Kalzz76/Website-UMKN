@@ -76,49 +76,87 @@ export default async function DetailTiketPage(props) {
 
   const sisaBayar = Math.max(0, pesanan.total_bayar - (pesanan.jumlah_terbayar || 0));
 
-  let fotoPreviewUrl = null;
-  let fotoBentukUrl = null;
-  let fotoGambarUrl = null;
-  let fotoRefUrl = null;
+  const { data: rawItems } = await supabaseAdmin
+    .from("pesanan_item")
+    .select("*, produk(*)")
+    .eq("id_pesanan", pesanan.id)
+    .order("urutan", { ascending: true })
+    .order("id", { ascending: true });
 
-  if (pesanan.foto_preview) {
-    const { data: signed } = await supabaseAdmin.storage
-      .from("referensi-kue")
-      .createSignedUrl(pesanan.foto_preview, 3600);
-    if (signed) fotoPreviewUrl = signed.signedUrl;
-  }
-  if (pesanan.foto_bentuk_kustom) {
-    const { data: signed } = await supabaseAdmin.storage
-      .from("referensi-kue")
-      .createSignedUrl(pesanan.foto_bentuk_kustom, 3600);
-    if (signed) fotoBentukUrl = signed.signedUrl;
-  }
-  if (pesanan.foto_gambar_kustom) {
-    const { data: signed } = await supabaseAdmin.storage
-      .from("referensi-kue")
-      .createSignedUrl(pesanan.foto_gambar_kustom, 3600);
-    if (signed) fotoGambarUrl = signed.signedUrl;
-  }
-  if (pesanan.foto_referensi) {
-    const { data: signed } = await supabaseAdmin.storage
-      .from("referensi-kue")
-      .createSignedUrl(pesanan.foto_referensi, 3600);
-    if (signed) fotoRefUrl = signed.signedUrl;
+  const { data: storagePublik } = supabaseAdmin.storage.from("publik").getPublicUrl("");
+  const basePublikUrl = storagePublik?.publicUrl ? storagePublik.publicUrl.replace(/\/+$/, "") : "";
+
+  let itemList = rawItems || [];
+  if (itemList.length === 0) {
+    itemList = [
+      {
+        id: 0,
+        jenis: "Custom",
+        nama_item: "Kue Custom",
+        harga_satuan: pesanan.total_kue,
+        jumlah: 1,
+        subtotal: pesanan.total_kue,
+        tulisan_kue: pesanan.tulisan_kue,
+        catatan: pesanan.catatan,
+        desain_json: pesanan.desain_json,
+        foto_preview: pesanan.foto_preview,
+        foto_bentuk_kustom: pesanan.foto_bentuk_kustom,
+        foto_gambar_kustom: pesanan.foto_gambar_kustom,
+      },
+    ];
   }
 
-  const previewUtama = fotoPreviewUrl || fotoRefUrl;
+  const itemsWithUrls = [];
+  for (let i = 0; i < itemList.length; i++) {
+    const it = itemList[i];
+    let prevUrl = null;
+    let bentukUrl = null;
+    let gambarUrl = null;
+    let prodUrl = null;
 
-  const teksList = (pesanan.desain_json?.items || []).filter((it) => it.type === "text");
-  const stikerList = (pesanan.desain_json?.items || []).filter((it) => it.type === "sticker");
-  const stikerGrup = {};
-  stikerList.forEach((st) => {
-    const kat = st.category || "stiker";
-    if (!stikerGrup[kat]) stikerGrup[kat] = [];
-    stikerGrup[kat].push(st.emoji || st.text || "★");
-  });
+    if (it.foto_preview) {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("referensi-kue")
+        .createSignedUrl(it.foto_preview, 3600);
+      if (signed) prevUrl = signed.signedUrl;
+    }
+    if (it.foto_bentuk_kustom) {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("referensi-kue")
+        .createSignedUrl(it.foto_bentuk_kustom, 3600);
+      if (signed) bentukUrl = signed.signedUrl;
+    }
+    if (it.foto_gambar_kustom) {
+      const { data: signed } = await supabaseAdmin.storage
+        .from("referensi-kue")
+        .createSignedUrl(it.foto_gambar_kustom, 3600);
+      if (signed) gambarUrl = signed.signedUrl;
+    }
+    if (it.produk?.foto) {
+      const f = it.produk.foto;
+      if (f.startsWith("http://") || f.startsWith("https://")) {
+        prodUrl = f;
+      } else {
+        prodUrl = `${basePublikUrl}/${f.replace(/^\/+/, "")}`;
+      }
+    }
+
+    const pilihanItem = (pesanan.pesanan_pilihan || []).filter(
+      (p) => !p.id_pesanan_item || Number(p.id_pesanan_item) === Number(it.id)
+    );
+
+    itemsWithUrls.push({
+      ...it,
+      prevUrl,
+      bentukUrl,
+      gambarUrl,
+      prodUrl,
+      pilihan: pilihanItem,
+    });
+  }
 
   return (
-    <div className="min-h-screen bg-amber-50 py-8 px-4">
+    <div className="min-h-screen bg-[#faf6ef] py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <Link
@@ -167,143 +205,153 @@ export default async function DetailTiketPage(props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6 border-b border-stone-100 items-start">
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
-                Preview Desain Kue
+                Isi Pesanan ({itemsWithUrls.length})
               </h3>
-              <div className="bg-amber-50/50 rounded-2xl p-4 flex flex-col items-center justify-center">
-                {previewUtama ? (
-                  <div className="flex flex-col items-center space-y-2 w-full">
-                    <img
-                      src={previewUtama}
-                      alt="Snapshot Kue Dipesan"
-                      className="w-full max-w-[260px] h-auto object-contain rounded-2xl border border-stone-200 bg-white p-2 drop-shadow-sm"
-                    />
-                    <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 px-2.5 py-0.5 rounded-full">
-                      Snapshot Desain 3D
-                    </span>
-                  </div>
-                ) : (
-                  <PreviewKue
-                    pilihan={pesanan.pesanan_pilihan || []}
-                    tulisan={pesanan.tulisan_kue || ""}
-                    className="w-full"
-                  />
-                )}
-              </div>
 
-              {(fotoBentukUrl || fotoGambarUrl) && (
-                <div className="flex gap-3">
-                  {fotoBentukUrl && (
-                    <div className="flex-1 bg-stone-50 border border-stone-200 rounded-xl p-2 text-center">
-                      <span className="text-[10px] font-bold text-stone-500 block mb-1">
-                        Bentuk Kustom
-                      </span>
-                      <img
-                        src={fotoBentukUrl}
-                        alt="Bentuk Kustom"
-                        className="w-full h-20 object-contain rounded bg-white border border-stone-100"
-                      />
-                    </div>
-                  )}
-                  {fotoGambarUrl && (
-                    <div className="flex-1 bg-stone-50 border border-stone-200 rounded-xl p-2 text-center">
-                      <span className="text-[10px] font-bold text-stone-500 block mb-1">
-                        Gambar Kustom
-                      </span>
-                      <img
-                        src={fotoGambarUrl}
-                        alt="Gambar Kustom"
-                        className="w-full h-20 object-contain rounded bg-white border border-stone-100"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="space-y-4">
+                {itemsWithUrls.map((it, idx) => {
+                  const isCustom = it.jenis === "Custom";
+                  const itTeks = (it.desain_json?.items || []).filter((x) => x.type === "text" || (x.t === "text" && x.text));
+                  const itStiker = (it.desain_json?.items || []).filter((x) => x.type === "sticker" || x.t === "emoji");
 
-              {pesanan.tulisan_kue && (
-                <div className="p-3 rounded-xl bg-stone-50 text-xs text-stone-700">
-                  <span className="font-semibold block text-stone-500">Tulisan di Kue:</span>
-                  <span className="font-bold text-rose-600 text-sm mt-0.5 block">
-                    &ldquo;{pesanan.tulisan_kue}&rdquo;
-                  </span>
-                </div>
-              )}
+                  return (
+                    <div
+                      key={it.id || idx}
+                      className="bg-amber-50/40 rounded-2xl p-4 border border-amber-100/80 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          isCustom ? "bg-amber-100 text-amber-900" : "bg-sky-100 text-sky-900"
+                        }`}>
+                          {isCustom ? "Kue Custom" : "Kue Katalog"}
+                        </span>
+                        <span className="text-xs font-bold text-stone-900 lining-nums tabular-nums">
+                          {formatRupiah(it.subtotal)}
+                        </span>
+                      </div>
 
-              {(teksList.length > 0 || Object.keys(stikerGrup).length > 0) && (
-                <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs space-y-2">
-                  <span className="font-bold text-amber-900 block text-[11px] uppercase tracking-wider">
-                    Elemen Desain di Kue:
-                  </span>
-                  {teksList.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-stone-500 font-semibold block text-[11px]">Teks:</span>
-                      {teksList.map((tx, idx) => (
-                        <div key={idx} className="bg-white/80 p-2 rounded border border-amber-100 flex justify-between items-center text-xs">
-                          <span className="font-bold text-stone-800">&ldquo;{tx.text}&rdquo;</span>
-                          <span className="text-[10px] text-stone-500">
-                            {tx.font || "Sans"}, {tx.size}px, {tx.effect || "polos"}
-                          </span>
+                      <div className="font-bold text-sm text-stone-900">
+                        {it.nama_item} {it.jumlah > 1 ? `(${it.jumlah}x)` : ""}
+                      </div>
+
+                      {isCustom ? (
+                        <div className="space-y-3">
+                          <div className="flex justify-center bg-white rounded-xl p-3 border border-stone-100">
+                            {it.prevUrl ? (
+                              <img
+                                src={it.prevUrl}
+                                alt="Snapshot Desain 3D"
+                                className="w-full max-w-[220px] h-auto object-contain rounded-lg drop-shadow-sm"
+                              />
+                            ) : (
+                              <PreviewKue
+                                pilihan={it.pilihan || []}
+                                tulisan={it.tulisan_kue || ""}
+                                className="w-full max-w-[180px]"
+                              />
+                            )}
+                          </div>
+
+                          {(it.bentukUrl || it.gambarUrl) && (
+                            <div className="flex gap-2">
+                              {it.bentukUrl && (
+                                <div className="flex-1 bg-white border border-stone-100 rounded-xl p-2 text-center">
+                                  <span className="text-[10px] font-bold text-stone-400 block mb-1">
+                                    Bentuk Kustom
+                                  </span>
+                                  <img
+                                    src={it.bentukUrl}
+                                    alt="Bentuk Kustom"
+                                    className="w-full h-16 object-contain rounded"
+                                  />
+                                </div>
+                              )}
+                              {it.gambarUrl && (
+                                <div className="flex-1 bg-white border border-stone-100 rounded-xl p-2 text-center">
+                                  <span className="text-[10px] font-bold text-stone-400 block mb-1">
+                                    Gambar Kustom
+                                  </span>
+                                  <img
+                                    src={it.gambarUrl}
+                                    alt="Gambar Kustom"
+                                    className="w-full h-16 object-contain rounded"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {it.tulisan_kue && (
+                            <div className="p-2.5 rounded-xl bg-white border border-stone-100 text-xs">
+                              <span className="font-semibold block text-stone-400 text-[10px]">Tulisan di Kue:</span>
+                              <span className="font-bold text-[#17382d] text-xs italic mt-0.5 block">
+                                &ldquo;{it.tulisan_kue}&rdquo;
+                              </span>
+                            </div>
+                          )}
+
+                          {it.catatan && (
+                            <div className="p-2.5 rounded-xl bg-white border border-stone-100 text-xs">
+                              <span className="font-semibold block text-stone-400 text-[10px]">Catatan:</span>
+                              <p className="font-medium text-stone-700 italic mt-0.5">&ldquo;{it.catatan}&rdquo;</p>
+                            </div>
+                          )}
+
+                          {it.pilihan?.length > 0 && (
+                            <div className="p-2.5 rounded-xl bg-white border border-stone-100 text-[11px] space-y-1">
+                              <span className="font-bold text-stone-400 block text-[10px] uppercase">Pilihan Opsi:</span>
+                              {it.pilihan.map((p, i) => (
+                                <div key={i} className="flex justify-between text-stone-700">
+                                  <span>{p.nama_grup}: <strong>{p.nama_item}</strong></span>
+                                  {p.jumlah > 1 && <span>x{p.jumlah}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  {Object.keys(stikerGrup).length > 0 && (
-                    <div className="space-y-1 pt-1">
-                      <span className="text-stone-500 font-semibold block text-[11px]">Hiasan & Stiker:</span>
-                      {Object.entries(stikerGrup).map(([kat, emojis]) => (
-                        <div key={kat} className="bg-white/80 p-1.5 rounded border border-amber-100 flex justify-between items-center text-xs">
-                          <span className="capitalize font-semibold text-stone-700">
-                            {kat} ({emojis.length})
-                          </span>
-                          <span className="tracking-widest text-base">{emojis.join(" ")}</span>
+                      ) : (
+                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-stone-100">
+                          <div className="w-16 h-16 rounded-lg bg-stone-50 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            {it.prodUrl ? (
+                              <img src={it.prodUrl} alt={it.nama_item} className="w-full h-full object-cover" />
+                            ) : (
+                              <i className="fa-solid fa-cake-candles text-stone-300 text-xl" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-stone-900">{it.nama_item}</p>
+                            <p className="text-[11px] text-stone-500 mt-0.5 lining-nums tabular-nums">
+                              {formatRupiah(it.harga_satuan)} x {it.jumlah}
+                            </p>
+                          </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-
-              <div className="p-3 rounded-xl bg-stone-50 text-xs text-stone-700 space-y-1">
-                <span className="font-semibold block text-stone-500">Catatan Khusus:</span>
-                {pesanan.catatan ? (
-                  <p className="font-medium text-stone-800 italic">&ldquo;{pesanan.catatan}&rdquo;</p>
-                ) : (
-                  <p className="italic text-stone-400">Tidak ada catatan khusus.</p>
-                )}
+                  );
+                })}
               </div>
             </div>
 
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
-                Rincian Komponen
+                Rincian Tagihan
               </h3>
               <div className="divide-y divide-stone-100 text-xs">
-                {(pesanan.pesanan_pilihan || []).map((pilihan) => {
-                  const subtotal = (pilihan.harga || 0) * (pilihan.jumlah || 1);
-                  return (
-                    <div key={pilihan.id} className="py-2.5 flex justify-between items-center">
-                      <div>
-                        <span className="text-stone-400 block text-[10px] uppercase">
-                          {pilihan.nama_grup}
-                        </span>
-                        <span className="font-semibold text-stone-800">
-                          {pilihan.nama_item}
-                          {pilihan.jumlah > 1 && (
-                            <span className="text-rose-600 font-bold ml-1">× {pilihan.jumlah}</span>
-                          )}
-                        </span>
-                      </div>
-                      <span className="font-medium text-stone-700">
-                        {pilihan.harga === 0 ? (
-                          <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[11px] font-bold">
-                            Termasuk
-                          </span>
-                        ) : (
-                          formatRupiah(subtotal)
-                        )}
+                {itemsWithUrls.map((it, idx) => (
+                  <div key={idx} className="py-2 flex justify-between items-center">
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase">
+                        {it.jenis === "Custom" ? "Kue Custom" : "Kue Katalog"}
+                      </span>
+                      <span className="font-semibold text-stone-800">
+                        {it.nama_item} {it.jumlah > 1 ? `x ${it.jumlah}` : ""}
                       </span>
                     </div>
-                  );
-                })}
+                    <span className="font-medium text-stone-700 lining-nums tabular-nums">
+                      {formatRupiah(it.subtotal)}
+                    </span>
+                  </div>
+                ))}
 
                 {pesanan.metode_pengiriman === "Kirim" && (
                   <div className="py-2.5 flex justify-between items-center">
@@ -315,7 +363,7 @@ export default async function DetailTiketPage(props) {
                         {pesanan.zona_ongkir?.nama || "Ongkos Kirim"}
                       </span>
                     </div>
-                    <span className="font-medium text-stone-700">
+                    <span className="font-medium text-stone-700 lining-nums tabular-nums">
                       {formatRupiah(pesanan.ongkir)}
                     </span>
                   </div>
@@ -325,34 +373,34 @@ export default async function DetailTiketPage(props) {
               <div className="pt-4 border-t border-stone-200 space-y-1.5 text-xs">
                 <div className="flex justify-between text-stone-600">
                   <span>Total Kue:</span>
-                  <span>{formatRupiah(pesanan.total_kue)}</span>
+                  <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(pesanan.total_kue)}</span>
                 </div>
                 {pesanan.ongkir > 0 && (
                   <div className="flex justify-between text-stone-600">
                     <span>Ongkos Kirim:</span>
-                    <span>{formatRupiah(pesanan.ongkir)}</span>
+                    <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(pesanan.ongkir)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-sm text-stone-900 pt-1 border-t border-stone-100">
                   <span>Total Bayar:</span>
-                  <span className="text-rose-600">{formatRupiah(pesanan.total_bayar)}</span>
+                  <span className="text-rose-600 lining-nums tabular-nums">{formatRupiah(pesanan.total_bayar)}</span>
                 </div>
                 {pesanan.persen_dp_saat_pesan && (
                   <div className="flex justify-between text-stone-600 pt-1">
                     <span>Jumlah DP ({pesanan.persen_dp_saat_pesan}%):</span>
-                    <span>{formatRupiah(pesanan.jumlah_dp)}</span>
+                    <span className="font-bold text-stone-800 lining-nums tabular-nums">{formatRupiah(pesanan.jumlah_dp)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-stone-600">
                   <span>Sudah Dibayar:</span>
-                  <span className="font-semibold text-emerald-700">
+                  <span className="font-semibold text-emerald-700 lining-nums tabular-nums">
                     {formatRupiah(pesanan.jumlah_terbayar || 0)}
                   </span>
                 </div>
                 {sisaBayar > 0 && (
                   <div className="flex justify-between text-amber-800 font-bold pt-1">
-                    <span>Sisa Pelunasan:</span>
-                    <span>{formatRupiah(sisaBayar)}</span>
+                    <span>Sisa Tagihan:</span>
+                    <span className="lining-nums tabular-nums">{formatRupiah(sisaBayar)}</span>
                   </div>
                 )}
               </div>

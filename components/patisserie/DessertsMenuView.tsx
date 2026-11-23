@@ -20,12 +20,13 @@ export interface DessertsMenuViewProps {
   initialSelectedId?: number | null;
   totalQty: number;
   totalPrice: number;
-  onAddToCart: (item: { nama: string; harga: number; tipe: DessertIllustType }) => void;
+  items?: MenuItem[];
+  onAddToCart: (item: { id?: number; nama: string; harga: number; tipe?: DessertIllustType }) => void;
   onNavigate: (view: ViewType) => void;
 }
 
 export type MenuCategoryKey = "semua" | "ultah" | "tart" | "cupcake" | "cookies" | "roti";
-export type SortOptionKey = "populer" | "harga-asc" | "harga-desc" | "nama";
+export type SortOptionKey = "terbaru" | "populer" | "harga-asc" | "harga-desc" | "nama";
 
 export interface MenuItem {
   id: number;
@@ -33,7 +34,7 @@ export interface MenuItem {
   harga: number;
   kategori: Exclude<MenuCategoryKey, "semua">;
   kategoriLabel: string;
-  photo: string;
+  photo?: string | null;
   tipe: DessertIllustType;
   ukuran: string;
   rating: number;
@@ -44,14 +45,14 @@ export interface MenuItem {
 }
 
 // 12 Koleksi Menu Lengkap dengan Foto Asli & Data Detail
-const MENU_ITEMS: MenuItem[] = [
+export const MENU_ITEMS: MenuItem[] = [
   {
     id: 1,
     nama: "Strawberry Shortcake",
     harga: 110000,
     kategori: "ultah",
     kategoriLabel: "Kue Ulang Tahun",
-    photo: "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg",
+    photo: null,
     tipe: "cake-raspberry",
     ukuran: "Whole Cake Ø16 cm · 6-8 Porsi",
     rating: 4.9,
@@ -66,7 +67,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 120000,
     kategori: "tart",
     kategoriLabel: "Kue Tart",
-    photo: "/images/patisserie/cake_pink_rose_chocolate_1795148928845.jpg",
+    photo: null,
     tipe: "cake-pinkchoc",
     ukuran: "Whole Cake Ø16 cm · 6-8 Porsi",
     rating: 4.8,
@@ -81,7 +82,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 125000,
     kategori: "ultah",
     kategoriLabel: "Kue Ulang Tahun",
-    photo: "/images/patisserie/cake_raspberry_lemonade_1795148927822.jpg",
+    photo: null,
     tipe: "cake-raspberry",
     ukuran: "Whole Cake Ø16 cm · 6-8 Porsi",
     rating: 4.9,
@@ -96,7 +97,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 110000,
     kategori: "ultah",
     kategoriLabel: "Kue Ulang Tahun",
-    photo: "/images/patisserie/etalase_ultah_coquette_1795156809819.jpg",
+    photo: null,
     tipe: "cupcake-straw",
     ukuran: "Whole Cake Ø16 cm · 6-8 Porsi",
     rating: 5.0,
@@ -111,7 +112,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 100000,
     kategori: "tart",
     kategoriLabel: "Kue Tart",
-    photo: "/images/patisserie/etalase_chiffon_earlgrey_1795156809702.jpg",
+    photo: null,
     tipe: "cupcake-apple",
     ukuran: "Whole Tart Ø16 cm · 6-8 Porsi",
     rating: 4.7,
@@ -125,7 +126,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 120000,
     kategori: "tart",
     kategoriLabel: "Kue Tart",
-    photo: "/images/patisserie/etalase_chiffon_pandan_1795156815155.jpg",
+    photo: null,
     tipe: "cupcake-mint",
     ukuran: "Whole Tart Ø18 cm · 8-10 Porsi",
     rating: 4.8,
@@ -140,7 +141,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 45000,
     kategori: "cupcake",
     kategoriLabel: "Cupcake",
-    photo: "/images/patisserie/cupcake_berry_peach_1795148928217.jpg",
+    photo: null,
     tipe: "cupcake-peach",
     ukuran: "1 Pcs Cupcake Artisan",
     rating: 4.8,
@@ -154,7 +155,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 45000,
     kategori: "cupcake",
     kategoriLabel: "Cupcake",
-    photo: "/images/patisserie/cupcake_cinnamon_mint_1795148928615.jpg",
+    photo: null,
     tipe: "cupcake-mint",
     ukuran: "1 Pcs Cupcake Artisan",
     rating: 4.6,
@@ -168,7 +169,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 135000,
     kategori: "tart",
     kategoriLabel: "Kue Tart",
-    photo: "/images/patisserie/cake_rose_garden_1795148927858.jpg",
+    photo: null,
     tipe: "cake-rosegarden",
     ukuran: "Whole Tart Ø18 cm · 8 Porsi",
     rating: 4.9,
@@ -183,7 +184,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 65000,
     kategori: "cookies",
     kategoriLabel: "Cookies",
-    photo: "/images/patisserie/umkm_orders_packed_1795398162960.jpg",
+    photo: null,
     tipe: "donuts",
     ukuran: "Toples Kedap Udara 250 gram",
     rating: 4.9,
@@ -198,7 +199,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 38000,
     kategori: "roti",
     kategoriLabel: "Roti Manis",
-    photo: "/images/patisserie/umkm_bakery_counter_1795398163126.jpg",
+    photo: null,
     tipe: "donuts",
     ukuran: "Isi 3 Pcs Roti Hangat",
     rating: 4.7,
@@ -212,7 +213,7 @@ const MENU_ITEMS: MenuItem[] = [
     harga: 55000,
     kategori: "roti",
     kategoriLabel: "Roti Manis",
-    photo: "/images/patisserie/treats_donuts_sundae_1795148927789.jpg",
+    photo: null,
     tipe: "sundae",
     ukuran: "1 Porsi Sundae + 2 Donat Glaze",
     rating: 4.9,
@@ -299,21 +300,38 @@ const CATEGORIES: CategoryTab[] = [
 ];
 
 export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
+  initialSelectedId,
+  items: itemsProp,
   onAddToCart,
 }) => {
+  const allItems = itemsProp && itemsProp.length > 0 ? itemsProp : MENU_ITEMS;
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryKey>("semua");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortBy, setSortBy] = useState<SortOptionKey>("populer");
-  const [visibleCount, setVisibleCount] = useState<number>(6);
+  const [sortBy, setSortBy] = useState<SortOptionKey>("terbaru");
+  const [visibleCount, setVisibleCount] = useState<number>(12);
   const [addedItemIds, setAddedItemIds] = useState<Record<number, boolean>>({});
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
-  // Live Spotlight / Pratinjau Kue di Kolom Kiri
-  const [selectedCake, setSelectedCake] = useState<MenuItem>(MENU_ITEMS[0]);
+  const [selectedCake, setSelectedCake] = useState<MenuItem>(() => {
+    if (initialSelectedId) {
+      const match = allItems.find((c) => c.id === initialSelectedId);
+      if (match) return match;
+    }
+    return allItems[0] || MENU_ITEMS[0];
+  });
   const previewRef = useRef<HTMLDivElement | null>(null);
 
-  // Filter & Search & Sort Logic
+  React.useEffect(() => {
+    if (allItems.length > 0) {
+      setSelectedCake((prev) => {
+        const found = allItems.find((c) => c.id === prev?.id);
+        return found || allItems[0];
+      });
+    }
+  }, [allItems]);
+
   const filteredAndSortedItems = useMemo(() => {
-    let result = [...MENU_ITEMS];
+    let result = [...allItems];
 
     // Filter Kategori
     if (selectedCategory !== "semua") {
@@ -333,7 +351,9 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
     }
 
     // Sorting Profesional
-    if (sortBy === "populer") {
+    if (sortBy === "terbaru") {
+      result.sort((a, b) => (b.id || 0) - (a.id || 0));
+    } else if (sortBy === "populer") {
       result.sort((a, b) => b.terjual - a.terjual);
     } else if (sortBy === "harga-asc") {
       result.sort((a, b) => a.harga - b.harga);
@@ -367,6 +387,7 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
   const handleAddToCartClick = (item: MenuItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     onAddToCart({
+      id: item.id,
       nama: item.nama,
       harga: item.harga,
       tipe: item.tipe,
@@ -386,16 +407,51 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
           <div className="relative rounded-[26px] overflow-hidden shadow-xl border border-[#E8D9C8] flex flex-col justify-between h-[calc(100vh-4.5rem)] max-h-[580px] sm:max-h-[610px] min-h-[460px] bg-[#EDE0D1]">
             {/* Background Live Preview Photo with Cross-fade Animation */}
             <AnimatePresence mode="wait">
-              <motion.img
-                key={selectedCake.id}
-                src={selectedCake.photo}
-                alt={selectedCake.nama}
-                initial={{ opacity: 0.3, scale: 1.04 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0.3, scale: 0.98 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-0 w-full h-full object-cover object-center"
-              />
+              {selectedCake.photo && !imgErrors[selectedCake.id] ? (
+                <motion.img
+                  key={selectedCake.id}
+                  src={selectedCake.photo}
+                  alt={selectedCake.nama}
+                  onError={() =>
+                    setImgErrors((prev) => ({
+                      ...prev,
+                      [selectedCake.id]: true,
+                    }))
+                  }
+                  initial={{ opacity: 0.3, scale: 1.04 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0.3, scale: 0.98 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+              ) : (
+                <div
+                  key={`no-photo-${selectedCake.id}`}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-[#EDE0D1] text-[#8C6D62] p-6 text-center"
+                >
+                  <div className="w-20 h-20 rounded-2xl bg-[#E0D1C1] flex items-center justify-center mb-3 shadow-inner">
+                    <svg
+                      className="w-10 h-10 text-[#8C6D62]/70"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </div>
+                  <span className="font-serif font-bold text-base text-[#381F1B]">
+                    Foto Belum Tersedia
+                  </span>
+                  <span className="text-xs text-[#7D5A50] mt-1">
+                    Foto produk akan tampil setelah diunggah oleh admin.
+                  </span>
+                </div>
+              )}
             </AnimatePresence>
 
             {/* Top Scrim Gradient */}
@@ -569,6 +625,7 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                     onChange={(e) => setSortBy(e.target.value as SortOptionKey)}
                     className="pl-8 pr-7 py-2 rounded-xl text-xs sm:text-[13px] font-semibold bg-[#FAF4EE] border border-[#E8DACB] text-[#5C3D2E] focus:outline-none focus:ring-1 focus:ring-[#7D2330] appearance-none cursor-pointer"
                   >
+                    <option value="terbaru">Terbaru</option>
                     <option value="populer">Paling Populer</option>
                     <option value="harga-asc">Harga: Terendah</option>
                     <option value="harga-desc">Harga: Tertinggi</option>
@@ -595,7 +652,7 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                       type="button"
                       onClick={() => {
                         setSelectedCategory(tab.key);
-                        setVisibleCount(6);
+                        setVisibleCount(12);
                       }}
                       className={`px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                         isActive
@@ -648,11 +705,45 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                         <div className="flex items-start gap-3">
                           {/* Cake Photo with Zoom on Hover */}
                           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#EFE2D6] relative">
-                            <img
-                              src={item.photo}
-                              alt={item.nama}
-                              className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-300"
-                            />
+                            {item.photo && !imgErrors[item.id] ? (
+                              <img
+                                src={item.photo}
+                                alt={item.nama}
+                                onError={() =>
+                                  setImgErrors((prev) => ({
+                                    ...prev,
+                                    [item.id]: true,
+                                  }))
+                                }
+                                className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-[#F5ECE3] text-[#8C6D62] text-center p-1">
+                                <svg
+                                  className="w-6 h-6 text-[#8C6D62]/60 mb-0.5"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <rect
+                                    x="3"
+                                    y="3"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                    ry="2"
+                                  />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                                <span className="text-[9px] font-semibold text-[#8C6D62] leading-tight">
+                                  Tidak ada foto
+                                </span>
+                              </div>
+                            )}
                             {item.badge && (
                               <span className="absolute bottom-1 left-1 right-1 px-1 py-0.5 rounded bg-black/60 backdrop-blur-xs text-[9px] font-bold text-white text-center truncate">
                                 {item.badge}

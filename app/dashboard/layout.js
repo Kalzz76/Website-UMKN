@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }) {
       redirect("/masuk?ke=/dashboard");
     }
     if (profil && profil.role === "pelanggan") {
-      redirect("/pesanan-saya");
+      redirect("/user");
     }
     redirect("/masuk");
   }

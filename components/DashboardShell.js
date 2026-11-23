@@ -134,8 +134,8 @@ export default function DashboardShell({
       ),
     },
     {
-      nama: "Harga & Opsi",
-      href: "/dashboard/harga-opsi",
+      nama: "Katalog & Opsi",
+      href: "/dashboard/katalog-opsi",
       ikon: (
         <svg viewBox="0 0 24 24">
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
@@ -201,12 +201,13 @@ export default function DashboardShell({
       ),
     },
     {
-      nama: "Profil",
-      href: "/dashboard/profil",
+      nama: "Ke Website",
+      href: "/",
       ikon: (
         <svg viewBox="0 0 24 24">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
       ),
     },
@@ -265,12 +266,13 @@ export default function DashboardShell({
       ),
     },
     {
-      nama: "Profil",
-      href: "/dashboard/profil",
+      nama: "Ke Website",
+      href: "/",
       ikon: (
         <svg viewBox="0 0 24 24">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
       ),
     },
@@ -282,10 +284,10 @@ export default function DashboardShell({
     judul: "Dashboard",
     subjudul: `Selamat datang, ${userName} • Ringkasan performa penjualan Cravely Bakery.`,
   };
-  if (pathname.startsWith("/dashboard/harga-opsi")) {
+  if (pathname.startsWith("/dashboard/katalog-opsi")) {
     infoHalaman = {
-      judul: "Harga & Opsi",
-      subjudul: "Kelola grup opsi kue dan daftar harga kustomisasi.",
+      judul: "Katalog & Opsi",
+      subjudul: "Kelola produk kue katalog dan pilihan kustomisasi studio kue.",
     };
   } else if (pathname.startsWith("/dashboard/pesanan")) {
     infoHalaman = {
@@ -388,7 +390,9 @@ export default function DashboardShell({
           <nav>
             {listMenu.map((item) => {
               const isActive =
-                item.href === "/dashboard"
+                item.href === "/"
+                  ? pathname === "/"
+                  : item.href === "/dashboard"
                   ? pathname === "/dashboard"
                   : pathname.startsWith(item.href);
 

@@ -442,12 +442,34 @@ export async function POST(request) {
     .update({ kode_pesanan })
     .eq("id", newPesanan.id);
 
+  const { data: newPesItem } = await supabase
+    .from("pesanan_item")
+    .insert({
+      id_pesanan: newPesanan.id,
+      jenis: "Custom",
+      id_produk: null,
+      nama_item: "Kue Custom",
+      harga_satuan: total_kue,
+      jumlah: 1,
+      subtotal: total_kue,
+      tulisan_kue: tulisan_kue ? tulisan_kue.trim() : "",
+      catatan: catatan ? catatan.trim() : "",
+      desain_json,
+      foto_preview: foto_preview_path,
+      foto_bentuk_kustom: foto_bentuk_kustom_path,
+      foto_gambar_kustom: foto_gambar_kustom_path,
+      urutan: 1,
+    })
+    .select("id")
+    .single();
+
   const pilihanRows = [];
   for (let i = 0; i < itemTerpilihList.length; i++) {
     const { itemData, jumlah } = itemTerpilihList[i];
     const gr = grupMap.get(itemData.id_grup);
     pilihanRows.push({
       id_pesanan: newPesanan.id,
+      id_pesanan_item: newPesItem ? newPesItem.id : null,
       id_item: itemData.id,
       id_grup: itemData.id_grup || (gr ? gr.id : null),
       nama_grup: gr ? gr.nama : "Opsi",

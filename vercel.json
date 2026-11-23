@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/batalkan-pesanan",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/bersihkan-keranjang",
+      "schedule": "0 2 * * *"
     }
   ]
 }

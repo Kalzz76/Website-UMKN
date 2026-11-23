@@ -5140,7 +5140,7 @@ export default function PesanPage() {
       sessionStorage.removeItem("cravely_custom_maxstep");
       showToast("Pesanan berhasil dibuat!");
       setTimeout(() => {
-        router.push(`/pesanan-saya/${data.kode_pesanan}`);
+        router.push(`/user/${data.kode_pesanan}`);
       }, 1000);
     } catch {
       setSedangKirim(false);
@@ -5450,7 +5450,7 @@ export default function PesanPage() {
             <Link href="/pesan" className="on">
               Custom Cake
             </Link>
-            <Link href="/pesanan-saya">Pesanan</Link>
+            <Link href="/user">Dashboard</Link>
             {(profil?.role === "admin" || profil?.role === "staf") && (
               <Link href="/dashboard">Dashboard</Link>
             )}
