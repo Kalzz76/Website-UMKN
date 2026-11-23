@@ -1529,10 +1529,6 @@ function buildKitchen() {
     // Sumber cahaya lampu hangat menerangi kue & meja
     const pLight = new THREE.PointLight(0xfff0d0, 1.35, 14, 1.4);
     pLight.position.set(0, 1.95, 0);
-    pLight.castShadow = true;
-    pLight.shadow.bias = -0.002;
-    pLight.shadow.mapSize.width = 512;
-    pLight.shadow.mapSize.height = 512;
     lamp.add(pLight);
 
     g.add(lamp);
@@ -1551,7 +1547,10 @@ function buildKitchen() {
   g.userData.leftGroup = leftGroup;
 
   g.traverse((o) => {
-    if (o.isMesh) o.receiveShadow = true;
+    if (o.isMesh) {
+      o.castShadow = false;
+      o.receiveShadow = false;
+    }
   });
   return g;
 }
@@ -2792,6 +2791,9 @@ export default function PesanPage() {
           hemi.color.setHex(0xfffaee);
           hemi.groundColor.setHex(0xf2e4d5);
         }
+        if (dl.castShadow) {
+          dl.castShadow = false;
+        }
         if (dl.intensity !== 1.05) {
           dl.intensity = 1.05;
           dl.color.setHex(0xfffaea);
@@ -2834,6 +2836,9 @@ export default function PesanPage() {
           hemi.intensity = 0.75;
           hemi.color.setHex(0xffffff);
           hemi.groundColor.setHex(0xf3c9d6);
+        }
+        if (!dl.castShadow) {
+          dl.castShadow = true;
         }
         if (dl.intensity !== 0.75) {
           dl.intensity = 0.75;

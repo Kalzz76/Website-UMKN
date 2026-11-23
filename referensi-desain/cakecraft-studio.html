@@ -622,14 +622,14 @@ function buildKitchen(){const g=new THREE.Group(),F=-3.1,CT=-.7,wood="#dca168",c
   const shade=new THREE.Mesh(new THREE.CylinderGeometry(.12,.52,.42,28,1,true),new THREE.MeshStandardMaterial({color:"#A36361",roughness:.35,side:THREE.DoubleSide}));shade.position.set(0,2.3,0);shade.castShadow=true;lamp.add(shade);
   kc(lamp,.5,.5,.03,"#ffdf99",0,2.1,0,.3);
   const bulb=new THREE.Mesh(new THREE.SphereGeometry(.14,16,12),new THREE.MeshBasicMaterial({color:0xfff6d6}));bulb.position.set(0,2.15,0);lamp.add(bulb);
-  const pLight=new THREE.PointLight(0xfff0d0,1.35,14,1.4);pLight.position.set(0,1.95,0);pLight.castShadow=true;lamp.add(pLight);
+  const pLight=new THREE.PointLight(0xfff0d0,1.35,14,1.4);pLight.position.set(0,1.95,0);lamp.add(pLight);
   g.add(lamp);
  });
  const gr=buildGirl();gr.position.set(2.6,F,-3);gr.rotation.y=.785;gr.scale.setScalar(.9);g.add(gr);g.userData.girl=gr.userData;g.userData.girlG=gr;
- g.traverse(o=>{if(o.isMesh)o.receiveShadow=true});return g}
+ g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});return g}
 let kit=false,KIT=null,prevKit=false,kView=null;
 function setKitchen(on){if(on===kit)return;kit=on;if(on){if(!KIT){KIT=buildKitchen();scene.add(KIT)}kView={ph};ph=.58;cam.fov=24}else{cam.fov=35;if(kView)ph=kView.ph}
- if(KIT)KIT.visible=on;hemi.intensity=on?1.1:.72;dl.intensity=on?1.05:.7;$("vbox").classList.toggle("kit",on);dl.position.set(on?6:3,on?14:6,on?9:5);const sc=dl.shadow.camera,e=on?11:5;sc.left=sc.bottom=-e;sc.right=sc.top=e;sc.far=on?60:20;sc.updateProjectionMatrix();
+ if(KIT)KIT.visible=on;dl.castShadow=!on;hemi.intensity=on?1.1:.72;dl.intensity=on?1.05:.7;$("vbox").classList.toggle("kit",on);dl.position.set(on?6:3,on?14:6,on?9:5);const sc=dl.shadow.camera,e=on?11:5;sc.left=sc.bottom=-e;sc.right=sc.top=e;sc.far=on?60:20;sc.updateProjectionMatrix();
  if(dl.shadow.map){dl.shadow.map.dispose();dl.shadow.map=null}dl.shadow.mapSize.set(on?2048:1024,on?2048:1024);cam.updateProjectionMatrix();lastSize=null;build()}
 let flames=[],lastSize=null;
 function build(){
