@@ -45,6 +45,10 @@ export default function ProfilUserPage() {
       }
       const data = await res.json();
       if (res.ok && data.profil) {
+        if (data.profil.role === "admin" || data.profil.role === "staf") {
+          router.replace("/dashboard/profil");
+          return;
+        }
         setProfil(data.profil);
         setFormProfil({
           nama: data.profil.nama || "",

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ChefHat,
@@ -15,12 +15,16 @@ import { usePatisserieCart } from "@/lib/patisserieCart";
 
 export function DynamicIslandNavbar({ showEntered = true }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { totalQty } = usePatisserieCart();
   const [userSession, setUserSession] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const leaveTimeoutRef = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function checkAuth() {
       try {
         const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
@@ -28,20 +32,62 @@ export function DynamicIslandNavbar({ showEntered = true }) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
         setUserSession(session);
-      } catch (err) {
-        // Fallback gracefully
-      }
+
+        if (session?.user?.id) {
+          const { data: profil } = await supabase
+            .from("profil")
+            .select("role")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (isMounted && profil?.role) {
+            setUserRole(profil.role);
+          }
+        } else {
+          setUserRole(null);
+        }
+      } catch {}
     }
+
     checkAuth();
+
+    let authSubscription = null;
+    import("@/lib/supabaseBrowser").then(({ getSupabaseBrowser }) => {
+      const supabase = getSupabaseBrowser();
+      const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (!isMounted) return;
+        setUserSession(session);
+        if (session?.user?.id) {
+          const { data: profil } = await supabase
+            .from("profil")
+            .select("role")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          if (isMounted && profil?.role) {
+            setUserRole(profil.role);
+          }
+        } else {
+          setUserRole(null);
+        }
+      });
+      authSubscription = data?.subscription;
+    });
+
+    return () => {
+      isMounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
   }, []);
 
-  // Tutup navbar otomatis setiap berpindah halaman (URL berubah)
   useEffect(() => {
     setIsExpanded(false);
   }, [pathname]);
 
-  // Bersihkan timeout saat unmount
   useEffect(() => {
     return () => {
       if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
@@ -59,7 +105,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     }, 380);
   };
 
-  // Deteksi judul halaman aktif untuk status KETUTUP (Tanpa icon sparkle)
   const getPageTitle = () => {
     if (pathname.startsWith("/toko")) return "Toko";
     if (pathname.startsWith("/menu")) return "Menu";
@@ -67,6 +112,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     if (pathname.startsWith("/kasir")) return "Kasir";
     if (
       pathname.startsWith("/profil") ||
+      pathname.startsWith("/dashboard/profil") ||
       pathname.startsWith("/masuk") ||
       pathname.startsWith("/daftar")
     ) {
@@ -82,6 +128,42 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     { label: "Toko", href: "/toko", active: pathname.startsWith("/toko") },
     { label: "Menu", href: "/menu", active: pathname.startsWith("/menu") },
   ];
+
+  const profileHref = !userSession
+    ? "/masuk"
+    : userRole === "admin" || userRole === "staf"
+    ? "/dashboard/profil"
+    : "/profil";
+
+  const handleProfileClick = async (e) => {
+    setIsExpanded(false);
+    if (!userSession) return;
+    if (userRole === "admin" || userRole === "staf") {
+      return;
+    }
+    if (userRole === "pelanggan") {
+      return;
+    }
+    e.preventDefault();
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
+      const supabase = getSupabaseBrowser();
+      const { data: profil } = await supabase
+        .from("profil")
+        .select("role")
+        .eq("id", userSession.user.id)
+        .maybeSingle();
+      const role = profil?.role || "pelanggan";
+      setUserRole(role);
+      if (role === "admin" || role === "staf") {
+        router.push("/dashboard/profil");
+      } else {
+        router.push("/profil");
+      }
+    } catch {
+      router.push("/profil");
+    }
+  };
 
   return (
     <nav
@@ -108,7 +190,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
       >
         <AnimatePresence mode="popLayout" initial={false}>
           {!isExpanded ? (
-            /* ==================== 1. STATUS KETUTUP (COMPACT DYNAMIC ISLAND) ==================== */
             <motion.button
               key="collapsed-island"
               type="button"
@@ -118,24 +199,20 @@ export function DynamicIslandNavbar({ showEntered = true }) {
               exit={{ opacity: 0, scale: 0.94 }}
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 hover:bg-[#F8EFE4]/80 transition cursor-pointer select-none whitespace-nowrap"
-              title="Klik atau arahkan kursor untuk membuka menu"
+              title="Buka menu navigasi"
             >
-              {/* Amber Indicator Dot */}
               <span className="w-2.5 h-2.5 rounded-full bg-[#B8925A] shadow-[0_0_8px_#C59B62] animate-pulse shrink-0" />
 
-              {/* Brand Name "Cravely" Saja */}
               <span className="font-coquette font-bold text-xs sm:text-sm tracking-wider text-[#3D2B28]">
                 Cravely
               </span>
 
               <span className="text-[#C59B62] font-bold text-xs">·</span>
 
-              {/* Active Page Name (Tanpa logo sparkle) */}
               <span className="font-serif font-extrabold text-xs sm:text-sm text-[#9E3B42]">
                 {activeTitle}
               </span>
 
-              {/* Cart Badge jika ada item */}
               {totalQty > 0 && (
                 <span className="ml-0.5 px-2 py-0.5 rounded-full bg-[#9E3B42] text-white text-[10px] font-extrabold tabular-nums shadow-xs flex items-center gap-1">
                   <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
@@ -143,11 +220,9 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 </span>
               )}
 
-              {/* Chevron Down Indicator */}
               <ChevronDown className="w-3.5 h-3.5 text-[#8C6D62] shrink-0 ml-0.5" />
             </motion.button>
           ) : (
-            /* ==================== 2. STATUS TERBUKA (EXPANDED NAVIGATION ROW) ==================== */
             <motion.div
               key="expanded-island"
               initial={{ opacity: 0, scale: 0.97 }}
@@ -156,7 +231,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
               transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-2 sm:gap-3 px-3.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap select-none"
             >
-              {/* Brand Logo Pill */}
               <Link
                 href="/"
                 onClick={() => setIsExpanded(false)}
@@ -166,10 +240,8 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 <span>Cravely</span>
               </Link>
 
-              {/* Vertical Divider */}
               <div className="h-4 w-px bg-[#D9B37C]/60 shrink-0" />
 
-              {/* Navigation Links: Home, Toko, Menu */}
               <div className="flex items-center gap-1 text-xs font-semibold whitespace-nowrap shrink-0">
                 {navLinks.map((link) => (
                   <Link
@@ -187,10 +259,8 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 ))}
               </div>
 
-              {/* Vertical Divider */}
               <div className="h-4 w-px bg-[#D9B37C]/60 shrink-0" />
 
-              {/* Cake Studio (CTA ke /pesan) */}
               <Link
                 href="/pesan"
                 onClick={() => setIsExpanded(false)}
@@ -204,9 +274,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 <span>Cake Studio</span>
               </Link>
 
-              {/* Right Controls: Kasir & Akun */}
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {/* Kasir Pill */}
                 <Link
                   href="/kasir"
                   onClick={() => setIsExpanded(false)}
@@ -233,11 +301,10 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                   </span>
                 </Link>
 
-                {/* Akun */}
                 {userSession ? (
                   <Link
-                    href="/profil"
-                    onClick={() => setIsExpanded(false)}
+                    href={profileHref}
+                    onClick={handleProfileClick}
                     className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5ECE2] hover:bg-[#EBDDD0] border border-[#D9B37C]/60 text-[#3D2B28] flex items-center justify-center transition shrink-0"
                     title="Profil Saya"
                   >
@@ -254,7 +321,6 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                   </Link>
                 )}
 
-                {/* Tombol Tutup / Collapse */}
                 <button
                   type="button"
                   onClick={() => setIsExpanded(false)}
