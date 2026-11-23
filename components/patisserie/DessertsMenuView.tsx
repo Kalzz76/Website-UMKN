@@ -35,6 +35,7 @@ export interface MenuItem {
   kategori: Exclude<MenuCategoryKey, "semua">;
   kategoriLabel: string;
   photo: string;
+  fallbackPhoto?: string;
   tipe: DessertIllustType;
   ukuran: string;
   rating: number;
@@ -408,6 +409,14 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                 key={selectedCake.id}
                 src={selectedCake.photo}
                 alt={selectedCake.nama}
+                onError={(e) => {
+                  const fb =
+                    selectedCake.fallbackPhoto ||
+                    "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
+                  if (e.currentTarget.src !== fb) {
+                    e.currentTarget.src = fb;
+                  }
+                }}
                 initial={{ opacity: 0.3, scale: 1.04 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0.3, scale: 0.98 }}
@@ -669,6 +678,14 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                             <img
                               src={item.photo}
                               alt={item.nama}
+                              onError={(e) => {
+                                const fb =
+                                  item.fallbackPhoto ||
+                                  "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
+                                if (e.currentTarget.src !== fb) {
+                                  e.currentTarget.src = fb;
+                                }
+                              }}
                               className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-300"
                             />
                             {item.badge && (

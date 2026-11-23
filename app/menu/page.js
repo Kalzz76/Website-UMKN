@@ -29,6 +29,17 @@ export default function MenuPage() {
                   (m) => m.nama.toLowerCase() === p.nama.toLowerCase()
                 ) || MENU_ITEMS[idx % MENU_ITEMS.length] || {};
 
+              const localDefault =
+                fallback.photo ||
+                "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
+              const isUploadedPhoto = Boolean(
+                p.foto &&
+                  (p.foto.startsWith("produk/") || p.foto.startsWith("http"))
+              );
+              const photoFinal = isUploadedPhoto
+                ? p.fotoUrl || p.foto
+                : localDefault;
+
               let kategori = fallback.kategori || "tart";
               let kategoriLabel = fallback.kategoriLabel || "Kue Tart";
               const lowerNama = p.nama.toLowerCase();
@@ -62,11 +73,8 @@ export default function MenuPage() {
                 harga: p.harga,
                 kategori,
                 kategoriLabel,
-                photo:
-                  p.fotoUrl ||
-                  p.foto ||
-                  fallback.photo ||
-                  "/images/patisserie/cake_raspberry_lemonade_1795148927822.jpg",
+                photo: photoFinal,
+                fallbackPhoto: localDefault,
                 tipe: fallback.tipe || "cake-raspberry",
                 ukuran: fallback.ukuran || "Whole Cake Ø16 cm · 6-8 Porsi",
                 rating: fallback.rating || 4.9,
