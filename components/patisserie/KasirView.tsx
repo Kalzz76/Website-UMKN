@@ -241,25 +241,25 @@ export const KasirView: React.FC<KasirViewProps> = ({
               </div>
             ) : (
               <div>
-                {/* Main Large Table Card Container */}
-                <div className="bg-[#FDF6EE] rounded-[28px] border border-[#ECD9C9] p-4 sm:p-6 shadow-[0_4px_20px_rgba(90,56,47,0.04)]">
-                  {/* Table Column Headers */}
-                  <div className="grid grid-cols-12 items-center px-4 pb-3 text-xs sm:text-sm font-serif font-bold text-[#4A2E2B]">
-                    <div className="col-span-6 sm:col-span-6">Produk</div>
-                    <div className="col-span-2 text-center hidden sm:block">Harga</div>
-                    <div className="col-span-3 sm:col-span-2 text-center">Jumlah</div>
-                    <div className="col-span-3 sm:col-span-2 text-right">Subtotal</div>
+                {/* Unified Table Card matching mockup */}
+                <div className="bg-[#FFFDF9] rounded-[24px] sm:rounded-[28px] border border-[#E8DACB] shadow-[0_4px_20px_rgba(90,56,47,0.04)] overflow-hidden">
+                  {/* Table Header Bar */}
+                  <div className="bg-[#F8EFE6] px-6 sm:px-8 py-3.5 sm:py-4 grid grid-cols-12 items-center text-xs sm:text-sm font-serif font-bold text-[#4A2E2B]">
+                    <div className="col-span-12 sm:col-span-5 lg:col-span-6">Produk</div>
+                    <div className="hidden sm:block sm:col-span-2 text-center">Harga</div>
+                    <div className="hidden sm:block sm:col-span-2 text-center">Jumlah</div>
+                    <div className="hidden sm:block sm:col-span-3 lg:col-span-2 text-right pr-2 sm:pr-3">Subtotal</div>
                   </div>
 
-                  {/* Product Cards Stack */}
-                  <div className="space-y-3.5">
+                  {/* Product Rows List */}
+                  <div className="divide-y divide-[#F2E5D8]">
                     <AnimatePresence>
                       {cart.map((item, index) => {
                         const photoSrc =
                           CAKE_PHOTO_MAP[item.nama] ||
                           "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
                         const descText =
-                          CAKE_DESC_MAP[item.nama] || "Kue artisan lembut dengan bahan premium";
+                          CAKE_DESC_MAP[item.nama] || "Kue lembut dengan krim stroberi segar";
                         const itemSubtotal = item.harga * item.qty;
 
                         return (
@@ -270,11 +270,11 @@ export const KasirView: React.FC<KasirViewProps> = ({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-[#FFFDF9] rounded-2xl p-3.5 sm:p-4 border border-[#F3E5D8] shadow-[0_2px_10px_rgba(90,56,47,0.03)] hover:shadow-md transition-all grid grid-cols-12 items-center gap-3 sm:gap-4"
+                            className="px-6 sm:px-8 py-5 sm:py-6 grid grid-cols-12 items-center gap-3 sm:gap-4 hover:bg-[#FAF3EB]/50 transition-colors"
                           >
-                            {/* Col 1: Product Thumbnail & Name (6 cols) */}
-                            <div className="col-span-12 sm:col-span-6 flex items-center gap-3.5">
-                              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#EFE2D6]">
+                            {/* Col 1: Product Thumbnail & Name */}
+                            <div className="col-span-12 sm:col-span-5 lg:col-span-6 flex items-center gap-3.5 sm:gap-4">
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#EBDCCF]">
                                 <img
                                   src={photoSrc}
                                   alt={item.nama}
@@ -283,37 +283,42 @@ export const KasirView: React.FC<KasirViewProps> = ({
                               </div>
 
                               <div className="min-w-0 flex-1">
-                                <h4 className="font-serif font-bold text-sm sm:text-base text-[#381F1B] leading-tight line-clamp-2">
+                                <h4 className="font-serif font-bold text-base sm:text-lg text-[#3E2522] leading-tight">
                                   {item.nama}
                                 </h4>
-                                <p className="text-[11px] sm:text-xs text-[#8C6D62] line-clamp-2 mt-1 leading-snug">
+                                <p className="text-xs text-[#8C6D62] line-clamp-2 mt-1 leading-snug">
                                   {descText}
                                 </p>
-                                {/* Mobile Price view */}
-                                <span className="sm:hidden text-xs font-semibold text-[#6E4238] block mt-1">
-                                  {formatRupiah(item.harga)}
-                                </span>
+                                {/* Mobile-only price display */}
+                                <div className="sm:hidden flex items-center justify-between mt-2 pt-2 border-t border-[#F5ECE3]">
+                                  <span className="font-serif font-medium text-xs text-[#3E2522]">
+                                    {formatRupiah(item.harga)}
+                                  </span>
+                                  <span className="font-serif font-bold text-xs text-[#7D2330]">
+                                    Subtotal: {formatRupiah(itemSubtotal)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Col 2: Unit Price (2 cols, desktop only) */}
-                            <div className="hidden sm:block sm:col-span-2 text-center text-xs sm:text-sm font-serif font-medium text-[#381F1B] tabular-nums">
+                            {/* Col 2: Price (Desktop) */}
+                            <div className="hidden sm:block sm:col-span-2 text-center font-serif font-medium text-sm sm:text-base text-[#3E2522] tabular-nums">
                               {formatRupiah(item.harga)}
                             </div>
 
-                            {/* Col 3: Counter Pill (2 cols) */}
+                            {/* Col 3: Counter Pill */}
                             <div className="col-span-6 sm:col-span-2 flex items-center justify-start sm:justify-center">
-                              <div className="bg-[#FDF4EB] border border-[#ECD9C9] rounded-full px-3.5 py-1.5 flex items-center gap-3">
+                              <div className="bg-[#FDF3EA] border border-[#ECD9C9] rounded-full px-4 py-1.5 flex items-center gap-3.5 shadow-xs">
                                 <button
                                   type="button"
                                   onClick={() => onUpdateQty(index, -1)}
                                   className="text-[#6E4238] hover:text-[#7D2330] p-0.5 transition active:scale-90 cursor-pointer"
                                   aria-label="Kurangi jumlah"
                                 >
-                                  <Minus className="w-3 h-3 stroke-[2.5]" />
+                                  <Minus className="w-3.5 h-3.5 stroke-[2.2]" />
                                 </button>
 
-                                <span className="text-xs sm:text-sm font-bold text-[#3D2B28] min-w-[14px] text-center tabular-nums">
+                                <span className="text-xs sm:text-sm font-serif font-bold text-[#3E2522] min-w-[16px] text-center tabular-nums">
                                   {item.qty}
                                 </span>
 
@@ -323,21 +328,21 @@ export const KasirView: React.FC<KasirViewProps> = ({
                                   className="text-[#6E4238] hover:text-[#7D2330] p-0.5 transition active:scale-90 cursor-pointer"
                                   aria-label="Tambah jumlah"
                                 >
-                                  <Plus className="w-3 h-3 stroke-[2.5]" />
+                                  <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
                                 </button>
                               </div>
                             </div>
 
-                            {/* Col 4: Subtotal & Trash (2 cols) */}
-                            <div className="col-span-6 sm:col-span-2 flex items-center justify-end gap-2.5 sm:gap-3">
-                              <span className="text-xs sm:text-sm font-serif font-medium text-[#381F1B] tabular-nums">
+                            {/* Col 4: Subtotal & Circular Outlined Trash Button */}
+                            <div className="col-span-6 sm:col-span-3 lg:col-span-2 flex items-center justify-end gap-3 sm:gap-4">
+                              <span className="hidden sm:inline-block font-serif font-medium text-sm sm:text-base text-[#3E2522] tabular-nums">
                                 {formatRupiah(itemSubtotal)}
                               </span>
 
                               <button
                                 type="button"
                                 onClick={() => onUpdateQty(index, -item.qty)}
-                                className="p-1 rounded-lg text-[#8C6D62] hover:text-[#7D2330] transition-colors cursor-pointer"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#DFCEC0] flex items-center justify-center text-[#8C6D62] hover:text-[#7D2330] hover:border-[#7D2330] hover:bg-[#F9EDE4] transition cursor-pointer shrink-0 shadow-xs active:scale-95"
                                 title="Hapus produk"
                                 aria-label={`Hapus ${item.nama}`}
                               >
@@ -352,11 +357,11 @@ export const KasirView: React.FC<KasirViewProps> = ({
                 </div>
 
                 {/* Back to Shopping Button */}
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-5 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => onNavigate("menu")}
-                    className="px-4 py-2 rounded-xl bg-[#FAF0E6] hover:bg-[#F2E2D2] border border-[#E0CFBF] text-[#5C3D2E] text-xs sm:text-sm font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer"
+                    className="px-5 py-2.5 rounded-2xl bg-[#FFFDF9] hover:bg-[#FAF0E6] border border-[#ECD9C9] text-[#5C3D2E] text-xs sm:text-sm font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer shadow-xs"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Lanjut Belanja</span>
