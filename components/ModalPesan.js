@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTutup }) {
+export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTutup, padaTutup }) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -30,10 +30,12 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
     ikonWarna = "text-rose-500 fa-circle-exclamation";
   }
 
+  const tutup = onTutup || padaTutup;
+
   return createPortal(
     <div
       onClick={(e) => {
-        if (e.target === e.currentTarget && onTutup) onTutup();
+        if (e.target === e.currentTarget && tutup) tutup();
       }}
       style={{
         position: "fixed",
@@ -57,7 +59,7 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
         <p className="mt-2 text-sm text-stone-600 whitespace-pre-line">{pesan}</p>
         <button
           type="button"
-          onClick={onTutup}
+          onClick={tutup}
           className="mt-6 w-full h-[40px] rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white transition text-xs shadow-sm cursor-pointer"
         >
           Mengerti

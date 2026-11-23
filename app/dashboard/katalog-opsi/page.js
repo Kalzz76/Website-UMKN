@@ -1166,6 +1166,7 @@ export default function KatalogOpsiPage() {
         judul={notifikasi.judul}
         pesan={notifikasi.pesan}
         tipe={notifikasi.tipe}
+        onTutup={() => setNotifikasi({ ...notifikasi, terbuka: false })}
         padaTutup={() => setNotifikasi({ ...notifikasi, terbuka: false })}
       />
     </div>
