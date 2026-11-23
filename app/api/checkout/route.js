@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta, hitungTanggalMinimal } from "@/lib/format";
 import { hitungPesanan } from "@/lib/hitungHarga";
+import { hitungJarakJalanKm, cariTarif, validasiKoordinat } from "@/lib/ongkir";
 
 export async function POST(request) {
   const supabaseUser = await getSupabaseServer();
@@ -36,7 +37,8 @@ export async function POST(request) {
   const no_wa = (body.no_wa || "").trim();
   const metode_pengiriman = body.metode_pengiriman || "Ambil";
   const alamat = (body.alamat || "").trim();
-  const id_zona = body.id_zona ? Number(body.id_zona) : null;
+  const lat_tujuan_raw = body.lat_tujuan;
+  const lng_tujuan_raw = body.lng_tujuan;
   const tanggal_ambil = body.tanggal_ambil || "";
   const jam_ambil = (body.jam_ambil || "").slice(0, 5);
   const catatan = (body.catatan || "").trim();
@@ -77,9 +79,15 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    if (!id_zona) {
+    if (
+      lat_tujuan_raw === undefined ||
+      lng_tujuan_raw === undefined ||
+      lat_tujuan_raw === null ||
+      lng_tujuan_raw === null ||
+      !validasiKoordinat(lat_tujuan_raw, lng_tujuan_raw)
+    ) {
       return NextResponse.json(
-        { pesan: "Zona pengiriman wajib dipilih untuk metode kirim." },
+        { pesan: "Titik lokasi pengiriman tidak valid atau belum dipilih pada peta." },
         { status: 400 }
       );
     }
@@ -196,29 +204,73 @@ export async function POST(request) {
     );
   }
 
-  let ongkir = 0;
-  if (metode_pengiriman === "Kirim") {
-    const { data: zona } = await supabase
-      .from("zona_ongkir")
-      .select("*")
-      .eq("id", id_zona)
-      .eq("aktif", true)
-      .single();
-
-    if (!zona) {
-      return NextResponse.json(
-        { pesan: "Zona pengiriman tidak valid atau sudah tidak aktif." },
-        { status: 400 }
-      );
-    }
-    ongkir = Number(zona.tarif || 0);
-  }
-
   const { data: pengaturan } = await supabase
     .from("pengaturan_toko")
     .select("*")
     .eq("id", 1)
     .single();
+
+  let ongkir = 0;
+  let jarak_km = null;
+  let lat_tujuan = null;
+  let lng_tujuan = null;
+
+  if (metode_pengiriman === "Kirim") {
+    lat_tujuan = Number(lat_tujuan_raw);
+    lng_tujuan = Number(lng_tujuan_raw);
+
+    const latToko =
+      pengaturan?.lat_toko !== null && pengaturan?.lat_toko !== undefined
+        ? Number(pengaturan.lat_toko)
+        : null;
+    const lngToko =
+      pengaturan?.lng_toko !== null && pengaturan?.lng_toko !== undefined
+        ? Number(pengaturan.lng_toko)
+        : null;
+
+    if (latToko === null || lngToko === null || isNaN(latToko) || isNaN(lngToko)) {
+      return NextResponse.json(
+        { pesan: "Pengiriman belum tersedia karena lokasi toko belum diatur." },
+        { status: 400 }
+      );
+    }
+
+    const { data: daftarTarif } = await supabase
+      .from("tarif_jarak")
+      .select("*")
+      .eq("aktif", true)
+      .order("jarak_maks_km", { ascending: true });
+
+    if (!daftarTarif || daftarTarif.length === 0) {
+      return NextResponse.json(
+        { pesan: "Pengiriman belum tersedia karena tarif jarak belum diatur." },
+        { status: 400 }
+      );
+    }
+
+    const faktorJalan = pengaturan?.faktor_jalan ? Number(pengaturan.faktor_jalan) : 1.3;
+    const maksKm = pengaturan?.maks_jarak_kirim_km ? Number(pengaturan.maks_jarak_kirim_km) : null;
+
+    jarak_km = hitungJarakJalanKm(latToko, lngToko, lat_tujuan, lng_tujuan, faktorJalan);
+    const hasilTarif = cariTarif(jarak_km, daftarTarif, maksKm);
+
+    if (hasilTarif.status === "tokoBelumDiatur") {
+      return NextResponse.json(
+        { pesan: "Pengiriman belum tersedia." },
+        { status: 400 }
+      );
+    }
+
+    if (hasilTarif.status === "diluarJangkauan") {
+      const infoBatas = maksKm ? ` (maksimal ${maksKm} km)` : "";
+      return NextResponse.json(
+        { pesan: `Alamat pengiriman di luar jangkauan${infoBatas}. Jarak: ${jarak_km} km. Pilih Ambil di Tempat atau hubungi toko.` },
+        { status: 400 }
+      );
+    }
+
+    ongkir = hasilTarif.tarif;
+  }
 
   const minimalHariCustom = pengaturan?.minimal_hari_pesan ?? 2;
   const minimalHariSiap = pengaturan?.minimal_hari_siap ?? 1;
@@ -350,7 +402,10 @@ export async function POST(request) {
       jam_ambil: jam_ambil,
       metode_pengiriman: metode_pengiriman,
       alamat: metode_pengiriman === "Kirim" ? alamat : null,
-      id_zona: metode_pengiriman === "Kirim" ? id_zona : null,
+      id_zona: null,
+      lat_tujuan: metode_pengiriman === "Kirim" ? lat_tujuan : null,
+      lng_tujuan: metode_pengiriman === "Kirim" ? lng_tujuan : null,
+      jarak_km: metode_pengiriman === "Kirim" ? jarak_km : null,
       ongkir: ongkir,
       total_kue: hasilHitung.total_kue,
       total_bayar: hasilHitung.total_bayar,

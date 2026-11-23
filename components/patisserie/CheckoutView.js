@@ -3,7 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import QRCode from "qrcode";
+
+const PetaLokasi = dynamic(() => import("@/components/PetaLokasi"), {
+  ssr: false,
+});
 import {
   MapPin,
   Truck,
@@ -47,6 +52,15 @@ export function CheckoutView() {
   const [noWa, setNoWa] = useState("");
   const [metodePengiriman, setMetodePengiriman] = useState("Ambil");
   const [alamat, setAlamat] = useState("");
+  const [patokan, setPatokan] = useState("");
+  const [latTujuan, setLatTujuan] = useState(null);
+  const [lngTujuan, setLngTujuan] = useState(null);
+  const [jarakKm, setJarakKm] = useState(null);
+  const [ongkirJarak, setOngkirJarak] = useState(0);
+  const [statusOngkir, setStatusOngkir] = useState("ok");
+  const [maksKmKirim, setMaksKmKirim] = useState(null);
+  const [sedangHitungOngkir, setSedangHitungOngkir] = useState(false);
+  const [tokoTersediaKirim, setTokoTersediaKirim] = useState(true);
   const [idZona, setIdZona] = useState("");
   const [tanggalAmbil, setTanggalAmbil] = useState("");
   const [jamAmbil, setJamAmbil] = useState("09:00");
@@ -135,6 +149,26 @@ export function CheckoutView() {
 
     if (toko) {
       setPengaturan(toko);
+      if (
+        toko.lat_toko === null ||
+        toko.lat_toko === undefined ||
+        toko.lng_toko === null ||
+        toko.lng_toko === undefined
+      ) {
+        setTokoTersediaKirim(false);
+      }
+    } else {
+      setTokoTersediaKirim(false);
+    }
+
+    const { data: listTarif } = await supabase
+      .from("tarif_jarak")
+      .select("id")
+      .eq("aktif", true)
+      .limit(1);
+
+    if (!listTarif || listTarif.length === 0) {
+      setTokoTersediaKirim(false);
     }
 
     try {
@@ -155,6 +189,43 @@ export function CheckoutView() {
   useEffect(() => {
     muatDataAwal();
   }, []);
+
+  useEffect(() => {
+    if (metodePengiriman !== "Kirim" || latTujuan === null || lngTujuan === null) {
+      return;
+    }
+
+    setSedangHitungOngkir(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/ongkir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat: latTujuan, lng: lngTujuan }),
+        });
+        const data = await res.json();
+        setSedangHitungOngkir(false);
+        if (res.ok) {
+          setStatusOngkir(data.status);
+          setJarakKm(data.jarak_km);
+          setOngkirJarak(data.ongkir || 0);
+          setMaksKmKirim(data.maks_km);
+          if (data.status === "tokoBelumDiatur") {
+            setTokoTersediaKirim(false);
+          }
+        } else {
+          setStatusOngkir("error");
+          setOngkirJarak(0);
+        }
+      } catch {
+        setSedangHitungOngkir(false);
+        setStatusOngkir("error");
+        setOngkirJarak(0);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [latTujuan, lngTujuan, metodePengiriman]);
 
   async function ubahJumlahItem(id, jumlahBaru) {
     if (jumlahBaru < 1 || jumlahBaru > 20) return;
@@ -187,8 +258,10 @@ export function CheckoutView() {
     } catch {}
   }
 
-  const zonaTerpilih = daftarZona.find((z) => String(z.id) === String(idZona));
-  const ongkir = metodePengiriman === "Kirim" && zonaTerpilih ? Number(zonaTerpilih.tarif || 0) : 0;
+  const ongkir =
+    metodePengiriman === "Kirim" && statusOngkir === "ok"
+      ? Number(ongkirJarak || 0)
+      : 0;
   const totalKue = Number(ringkasan.total_kue || 0);
   const totalBayar = totalKue + ongkir;
 
@@ -231,8 +304,18 @@ export function CheckoutView() {
         setPesanError("Alamat lengkap wajib diisi untuk pengiriman.");
         return;
       }
-      if (!idZona) {
-        setPesanError("Silakan pilih zona pengiriman.");
+      if (latTujuan === null || lngTujuan === null) {
+        setPesanError("Silakan tentukan titik pengantaran pada peta.");
+        return;
+      }
+      if (statusOngkir === "diluarJangkauan") {
+        setPesanError(
+          `Alamat di luar jangkauan pengiriman${maksKmKirim ? ` (maks ${maksKmKirim} km)` : ""}. Silakan pilih Ambil di Toko.`
+        );
+        return;
+      }
+      if (statusOngkir === "tokoBelumDiatur") {
+        setPesanError("Pengiriman belum tersedia saat ini. Silakan pilih Ambil di Toko.");
         return;
       }
     }
@@ -267,12 +350,17 @@ export function CheckoutView() {
     setSedangProses(true);
 
     try {
+      const alamatGabung = patokan.trim()
+        ? `${alamat.trim()} (Patokan: ${patokan.trim()})`
+        : alamat.trim();
+
       const payload = {
         nama_penerima: namaPenerima.trim(),
         no_wa: noWa.trim(),
         metode_pengiriman: metodePengiriman,
-        alamat: metodePengiriman === "Kirim" ? alamat.trim() : "",
-        id_zona: metodePengiriman === "Kirim" ? Number(idZona) : null,
+        alamat: metodePengiriman === "Kirim" ? alamatGabung : "",
+        lat_tujuan: metodePengiriman === "Kirim" ? latTujuan : null,
+        lng_tujuan: metodePengiriman === "Kirim" ? lngTujuan : null,
         tanggal_ambil: tanggalAmbil,
         jam_ambil: jamAmbil,
         catatan: catatan.trim(),
@@ -605,52 +693,97 @@ export function CheckoutView() {
                           </p>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setMetodePengiriman("Kirim")}
-                          className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
-                            metodePengiriman === "Kirim"
-                              ? "border-[#7D2330] bg-[#FFF5F2] ring-1 ring-[#7D2330]"
-                              : "border-[#E6D4C6] bg-white/70 hover:bg-white"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="metode"
-                              checked={metodePengiriman === "Kirim"}
-                              onChange={() => setMetodePengiriman("Kirim")}
-                              className="accent-[#7D2330]"
-                            />
-                            <span className="font-bold text-xs sm:text-sm text-[#4A2E2B]">
-                              Kirim ke Alamat
+                        {tokoTersediaKirim ? (
+                          <button
+                            type="button"
+                            onClick={() => setMetodePengiriman("Kirim")}
+                            className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
+                              metodePengiriman === "Kirim"
+                                ? "border-[#7D2330] bg-[#FFF5F2] ring-1 ring-[#7D2330]"
+                                : "border-[#E6D4C6] bg-white/70 hover:bg-white"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="metode"
+                                checked={metodePengiriman === "Kirim"}
+                                onChange={() => setMetodePengiriman("Kirim")}
+                                className="accent-[#7D2330]"
+                              />
+                              <span className="font-bold text-xs sm:text-sm text-[#4A2E2B]">
+                                Kirim ke Alamat
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-[#7D5A50] mt-1 pl-5">
+                              Kurir khusus kue berpendingin
+                            </p>
+                          </button>
+                        ) : (
+                          <div className="p-3.5 rounded-xl border border-dashed border-[#E6D4C6] bg-stone-100/70 text-stone-400 text-left">
+                            <span className="font-bold text-xs sm:text-sm block">
+                              Pengiriman Belum Tersedia
                             </span>
+                            <p className="text-[11px] text-stone-500 mt-1">
+                              Opsi kirim belum diaktifkan oleh toko. Silakan pilih Ambil di Toko.
+                            </p>
                           </div>
-                          <p className="text-[11px] text-[#7D5A50] mt-1 pl-5">
-                            Kurir khusus kue berpendingin
-                          </p>
-                        </button>
+                        )}
                       </div>
                     </div>
 
                     {metodePengiriman === "Kirim" && (
-                      <div className="space-y-3.5 p-4 rounded-2xl bg-white/60 border border-[#EEDBCE]">
+                      <div className="space-y-4 p-4 sm:p-5 rounded-2xl bg-white/70 border border-[#EEDBCE]">
                         <div>
-                          <label className="block text-xs font-semibold text-[#4A2E2B] mb-1">
-                            Zona Pengiriman *
+                          <label className="block text-xs font-semibold text-[#4A2E2B] mb-1.5">
+                            Pilih Titik Pengantaran pada Peta *
                           </label>
-                          <select
-                            value={idZona}
-                            onChange={(e) => setIdZona(e.target.value)}
-                            className="w-full px-3 py-2.5 rounded-xl border border-[#E6D4C6] bg-white text-xs sm:text-sm text-[#4A2E2B] focus:outline-none focus:border-[#7D2330] cursor-pointer"
-                          >
-                            {daftarZona.map((z) => (
-                              <option key={z.id} value={z.id}>
-                                {z.nama} — {formatRupiah(z.tarif)}
-                              </option>
-                            ))}
-                          </select>
+                          <PetaLokasi
+                            lat={latTujuan}
+                            lng={lngTujuan}
+                            onChange={({ lat, lng }) => {
+                              setLatTujuan(lat);
+                              setLngTujuan(lng);
+                            }}
+                            latToko={pengaturan?.lat_toko}
+                            lngToko={pengaturan?.lng_toko}
+                            noWaToko={pengaturan?.no_wa}
+                            tinggi="280px"
+                          />
                         </div>
+
+                        {sedangHitungOngkir && (
+                          <div className="p-3 rounded-xl bg-[#FAF0E6] border border-[#E8DACB] text-xs text-[#7D5A50] animate-pulse flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#7D2330] animate-ping" />
+                            <span>Menghitung jarak dan ongkos kirim...</span>
+                          </div>
+                        )}
+
+                        {!sedangHitungOngkir && statusOngkir === "ok" && jarakKm !== null && (
+                          <div className="p-3.5 rounded-xl bg-[#FAF0E6] border border-[#E8DACB] text-xs text-[#4A2E2B] space-y-1">
+                            <div className="flex items-center justify-between font-bold">
+                              <span>Jarak sekitar {jarakKm} km</span>
+                              <span className="text-[#7D2330] font-mono text-sm">
+                                Ongkir: {formatRupiah(ongkirJarak)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-[#7D5A50]">
+                              Jarak adalah perkiraan berdasarkan rute jalan terdekat.
+                            </p>
+                          </div>
+                        )}
+
+                        {!sedangHitungOngkir && statusOngkir === "diluarJangkauan" && (
+                          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+                            Di luar jangkauan pengiriman{maksKmKirim ? ` (maks ${maksKmKirim} km)` : ""}. Pilih Ambil di Tempat atau hubungi toko.
+                          </div>
+                        )}
+
+                        {!sedangHitungOngkir && statusOngkir === "tokoBelumDiatur" && (
+                          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold">
+                            Pengiriman belum tersedia.
+                          </div>
+                        )}
 
                         <div>
                           <label className="block text-xs font-semibold text-[#4A2E2B] mb-1">
@@ -667,6 +800,19 @@ export function CheckoutView() {
                               className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E6D4C6] bg-white text-xs sm:text-sm text-[#4A2E2B] placeholder-[#9E8278] focus:outline-none focus:border-[#7D2330] transition"
                             />
                           </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#4A2E2B] mb-1">
+                            Patokan / Detail Lokasi (Opsional)
+                          </label>
+                          <input
+                            type="text"
+                            value={patokan}
+                            onChange={(e) => setPatokan(e.target.value)}
+                            placeholder="Contoh: pagar hitam, seberang minimarket, rumah cat hijau..."
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6D4C6] bg-white text-xs sm:text-sm text-[#4A2E2B] placeholder-[#9E8278] focus:outline-none focus:border-[#7D2330] transition"
+                          />
                         </div>
                       </div>
                     )}
@@ -727,7 +873,14 @@ export function CheckoutView() {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer"
+                    disabled={
+                      metodePengiriman === "Kirim" &&
+                      (statusOngkir !== "ok" ||
+                        latTujuan === null ||
+                        lngTujuan === null ||
+                        sedangHitungOngkir)
+                    }
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span>Lanjut ke Pembayaran →</span>
                   </button>
@@ -876,7 +1029,13 @@ export function CheckoutView() {
                   </button>
                   <button
                     type="button"
-                    disabled={sedangProses}
+                    disabled={
+                      sedangProses ||
+                      (metodePengiriman === "Kirim" &&
+                        (statusOngkir !== "ok" ||
+                          latTujuan === null ||
+                          lngTujuan === null))
+                    }
                     onClick={handleBuatPesanan}
                     className="px-8 py-3 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer disabled:opacity-50"
                   >

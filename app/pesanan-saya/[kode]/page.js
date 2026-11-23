@@ -360,7 +360,9 @@ export default async function DetailTiketPage(props) {
                         Pengiriman
                       </span>
                       <span className="font-semibold text-stone-800">
-                        {pesanan.zona_ongkir?.nama || "Ongkos Kirim"}
+                        {pesanan.jarak_km
+                          ? `Kurir Khusus (${pesanan.jarak_km} km)`
+                          : pesanan.zona_ongkir?.nama || "Ongkos Kirim"}
                       </span>
                     </div>
                     <span className="font-medium text-stone-700 lining-nums tabular-nums">
@@ -430,7 +432,9 @@ export default async function DetailTiketPage(props) {
                   <div>
                     <span>Pengambilan: </span>
                     <strong>
-                      {pesanan.metode_pengiriman === "Ambil" ? "Ambil di Toko" : "Kirim ke Alamat"}
+                      {pesanan.metode_pengiriman === "Ambil"
+                        ? "Ambil di Toko"
+                        : `Kirim ke Alamat${pesanan.jarak_km ? ` (Jarak ${pesanan.jarak_km} km)` : ""}`}
                     </strong>
                     {pesanan.alamat && (
                       <p className="text-stone-500 mt-1">{pesanan.alamat}</p>

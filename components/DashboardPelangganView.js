@@ -1226,7 +1226,7 @@ export default function DashboardPelangganView({
                                   Penerima: {p.nama_penerima} •{" "}
                                   {p.metode_pengiriman === "Ambil"
                                     ? "Ambil di Toko"
-                                    : `Kirim (${p.zona_ongkir?.nama || "Kurir"})`}
+                                    : `Kirim Kurir${p.jarak_km ? ` (${p.jarak_km} km)` : p.zona_ongkir?.nama ? ` (${p.zona_ongkir.nama})` : ""}`}
                                 </p>
 
                                 <p className="text-xs text-[#6b8274]">
@@ -2226,7 +2226,8 @@ export default function DashboardPelangganView({
               </div>
               <div className="flex justify-between text-[#3a5246]">
                 <span>
-                  Ongkos Kirim ({pesananInvoice.metode_pengiriman})
+                  Ongkos Kirim ({pesananInvoice.metode_pengiriman}
+                  {pesananInvoice.jarak_km ? ` - ${pesananInvoice.jarak_km} km` : ""})
                 </span>
                 <span>{formatRupiah(pesananInvoice.ongkir || 0)}</span>
               </div>

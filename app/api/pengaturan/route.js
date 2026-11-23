@@ -33,6 +33,33 @@ export async function POST(request) {
     const atas_nama = formData.get("atas_nama") || "";
     const hapus_qris = formData.get("hapus_qris") === "true";
     const file_qris = formData.get("file_qris");
+    const lat_toko_raw = formData.get("lat_toko");
+    const lng_toko_raw = formData.get("lng_toko");
+    const faktor_jalan_raw = formData.get("faktor_jalan");
+    const maks_jarak_kirim_km_raw = formData.get("maks_jarak_kirim_km");
+
+    let lat_toko = null;
+    let lng_toko = null;
+    if (lat_toko_raw !== null && lat_toko_raw !== undefined && String(lat_toko_raw).trim() !== "") {
+      const n = Number(lat_toko_raw);
+      if (!isNaN(n)) lat_toko = n;
+    }
+    if (lng_toko_raw !== null && lng_toko_raw !== undefined && String(lng_toko_raw).trim() !== "") {
+      const n = Number(lng_toko_raw);
+      if (!isNaN(n)) lng_toko = n;
+    }
+
+    let faktor_jalan = 1.3;
+    if (faktor_jalan_raw !== null && faktor_jalan_raw !== undefined && String(faktor_jalan_raw).trim() !== "") {
+      const n = Number(faktor_jalan_raw);
+      if (!isNaN(n) && n >= 1) faktor_jalan = n;
+    }
+
+    let maks_jarak_kirim_km = null;
+    if (maks_jarak_kirim_km_raw !== null && maks_jarak_kirim_km_raw !== undefined && String(maks_jarak_kirim_km_raw).trim() !== "") {
+      const n = Number(maks_jarak_kirim_km_raw);
+      if (!isNaN(n) && n > 0) maks_jarak_kirim_km = n;
+    }
 
     if (!nama_toko || nama_toko.trim() === "") {
       return NextResponse.json(
@@ -166,6 +193,10 @@ export async function POST(request) {
         no_rekening: no_rekening.trim(),
         atas_nama: atas_nama.trim(),
         gambar_qris: gambar_qris_path,
+        lat_toko,
+        lng_toko,
+        faktor_jalan,
+        maks_jarak_kirim_km,
       });
 
     if (errUpdate) {

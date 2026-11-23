@@ -945,17 +945,35 @@ export default function PesananDashboardPage() {
               </span>
             </div>
             <div>
-              <span className="text-stone-400 block text-[9px]">Zona / Lokasi</span>
+              <span className="text-stone-400 block text-[9px]">
+                {detailPesanan.jarak_km ? "Jarak Pengantaran" : "Zona / Lokasi"}
+              </span>
               <span className="font-bold text-stone-900">
-                {detailPesanan.zona_ongkir?.nama || "Toko Cravely"}
+                {detailPesanan.jarak_km
+                  ? `${detailPesanan.jarak_km} km`
+                  : detailPesanan.zona_ongkir?.nama || "Toko Cravely"}
               </span>
             </div>
             {detailPesanan.metode_pengiriman === "Kirim" && detailPesanan.alamat && (
-              <div className="col-span-2 pt-1 border-t border-dashed border-stone-200">
-                <span className="text-stone-400 block text-[9px]">Alamat</span>
+              <div className="col-span-2 pt-1 border-t border-dashed border-stone-200 space-y-1.5">
+                <span className="text-stone-400 block text-[9px]">Alamat Lengkap</span>
                 <p className="font-medium text-stone-800 bg-[#fbf6e9] border border-[#e0d5b8] p-1.5 rounded-lg mt-0.5">
                   {detailPesanan.alamat}
                 </p>
+                {detailPesanan.lat_tujuan !== null &&
+                  detailPesanan.lng_tujuan !== null &&
+                  detailPesanan.lat_tujuan !== undefined &&
+                  detailPesanan.lng_tujuan !== undefined && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${detailPesanan.lat_tujuan},${detailPesanan.lng_tujuan}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline pt-0.5"
+                    >
+                      <i className="fa-solid fa-map-location-dot text-xs"></i>
+                      <span>Lihat Lokasi di Google Maps</span>
+                    </a>
+                  )}
               </div>
             )}
           </div>
@@ -1153,7 +1171,7 @@ export default function PesananDashboardPage() {
                 <span>Subtotal Semua Kue</span>
                 <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(detailPesanan.total_kue)}</span>
               </div>
-              {detailPesanan.ongkir > 0 && (
+              {isAdmin && detailPesanan.ongkir > 0 && (
                 <div className="flex justify-between text-stone-600 text-[10px]">
                   <span>Ongkos Kirim</span>
                   <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(detailPesanan.ongkir)}</span>
