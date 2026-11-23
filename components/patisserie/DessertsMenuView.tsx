@@ -26,7 +26,7 @@ export interface DessertsMenuViewProps {
 }
 
 export type MenuCategoryKey = "semua" | "ultah" | "tart" | "cupcake" | "cookies" | "roti";
-export type SortOptionKey = "populer" | "harga-asc" | "harga-desc" | "nama";
+export type SortOptionKey = "terbaru" | "populer" | "harga-asc" | "harga-desc" | "nama";
 
 export interface MenuItem {
   id: number;
@@ -307,8 +307,8 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
   const allItems = itemsProp && itemsProp.length > 0 ? itemsProp : MENU_ITEMS;
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryKey>("semua");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortBy, setSortBy] = useState<SortOptionKey>("populer");
-  const [visibleCount, setVisibleCount] = useState<number>(6);
+  const [sortBy, setSortBy] = useState<SortOptionKey>("terbaru");
+  const [visibleCount, setVisibleCount] = useState<number>(12);
   const [addedItemIds, setAddedItemIds] = useState<Record<number, boolean>>({});
   const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
@@ -351,7 +351,9 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
     }
 
     // Sorting Profesional
-    if (sortBy === "populer") {
+    if (sortBy === "terbaru") {
+      result.sort((a, b) => (b.id || 0) - (a.id || 0));
+    } else if (sortBy === "populer") {
       result.sort((a, b) => b.terjual - a.terjual);
     } else if (sortBy === "harga-asc") {
       result.sort((a, b) => a.harga - b.harga);
@@ -623,6 +625,7 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                     onChange={(e) => setSortBy(e.target.value as SortOptionKey)}
                     className="pl-8 pr-7 py-2 rounded-xl text-xs sm:text-[13px] font-semibold bg-[#FAF4EE] border border-[#E8DACB] text-[#5C3D2E] focus:outline-none focus:ring-1 focus:ring-[#7D2330] appearance-none cursor-pointer"
                   >
+                    <option value="terbaru">Terbaru</option>
                     <option value="populer">Paling Populer</option>
                     <option value="harga-asc">Harga: Terendah</option>
                     <option value="harga-desc">Harga: Tertinggi</option>
@@ -649,7 +652,7 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                       type="button"
                       onClick={() => {
                         setSelectedCategory(tab.key);
-                        setVisibleCount(6);
+                        setVisibleCount(12);
                       }}
                       className={`px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                         isActive

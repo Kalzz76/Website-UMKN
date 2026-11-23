@@ -737,7 +737,6 @@ export default function KatalogOpsiPage() {
                     <th className="py-2.5 px-3">Nama Produk</th>
                     <th className="py-2.5 px-3">Deskripsi</th>
                     <th className="py-2.5 px-3">Harga</th>
-                    <th className="py-2.5 px-3 text-center">Urutan</th>
                     <th className="py-2.5 px-3 text-center">Status</th>
                     <th className="py-2.5 px-3 text-right rounded-r-xl">Aksi</th>
                   </tr>
@@ -772,9 +771,6 @@ export default function KatalogOpsiPage() {
                       </td>
                       <td className="py-2.5 px-3 font-bold text-stone-900 lining-nums tabular-nums">
                         {formatRupiah(p.harga)}
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-mono text-stone-500">
-                        {p.urutan ?? 0}
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         <span
@@ -869,32 +865,18 @@ export default function KatalogOpsiPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                    Harga (Rp) <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={formProduk.harga}
-                    onChange={(e) => setFormProduk({ ...formProduk, harga: Number(e.target.value) })}
-                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition lining-nums"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                    Urutan Tampil
-                  </label>
-                  <input
-                    type="number"
-                    value={formProduk.urutan}
-                    onChange={(e) => setFormProduk({ ...formProduk, urutan: Number(e.target.value) })}
-                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                  Harga (Rp) <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={formProduk.harga}
+                  onChange={(e) => setFormProduk({ ...formProduk, harga: Number(e.target.value) })}
+                  className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition lining-nums"
+                />
               </div>
 
               <div>

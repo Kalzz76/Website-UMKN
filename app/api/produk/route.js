@@ -7,8 +7,8 @@ export async function GET() {
   const { data, error } = await supabase
     .from("produk")
     .select("*")
-    .order("urutan", { ascending: true })
-    .order("id", { ascending: true });
+    .order("dibuat_pada", { ascending: false })
+    .order("id", { ascending: false });
 
   if (error) {
     return NextResponse.json({ pesan: "Gagal memuat produk: " + error.message }, { status: 500 });
