@@ -40,7 +40,7 @@ create table if not exists public.keranjang_item (
   foto_bentuk_kustom text,
   foto_gambar_kustom text,
   dibuat_pada timestamptz not null default now(),
-  constraint keranjang_item_jenis_check check (
+  constraint keranjang_item_aturan_jenis_check check (
     (jenis = 'Siap' and id_produk is not null) or
     (jenis = 'Custom' and pilihan is not null and jumlah = 1)
   )
