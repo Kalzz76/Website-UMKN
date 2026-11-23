@@ -382,8 +382,8 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
     <div className="w-full relative">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 sm:gap-9 items-start">
         {/* ==================== LEFT COLUMN: LIVE SPOTLIGHT / PRATINJAU DETAIL KUE ==================== */}
-        <div ref={previewRef} className="lg:col-span-4 xl:col-span-4 w-full lg:sticky lg:top-20">
-          <div className="relative rounded-[26px] overflow-hidden shadow-xl border border-[#E8D9C8] flex flex-col justify-between min-h-[580px] sm:min-h-[640px] lg:min-h-[680px] bg-[#EDE0D1]">
+        <div ref={previewRef} className="lg:col-span-4 xl:col-span-4 w-full lg:sticky lg:top-14 z-20 self-start">
+          <div className="relative rounded-[26px] overflow-hidden shadow-xl border border-[#E8D9C8] flex flex-col justify-between h-[calc(100vh-4.5rem)] max-h-[580px] sm:max-h-[610px] min-h-[460px] bg-[#EDE0D1]">
             {/* Background Live Preview Photo with Cross-fade Animation */}
             <AnimatePresence mode="wait">
               <motion.img
@@ -399,12 +399,12 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
             </AnimatePresence>
 
             {/* Top Scrim Gradient */}
-            <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-black/75 via-black/35 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-black/75 via-black/35 to-transparent pointer-events-none" />
 
             {/* Top Text Content & Live Status */}
-            <div className="relative z-10 p-6 sm:p-7 pt-7 sm:pt-8 text-white">
+            <div className="relative z-10 p-5 sm:p-6 pt-5 sm:pt-6 text-white">
               <div className="flex items-center justify-between gap-2">
-                <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-white/95 border border-white/25">
+                <span className="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-white/95 border border-white/25">
                   Pratinjau Kue Terpilih
                 </span>
                 <span className="flex items-center gap-1 text-xs font-semibold text-amber-300 drop-shadow">
@@ -420,12 +420,12 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.25 }}
-                  className="mt-3"
+                  className="mt-2"
                 >
-                  <h2 className="font-serif text-2xl sm:text-3xl font-bold uppercase tracking-tight text-white leading-[1.15] drop-shadow-md">
+                  <h2 className="font-serif text-xl sm:text-2xl lg:text-[26px] font-bold uppercase tracking-tight text-white leading-tight drop-shadow-md">
                     {selectedCake.nama}
                   </h2>
-                  <p className="font-serif italic text-sm sm:text-base text-white/90 mt-1 drop-shadow">
+                  <p className="font-serif italic text-xs sm:text-sm text-white/90 mt-0.5 drop-shadow">
                     {selectedCake.ukuran}
                   </p>
                 </motion.div>
@@ -437,15 +437,15 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
               {/* Curve Scoop SVG */}
               <div className="w-full overflow-hidden leading-none -mb-[1px]">
                 <svg
-                  viewBox="0 0 400 36"
+                  viewBox="0 0 400 32"
                   preserveAspectRatio="none"
-                  className="w-full h-7 sm:h-9 text-[#7D2330] fill-current"
+                  className="w-full h-6 sm:h-7 text-[#7D2330] fill-current"
                 >
-                  <path d="M0,36 C130,0 270,32 400,12 L400,36 L0,36 Z" />
+                  <path d="M0,32 C130,0 270,28 400,10 L400,32 L0,32 Z" />
                 </svg>
               </div>
 
-              <div className="bg-[#7D2330] text-white px-6 sm:px-7 pb-6 sm:pb-7 pt-1">
+              <div className="bg-[#7D2330] text-white px-5 sm:px-6 pb-5 sm:pb-6 pt-0.5">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={selectedCake.id}
@@ -463,21 +463,21 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                       </span>
                     </div>
 
-                    <p className="text-xs sm:text-[13px] text-white/90 leading-relaxed mt-1.5 line-clamp-3">
+                    <p className="text-xs text-white/90 leading-snug mt-1 line-clamp-2">
                       {selectedCake.desc}
                     </p>
 
-                    <div className="mt-2.5 pt-2 border-t border-white/20">
-                      <p className="text-[11px] text-[#F9CCD2]/90 font-medium line-clamp-1">
+                    <div className="mt-2 pt-1.5 border-t border-white/20">
+                      <p className="text-[10.5px] text-[#F9CCD2]/90 font-medium line-clamp-1">
                         <span className="font-bold text-white">Komposisi:</span> {selectedCake.komposisi}
                       </p>
                     </div>
 
-                    <div className="mt-4 flex items-center gap-3">
+                    <div className="mt-3 flex items-center gap-2.5">
                       <button
                         type="button"
                         onClick={(e) => handleAddToCartClick(selectedCake, e)}
-                        className={`flex-1 py-2 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer ${
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-[13px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer ${
                           addedItemIds[selectedCake.id]
                             ? "bg-emerald-600 text-white"
                             : "bg-white text-[#7D2330] hover:bg-[#FFFDF9]"
@@ -485,12 +485,12 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                       >
                         {addedItemIds[selectedCake.id] ? (
                           <>
-                            <Check className="w-4 h-4" />
+                            <Check className="w-3.5 h-3.5" />
                             <span>Ditambahkan!</span>
                           </>
                         ) : (
                           <>
-                            <ShoppingBag className="w-4 h-4" />
+                            <ShoppingBag className="w-3.5 h-3.5" />
                             <span>+ Masukkan Keranjang</span>
                           </>
                         )}
