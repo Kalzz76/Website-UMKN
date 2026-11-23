@@ -4173,7 +4173,7 @@ export default function PesanPage() {
         className="bc"
         viewBox={`0 0 ${x} 64`}
         preserveAspectRatio="none"
-        fill="#17382d"
+        fill="#3B2326"
         aria-hidden="true"
         style={{
           width: "100%",
@@ -4914,10 +4914,10 @@ export default function PesanPage() {
                     marginTop: "16px",
                     padding: "16px",
                     borderRadius: "16px",
-                    background: "#183b2d",
-                    color: "#ffffff",
-                    border: "1.5px dashed rgba(255, 255, 255, 0.25)",
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                    background: "#FFFDF7",
+                    color: "#3B2326",
+                    border: "1.5px dashed #CDBFAA",
+                    boxShadow: "0 4px 12px rgba(163, 99, 97, 0.08)",
                   }}
                 >
                   <div
@@ -4928,7 +4928,7 @@ export default function PesanPage() {
                       marginBottom: "8px",
                     }}
                   >
-                    <b style={{ fontSize: "13px", color: "#ff7b7b" }}>
+                    <b style={{ fontSize: "13px", color: "#A36361" }}>
                       {S.pay === "qris"
                         ? "📌 QRIS Resmi Cravely Bakery"
                         : S.pay === "cash"
@@ -4942,10 +4942,10 @@ export default function PesanPage() {
                           fontWeight: 700,
                           padding: "3px 10px",
                           borderRadius: "10px",
-                          background: "rgba(255, 255, 255, 0.12)",
-                          border: "1px solid rgba(255, 255, 255, 0.2)",
-                          color: "#f2c230",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                          background: "#F1DBD0",
+                          border: "1px solid #D3A29D",
+                          color: "#A36361",
+                          boxShadow: "0 1px 3px rgba(163, 99, 97, 0.1)",
                         }}
                       >
                         Batas: {pengaturan?.batas_bayar_jam || 24} Jam
@@ -4956,7 +4956,7 @@ export default function PesanPage() {
                     <div
                       style={{
                         fontSize: "13px",
-                        color: "#ffffff",
+                        color: "#3B2326",
                         lineHeight: "1.6",
                       }}
                     >
@@ -4965,7 +4965,7 @@ export default function PesanPage() {
                       </div>
                       <div>
                         No. Rekening:{" "}
-                        <b style={{ letterSpacing: "1px", color: "#f2c230" }}>
+                        <b style={{ letterSpacing: "1px", color: "#A36361" }}>
                           {pengaturan?.no_rekening || "1234567890"}
                         </b>
                       </div>
@@ -5035,7 +5035,7 @@ export default function PesanPage() {
                   <div
                     style={{
                       fontSize: "11.5px",
-                      color: "#c2d6ca",
+                      color: "#7A5E60",
                       marginTop: "8px",
                       fontWeight: 600,
                     }}
@@ -5132,7 +5132,7 @@ export default function PesanPage() {
                           {r[1] > 0 ? (
                             formatRupiah(r[1])
                           ) : (
-                            <span style={{ color: "#557064", fontWeight: 600 }}>
+                            <span style={{ color: "#ADB697", fontWeight: 700 }}>
                               Termasuk
                             </span>
                           )}
@@ -5141,7 +5141,7 @@ export default function PesanPage() {
                           {r[1] > 0 ? (
                             formatRupiah(r[1])
                           ) : (
-                            <span style={{ color: "#557064", fontWeight: 600 }}>
+                            <span style={{ color: "#ADB697", fontWeight: 700 }}>
                               Termasuk
                             </span>
                           )}
@@ -5179,7 +5179,7 @@ export default function PesanPage() {
                     <div
                       style={{
                         fontWeight: 800,
-                        color: "#ba2b2b",
+                        color: "#A36361",
                         marginBottom: "8px",
                         fontSize: "14px",
                       }}
@@ -5191,7 +5191,7 @@ export default function PesanPage() {
                     <div
                       className="cb"
                       style={{
-                        color: S.pay === "bank" ? "#ba2b2b" : "#6f7d75",
+                        color: S.pay === "bank" ? "#A36361" : "#7A5E60",
                         fontWeight: S.pay === "bank" ? 800 : 600,
                       }}
                     >
@@ -5201,7 +5201,7 @@ export default function PesanPage() {
                     <div
                       className="cb"
                       style={{
-                        color: S.pay === "qris" ? "#ba2b2b" : "#6f7d75",
+                        color: S.pay === "qris" ? "#A36361" : "#7A5E60",
                         fontWeight: S.pay === "qris" ? 800 : 600,
                       }}
                     >
@@ -5211,7 +5211,7 @@ export default function PesanPage() {
                       <div
                         className="cb"
                         style={{
-                          color: S.pay === "cash" ? "#ba2b2b" : "#6f7d75",
+                          color: S.pay === "cash" ? "#A36361" : "#7A5E60",
                           fontWeight: S.pay === "cash" ? 800 : 600,
                         }}
                       >
@@ -5222,16 +5222,16 @@ export default function PesanPage() {
                       style={{
                         marginTop: "10px",
                         paddingTop: "8px",
-                        borderTop: "1.5px dashed #d8cca6",
+                        borderTop: "1.5px dashed #CDBFAA",
                         fontSize: "12px",
-                        color: "#17382d",
+                        color: "#3B2326",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                       }}
                     >
                       <span>Bayar Sekarang:</span>
-                      <b style={{ fontSize: "14px", color: "#ba2b2b" }}>
+                      <b style={{ fontSize: "14px", color: "#A36361" }}>
                         {formatRupiah(jumlahDpSekarang)}
                       </b>
                     </div>
@@ -5242,7 +5242,7 @@ export default function PesanPage() {
                     <div
                       style={{
                         fontSize: "12.5px",
-                        color: "#17382d",
+                        color: "#3B2326",
                         lineHeight: "1.5",
                       }}
                     >
@@ -5265,7 +5265,7 @@ export default function PesanPage() {
                           style={{
                             marginTop: "4px",
                             fontStyle: "italic",
-                            color: "#4f6559",
+                            color: "#7A5E60",
                           }}
                         >
                           &ldquo;{S.f.notes}&rdquo;

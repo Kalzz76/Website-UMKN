@@ -515,6 +515,73 @@ function tileTex(rx,ry,base,grout){const n=64,d=new Uint8Array(n*n*4),B=hx(base)
  const t=new THREE.DataTexture(d,n,n,THREE.RGBAFormat);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;t.needsUpdate=true;return t}
 function kplant(g,x,y,z,s,pot,leaf,n){const p=new THREE.Group();p.position.set(x,y,z);p.scale.setScalar(s);kc(p,.46,.33,.8,pot,0,.4,0);kc(p,.5,.5,.1,pot,0,.82,0);kc(p,.42,.42,.04,"#4a3a2a",0,.85,0);
  for(let i=0;i<n;i++){const a=i/n*6.283+i*.7,k=.5+(i%3)*.22,d=new THREE.Vector3(Math.cos(a)*k,1,Math.sin(a)*k).normalize(),l=ks(p,.3,leaf,0,0,0,.42,1.45,.14);l.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d);l.position.copy(d).multiplyScalar(.42).add(new THREE.Vector3(0,.85,0))}g.add(p)}
+
+/* ===== karakter cewek imut berceleme ===== */
+function limb(g,a,b,r,c){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=B.clone().sub(A),m=new THREE.Mesh(new THREE.CylinderGeometry(r,r*.9,d.length(),14),KM(c,.6));m.position.copy(A).add(B).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());m.castShadow=true;g.add(m);return m}
+function buildGirl(){const g=new THREE.Group(),skin="#fbe2d4",hair="#6a3733",wt="#fffaf6",pk="#ee8da3",pkD="#d96f8a",R=.78,HY=3.4,fz=(x,y)=>Math.sqrt(Math.max(.02,R*R-x*x-y*y))*.95;
+ function tube(par,pts,rf,col,rough){const cv=new THREE.CatmullRomCurve3(pts.map(v=>new THREE.Vector3(v[0],v[1],v[2]))),TS=24,RS=16,geo=new THREE.TubeGeometry(cv,TS,1,RS,false),pa=geo.attributes.position;
+  for(let i=0;i<=TS;i++){const t=i/TS,c=cv.getPointAt(t),f=rf(t);for(let j=0;j<=RS;j++){const k=i*(RS+1)+j;pa.setXYZ(k,c.x+(pa.getX(k)-c.x)*f,c.y+(pa.getY(k)-c.y)*f,c.z+(pa.getZ(k)-c.z)*f)}}
+  geo.computeVertexNormals();const m=new THREE.Mesh(geo,KM(col,rough));m.castShadow=true;par.add(m);return m}
+ const slv=t=>.25-.05*t+.05*Math.pow(Math.max(0,(t-.78)/.22),1.5),fr=t=>.1-.025*t,hr=t=>Math.max(.5,1-.5*Math.pow(t,2));
+ function hand(par){const h=new THREE.Group();par.add(h);ks(h,.15,skin,0,.14,0,1,1.05,.7,.6);
+  [[-.08,.8],[-.03,1],[.03,1],[.08,.8]].forEach((f,j)=>{const m=ks(h,.05,skin,f[0]*1.1,.36+f[1]*.03,0,1,2.2*f[1]+.4,1.1,.6);m.rotation.z=(j-1.5)*-.1});
+  const t=ks(h,.058,skin,.16,.18,.03,1,2.1,1.1,.6);t.rotation.z=-.85;h.scale.setScalar(1.1);return h}
+ /* kaki: kaos kaki putih + sepatu merah */
+ for(const x of [-.22,.22]){kc(g,.1,.1,.5,wt,x,.3,0,.8);ks(g,.19,"#b03a48",x,.08,.1,1,.6,1.5,.4)}
+ /* rok pink mengembang + renda putih */
+ kc(g,.46,.8,.95,pk,0,1.0,0,.85,40);const rf=new THREE.Mesh(new THREE.TorusGeometry(.8,.045,8,40),KM(wt,.8));rf.rotation.x=Math.PI/2;rf.position.y=.53;g.add(rf);
+ const wb=new THREE.Mesh(new THREE.TorusGeometry(.45,.05,8,36),KM(pkD,.8));wb.rotation.x=Math.PI/2;wb.position.y=1.5;g.add(wb);
+ /* blus putih + bib apron pink dengan saku hati */
+ const to=kc(g,.4,.46,1.0,wt,0,2.02,0,.85,28);to.scale.z=.85;ks(g,.45,wt,0,2.5,0,1,.35,.75,.85);
+ kb(g,.6,.8,.05,pk,0,1.95,.38,.85);kb(g,.62,.05,.06,pkD,0,2.35,.38,.85);
+ for(const q of [-1,1]){const sp=tube(g,[[q*.24,2.35,.38],[q*.26,2.6,.2],[q*.28,2.72,-.1]],t=>.05,pk,.85)}
+ kb(g,.28,.24,.03,wt,0,1.8,.43,.85);for(const q of [-1,1])ks(g,.05,"#e24a6a",q*.035,1.83,.46,1,1,.4,.5);const hb=kb(g,.075,.075,.03,"#e24a6a",0,1.79,.46,.5);hb.rotation.z=Math.PI/4;
+ kc(g,.17,.19,.28,wt,0,2.64,0,.8);
+ /* lengan kanan (tergantung santai) */
+ const ar=new THREE.Group();ar.position.set(-.6,2.45,0);g.add(ar);ks(ar,.27,wt,0,0,0,1,1,1,.85);
+ tube(ar,[[0,0,0],[-.1,-.2,.01],[-.18,-.4,.03]],slv,wt,.85);
+ const fa=new THREE.Group();fa.position.set(-.18,-.4,.03);ar.add(fa);tube(fa,[[.03,.1,0],[0,0,0],[-.08,-.45,.05],[-.12,-.88,.12]],fr,skin,.6);
+ const wh=new THREE.Group();wh.position.set(-.12,-.88,.12);fa.add(wh);hand(wh).rotation.z=Math.PI;
+ /* lengan kiri */
+ const al=new THREE.Group();al.position.set(.6,2.45,0);g.add(al);ks(al,.27,wt,0,0,0,1,1,1,.85);
+ tube(al,[[0,0,0],[.1,-.2,.01],[.18,-.4,.03]],slv,wt,.85);
+ const lf=new THREE.Group();lf.position.set(.18,-.4,.03);al.add(lf);tube(lf,[[-.03,.1,0],[0,0,0],[.08,-.45,.05],[.12,-.88,.12]],fr,skin,.6);
+ const lw=new THREE.Group();lw.position.set(.12,-.88,.12);lf.add(lw);hand(lw).rotation.z=Math.PI;
+ /* kepala */
+ const hd=new THREE.Group();hd.position.y=HY;g.add(hd);ks(hd,R,skin,0,0,0,1,1,.95,.55);ks(hd,.4,skin,0,-.36,.2,1,.85,.9,.55);
+ const ey=new THREE.Group();hd.add(ey);
+ for(const q of [-1,1]){const x=q*.28,y=-.1,z=fz(x,y);
+  ks(ey,.17,"#ffffff",x,y,z-.03,1.05,1.15,.35,.3);ks(ey,.155,"#6b3a2a",x,y,z,.95,1.15,.3,.25);ks(ey,.1,"#c98a52",x,y-.06,z+.012,1.1,.5,.3,.3);ks(ey,.085,"#2a1410",x,y,z+.025,1,1.1,.3,.2);
+  ks(ey,.045,"#ffffff",x+q*.05,y+.06,z+.05,1,1,.4,.2);ks(ey,.022,"#ffffff",x-q*.05,y-.07,z+.045,1,1,.4,.2);
+  const ld=new THREE.Mesh(new THREE.TorusGeometry(.17,.028,6,18,Math.PI),KM("#3a1d18",.4));ld.scale.set(1.08,1,1);ld.position.set(x,y+.01,z+.01);ey.add(ld);
+  ks(hd,.15,"#ff9aa8",q*.47,-.27,fz(.47,-.27)-.03,1.3,.6,.3,.8);ks(hd,.09,skin,q*.77,-.05,0,.5,1,.8,.55)}
+ ks(hd,.035,"#eebfae",0,-.2,fz(0,-.2)+.01,1,1.2,.8,.6);
+ const mo=new THREE.Group();mo.position.set(0,-.36,fz(0,-.36)-.01);hd.add(mo);const sm=new THREE.Mesh(new THREE.TorusGeometry(.075,.014,6,14,Math.PI),KM("#c4505a",.5));sm.rotation.z=Math.PI;sm.position.y=.04;mo.add(sm);
+ /* rambut panjang lurus coklat */
+ ks(hd,R*1.03,hair,0,.04,-.22,1.02,1,.85,.5);
+ const bk=kc(g,.62,.7,1.5,hair,0,2.5,-.32,.5,28);bk.scale.z=.5;
+ const cap=new THREE.Mesh(new THREE.SphereGeometry(R*1.05,32,24,0,6.283,0,1.35),KM(hair,.45));cap.position.y=.02;cap.castShadow=true;hd.add(cap);
+ function lock(par,pts,r,tip){const cv=new THREE.CatmullRomCurve3(pts.map(v=>new THREE.Vector3(v[0],v[1],v[2]))),TS=20,RS=12,geo=new THREE.TubeGeometry(cv,TS,r,RS,false),pa=geo.attributes.position;
+  for(let i=0;i<=TS;i++){const t=i/TS,c=cv.getPointAt(t),f=Math.max(tip,1-(1-tip)*Math.pow(t,1.6));for(let j=0;j<=RS;j++){const k=i*(RS+1)+j;pa.setXYZ(k,c.x+(pa.getX(k)-c.x)*f,c.y+(pa.getY(k)-c.y)*f,c.z+(pa.getZ(k)-c.z)*f)}}
+  geo.computeVertexNormals();const m=new THREE.Mesh(geo,KM(hair,.45));m.castShadow=true;par.add(m);return m}
+ for(const x of [-.56,-.42,-.28,-.14,0,.14,.28,.42,.56])lock(hd,[[x*.85,.72,-.02],[x*.95,.52,fz(x,.52)+.02],[x,.32,fz(x,.32)+.05],[x*1.02,.15,fz(x,.15)+.05]],.13,.3);
+ for(const q of [-1,1]){lock(hd,[[q*.66,.3,.2],[q*.77,0,.2],[q*.75,-.3,.25],[q*.66,-.5,.38]],.13,.25);lock(hd,[[q*.6,.28,.52],[q*.64,-.05,.45],[q*.6,-.32,.5]],.08,.3);
+  lock(g,[[q*.76,HY-.3,-.05],[q*.92,HY-.9,-.12],[q*.92,HY-1.45,-.12],[q*.84,HY-1.95,-.08]],.17,.75)}
+ /* pita pink di atas kepala */
+ const bw=new THREE.Group();bw.position.set(-.3,.78,.22);bw.rotation.z=.35;hd.add(bw);for(const q of [-1,1]){const lp=ks(bw,.17,pk,q*.2,0,0,1.2,.8,.5,.5);lp.rotation.z=q*.25}ks(bw,.08,pkD,0,0,.04,1,1,.8,.5);
+ /* balon "Haii!" */
+ const cb=document.createElement("canvas");cb.width=256;cb.height=160;const c2=cb.getContext("2d");c2.fillStyle="#ffffff";c2.strokeStyle="#ee8da3";c2.lineWidth=8;c2.lineJoin="round";
+ c2.beginPath();c2.moveTo(40,10);c2.arcTo(246,10,246,60,30);c2.arcTo(246,112,200,112,30);c2.lineTo(90,112);c2.lineTo(34,150);c2.lineTo(60,112);c2.arcTo(10,112,10,60,30);c2.arcTo(10,10,60,10,30);c2.closePath();c2.fill();c2.stroke();
+ c2.fillStyle="#d96f8a";c2.font="bold 54px sans-serif";c2.textAlign="center";c2.textBaseline="middle";c2.fillText("Haii! \ud83d\udc4b",128,62);
+ const bub=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cb),transparent:true,opacity:0,depthTest:false}));bub.position.set(1.3,4.7,0);bub.renderOrder=10;bub.visible=false;g.add(bub);
+ g.userData={fa,hd,ey,wh,ar,al,mo,bub};return g}
+function charAnim(t){if(!KIT||!kit)return;const u=KIT.userData.girl;if(!u)return;const G=KIT.userData.girlG;if(G){G.rotation.z=Math.sin(t*.0015)*.025;G.scale.y=.9*(1+Math.sin(t*.003)*.01)}
+ /* melambai + "Haii!" sesekali: 3 detik tiap 11 detik */
+ const p=(t%11000)/3000,e=p<1?Math.max(0,Math.min(1,p/.15,(1-p)/.15)):0,E=e*e*(3-2*e),sw=Math.sin(t*.013);
+ u.ar.rotation.z=-1.7*E+Math.sin(t*.0018)*.03*(1-E);u.fa.rotation.z=-1.5*E+sw*.3*E+Math.sin(t*.004)*.05*(1-E);u.wh.rotation.z=sw*.35*E;u.al.rotation.z=Math.sin(t*.0017+1)*.03;
+ u.hd.rotation.z=.05+E*.08+Math.sin(t*.002)*.04;u.hd.rotation.y=Math.sin(t*.0013)*.12;u.hd.rotation.x=Math.sin(t*.0021)*.03;
+ u.mo.scale.y=1+Math.sin(t*.004)*.1+Math.abs(sw)*.6*E;u.ey.scale.y=(t%3800)<140?.12:1;
+ u.bub.visible=E>.01;u.bub.material.opacity=E;const k=.6+.4*E;u.bub.scale.set(1.7*k,1.06*k,1)}
 function buildKitchen(){const g=new THREE.Group(),F=-3.1,CT=-.7,wood="#d9a066",cab="#f1deb9",tp="#9f8f7f",wl="#f3e8d6";
  kb(g,13.4,.8,13.4,"#e8c79c",0,F-.4,0,.8);
  const fl=new THREE.Mesh(new THREE.PlaneGeometry(11,11),new THREE.MeshStandardMaterial({map:tileTex(6,6,"#ecdfc6","#cdbd9a"),roughness:.55}));fl.rotation.x=-Math.PI/2;fl.position.set(.05,F+.003,.05);fl.receiveShadow=true;g.add(fl);
@@ -547,6 +614,7 @@ function buildKitchen(){const g=new THREE.Group(),F=-3.1,CT=-.7,wood="#d9a066",c
  [[-.18,0],[.18,.05],[0,-.18],[.05,.2]].forEach(([dx,dz])=>ks(isl,.22,"#7bbf4a",-2.5+dx,CT+.4,-.85+dz,1,.95,1,.4));
  kc(isl,.5,.42,.05,"#f7f4ee",2.5,CT+.025,.8);[[0,0],[.15,.1],[-.15,.05],[.05,-.15]].forEach(([dx,dz])=>ks(isl,.16,"#5f9e5a",2.5+dx,CT+.12,.8+dz,1,.6,1));kc(isl,.14,.12,.28,"#ffffff",2.2,CT+.14,-.7);
  kplant(g,-4.6,F,4.6,1,"#c97b4a","#5f9e5a",11);kplant(g,5.0,F,3.3,.85,"#f1ece2","#4f8a4e",10);kplant(g,4.9,CT,-4.8,.5,"#c97b4a","#5f9e5a",7);
+ const gr=buildGirl();gr.position.set(2.6,F,-3);gr.rotation.y=.785;gr.scale.setScalar(.9);g.add(gr);g.userData.girl=gr.userData;g.userData.girlG=gr;
  g.traverse(o=>{if(o.isMesh)o.receiveShadow=true});return g}
 let kit=false,KIT=null,prevKit=false,kView=null;
 function setKitchen(on){if(on===kit)return;kit=on;if(on){if(!KIT){KIT=buildKitchen();scene.add(KIT)}kView={ph};ph=.58;cam.fov=24}else{cam.fov=35;if(kView)ph=kView.ph}
@@ -627,7 +695,7 @@ function size(){const b=$("vbox");R3.setSize(b.clientWidth,b.clientHeight,false)
 new ResizeObserver(size).observe($("vbox"));size();
 function updateCam(){root.rotation.y=th;if(kit){const az=.785,c=Math.cos(ph);cam.position.set(dist*Math.sin(az)*c,-.2+dist*Math.sin(ph),dist*Math.cos(az)*c);cam.lookAt(0,-.2,0)}else{cam.position.set(0,.5+dist*Math.sin(ph),dist*Math.cos(ph));cam.lookAt(0,.4,0)}}
 (function loop(t){requestAnimationFrame(loop);if(auto&&!dragging)th+=.006;updateCam();
- flames.forEach((f,i)=>f.scale.set(1+Math.sin(t*.02+i)*.12,1.6+Math.sin(t*.031+i*2)*.2,1));R3.render(scene,cam)})(0);
+ flames.forEach((f,i)=>f.scale.set(1+Math.sin(t*.02+i)*.12,1.6+Math.sin(t*.031+i*2)*.2,1));charAnim(t);R3.render(scene,cam)})(0);
 
 
 /* ===== area gambar bentuk layar penuh ===== */
