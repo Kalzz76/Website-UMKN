@@ -1042,10 +1042,10 @@ export default function PesananDashboardPage() {
                     </div>
                     {isAdmin && (
                       <Link
-                        href="/dashboard/harga-opsi"
+                        href="/dashboard/katalog-opsi"
                         className="font-bold text-amber-800 hover:text-amber-900 underline whitespace-nowrap text-[10px]"
                       >
-                        Atur di Harga & Opsi
+                        Atur di Katalog & Opsi
                       </Link>
                     )}
                   </div>

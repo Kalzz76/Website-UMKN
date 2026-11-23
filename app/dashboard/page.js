@@ -416,7 +416,7 @@ export default async function DashboardPage() {
         adaGrup: false,
         namaGrup: "",
         kosong: true,
-        pesan: "Belum ada grup yang diset sebagai jenis kue di menu Harga & Opsi",
+        pesan: "Belum ada grup yang diset sebagai jenis kue di menu Katalog & Opsi",
         items: [],
         total: 0,
       };
@@ -495,7 +495,7 @@ export default async function DashboardPage() {
         adaGrup: false,
         namaGrup: "",
         kosong: true,
-        pesan: "Belum ada grup yang diset sebagai terlaris di menu Harga & Opsi",
+        pesan: "Belum ada grup yang diset sebagai terlaris di menu Katalog & Opsi",
         items: [],
       };
     } else {

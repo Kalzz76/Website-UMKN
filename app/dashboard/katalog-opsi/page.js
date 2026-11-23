@@ -5,7 +5,7 @@ import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah } from "@/lib/format";
 import ModalPesan from "@/components/ModalPesan";
 
-export default function HargaOpsiPage() {
+export default function KatalogOpsiPage() {
   const [profil, setProfil] = useState(null);
   const [tabAktif, setTabAktif] = useState("custom");
 

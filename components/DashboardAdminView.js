@@ -37,7 +37,7 @@ export default function DashboardAdminView({
     adaGrup: false,
     namaGrup: "",
     kosong: true,
-    pesan: "Belum ada grup yang diset sebagai jenis kue di menu Harga & Opsi",
+    pesan: "Belum ada grup yang diset sebagai jenis kue di menu Katalog & Opsi",
     items: [],
     total: 0,
   };
@@ -46,7 +46,7 @@ export default function DashboardAdminView({
     adaGrup: false,
     namaGrup: "",
     kosong: true,
-    pesan: "Belum ada grup yang diset sebagai terlaris di menu Harga & Opsi",
+    pesan: "Belum ada grup yang diset sebagai terlaris di menu Katalog & Opsi",
     items: [],
   };
 
@@ -521,7 +521,7 @@ export default function DashboardAdminView({
                   <h3 className="card-heading-text">{judulTerlaris}</h3>
                 </div>
                 <Link
-                  href="/dashboard/harga-opsi"
+                  href="/dashboard/katalog-opsi"
                   className="card-see-all-link"
                 >
                   <span>Atur</span>

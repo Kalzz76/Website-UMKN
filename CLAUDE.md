@@ -87,7 +87,7 @@ toko-kue/
 │   │   ├── dashboard.css                CSS dashboard referensi (semua class dipertahankan, tanpa komentar)
 │   │   ├── layout.js                    sidebar & topbar sesuai role
 │   │   ├── page.js                      ringkasan dashboard admin & staf
-│   │   ├── harga-opsi/page.js           admin
+│   │   ├── katalog-opsi/page.js         admin
 │   │   ├── pesanan/page.js              admin + staf
 │   │   ├── pesanan/[kode]/page.js       admin + staf
 │   │   ├── stok/page.js                 admin + staf
@@ -122,7 +122,7 @@ toko-kue/
 | ----------------------------------------------------- | :---: | :-----------: | :-------: |
 | Lihat landing page, kustomisasi, dan preview          | Ya    | Ya            | Ya        |
 | Membuat pesanan, bayar, lihat pesanan sendiri         | Tidak | Tidak         | Ya        |
-| Harga & Opsi                                          | Ya    | Tidak         | Tidak     |
+| Katalog & Opsi                                        | Ya    | Tidak         | Tidak     |
 | Daftar dan detail pesanan semua pelanggan             | Ya    | Ya (terbatas) | Tidak     |
 | Ubah status produksi (Sedang Dibuat, Siap)            | Ya    | Ya            | Tidak     |
 | Konfirmasi pembayaran, Dikirim, Selesai, Batalkan     | Ya    | Tidak         | Tidak     |
@@ -282,7 +282,7 @@ Halaman `/pesan` menggunakan Studio Kue 3D interaktif berbasis Three.js dengan p
 - **Sidebar**:
   - Dipindahkan apa adanya sesuai struktur referensi (`.sidebar`, `.sidebar-top-gap`, `.nav-menu`, `.nav-link`, `.sidebar-bottom-gap`). Latar belakang menggunakan `#17382d` dan gambar latar `/assets/images/admin-sidebar.png`.
   - **Menu Navigasi dikembalikan ke menu sebelumnya** (jangan diubah menjadi Produk / Pelanggan):
-    - **Menu Admin:** Dashboard (`/dashboard`), Harga & Opsi (`/dashboard/harga-opsi`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`), Laporan (`/dashboard/laporan`), Pengaturan (`/dashboard/pengaturan`), Akun (`/dashboard/akun`).
+    - **Menu Admin:** Dashboard (`/dashboard`), Katalog & Opsi (`/dashboard/katalog-opsi`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`), Laporan (`/dashboard/laporan`), Pengaturan (`/dashboard/pengaturan`), Akun (`/dashboard/akun`).
     - **Menu Staf Produksi:** Dashboard (`/dashboard`), Pesanan (`/dashboard/pesanan`), Stok (`/dashboard/stok`).
   - **Fitur Buka/Tutup Sidebar**: Saat sidebar ditutup (tombol toggle di topbar diklik), **sidebar jangan tertutup/hilang seluruhnya**. Sidebar menyusut menjadi mode ringkas (collapsed) di mana **ikon menu tetap tampil** sehingga pengguna tetap bisa melihat dan mengeklik menu lewat ikonnya (teks label menu disembunyikan).
 - **Topbar**:
@@ -299,7 +299,7 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 1. **Sidebar Murni Kode**:
    - `position: fixed`, tinggi penuh layar (`top: 0`, `bottom: 0`), latar warna polos `var(--bg-sidebar)`. Tanpa gambar latar (`admin-sidebar.png` dihapus).
    - Bagian atas: logo kecil ikon `fa-cake-candles` dan nama toko dari `pengaturan_toko` dengan font `Dancing Script`.
-   - Tengah: navigasi menu ber-scrollbar tipis. Menu admin: Dashboard, Harga & Opsi, Pesanan, Stok, Laporan, Pengaturan, Akun. Menu staf: Dashboard, Pesanan, Stok. Menu aktif memakai `var(--bg-sidebar-active)` dan `var(--text-sidebar-active)`.
+   - Tengah: navigasi menu ber-scrollbar tipis. Menu admin: Dashboard, Katalog & Opsi, Pesanan, Stok, Laporan, Pengaturan, Akun. Menu staf: Dashboard, Pesanan, Stok. Menu aktif memakai `var(--bg-sidebar-active)` dan `var(--text-sidebar-active)`.
    - Bawah: tulisan "Make Life Sweeter" dengan ikon hati, font `Satisfy`, disembunyikan jika tinggi layar terbatas atau sidebar diciutkan.
    - Tombol buka-tutup: saat diciutkan, sidebar mengecil menjadi bar ikon 72px (label dan kutipan bawah disembunyikan, ikon memiliki title tooltip). Konten menyesuaikan lebar dengan transisi dan memicu resize `chart.js`. Status disimpan di `localStorage` dengan blok `try/catch`. Pada layar <= 800px menjadi laci (drawer) dengan overlay.
 
@@ -354,7 +354,7 @@ Halaman ringkasan admin dibangun dengan data nyata dari database Supabase (bukan
 11. **Aturan Gambar**:
     - Semua gambar dari URL luar (Unsplash) DILARANG. Foto diganti bulatan warna opsi atau preview SVG (`PreviewKue`). Latar kartu memakai gambar lokal `/assets/images/`.
 
-### Menu Harga & Opsi (satu menu untuk semua pengaturan harga)
+### Menu Katalog & Opsi (pengaturan produk katalog dan opsi kustomisasi)
 
 Satu halaman, isinya **grup opsi**, dan tiap grup punya daftar item beserta harganya. Tidak ada menu terpisah untuk rasa, ukuran, dan lainnya.
 
@@ -375,7 +375,7 @@ Dekorasi  : Lelehan Krim 12.000 | Stroberi 10.000 | Mixed Berry 15.000 ...      
 - **Total dihitung di server**, bukan di browser. Browser boleh menghitung untuk tampilan, tetapi saat pesanan dibuat server menghitung ulang dari database dan mengabaikan harga dari browser.
 - Total kue = jumlah harga semua item terpilih. Server menolak kalau: ada item yang tidak aktif atau tidak ada, grup `wajib` belum dipilih, atau grup `jenis_pilihan = satu` berisi lebih dari satu item.
 - Total bayar = total kue + ongkir (kalau dikirim). Ongkir diambil dari tabel `zona_ongkir`, bukan dari input browser.
-- **Nama, harga, warna, dan kode visual tiap item disalin ke `pesanan_pilihan` saat pesanan dibuat.** Mengubah harga di Harga & Opsi tidak boleh mengubah pesanan yang sudah ada.
+- **Nama, harga, warna, dan kode visual tiap item disalin ke `pesanan_pilihan` saat pesanan dibuat.** Mengubah harga di Katalog & Opsi tidak boleh mengubah pesanan yang sudah ada.
 
 ### Menu Pesanan
 
@@ -384,7 +384,7 @@ Dekorasi  : Lelehan Krim 12.000 | Stroberi 10.000 | Mixed Berry 15.000 ...      
 **Detail pesanan** (side drawer di `/dashboard/pesanan`):
 - **Preview kue** dari pilihan pelanggan
 - **Komponen** yang dipilih (grup, item), tulisan di kue, catatan, foto referensi
-- **Kebutuhan Bahan** (admin dan staf): tabel Bahan, Dibutuhkan, Stok saat ini, Status (Cukup / Kurang). Banner merah jika ada bahan kurang, banner hijau jika cukup. Catatan jika ada pilihan tanpa resep (dengan tautan ke Harga & Opsi untuk admin). Tombol **Kurangi Stok** manual (aktif pada status Diterima, Sedang Dibuat, Siap, Dikirim, Selesai; nonaktif untuk Menunggu Pembayaran dan Dibatalkan) dengan dialog konfirmasi rincian pemotongan. Setelah dikurangi, menampilkan waktu pemotongan dan nama pemotong, jumlah yang benar-benar dikurangi, serta tombol **Kembalikan Stok** (dengan konfirmasi). Panel ini tidak menampilkan data harga.
+- **Kebutuhan Bahan** (admin dan staf): tabel Bahan, Dibutuhkan, Stok saat ini, Status (Cukup / Kurang). Banner merah jika ada bahan kurang, banner hijau jika cukup. Catatan jika ada pilihan tanpa resep (dengan tautan ke Katalog & Opsi untuk admin). Tombol **Kurangi Stok** manual (aktif pada status Diterima, Sedang Dibuat, Siap, Dikirim, Selesai; nonaktif untuk Menunggu Pembayaran dan Dibatalkan) dengan dialog konfirmasi rincian pemotongan. Setelah dikurangi, menampilkan waktu pemotongan dan nama pemotong, jumlah yang benar-benar dikurangi, serta tombol **Kembalikan Stok** (dengan konfirmasi). Panel ini tidak menampilkan data harga.
 - **Rincian harga** per komponen, ongkir, total, jumlah DP, jumlah terbayar, sisa (admin saja)
 - **Pembayaran**: daftar pembayaran (jenis, jumlah, metode, bukti, status) dengan tombol **Konfirmasi** dan **Tolak** (admin saja)
 - **Pengiriman**: Ambil di Tempat, atau Kirim beserta alamat dan zona
@@ -622,7 +622,7 @@ Kerjakan bertahap. Setelah tiap tahap, pastikan project bisa dijalankan (`npm ru
 
 1. **Fondasi**: buat project Next.js + Tailwind, hubungkan Supabase, semua file migration dan `seed.sql`, trigger `profil`, bucket Storage, `lib/` dasar (client, format, cek role).
 2. **Autentikasi dan kerangka**: halaman masuk dan daftar, `middleware.js`, layout dashboard dengan sidebar per role, modal pesan, akun admin pertama.
-3. **Admin: Harga & Opsi dan Pengaturan**: grup dan item opsi, pengaturan toko, zona ongkir, tanggal tutup.
+3. **Admin: Katalog & Opsi dan Pengaturan**: grup dan item opsi, produk katalog, pengaturan toko, zona ongkir, tanggal tutup.
 4. **Preview kue**: komponen `PreviewKue` (versi SVG 2D) dan uji dengan data opsi dari seed.
 5. **Alur pemesanan pelanggan**: kustomisasi, tanggal dan kuota, pengiriman, perhitungan harga di server, pembuatan pesanan, tiket QR.
 6. **Pembayaran**: unggah bukti, konfirmasi admin, mode DP atau Lunas, status bayar.
