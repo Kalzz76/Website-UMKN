@@ -96,14 +96,6 @@ export async function POST(request) {
     const no_rekening = formData.get("no_rekening") || "";
     const atas_nama = formData.get("atas_nama") || "";
 
-    const latRaw = formData.get("lat_toko");
-    const lngRaw = formData.get("lng_toko");
-    const lat_toko = latRaw !== null && latRaw !== "" && !isNaN(Number(latRaw)) ? Number(latRaw) : null;
-    const lng_toko = lngRaw !== null && lngRaw !== "" && !isNaN(Number(lngRaw)) ? Number(lngRaw) : null;
-
-    const faktor_jalan = Number(formData.get("faktor_jalan") || 1.3);
-    const maks_jarak_kirim_km = Number(formData.get("maks_jarak_kirim_km") || 20);
-
     const hapus_qris = formData.get("hapus_qris") === "true";
     const file_qris = formData.get("file_qris");
     const lat_toko_raw = formData.get("lat_toko");
