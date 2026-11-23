@@ -85,7 +85,7 @@ export const PromoWelcomeModal: React.FC<PromoWelcomeModalProps> = ({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center p-6 text-center text-xs font-bold text-cherry">
-                    Cravely Patisserie · Bandung
+                    Cravely
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-kayuGelap/72 via-transparent to-transparent" />
@@ -116,7 +116,7 @@ export const PromoWelcomeModal: React.FC<PromoWelcomeModalProps> = ({
                       <circle cx="32" cy="13" r="2.8" fill="#9E3B42" />
                     </svg>
                     <span className="font-script text-2xl sm:text-3xl text-cherry leading-none">
-                      Cravely Patisserie
+                      Cravely
                     </span>
                   </div>
 

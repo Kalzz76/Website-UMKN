@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
-import { Clock, Mail, MapPin, Phone, ChefHat, Sparkles, Heart } from 'lucide-react';
+import { Clock, Mail, MapPin, Phone, ChefHat } from 'lucide-react';
 import type { ViewType } from './patisserieData';
 
 const InstagramIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -44,26 +44,13 @@ export const PatisserieFooter: React.FC<PatisserieFooterProps> = () => {
               <span className="font-script text-3xl sm:text-4xl text-[#E8A5AC] block leading-none">
                 Baked with Love
               </span>
-              <h2 className="font-coquette text-2xl font-bold tracking-wider text-[#FFFDF9] mt-1.5 flex items-center gap-2">
-                <span>Cravely</span>
-                <span className="text-[10px] font-sans uppercase tracking-[0.25em] px-2 py-0.5 rounded-full bg-[#C59B62]/20 border border-[#C59B62]/50 text-[#F0D5A8]">
-                  Patisserie
-                </span>
+              <h2 className="font-coquette text-2xl font-bold tracking-wider text-[#FFFDF9] mt-1.5">
+                Cravely
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-[#E6D4CC] leading-relaxed">
               Patisserie rumahan di jantung kota Bandung sejak 2018. Kami memanggang cupcake lembut, chiffon pandan wangi, kue ulang tahun berpita, dan kreasi Custom Cake 3D segar setiap hari dengan resep mentega murni pilihan.
             </p>
-            <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#F3DAAC]">
-              <span className="px-2.5 py-1 rounded-full bg-white/5 border border-[#C59B62]/30 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#E8A5AC]" />
-                100% Bahan Segar
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-white/5 border border-[#C59B62]/30 flex items-center gap-1">
-                <Heart className="w-3 h-3 text-[#E8A5AC]" />
-                Halal &amp; Homemade
-              </span>
-            </div>
           </div>
 
           {/* Column 2: Alamat Toko & Jam Operasional */}
@@ -199,8 +186,8 @@ export const PatisserieFooter: React.FC<PatisserieFooterProps> = () => {
 
         {/* Bottom Copyright Row */}
         <div className="mt-12 pt-6 border-t border-[#C59B62]/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#DAC8BF]/70">
-          <span>© 2026 Cravely Patisserie &amp; Cake Atelier. Seluruh hak cipta dilindungi.</span>
-          <span className="text-[#E5C590]/80">Bandung, Jawa Barat · Made with Love &amp; Pure Butter</span>
+          <span>© 2026 Cravely. Seluruh hak cipta dilindungi.</span>
+          <span className="text-[#E5C590]/80">Bandung, Jawa Barat</span>
         </div>
       </div>
     </footer>

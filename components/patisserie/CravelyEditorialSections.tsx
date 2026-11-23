@@ -10,7 +10,6 @@ import {
   Heart,
   MapPin,
   Phone,
-  Sparkles,
   User,
   X,
 } from 'lucide-react';
@@ -360,7 +359,7 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
             transition={{ duration: 0.5 }}
             className="font-script text-3xl sm:text-4xl text-blush block leading-none"
           >
-            Cravely Patisserie Bandung
+            Cravely
           </motion.span>
           <motion.h2
             initial={{ opacity: 0, y: 16 }}
@@ -431,7 +430,7 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
       >
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.26em] text-burgundy">
-            Kisah Dapur Cravely · Bandung
+            Kisah Dapur Cravely
           </p>
           <h2 className="font-serif text-3xl sm:text-5xl font-bold text-ink mt-2">
             Selamat Datang di <span className="italic text-cherry">Cerita Kami</span>
@@ -768,17 +767,6 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
               ))}
             </div>
           </div>
-
-          <div className="mt-7 text-center">
-            <button
-              type="button"
-              onClick={() => onNavigate('dokumentasi')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-cherry hover:text-burgundy underline underline-offset-4"
-            >
-              <span>Lihat Galeri Dokumentasi &amp; Promo Lengkap</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
 
         {/* Cinematic Spotlight Lightbox Modal */}
@@ -929,9 +917,8 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
         <div className="max-w-3xl mx-auto relative z-10">
           {/* Header */}
           <div className="text-center max-w-xl mx-auto mb-8 sm:mb-10">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#FFFDF9]/10 border border-[#C59B62]/50 text-[11px] font-bold uppercase tracking-[0.22em] text-[#E5C590] mb-3 backdrop-blur-xs">
-              <Sparkles className="w-3.5 h-3.5 text-[#E5C590]" />
-              <span>Butik &amp; Atelier Bandung</span>
+            <div className="inline-flex items-center px-4 py-1 rounded-full bg-[#FFFDF9]/10 border border-[#C59B62]/50 text-[11px] font-bold uppercase tracking-[0.22em] text-[#E5C590] mb-3 backdrop-blur-xs">
+              <span>Cravely</span>
             </div>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#FFFDF9] tracking-tight">
               Reservasi &amp; Pesan Cepat
@@ -942,9 +929,8 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
           </div>
 
           {!resSubmitted ? (
-            <div className="rounded-3xl bg-[#FFFDF9] border-2 border-[#C59B62]/70 shadow-[0_24px_55px_rgba(20,8,6,0.45)] p-6 sm:p-9 text-[#3D2B28]">
-              <div className="border border-dashed border-[#D9B37C]/60 rounded-2xl p-5 sm:p-7 bg-[#FDFAF6]">
-                <form onSubmit={handleReservationSubmit} className="space-y-4">
+            <div className="rounded-3xl bg-[#FFFDF9] border-2 border-[#C59B62]/70 shadow-[0_24px_55px_rgba(20,8,6,0.45)] p-6 sm:p-10 text-[#3D2B28]">
+              <form onSubmit={handleReservationSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Nama Lengkap */}
                     <div className="space-y-1.5">
@@ -1011,9 +997,8 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                   <div className="pt-3">
                     <button
                       type="submit"
-                      className="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-[#9E3B42] via-[#B23A48] to-[#9E3B42] hover:brightness-105 active:scale-[0.99] text-white font-serif font-bold text-sm tracking-wider shadow-[0_8px_22px_rgba(158,59,66,0.38)] border border-[#E8A5AC]/40 flex items-center justify-center gap-2 transition cursor-pointer"
+                      className="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-[#9E3B42] via-[#B23A48] to-[#9E3B42] hover:brightness-105 active:scale-[0.99] text-white font-serif font-bold text-sm tracking-wider shadow-[0_8px_22px_rgba(158,59,66,0.38)] border border-[#E8A5AC]/40 flex items-center justify-center transition cursor-pointer"
                     >
-                      <Sparkles className="w-4 h-4 text-[#FDE5E7]" />
                       <span>Kirim Reservasi Sekarang</span>
                     </button>
                     <p className="text-center text-[11px] text-[#8C6D62] mt-2.5">
@@ -1021,7 +1006,6 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                     </p>
                   </div>
                 </form>
-              </div>
             </div>
           ) : (
             <div className="rounded-3xl bg-[#FFFDF9] border-2 border-[#C59B62]/80 shadow-[0_24px_55px_rgba(20,8,6,0.45)] p-8 sm:p-10 text-center text-[#3D2B28] space-y-4">

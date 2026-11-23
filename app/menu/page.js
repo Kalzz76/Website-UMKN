@@ -37,12 +37,12 @@ export default function MenuPage() {
   };
 
   return (
-    <div className="min-h-screen bg-ivory text-ink selection:bg-blush selection:text-cherry pt-20">
+    <div className="min-h-screen bg-[#FAF4EE] text-ink selection:bg-blush selection:text-cherry pt-14 sm:pt-16 pb-16">
       {/* Floating Dynamic Island Navbar */}
       <DynamicIslandNavbar showEntered={true} />
 
       {/* Main Desserts Menu View */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-6">
         <DessertsMenuView
           totalQty={totalQty}
           totalPrice={totalPrice}
