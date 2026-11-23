@@ -24,6 +24,7 @@ export async function POST(request) {
     const jam_tutup = formData.get("jam_tutup") || "20:00";
     const kuota_harian = Number(formData.get("kuota_harian"));
     const minimal_hari_pesan = Number(formData.get("minimal_hari_pesan"));
+    const minimal_hari_siap = Number(formData.get("minimal_hari_siap") || 1);
     const mode_pembayaran = formData.get("mode_pembayaran") || "DP";
     const persen_dp = Number(formData.get("persen_dp"));
     const batas_bayar_jam = Number(formData.get("batas_bayar_jam"));
@@ -157,6 +158,7 @@ export async function POST(request) {
         jam_tutup,
         kuota_harian,
         minimal_hari_pesan,
+        minimal_hari_siap: isNaN(minimal_hari_siap) ? 1 : minimal_hari_siap,
         mode_pembayaran,
         persen_dp,
         batas_bayar_jam,

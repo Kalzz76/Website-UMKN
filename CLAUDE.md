@@ -503,7 +503,16 @@ Dibuat lewat **file SQL di `supabase/migrations/`** dan data awal lewat `seed.sq
 `id` (uuid, sama dengan `auth.users.id`), `nama`, `no_wa`, `role` (`admin` / `staf` / `pelanggan`, default `pelanggan`), `aktif` (boolean, default true), `dibuat_pada`. Dibuat otomatis lewat trigger saat ada pendaftaran baru di `auth.users`.
 
 ### pengaturan_toko
-Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
+Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `minimal_hari_siap` (default 1), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`.
+
+### produk
+Kue katalog siap pesan: `id` (bigint identity), `nama`, `deskripsi`, `harga` (integer, rupiah), `foto` (text, path di bucket publik), `aktif` (boolean, default true), `urutan` (integer, default 0), `dibuat_pada`. RLS: publik membaca produk aktif, admin mengelola penuh.
+
+### keranjang_item
+Keranjang belanja terpadu di database: `id` (bigint identity), `id_pelanggan` (uuid FK `profil` on delete cascade), `jenis` (`'Custom'` atau `'Siap'`), `id_produk` (bigint FK `produk` on delete cascade, boleh kosong), `jumlah` (integer default 1, 1-20), `pilihan` (jsonb daftar `{id_item, jumlah}`), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (path text), `dibuat_pada`. Check: jenis Siap wajib punya `id_produk`; jenis Custom wajib punya `pilihan` dan `jumlah = 1`. Maksimal 20 baris per pelanggan, maksimal 10 kue custom. RLS: pelanggan membaca dan menghapus barisnya sendiri.
+
+### pesanan_item
+Rincian item dalam pesanan: `id` (bigint identity), `id_pesanan` (bigint FK `pesanan` on delete cascade), `jenis` (`'Custom'` atau `'Siap'`), `id_produk` (bigint FK `produk` on delete set null), `nama_item` dan `harga_satuan` (salinan saat checkout; untuk Custom `harga_satuan = total kue itu`), `jumlah` (integer default 1), `subtotal` (integer), `tulisan_kue`, `catatan`, `desain_json` (jsonb), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom`, `urutan` (integer default 1). RLS: pelanggan membaca item miliknya.
 
 ### grup_opsi
 `id`, `nama`, `urutan`, `wajib` (boolean), `jenis_pilihan` (`satu` / `banyak`), `peran_visual` (`badan` / `ukuran` / `krim` / `topping` / `bentuk` / `stiker` / kosong), `peran_dashboard` (`jenis` / `terlaris` / null, eksklusif).
@@ -521,7 +530,7 @@ Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alama
 `id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `stok_dipotong_pada` (timestamptz, boleh kosong), `dibuat_pada`.
 
 ### pesanan_pilihan
-Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_item` (bigint FK ke `opsi_item(id)` on delete set null, boleh kosong), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
+Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_pesanan_item` (bigint FK `pesanan_item` on delete cascade, boleh kosong), `id_item` (bigint FK ke `opsi_item(id)` on delete set null, boleh kosong), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
 
 ### resep_item
 Komposisi bahan untuk opsi kue: `id`, `id_item` (FK `opsi_item` on delete cascade), `id_bahan` (FK `bahan` on delete cascade), `jumlah` (numeric > 0), unik per `(id_item, id_bahan)`.
@@ -539,9 +548,52 @@ Catatan pergerakan inventaris bahan: `id`, `id_bahan` (FK `bahan` on delete casc
 `id`, `id_pesanan` (FK), `keterangan` (contoh `Diterima → Sedang Dibuat`), `id_user` (FK `profil`, boleh kosong untuk aksi otomatis), `dibuat_pada`.
 
 ### Storage (Supabase)
-- `referensi-kue` (privat): foto referensi pelanggan
-- `bukti-bayar` (privat): bukti pembayaran
-- `publik` (publik): gambar QRIS
+- `referensi-kue` (privat): foto snapshot 3D preview, bentuk kustom, dan gambar kustom. Diunggah ke path `keranjang/{id_pelanggan}/...` saat masih di keranjang, lalu dipindahkan ke `pesanan/{kode_pesanan}/...` saat checkout.
+- `bukti-bayar` (privat): bukti transfer pelanggan
+- `publik` (publik): gambar QRIS toko dan foto produk kue katalog (`produk/...`)
+
+## Alur Keranjang dan Checkout Terpadu
+
+Semua kue (kue katalog siap pesan dan kue custom studio) masuk ke dalam SATU keranjang dan dibayar bersamaan dalam SATU pesanan.
+
+1. **Penyimpanan Keranjang**:
+   - Keranjang disimpan di database pada tabel `keranjang_item`, bukan di browser/localStorage.
+   - Login wajib saat menambah ke keranjang. Tamu diarahkan ke `/masuk?ke=...`.
+   - Kue katalog: jumlah 1 sampai 20. Jika produk yang sama ditambah lagi, jumlahnya digabung otomatis.
+   - Kue custom studio: 1 desain = 1 kue (jumlah selalu 1), tidak bisa diedit di keranjang, hanya bisa dihapus.
+   - Batas maksimal: 20 baris keranjang dan 10 kue custom per pelanggan.
+
+2. **Aturan Checkout**:
+   - Satu tanggal dan jam untuk seluruh pesanan. Tanggal minimal = yang paling lama dari seluruh item di keranjang (kue custom memakai `minimal_hari_pesan`, kue katalog memakai `minimal_hari_siap`).
+   - Kuota harian dapur dihitung per kue custom. Pesanan yang hanya berisi kue katalog tidak memakai kuota harian.
+   - Ongkos kirim dihitung sekali per pesanan dari zona ongkir aktif (Rp 0 untuk Ambil di Toko).
+   - Mode DP atau Lunas dihitung dari total seluruh item. Seluruh harga dihitung ulang oleh server dari database (harga dari browser diabaikan).
+   - Metode pembayaran hanya Transfer Bank atau QRIS.
+   - Saat checkout berhasil: file foto dipindahkan dari `keranjang/{id_pelanggan}/` ke `pesanan/{kode_pesanan}/`, data pesanan disimpan ke `pesanan`, `pesanan_item`, `pesanan_pilihan`, dan keranjang dikosongkan. Jika ada kegagalan, rollback dilakukan dan keranjang tidak dikosongkan.
+
+3. **Pembersihan Otomatis**:
+   - Cron job `/api/cron/bersihkan-keranjang` menghapus item keranjang yang tidak dicheckout lebih dari 30 hari beserta berkasnya di Storage.
+
+## Kontrak POST /api/keranjang (Untuk Studio Custom Cake)
+
+Endpoint untuk memasukkan kue kustom studio ke keranjang terpadu.
+
+- **URL**: `/api/keranjang`
+- **Metode**: `POST`
+- **Header**: Wajib login (session cookie Supabase).
+- **Format Body**: `multipart/form-data`
+  - `jenis`: `"Custom"` (string wajib)
+  - `pilihan`: JSON string berupa daftar item opsi terpilih, format: `[{"id_item": 1, "jumlah": 1}, ...]`
+  - `tulisan_kue`: string teks tulisan di atas kue (opsional)
+  - `catatan`: string catatan khusus pemesan (opsional)
+  - `desain_json`: JSON string struktur desain 3D (template, stiker, teks dekorasi)
+  - `foto_preview`: File gambar (JPG/PNG, max 2 MB) hasil snapshot 3D kue
+  - `foto_bentuk_kustom`: File gambar (JPG/PNG, max 2 MB) jika memilih opsi bentuk kustom
+  - `foto_gambar_kustom`: File gambar (JPG/PNG, max 2 MB) jika memilih opsi gambar kustom
+- **Respon Sukses (200)**:
+  `{ "sukses": true, "pesan": "Kue custom berhasil ditambahkan ke keranjang.", "id_item": 123 }`
+- **Respon Error (400/401/409)**:
+  `{ "pesan": "Pesan error bahasa Indonesia" }`
 
 Unggahan lewat Route Handler (`FormData`), validasi jenis `jpg`/`jpeg`/`png` dan ukuran maksimal 2 MB, nama file dibuat unik. File lama dihapus saat diganti.
 

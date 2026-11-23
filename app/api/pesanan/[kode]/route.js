@@ -38,7 +38,13 @@ export async function GET(request, { params }) {
     );
   }
 
-  const [pilRes, bayarRes, riwRes] = await Promise.all([
+  const [itemsRes, pilRes, bayarRes, riwRes] = await Promise.all([
+    supabase
+      .from("pesanan_item")
+      .select("*, produk(*)")
+      .eq("id_pesanan", pesanan.id)
+      .order("urutan", { ascending: true })
+      .order("id", { ascending: true }),
     supabase
       .from("pesanan_pilihan")
       .select("*")
@@ -89,6 +95,84 @@ export async function GET(request, { params }) {
     if (signed) fotoGambarUrl = signed.signedUrl;
   }
 
+  const { data: storagePublik } = supabase.storage.from("publik").getPublicUrl("");
+  const basePublikUrl = storagePublik?.publicUrl ? storagePublik.publicUrl.replace(/\/+$/, "") : "";
+
+  let rawItems = itemsRes.data || [];
+  if (rawItems.length === 0) {
+    rawItems = [
+      {
+        id: 0,
+        id_pesanan: pesanan.id,
+        jenis: "Custom",
+        id_produk: null,
+        nama_item: "Kue Custom",
+        harga_satuan: pesanan.total_kue,
+        jumlah: 1,
+        subtotal: pesanan.total_kue,
+        tulisan_kue: pesanan.tulisan_kue,
+        catatan: pesanan.catatan,
+        desain_json: pesanan.desain_json,
+        foto_preview: pesanan.foto_preview,
+        foto_bentuk_kustom: pesanan.foto_bentuk_kustom,
+        foto_gambar_kustom: pesanan.foto_gambar_kustom,
+        urutan: 1,
+      },
+    ];
+  }
+
+  const itemsWithUrls = [];
+  for (let i = 0; i < rawItems.length; i++) {
+    const it = rawItems[i];
+    let itFotoPrevUrl = null;
+    let itFotoBentukUrl = null;
+    let itFotoGambarUrl = null;
+    let itFotoProdukUrl = null;
+
+    if (it.foto_preview) {
+      const { data: signed } = await supabase.storage
+        .from("referensi-kue")
+        .createSignedUrl(it.foto_preview, 3600);
+      if (signed) itFotoPrevUrl = signed.signedUrl;
+    }
+
+    if (it.foto_bentuk_kustom) {
+      const { data: signed } = await supabase.storage
+        .from("referensi-kue")
+        .createSignedUrl(it.foto_bentuk_kustom, 3600);
+      if (signed) itFotoBentukUrl = signed.signedUrl;
+    }
+
+    if (it.foto_gambar_kustom) {
+      const { data: signed } = await supabase.storage
+        .from("referensi-kue")
+        .createSignedUrl(it.foto_gambar_kustom, 3600);
+      if (signed) itFotoGambarUrl = signed.signedUrl;
+    }
+
+    const fotoProd = it.produk?.foto;
+    if (fotoProd) {
+      if (fotoProd.startsWith("http://") || fotoProd.startsWith("https://")) {
+        itFotoProdukUrl = fotoProd;
+      } else {
+        itFotoProdukUrl = `${basePublikUrl}/${fotoProd.replace(/^\/+/, "")}`;
+      }
+    }
+
+    const pilihanItem = (pilRes.data || []).filter(
+      (p) => !p.id_pesanan_item || Number(p.id_pesanan_item) === Number(it.id)
+    );
+
+    itemsWithUrls.push({
+      ...it,
+      fotoPreviewUrl: itFotoPrevUrl || (it.id === 0 ? fotoPrevUrl : null),
+      fotoBentukUrl: itFotoBentukUrl || (it.id === 0 ? fotoBentukUrl : null),
+      fotoGambarUrl: itFotoGambarUrl || (it.id === 0 ? fotoGambarUrl : null),
+      fotoProdukUrl: itFotoProdukUrl,
+      pilihan: pilihanItem,
+    });
+  }
+
   const bayarWithUrl = [];
   const bayarList = bayarRes.data || [];
   for (let i = 0; i < bayarList.length; i++) {
@@ -106,6 +190,7 @@ export async function GET(request, { params }) {
   return NextResponse.json({
     sukses: true,
     pesanan,
+    items: itemsWithUrls,
     pilihan: pilRes.data || [],
     pembayaran: bayarWithUrl,
     riwayat: riwRes.data || [],

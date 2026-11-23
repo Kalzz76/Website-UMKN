@@ -1,20 +1,57 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta, hitungTanggalMinimal } from "@/lib/format";
 
 export async function GET() {
-  const supabase = await getSupabaseServer();
+  const supabaseUser = await getSupabaseServer();
+  const supabase = getSupabaseAdmin();
 
   const { data: toko } = await supabase
     .from("pengaturan_toko")
-    .select("jam_buka, jam_tutup, kuota_harian, minimal_hari_pesan")
+    .select("jam_buka, jam_tutup, kuota_harian, minimal_hari_pesan, minimal_hari_siap")
     .eq("id", 1)
     .single();
 
-  const minimalHari = toko?.minimal_hari_pesan ?? 2;
+  const minimalHariCustom = toko?.minimal_hari_pesan ?? 2;
+  const minimalHariSiap = toko?.minimal_hari_siap ?? 1;
   const kuotaHarian = toko?.kuota_harian ?? 5;
   const jamBuka = (toko?.jam_buka || "08:00").slice(0, 5);
   const jamTutup = (toko?.jam_tutup || "20:00").slice(0, 5);
+
+  const {
+    data: { user },
+  } = await supabaseUser.auth.getUser();
+
+  let adaCustom = false;
+  let adaSiap = false;
+  let customCountDiKeranjang = 0;
+
+  if (user) {
+    const { data: keranjang } = await supabase
+      .from("keranjang_item")
+      .select("jenis, jumlah")
+      .eq("id_pelanggan", user.id);
+
+    if (keranjang && keranjang.length > 0) {
+      for (let i = 0; i < keranjang.length; i++) {
+        if (keranjang[i].jenis === "Custom") {
+          adaCustom = true;
+          customCountDiKeranjang += 1;
+        } else {
+          adaSiap = true;
+        }
+      }
+    }
+  }
+
+  let minimalHari = minimalHariCustom;
+  if (adaCustom && adaSiap) {
+    minimalHari = Math.max(minimalHariCustom, minimalHariSiap);
+  } else if (adaCustom && !adaSiap) {
+    minimalHari = minimalHariCustom;
+  } else if (!adaCustom && adaSiap) {
+    minimalHari = minimalHariSiap;
+  }
 
   const tanggalMinimal = hitungTanggalMinimal(minimalHari);
   const hariIni = getTanggalHariIniJakarta();
@@ -25,20 +62,45 @@ export async function GET() {
 
   const { data: pesananAktif } = await supabase
     .from("pesanan")
-    .select("tanggal_ambil")
+    .select("id, tanggal_ambil")
     .gte("tanggal_ambil", hariIni)
     .neq("status_pesanan", "Dibatalkan");
 
-  const kuotaPerTanggal = {};
+  const pesananIds = (pesananAktif || []).map((p) => p.id);
+
+  let customItemsPerPesanan = new Map();
+  if (pesananIds.length > 0) {
+    const { data: itemsAktif } = await supabase
+      .from("pesanan_item")
+      .select("id_pesanan, jenis")
+      .in("id_pesanan", pesananIds)
+      .eq("jenis", "Custom");
+
+    if (itemsAktif) {
+      for (let i = 0; i < itemsAktif.length; i++) {
+        const idPes = itemsAktif[i].id_pesanan;
+        customItemsPerPesanan.set(idPes, (customItemsPerPesanan.get(idPes) || 0) + 1);
+      }
+    }
+  }
+
+  const customPerTanggal = {};
   for (let i = 0; i < (pesananAktif || []).length; i++) {
-    const tgl = pesananAktif[i].tanggal_ambil;
-    kuotaPerTanggal[tgl] = (kuotaPerTanggal[tgl] || 0) + 1;
+    const p = pesananAktif[i];
+    const tgl = p.tanggal_ambil;
+    const count = customItemsPerPesanan.has(p.id)
+      ? customItemsPerPesanan.get(p.id)
+      : 1;
+    customPerTanggal[tgl] = (customPerTanggal[tgl] || 0) + count;
   }
 
   const tanggalPenuh = [];
-  for (const tgl in kuotaPerTanggal) {
-    if (kuotaPerTanggal[tgl] >= kuotaHarian) {
-      tanggalPenuh.push(tgl);
+  if (!adaSiap || adaCustom || !user) {
+    const tambahCustom = customCountDiKeranjang > 0 ? customCountDiKeranjang : 1;
+    for (const tgl in customPerTanggal) {
+      if (customPerTanggal[tgl] + (adaCustom ? tambahCustom - 1 : 0) >= kuotaHarian) {
+        tanggalPenuh.push(tgl);
+      }
     }
   }
 
@@ -50,5 +112,7 @@ export async function GET() {
     jam_tutup: jamTutup,
     minimal_hari_pesan: minimalHari,
     kuota_harian: kuotaHarian,
+    ada_custom: adaCustom,
+    ada_siap: adaSiap,
   });
 }

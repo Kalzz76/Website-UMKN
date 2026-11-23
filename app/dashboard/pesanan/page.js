@@ -13,6 +13,7 @@ export default function PesananDashboardPage() {
   const [profil, setProfil] = useState(null);
   const [thumbnailMap, setThumbnailMap] = useState({});
   const [pilihanMap, setPilihanMap] = useState({});
+  const [isiRingkasMap, setIsiRingkasMap] = useState({});
 
   const [filterStatus, setFilterStatus] = useState("");
   const [filterTanggal, setFilterTanggal] = useState("");
@@ -26,6 +27,7 @@ export default function PesananDashboardPage() {
   const [drawerBuka, setDrawerBuka] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailPesanan, setDetailPesanan] = useState(null);
+  const [detailItems, setDetailItems] = useState([]);
   const [detailPilihan, setDetailPilihan] = useState([]);
   const [detailBayar, setDetailBayar] = useState([]);
   const [detailRiwayat, setDetailRiwayat] = useState([]);
@@ -105,22 +107,76 @@ export default function PesananDashboardPage() {
 
       const ids = data.map((x) => x.id);
       if (ids.length > 0) {
-        const { data: pilData } = await supabase
-          .from("pesanan_pilihan")
-          .select("id_pesanan, peran_visual, warna, kode_visual")
-          .in("id_pesanan", ids);
+        const [pilRes, itemRes] = await Promise.all([
+          supabase
+            .from("pesanan_pilihan")
+            .select("id_pesanan, peran_visual, warna, kode_visual")
+            .in("id_pesanan", ids),
+          supabase
+            .from("pesanan_item")
+            .select("id_pesanan, jenis, nama_item, jumlah, foto_preview, produk(foto)")
+            .in("id_pesanan", ids)
+            .order("urutan", { ascending: true })
+        ]);
 
         const pMap = {};
-        if (pilData) {
-          for (let i = 0; i < pilData.length; i++) {
-            const item = pilData[i];
+        if (pilRes.data) {
+          for (let i = 0; i < pilRes.data.length; i++) {
+            const item = pilRes.data[i];
             if (!pMap[item.id_pesanan]) pMap[item.id_pesanan] = [];
             pMap[item.id_pesanan].push(item);
           }
         }
         setPilihanMap(pMap);
 
-        const pathsToSign = data.map((x) => x.foto_preview).filter(Boolean);
+        const itemsByOrder = {};
+        const allItems = itemRes.data || [];
+        for (let i = 0; i < allItems.length; i++) {
+          const it = allItems[i];
+          if (!itemsByOrder[it.id_pesanan]) itemsByOrder[it.id_pesanan] = [];
+          itemsByOrder[it.id_pesanan].push(it);
+        }
+
+        const isiMap = {};
+        const thumbObj = {};
+        const pathsToSign = [];
+        const pathToOrderMap = {};
+
+        const { data: storagePublik } = supabase.storage.from("publik").getPublicUrl("");
+        const basePublikUrl = storagePublik?.publicUrl ? storagePublik.publicUrl.replace(/\/+$/, "") : "";
+
+        for (let i = 0; i < data.length; i++) {
+          const p = data[i];
+          const orderItems = itemsByOrder[p.id] || [];
+          if (orderItems.length > 0) {
+            isiMap[p.id] = orderItems
+              .map((it) => (it.jumlah > 1 ? `${it.jumlah}x ` : "") + it.nama_item)
+              .join(", ");
+            const first = orderItems[0];
+            if (first.jenis === "Custom" && first.foto_preview) {
+              pathsToSign.push(first.foto_preview);
+              pathToOrderMap[first.foto_preview] = p.id;
+            } else if (first.jenis === "Siap" && first.produk?.foto) {
+              const f = first.produk.foto;
+              if (f.startsWith("http://") || f.startsWith("https://")) {
+                thumbObj[p.id] = f;
+              } else {
+                thumbObj[p.id] = `${basePublikUrl}/${f.replace(/^\/+/, "")}`;
+              }
+            } else if (p.foto_preview) {
+              pathsToSign.push(p.foto_preview);
+              pathToOrderMap[p.foto_preview] = p.id;
+            }
+          } else {
+            isiMap[p.id] = p.tulisan_kue ? "1x Kue Custom" : "1x Kue";
+            if (p.foto_preview) {
+              pathsToSign.push(p.foto_preview);
+              pathToOrderMap[p.foto_preview] = p.id;
+            }
+          }
+        }
+        setIsiRingkasMap(isiMap);
+
         if (pathsToSign.length > 0) {
           try {
             const resSign = await fetch("/api/berkas/signed-urls", {
@@ -129,16 +185,16 @@ export default function PesananDashboardPage() {
               body: JSON.stringify({ paths: pathsToSign, bucket: "referensi-kue" }),
             });
             const jsonSign = await resSign.json();
-            const thumbObj = {};
-            for (let i = 0; i < data.length; i++) {
-              const item = data[i];
-              if (item.foto_preview && jsonSign.urls?.[item.foto_preview]) {
-                thumbObj[item.id] = jsonSign.urls[item.foto_preview];
+            for (let i = 0; i < pathsToSign.length; i++) {
+              const path = pathsToSign[i];
+              const orderId = pathToOrderMap[path];
+              if (orderId && jsonSign.urls?.[path]) {
+                thumbObj[orderId] = jsonSign.urls[path];
               }
             }
-            setThumbnailMap(thumbObj);
           } catch {}
         }
+        setThumbnailMap(thumbObj);
       }
     }
     setSedangMemuat(false);
@@ -163,6 +219,7 @@ export default function PesananDashboardPage() {
       }
 
       setDetailPesanan(json.pesanan);
+      setDetailItems(json.items || []);
       setDetailPilihan(json.pilihan || []);
       setDetailBayar(json.pembayaran || []);
       setDetailRiwayat(json.riwayat || []);
@@ -621,113 +678,256 @@ export default function PesananDashboardPage() {
           )}
         </div>
 
-        <div className="p-3 rounded-2xl bg-white border border-[#dfd4bd] space-y-2">
-          <div className="flex items-center justify-between pb-1 border-b border-stone-100">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between pb-1">
             <span className="text-[10px] font-bold text-stone-700 uppercase tracking-wider flex items-center space-x-1">
-              <i className="fa-solid fa-cake-candles text-amber-600 text-[11px]" />
-              <span>Visual Kue</span>
-            </span>
-            <span className="text-[10px] text-stone-500 font-medium">
-              {formatTanggalSingkat(detailPesanan.tanggal_ambil)} {detailPesanan.jam_ambil?.slice(0, 5)} WIB
+              <i className="fa-solid fa-layer-group text-amber-700 text-[11px]" />
+              <span>Isi Pesanan ({detailItems.length || 1})</span>
             </span>
           </div>
 
-          <div className="flex justify-center py-1">
-            {detailFotoPrevUrl ? (
-              <div className="relative group w-full flex justify-center">
-                <img
-                  src={detailFotoPrevUrl}
-                  alt="Snapshot 3D"
-                  className="w-full max-h-[220px] object-contain rounded-xl border border-[#e0d5b8] bg-[#fbf6e9] p-1 shadow-2xs"
-                />
-                <a
-                  href={detailFotoPrevUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="absolute bottom-2 right-2 bg-black/60 hover:bg-black text-white text-[9px] font-bold px-2 py-1 rounded-lg transition"
-                >
-                  <i className="fa-solid fa-magnifying-glass-plus mr-1" />
-                  <span>Perbesar</span>
-                </a>
+          {(detailItems.length > 0
+            ? detailItems
+            : [
+                {
+                  id: 0,
+                  jenis: "Custom",
+                  nama_item: "Kue Custom",
+                  subtotal: detailPesanan.total_kue,
+                  jumlah: 1,
+                  fotoPreviewUrl: detailFotoPrevUrl,
+                  fotoBentukUrl: detailFotoBentukUrl,
+                  fotoGambarUrl: detailFotoGambarUrl,
+                  tulisan_kue: detailPesanan.tulisan_kue,
+                  catatan: detailPesanan.catatan,
+                  pilihan: detailPilihan,
+                  desain_json: detailPesanan.desain_json,
+                },
+              ]
+          ).map((it, idx) => {
+            const isCustom = it.jenis === "Custom";
+            const itPilihan = it.pilihan || [];
+            const itGrup = {};
+            for (let i = 0; i < itPilihan.length; i++) {
+              const p = itPilihan[i];
+              const gName = p.nama_grup || "Opsi";
+              if (!itGrup[gName]) itGrup[gName] = [];
+              itGrup[gName].push(p);
+            }
+            const itDesain =
+              it.desain_json && typeof it.desain_json === "object"
+                ? it.desain_json
+                : null;
+            const itDesainItems = Array.isArray(itDesain?.items)
+              ? itDesain.items
+              : [];
+            const itTeks = itDesainItems.filter((x) => x.t === "text" && x.text);
+            const itStiker = itDesainItems.filter((x) => x.t === "emoji");
+
+            return (
+              <div
+                key={idx}
+                className="p-3 rounded-2xl bg-white border border-[#dfd4bd] space-y-2"
+              >
+                <div className="flex items-center justify-between pb-1.5 border-b border-stone-100">
+                  <div className="flex items-center space-x-1.5 min-w-0">
+                    <span
+                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        isCustom
+                          ? "bg-amber-100 text-amber-900 border border-amber-200"
+                          : "bg-sky-100 text-sky-900 border border-sky-200"
+                      }`}
+                    >
+                      {isCustom ? "Kue Custom" : "Kue Katalog"}
+                    </span>
+                    <h5 className="text-xs font-bold text-stone-900 truncate">
+                      {it.nama_item} {it.jumlah > 1 ? `(${it.jumlah}x)` : ""}
+                    </h5>
+                  </div>
+                  {isAdmin && (
+                    <span className="text-xs font-bold text-[#1d3b2e] lining-nums tabular-nums flex-shrink-0 ml-2">
+                      {formatRupiah(it.subtotal)}
+                    </span>
+                  )}
+                </div>
+
+                {isCustom ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-center py-1">
+                      {it.fotoPreviewUrl ? (
+                        <div className="relative group w-full flex justify-center">
+                          <img
+                            src={it.fotoPreviewUrl}
+                            alt="Snapshot 3D"
+                            className="w-full max-h-[180px] object-contain rounded-xl border border-[#e0d5b8] bg-[#fbf6e9] p-1 shadow-2xs"
+                          />
+                          <a
+                            href={it.fotoPreviewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute bottom-2 right-2 bg-black/60 hover:bg-black text-white text-[9px] font-bold px-2 py-1 rounded-lg transition"
+                          >
+                            <i className="fa-solid fa-magnifying-glass-plus mr-1" />
+                            <span>Perbesar</span>
+                          </a>
+                        </div>
+                      ) : (
+                        <PreviewKue
+                          pilihan={itPilihan.length > 0 ? itPilihan : detailPilihan}
+                          tulisan_kue={it.tulisan_kue || detailPesanan.tulisan_kue}
+                          className="w-full max-w-[140px] h-auto drop-shadow-2xs"
+                        />
+                      )}
+                    </div>
+
+                    {(it.fotoBentukUrl || it.fotoGambarUrl) && (
+                      <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                        {it.fotoBentukUrl && (
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] font-bold text-stone-400 block uppercase">
+                              Bentuk Kustom
+                            </span>
+                            <a
+                              href={it.fotoBentukUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block relative group"
+                            >
+                              <img
+                                src={it.fotoBentukUrl}
+                                alt="Bentuk"
+                                className="w-full h-12 object-contain rounded-lg border border-[#e0d5b8] bg-white p-0.5"
+                              />
+                            </a>
+                          </div>
+                        )}
+                        {it.fotoGambarUrl && (
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] font-bold text-stone-400 block uppercase">
+                              Gambar Kustom
+                            </span>
+                            <a
+                              href={it.fotoGambarUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block relative group"
+                            >
+                              <img
+                                src={it.fotoGambarUrl}
+                                alt="Gambar"
+                                className="w-full h-12 object-contain rounded-lg border border-[#e0d5b8] bg-white p-0.5"
+                              />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {it.tulisan_kue && (
+                      <div className="pt-1 border-t border-dashed border-stone-200">
+                        <span className="text-[9px] font-bold text-stone-400 block uppercase">
+                          Tulisan di Kue
+                        </span>
+                        <p className="text-xs font-bold text-[#1d3b2e] bg-[#fbf6e9] border border-[#e0d5b8] p-1.5 rounded-lg italic mt-0.5">
+                          &ldquo;{it.tulisan_kue}&rdquo;
+                        </p>
+                      </div>
+                    )}
+
+                    {it.catatan && it.catatan.trim() ? (
+                      <div className="pt-1 border-t border-dashed border-stone-200">
+                        <span className="text-[9px] font-bold text-stone-400 block uppercase">
+                          Catatan Pemesan
+                        </span>
+                        <p className="text-[11px] font-medium text-stone-800 bg-[#fbf6e9] border border-[#e0d5b8] p-1.5 rounded-lg whitespace-pre-line italic mt-0.5">
+                          &ldquo;{it.catatan}&rdquo;
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {Object.keys(itGrup).length > 0 && (
+                      <div className="pt-1 border-t border-[#dfd4bd] divide-y divide-[#ede2cd] text-xs">
+                        {Object.entries(itGrup).map(([namaGrup, items]) => (
+                          <div
+                            key={namaGrup}
+                            className="py-1 flex items-center justify-between gap-1.5"
+                          >
+                            <span className="font-semibold text-stone-500 text-[10px]">
+                              {namaGrup}
+                            </span>
+                            <div className="flex flex-wrap items-center justify-end gap-1">
+                              {items.map((opt, i) => (
+                                <span
+                                  key={i}
+                                  className="font-bold text-stone-900 bg-[#fbf6e9] border border-[#e0d5b8] px-1.5 py-0.2 rounded text-[10px] inline-flex items-center space-x-1"
+                                >
+                                  {opt.warna && (
+                                    <span
+                                      className="w-2 h-2 rounded-full border border-stone-300 inline-block"
+                                      style={{ backgroundColor: opt.warna }}
+                                    />
+                                  )}
+                                  <span>
+                                    {opt.nama_item}
+                                    {opt.jumlah > 1 ? ` x ${opt.jumlah}` : ""}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {itTeks.length > 0 && (
+                      <div className="pt-1 border-t border-dashed border-stone-200 space-y-0.5">
+                        <span className="text-[9px] font-bold text-stone-400 block uppercase">
+                          Teks Desain
+                        </span>
+                        {itTeks.map((t, i) => (
+                          <div
+                            key={i}
+                            className="p-1 rounded bg-[#fbf6e9] border border-[#e0d5b8] text-[10px] flex justify-between"
+                          >
+                            <span className="font-bold">&ldquo;{t.text}&rdquo;</span>
+                            <span className="text-[8px] text-stone-400">
+                              {t.font || "Bawaan"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-xl bg-stone-100 border border-[#dfd4bd] overflow-hidden flex items-center justify-center flex-shrink-0">
+                      {it.fotoProdukUrl ? (
+                        <img
+                          src={it.fotoProdukUrl}
+                          alt={it.nama_item}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <i className="fa-solid fa-cake-candles text-stone-300 text-xl" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-stone-900">{it.nama_item}</p>
+                      {isAdmin ? (
+                        <p className="text-[11px] text-stone-600 mt-0.5 lining-nums">
+                          {formatRupiah(it.harga_satuan)} x {it.jumlah}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-stone-600 mt-0.5">
+                          Jumlah: {it.jumlah}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <PreviewKue
-                pilihan={detailPilihan}
-                tulisan_kue={detailPesanan.tulisan_kue}
-                className="w-full max-w-[150px] h-auto drop-shadow-2xs"
-              />
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-            {detailFotoBentukUrl && (
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-stone-400 block uppercase">
-                  Bentuk Kustom
-                </span>
-                <a
-                  href={detailFotoBentukUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block relative group"
-                >
-                  <img
-                    src={detailFotoBentukUrl}
-                    alt="Bentuk Kustom"
-                    className="w-full h-14 object-contain rounded-lg border border-[#e0d5b8] bg-white p-0.5"
-                  />
-                  <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded p-0.5 text-[7px]">
-                    <i className="fa-solid fa-magnifying-glass-plus" />
-                  </span>
-                </a>
-              </div>
-            )}
-
-            {detailFotoGambarUrl && (
-              <div className="space-y-0.5">
-                <span className="text-[9px] font-bold text-stone-400 block uppercase">
-                  Gambar Kustom
-                </span>
-                <a
-                  href={detailFotoGambarUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block relative group"
-                >
-                  <img
-                    src={detailFotoGambarUrl}
-                    alt="Gambar Kustom"
-                    className="w-full h-14 object-contain rounded-lg border border-[#e0d5b8] bg-white p-0.5"
-                  />
-                  <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white rounded p-0.5 text-[7px]">
-                    <i className="fa-solid fa-magnifying-glass-plus" />
-                  </span>
-                </a>
-              </div>
-            )}
-          </div>
-
-          {detailPesanan.tulisan_kue && (
-            <div className="pt-1 border-t border-dashed border-stone-200">
-              <span className="text-[9px] font-bold text-stone-400 block uppercase">
-                Tulisan di Kue
-              </span>
-              <p className="text-xs font-bold text-[#1d3b2e] bg-[#fbf6e9] border border-[#e0d5b8] p-1.5 rounded-lg italic mt-0.5">
-                &ldquo;{detailPesanan.tulisan_kue}&rdquo;
-              </p>
-            </div>
-          )}
-
-          {detailPesanan.catatan && detailPesanan.catatan.trim() ? (
-            <div className="pt-1 border-t border-dashed border-stone-200">
-              <span className="text-[9px] font-bold text-stone-400 block uppercase">
-                Catatan Pemesan
-              </span>
-              <p className="text-[11px] font-medium text-stone-800 bg-[#fbf6e9] border border-[#e0d5b8] p-1.5 rounded-lg whitespace-pre-line italic mt-0.5">
-                &ldquo;{detailPesanan.catatan}&rdquo;
-              </p>
-            </div>
-          ) : null}
+            );
+          })}
         </div>
 
         <div className="p-3 rounded-2xl bg-white border border-[#dfd4bd] space-y-1.5">
@@ -759,84 +959,6 @@ export default function PesananDashboardPage() {
               </div>
             )}
           </div>
-        </div>
-
-        <div className="p-3 rounded-2xl bg-white border border-[#dfd4bd] space-y-1.5">
-          <div className="flex items-center justify-between pb-1 border-b border-stone-100">
-            <div className="flex items-center space-x-1">
-              <i className="fa-solid fa-wand-magic-sparkles text-amber-600 text-[11px]" />
-              <h4 className="text-[10px] font-bold text-[#1d3b2e] uppercase tracking-wider">
-                Spesifikasi
-              </h4>
-            </div>
-            {desain?.nama_template && (
-              <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded-full border border-amber-200">
-                {desain.nama_template}
-              </span>
-            )}
-          </div>
-
-          <div className="divide-y divide-[#e0d5b8] text-xs">
-            {Object.entries(grupPilihan).map(([namaGrup, items]) => (
-              <div key={namaGrup} className="py-1 flex items-center justify-between gap-1.5">
-                <span className="font-semibold text-stone-500 text-[10px]">{namaGrup}</span>
-                <div className="flex flex-wrap items-center justify-end gap-1">
-                  {items.map((it, idx) => (
-                    <span
-                      key={idx}
-                      className="font-bold text-stone-900 bg-[#fbf6e9] border border-[#e0d5b8] px-1.5 py-0.2 rounded text-[10px] inline-flex items-center space-x-1"
-                    >
-                      {it.warna && (
-                        <span
-                          className="w-2 h-2 rounded-full border border-stone-300 inline-block"
-                          style={{ backgroundColor: it.warna }}
-                        />
-                      )}
-                      <span>
-                        {it.nama_item}
-                        {it.jumlah > 1 ? ` x ${it.jumlah}` : ""}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {(teksItems.length > 0 || Object.keys(stikerPerKategori).length > 0) && (
-            <div className="pt-1 border-t border-dashed border-[#e0d5b8] space-y-1 text-xs">
-              {teksItems.length > 0 && (
-                <div className="space-y-0.5">
-                  <span className="text-[9px] font-bold text-stone-500">Teks Kue:</span>
-                  {teksItems.map((t, idx) => (
-                    <div
-                      key={idx}
-                      className="p-1 rounded bg-[#fbf6e9] border border-[#e0d5b8] flex justify-between items-center text-[10px]"
-                    >
-                      <span className="font-bold text-stone-900">&ldquo;{t.text}&rdquo;</span>
-                      <span className="text-[8px] text-stone-400">{t.font || "Bawaan"}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {Object.keys(stikerPerKategori).length > 0 && (
-                <div className="space-y-0.5">
-                  <span className="text-[9px] font-bold text-stone-500">Stiker:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {Object.entries(stikerPerKategori).map(([kategori, emojis]) => (
-                      <div
-                        key={kategori}
-                        className="px-1.5 py-0.2 rounded bg-[#fbf6e9] border border-[#e0d5b8] text-[9px] flex items-center space-x-1"
-                      >
-                        <span className="font-bold text-stone-800">{kategori}:</span>
-                        <span>{emojis.join(" ")}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="p-3 rounded-2xl bg-white border border-[#dfd4bd] space-y-2">
@@ -1021,14 +1143,20 @@ export default function PesananDashboardPage() {
             </div>
 
             <div className="space-y-1 text-xs">
-              <div className="flex justify-between text-stone-600 text-[10px]">
-                <span>Subtotal Kue</span>
-                <span className="font-bold text-stone-900">{formatRupiah(detailPesanan.total_kue)}</span>
+              {detailItems.map((it, idx) => (
+                <div key={idx} className="flex justify-between text-stone-600 text-[10px]">
+                  <span className="truncate pr-2">{it.jumlah > 1 ? `${it.jumlah}x ` : ""}{it.nama_item}</span>
+                  <span className="font-bold text-stone-900 lining-nums tabular-nums flex-shrink-0">{formatRupiah(it.subtotal)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-stone-600 text-[10px] pt-1 border-t border-dashed border-stone-100">
+                <span>Subtotal Semua Kue</span>
+                <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(detailPesanan.total_kue)}</span>
               </div>
               {detailPesanan.ongkir > 0 && (
                 <div className="flex justify-between text-stone-600 text-[10px]">
-                  <span>Ongkir</span>
-                  <span className="font-bold text-stone-900">{formatRupiah(detailPesanan.ongkir)}</span>
+                  <span>Ongkos Kirim</span>
+                  <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(detailPesanan.ongkir)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center p-2 rounded-xl bg-[#17382d] text-white my-1">
@@ -1036,7 +1164,7 @@ export default function PesananDashboardPage() {
                   <span className="text-[8px] font-bold text-emerald-200 block uppercase">
                     Total
                   </span>
-                  <span className="text-xs font-black">
+                  <span className="text-xs font-black lining-nums tabular-nums">
                     {formatRupiah(detailPesanan.total_bayar)}
                   </span>
                 </div>
@@ -1052,14 +1180,29 @@ export default function PesananDashboardPage() {
               </div>
               <div className="flex justify-between text-stone-600 text-[10px]">
                 <span>Terbayar</span>
-                <span className="font-bold text-emerald-700">{formatRupiah(detailPesanan.jumlah_terbayar)}</span>
+                <span className="font-bold text-emerald-700 lining-nums tabular-nums">{formatRupiah(detailPesanan.jumlah_terbayar)}</span>
               </div>
               <div className="flex justify-between items-baseline pt-0.5 border-t border-dashed border-stone-200 text-xs">
                 <span className="font-bold text-rose-800 text-[10px]">Sisa Tagihan</span>
-                <span className="font-black text-xs text-rose-800">
-                  {formatRupiah(detailPesanan.total_bayar - detailPesanan.jumlah_terbayar)}
+                <span className="font-black text-xs text-rose-800 lining-nums tabular-nums">
+                  {formatRupiah(Math.max(0, detailPesanan.total_bayar - detailPesanan.jumlah_terbayar))}
                 </span>
               </div>
+
+              {(() => {
+                const sumSub = detailItems.reduce((acc, it) => acc + (Number(it.subtotal) || 0), 0);
+                if (detailItems.length > 0 && sumSub !== Number(detailPesanan.total_kue)) {
+                  return (
+                    <div className="p-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-700 text-[10px] font-bold flex items-center space-x-1.5 mt-2">
+                      <i className="fa-solid fa-triangle-exclamation text-rose-600 text-xs flex-shrink-0" />
+                      <span>
+                        Peringatan: Jumlah subtotal item ({formatRupiah(sumSub)}) tidak sama dengan total kue ({formatRupiah(detailPesanan.total_kue)}).
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         )}
@@ -1300,6 +1443,7 @@ export default function PesananDashboardPage() {
                     <th className="py-3 px-3 rounded-l-xl w-12">Kue</th>
                     <th className="py-3 px-3 whitespace-nowrap">Kode</th>
                     <th className="py-3 px-3 whitespace-nowrap">Pelanggan</th>
+                    <th className="py-3 px-3 whitespace-nowrap">Isi</th>
                     <th className="py-3 px-3 whitespace-nowrap">Jadwal</th>
                     <th className="py-3 px-3 whitespace-nowrap">Pengiriman</th>
                     <th className="py-3 px-3 whitespace-nowrap">Status Pesanan</th>
@@ -1368,6 +1512,11 @@ export default function PesananDashboardPage() {
                               {p.no_wa}
                             </span>
                           </div>
+                        </td>
+                        <td className="py-3 px-3 font-medium text-stone-700 text-xs max-w-[200px]">
+                          <span className="truncate block" title={isiRingkasMap[p.id]}>
+                            {isiRingkasMap[p.id] || "1 Kue"}
+                          </span>
                         </td>
                         <td className="py-3 px-3 text-stone-600 text-[11px] whitespace-nowrap">
                           {formatTanggalSingkat(p.tanggal_ambil)} {p.jam_ambil?.slice(0, 5)}

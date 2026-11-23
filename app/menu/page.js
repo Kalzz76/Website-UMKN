@@ -11,7 +11,7 @@ import { AnimatePresence, motion } from "motion/react";
 
 export default function MenuPage() {
   const router = useRouter();
-  const { totalQty, totalPrice, addItem } = usePatisserieCart();
+  const { totalQty } = usePatisserieCart();
   const [toastMsg, setToastMsg] = useState(null);
 
   const showToast = (msg) => {
@@ -19,9 +19,34 @@ export default function MenuPage() {
     setTimeout(() => setToastMsg(null), 2500);
   };
 
-  const handleAddToCart = (item) => {
-    addItem(item);
-    showToast(`Masuk keranjang: ${item.nama}`);
+  const handleAddToCart = async (item) => {
+    try {
+      const res = await fetch("/api/keranjang", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jenis: "Siap",
+          id_produk: item.id,
+          jumlah: 1,
+        }),
+      });
+
+      if (res.status === 401) {
+        router.push("/masuk?redirect=/menu");
+        return;
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.pesan || "Gagal menambahkan ke keranjang.");
+        return;
+      }
+
+      window.dispatchEvent(new Event("cravely_cart_updated"));
+      showToast(`Masuk keranjang: ${item.nama}`);
+    } catch {
+      showToast("Terjadi kesalahan jaringan.");
+    }
   };
 
   const handleNavigate = (view) => {
@@ -29,8 +54,8 @@ export default function MenuPage() {
       router.push("/pesan");
     } else if (view === "toko" || view === "etalase") {
       router.push("/toko");
-    } else if (view === "kasir") {
-      router.push("/kasir");
+    } else if (view === "kasir" || view === "checkout") {
+      router.push("/checkout");
     } else {
       router.push("/");
     }
@@ -38,27 +63,23 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF4EE] text-ink selection:bg-blush selection:text-cherry pt-14 sm:pt-16 pb-16">
-      {/* Floating Dynamic Island Navbar */}
       <DynamicIslandNavbar showEntered={true} />
 
-      {/* Main Desserts Menu View */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-6">
         <DessertsMenuView
           totalQty={totalQty}
-          totalPrice={totalPrice}
+          totalPrice={0}
           onAddToCart={handleAddToCart}
           onNavigate={handleNavigate}
         />
       </main>
 
-      {/* Footer */}
       <PatisserieFooter
         onNavigate={handleNavigate}
         onOpenHampers={() => {}}
         onExitShop={() => router.push("/")}
       />
 
-      {/* Toast Notification */}
       <AnimatePresence>
         {toastMsg && (
           <motion.div
@@ -73,7 +94,6 @@ export default function MenuPage() {
         )}
       </AnimatePresence>
 
-      {/* Custom Piping Bag Cursor */}
       <PipingBagCursor />
     </div>
   );
