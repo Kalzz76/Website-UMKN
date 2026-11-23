@@ -468,63 +468,10 @@ export const KasirView: React.FC<KasirViewProps> = ({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* ==================== FOOTER SECTION: EXACT REFERENCE CORNER WAVES & SKETCHES ==================== */}
-        <div className="mt-8 sm:mt-12 relative w-full h-32 sm:h-40 flex items-end justify-between overflow-hidden pointer-events-none select-none">
-          {/* Left Side: Cake Slice Sketch & Corner Waves */}
-          <div className="relative w-[45%] max-w-[420px] h-full flex items-end">
-            <svg
-              viewBox="0 0 420 150"
-              preserveAspectRatio="none"
-              className="w-full h-full"
-            >
-              {/* Soft Peach / Blush Upper Wave */}
-              <path
-                d="M0,35 C100,35 180,105 320,128 C370,135 400,145 420,150 L420,150 L0,150 Z"
-                fill="#F2DCD2"
-              />
-              {/* Deep Burgundy Corner Wave */}
-              <path
-                d="M0,90 C50,90 90,120 150,128 C200,135 240,150 270,150 L0,150 Z"
-                fill="#7D2330"
-              />
-
-              {/* Line Art Cake Slice Sketch */}
-              <g stroke="#6E4238" strokeWidth="1.2" fill="none">
-                {/* Plate Oval Base */}
-                <ellipse cx="105" cy="122" rx="65" ry="10" stroke="#6E4238" opacity="0.65" />
-                <path d="M45,124 Q105,134 165,124" opacity="0.4" />
-
-                {/* Cake Slice Triangle & 3D Faces */}
-                <path d="M55,115 L145,88 L145,58 L55,85 Z" fill="#FFFDF9" fillOpacity="0.75" />
-                <path d="M55,85 L102,48 L145,58 Z" fill="#FAF4EE" fillOpacity="0.8" />
-                <path d="M55,115 L55,85" />
-                <path d="M145,88 L145,58" />
-
-                {/* Layer Sponge & Cream Lines */}
-                <path d="M55,100 L145,73" strokeDasharray="2,1.5" />
-                <path d="M55,95 L145,68" strokeDasharray="3,2" />
-
-                {/* Cream Rosette & Berry On Top */}
-                <circle cx="85" cy="48" r="6" stroke="#6E4238" fill="#FFFDF9" />
-                <circle cx="94" cy="46" r="4.5" stroke="#6E4238" fill="#FFFDF9" />
-                <path d="M85,42 Q87,36 91,37" strokeLinecap="round" />
-                {/* Texture shading */}
-                <line x1="65" y1="108" x2="68" y2="105" opacity="0.5" />
-                <line x1="80" y1="103" x2="83" y2="100" opacity="0.5" />
-                <line x1="110" y1="94" x2="113" y2="91" opacity="0.5" />
-                <line x1="125" y1="89" x2="128" y2="86" opacity="0.5" />
-              </g>
-            </svg>
-          </div>
-
-          {/* Right Side: Thank You Calligraphy, Botanical Leaves & Corner Waves */}
-          <div className="relative w-[50%] max-w-[480px] h-full flex flex-col justify-end items-end">
-            {/* Calligraphy Text: Terima kasih sudah memilih Cravely ♡ */}
-            <div className="relative z-10 text-right pr-4 sm:pr-8 pb-3 sm:pb-5 pointer-events-auto">
-              <p className="font-serif italic text-base sm:text-xl text-[#7D5A50] leading-tight">
+            {/* Subtext: "Terima kasih sudah memilih Cravely ♡" with Cursive Script */}
+            <div className="mt-8 text-center sm:text-right pr-2 sm:pr-4">
+              <p className="font-serif italic text-base sm:text-lg text-[#7D5A50] leading-snug">
                 Terima kasih<br />
                 <span className="relative inline-block mt-0.5">
                   sudah memilih Cravely ♡
@@ -540,36 +487,6 @@ export const KasirView: React.FC<KasirViewProps> = ({
                   </svg>
                 </span>
               </p>
-            </div>
-
-            {/* Right Corner Waves & Botanical Flourish SVG */}
-            <div className="absolute inset-0 w-full h-full">
-              <svg
-                viewBox="0 0 480 150"
-                preserveAspectRatio="none"
-                className="w-full h-full"
-              >
-                {/* Soft Peach / Blush Upper Wave */}
-                <path
-                  d="M0,150 C80,145 160,120 260,100 C360,80 420,50 480,35 L480,150 Z"
-                  fill="#F2DCD2"
-                />
-                {/* Deep Burgundy Corner Wave */}
-                <path
-                  d="M160,150 C240,150 300,135 360,125 C420,115 450,100 480,85 L480,150 Z"
-                  fill="#7D2330"
-                />
-
-                {/* Botanical Leaf Branch on Far Right */}
-                <g stroke="#7D5A50" strokeWidth="1.2" fill="none" opacity="0.55">
-                  <path d="M340,130 Q410,70 465,15" strokeLinecap="round" />
-                  {/* Leaves along branch */}
-                  <path d="M375,100 C365,88 385,80 395,92 C400,102 385,108 375,100 Z" fill="#7D5A50" fillOpacity="0.08" />
-                  <path d="M410,75 C425,65 435,78 425,88 C415,95 405,82 410,75 Z" fill="#7D5A50" fillOpacity="0.08" />
-                  <path d="M435,48 C425,36 445,30 452,40 C458,50 442,55 435,48 Z" fill="#7D5A50" fillOpacity="0.08" />
-                  <path d="M455,25 C470,18 478,28 470,36 C462,42 450,32 455,25 Z" fill="#7D5A50" fillOpacity="0.08" />
-                </g>
-              </svg>
             </div>
           </div>
         </div>
