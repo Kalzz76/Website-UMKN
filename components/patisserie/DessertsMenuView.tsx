@@ -20,7 +20,8 @@ export interface DessertsMenuViewProps {
   initialSelectedId?: number | null;
   totalQty: number;
   totalPrice: number;
-  onAddToCart: (item: { nama: string; harga: number; tipe: DessertIllustType }) => void;
+  items?: MenuItem[];
+  onAddToCart: (item: { id?: number; nama: string; harga: number; tipe?: DessertIllustType }) => void;
   onNavigate: (view: ViewType) => void;
 }
 
@@ -44,7 +45,7 @@ export interface MenuItem {
 }
 
 // 12 Koleksi Menu Lengkap dengan Foto Asli & Data Detail
-const MENU_ITEMS: MenuItem[] = [
+export const MENU_ITEMS: MenuItem[] = [
   {
     id: 1,
     nama: "Strawberry Shortcake",
@@ -299,21 +300,37 @@ const CATEGORIES: CategoryTab[] = [
 ];
 
 export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
+  initialSelectedId,
+  items: itemsProp,
   onAddToCart,
 }) => {
+  const allItems = itemsProp && itemsProp.length > 0 ? itemsProp : MENU_ITEMS;
   const [selectedCategory, setSelectedCategory] = useState<MenuCategoryKey>("semua");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortOptionKey>("populer");
   const [visibleCount, setVisibleCount] = useState<number>(6);
   const [addedItemIds, setAddedItemIds] = useState<Record<number, boolean>>({});
 
-  // Live Spotlight / Pratinjau Kue di Kolom Kiri
-  const [selectedCake, setSelectedCake] = useState<MenuItem>(MENU_ITEMS[0]);
+  const [selectedCake, setSelectedCake] = useState<MenuItem>(() => {
+    if (initialSelectedId) {
+      const match = allItems.find((c) => c.id === initialSelectedId);
+      if (match) return match;
+    }
+    return allItems[0] || MENU_ITEMS[0];
+  });
   const previewRef = useRef<HTMLDivElement | null>(null);
 
-  // Filter & Search & Sort Logic
+  React.useEffect(() => {
+    if (allItems.length > 0) {
+      setSelectedCake((prev) => {
+        const found = allItems.find((c) => c.id === prev?.id);
+        return found || allItems[0];
+      });
+    }
+  }, [allItems]);
+
   const filteredAndSortedItems = useMemo(() => {
-    let result = [...MENU_ITEMS];
+    let result = [...allItems];
 
     // Filter Kategori
     if (selectedCategory !== "semua") {
@@ -367,6 +384,7 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
   const handleAddToCartClick = (item: MenuItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     onAddToCart({
+      id: item.id,
       nama: item.nama,
       harga: item.harga,
       tipe: item.tipe,
