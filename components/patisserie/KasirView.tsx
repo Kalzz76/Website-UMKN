@@ -94,9 +94,6 @@ export const KasirView: React.FC<KasirViewProps> = ({
   const [discountAmount, setDiscountAmount] = useState(0);
   const [appliedVoucher, setAppliedVoucher] = useState<string | null>(null);
 
-  // Detail Tambahan Patisserie: Kemasan Hardbox Eksklusif & Free Kartu Lilin
-  const packagingFee = cart.length > 0 ? 15000 : 0; // Kemasan Hardbox Eksklusif & Ice Gel Pendingin
-
   // Checkout Modal State
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [phone, setPhone] = useState("");
@@ -105,10 +102,10 @@ export const KasirView: React.FC<KasirViewProps> = ({
   const [specialRequest, setSpecialRequest] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Perhitungan Subtotal & Grand Total
+  // Perhitungan Subtotal & Grand Total (Murni harga produk dikurangi diskon voucher)
   const subtotal = cart.reduce((sum, item) => sum + item.harga * item.qty, 0);
   const totalItemCount = cart.reduce((sum, item) => sum + item.qty, 0);
-  const grandTotal = Math.max(0, subtotal + packagingFee - discountAmount);
+  const grandTotal = Math.max(0, subtotal - discountAmount);
 
   // Handle Voucher Apply
   const handleApplyVoucher = (e: React.FormEvent) => {
@@ -181,8 +178,6 @@ export const KasirView: React.FC<KasirViewProps> = ({
       ),
       "─────────────────────────",
       `*Subtotal:* ${formatRupiah(subtotal)}`,
-      `*Kemasan Hardbox & Ice Gel:* ${formatRupiah(packagingFee)}`,
-      `*Lilin & Pisau Kue:* GRATIS (Include)`,
       appliedVoucher ? `*Diskon Voucher (${appliedVoucher}):* -${formatRupiah(discountAmount)}` : "",
       `*TOTAL PEMBAYARAN:* ${formatRupiah(grandTotal)}`,
       "─────────────────────────",
@@ -203,56 +198,9 @@ export const KasirView: React.FC<KasirViewProps> = ({
   };
 
   return (
-    <div className="w-full relative min-h-[750px] overflow-hidden pb-12">
-      {/* ==================== BACKGROUND DECORATIVE ELEMENTS (BOTANICAL & WAVES) ==================== */}
-      {/* Top Left Botanical Branch */}
-      <div className="absolute top-0 left-0 pointer-events-none opacity-40 -translate-x-3 -translate-y-2 z-0 hidden md:block">
-        <svg width="180" height="150" viewBox="0 0 200 160" fill="none" stroke="#6E4238" strokeWidth="1.2">
-          <path d="M10,10 Q60,50 120,40 T190,10" strokeLinecap="round" />
-          <path d="M40,25 C30,35 45,55 55,40 C65,25 45,15 40,25 Z" fill="#6E4238" fillOpacity="0.1" />
-          <path d="M85,38 C80,55 105,65 110,48 C115,30 95,28 85,38 Z" fill="#6E4238" fillOpacity="0.1" />
-          <path d="M135,32 C135,50 160,55 158,38 C155,20 138,20 135,32 Z" fill="#6E4238" fillOpacity="0.1" />
-          <path d="M15,5 Q55,90 140,110" strokeLinecap="round" opacity="0.6" />
-          <path d="M50,60 C40,75 60,90 70,75 Z" fill="#6E4238" fillOpacity="0.08" />
-          <path d="M95,85 C90,105 115,110 115,90 Z" fill="#6E4238" fillOpacity="0.08" />
-        </svg>
-      </div>
-
-      {/* Top Right Botanical Branch */}
-      <div className="absolute top-0 right-0 pointer-events-none opacity-40 translate-x-4 -translate-y-2 z-0 hidden md:block">
-        <svg width="180" height="150" viewBox="0 0 200 160" fill="none" stroke="#6E4238" strokeWidth="1.2">
-          <path d="M190,10 Q140,50 80,40 T10,10" strokeLinecap="round" />
-          <path d="M160,25 C170,35 155,55 145,40 C135,25 155,15 160,25 Z" fill="#6E4238" fillOpacity="0.1" />
-          <path d="M115,38 C120,55 95,65 90,48 C85,30 105,28 115,38 Z" fill="#6E4238" fillOpacity="0.1" />
-          <path d="M65,32 C65,50 40,55 42,38 C45,20 62,20 65,32 Z" fill="#6E4238" fillOpacity="0.1" />
-          <path d="M185,5 Q145,90 60,110" strokeLinecap="round" opacity="0.6" />
-          <path d="M150,60 C160,75 140,90 130,75 Z" fill="#6E4238" fillOpacity="0.08" />
-          <path d="M105,85 C110,105 85,110 85,90 Z" fill="#6E4238" fillOpacity="0.08" />
-        </svg>
-      </div>
-
-      {/* Bottom Organic Sweeping Waves (Terracotta & Burgundy) */}
-      <div className="absolute bottom-0 inset-x-0 h-44 pointer-events-none overflow-hidden z-0">
-        <svg
-          viewBox="0 0 1440 200"
-          preserveAspectRatio="none"
-          className="absolute bottom-0 w-full h-full opacity-65"
-        >
-          {/* Layer 1: Soft Peach / Terracotta Wave */}
-          <path
-            d="M0,80 C320,170 540,30 840,110 C1140,190 1320,80 1440,60 L1440,200 L0,200 Z"
-            fill="#F2DBD0"
-          />
-          {/* Layer 2: Deep Burgundy Flowing Bottom Accent */}
-          <path
-            d="M0,150 C240,110 420,180 720,130 C1020,80 1260,160 1440,140 L1440,200 L0,200 Z"
-            fill="#7D2330"
-          />
-        </svg>
-      </div>
-
+    <div className="w-full relative pb-8">
       {/* ==================== PAGE CONTENT ==================== */}
-      <div className="relative z-10">
+      <div>
         {/* ==================== HEADER: KERANJANG BELANJA ==================== */}
         <div className="mb-7 sm:mb-9">
           <div className="flex items-center gap-4 w-full">
@@ -416,19 +364,6 @@ export const KasirView: React.FC<KasirViewProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Bottom Left Corner Delicate Cake Line-Art Sketch (On top of organic wave) */}
-            <div className="mt-12 pointer-events-none opacity-40 hidden sm:block">
-              <svg width="120" height="75" viewBox="0 0 130 85" fill="none" stroke="#6E4238" strokeWidth="1.2">
-                <path d="M10,75 L105,75 L120,45 L25,45 Z" strokeLinejoin="round" />
-                <path d="M10,75 L10,58 L25,30 L120,30 L120,45" strokeLinejoin="round" />
-                <path d="M10,58 L105,58 L120,30" strokeLinejoin="round" />
-                <line x1="12" y1="66" x2="105" y2="66" strokeDasharray="2,2" />
-                <circle cx="75" cy="22" r="7" stroke="#6E4238" />
-                <circle cx="86" cy="23" r="5" stroke="#6E4238" />
-                <path d="M75,15 Q78,9 83,10" strokeLinecap="round" />
-              </svg>
-            </div>
           </div>
 
           {/* ==================== RIGHT COLUMN: ORDER SUMMARY CARD ==================== */}
@@ -459,32 +394,6 @@ export const KasirView: React.FC<KasirViewProps> = ({
                   <span>Subtotal ({totalItemCount} Produk)</span>
                   <span className="font-serif font-medium text-[#381F1B] tabular-nums">
                     {formatRupiah(subtotal)}
-                  </span>
-                </div>
-
-                {/* Kemasan Eksklusif & Ice Gel */}
-                <div className="flex items-center justify-between text-[#5C3D2E]">
-                  <div className="flex items-center gap-1.5">
-                    <span>Kemasan Hardbox &amp; Ice Gel</span>
-                    <span
-                      title="Kemasan box eksklusif tebal berlapis foil & ice gel agar kue dingin & aman"
-                      className="cursor-help text-[#8C6D62] hover:text-[#7D2330]"
-                    >
-                      <Info className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                  <span className="font-serif font-medium text-[#381F1B] tabular-nums">
-                    {formatRupiah(packagingFee)}
-                  </span>
-                </div>
-
-                {/* Lilin & Pisau Kue (Gratis) */}
-                <div className="flex items-center justify-between text-[#5C3D2E]">
-                  <div className="flex items-center gap-1.5">
-                    <span>Lilin Ulang Tahun &amp; Pisau</span>
-                  </div>
-                  <span className="font-semibold text-emerald-700">
-                    Gratis (Include)
                   </span>
                 </div>
 
@@ -561,19 +470,10 @@ export const KasirView: React.FC<KasirViewProps> = ({
             </div>
 
             {/* Subtext: "Terima kasih sudah memilih Cravely ♡" with Cursive Script */}
-            <div className="mt-8 text-center relative">
+            <div className="mt-6 text-center">
               <p className="font-serif italic text-base sm:text-lg text-[#7D5A50]">
                 Terima kasih<br />sudah memilih Cravely ♡
               </p>
-
-              {/* Bottom Right Botanical Leaf Flourish */}
-              <div className="absolute right-0 bottom-0 translate-x-4 translate-y-4 pointer-events-none opacity-40 hidden sm:block">
-                <svg width="70" height="60" viewBox="0 0 80 70" fill="none" stroke="#6E4238" strokeWidth="1.2">
-                  <path d="M70,60 Q40,30 10,40" strokeLinecap="round" />
-                  <path d="M50,45 C55,30 35,25 38,40 Z" fill="#6E4238" fillOpacity="0.1" />
-                  <path d="M25,38 C28,25 15,20 18,35 Z" fill="#6E4238" fillOpacity="0.1" />
-                </svg>
-              </div>
             </div>
           </div>
         </div>
