@@ -2295,185 +2295,77 @@ function build3DDonat(add, M, MB, S, sliced) {
   add(g);
 }
 
-function makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced) {
+function makeOneCookie(cookieTex, cookieMat, chipMat, S) {
   const g = new THREE.Group();
-  const crumbTex = getCrumbTexture();
 
-  if (!sliced) {
-    const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.05, 1.12, 0.26, 48),
-      cookieMat
-    );
-    base.position.y = 0.13;
-    g.add(base);
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.05, 1.12, 0.26, 48),
+    cookieMat
+  );
+  base.position.y = 0.13;
+  g.add(base);
 
-    const topDome = new THREE.Mesh(
-      new THREE.SphereGeometry(1.12, 36, 20),
-      cookieMat
-    );
-    topDome.scale.set(1.0, 0.32, 1.0);
-    topDome.position.y = 0.12;
-    g.add(topDome);
+  const topDome = new THREE.Mesh(
+    new THREE.SphereGeometry(1.12, 36, 20),
+    cookieMat
+  );
+  topDome.scale.set(1.0, 0.32, 1.0);
+  topDome.position.y = 0.12;
+  g.add(topDome);
 
-    const chipGeo = new THREE.ConeGeometry(0.13, 0.16, 7);
-    const chipPositions = [
-      [0.22, 0.30, 0.18, 0.2, 0.4, 0.1],
-      [-0.32, 0.28, -0.22, -0.3, 0.8, 0.2],
-      [0.05, 0.33, -0.38, 0.4, -0.2, 0.5],
-      [-0.45, 0.24, 0.28, 0.1, 1.2, -0.3],
-      [0.48, 0.24, -0.15, -0.2, -0.5, 0.4],
-      [-0.08, 0.32, 0.35, 0.3, 0.6, 0.2],
-      [0.35, 0.26, 0.42, -0.4, 0.3, -0.1],
-      [-0.55, 0.20, -0.12, 0.1, -0.7, 0.3],
-    ];
+  const chipGeo = new THREE.ConeGeometry(0.13, 0.16, 7);
+  const chipPositions = [
+    [0.22, 0.30, 0.18, 0.2, 0.4, 0.1],
+    [-0.32, 0.28, -0.22, -0.3, 0.8, 0.2],
+    [0.05, 0.33, -0.38, 0.4, -0.2, 0.5],
+    [-0.45, 0.24, 0.28, 0.1, 1.2, -0.3],
+    [0.48, 0.24, -0.15, -0.2, -0.5, 0.4],
+    [-0.08, 0.32, 0.35, 0.3, 0.6, 0.2],
+    [0.35, 0.26, 0.42, -0.4, 0.3, -0.1],
+    [-0.55, 0.20, -0.12, 0.1, -0.7, 0.3],
+  ];
 
-    chipPositions.forEach(([x, y, z, rx, ry, rz]) => {
-      const ch = new THREE.Mesh(chipGeo, chipMat);
-      ch.position.set(x, y, z);
-      ch.rotation.set(rx, ry, rz);
-      g.add(ch);
-    });
+  chipPositions.forEach(([x, y, z, rx, ry, rz]) => {
+    const ch = new THREE.Mesh(chipGeo, chipMat);
+    ch.position.set(x, y, z);
+    ch.rotation.set(rx, ry, rz);
+    g.add(ch);
+  });
 
-    if (S.deco && S.deco.spr) {
-      const spGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.08, 6);
-      const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
-      for (let i = 0; i < 20; i++) {
-        const a = (i * Math.PI * 2) / 20;
-        const r = 0.4 + Math.random() * 0.45;
-        const sp = new THREE.Mesh(
-          spGeo,
-          new THREE.MeshStandardMaterial({ color: spColors[i % spColors.length], roughness: 0.4 })
-        );
-        sp.position.set(Math.cos(a) * r, 0.32, Math.sin(a) * r);
-        sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
-        g.add(sp);
-      }
-    }
-
-    if (S.deco && S.deco.drip) {
-      const dripMat = new THREE.MeshStandardMaterial({
-        color: "#3B1E11",
-        roughness: 0.25,
-        metalness: 0.1,
-      });
-      for (let i = 0; i < 4; i++) {
-        const dr = new THREE.Mesh(new THREE.TorusGeometry(0.25 + i * 0.2, 0.022, 8, 32), dripMat);
-        dr.rotation.x = Math.PI / 2;
-        dr.position.y = 0.32;
-        g.add(dr);
-      }
-    }
-  } else {
-    const { flavColor, fillColor } = getResolvedPastryColors(S);
-
-    const crumbMat = new THREE.MeshStandardMaterial({
-      color: cookieMat.color,
-      roughness: 0.95,
-      map: crumbTex.map,
-      bumpMap: crumbTex.bump,
-      bumpScale: 5.5,
-      side: THREE.DoubleSide,
-    });
-
-    const fillMat = new THREE.MeshStandardMaterial({
-      color: fillColor,
-      roughness: 0.18,
-      metalness: 0.05,
-      side: THREE.DoubleSide,
-    });
-
-    const buildHalf = (isHalf2) => {
-      const hG = new THREE.Group();
-
-      const b = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.08, 1.15, 0.16, 48, 1, false, 0, Math.PI),
-        cookieMat
+  if (S.deco && S.deco.spr) {
+    const spGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.08, 6);
+    const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
+    for (let i = 0; i < 20; i++) {
+      const a = (i * Math.PI * 2) / 20;
+      const r = 0.4 + Math.random() * 0.45;
+      const sp = new THREE.Mesh(
+        spGeo,
+        new THREE.MeshStandardMaterial({ color: spColors[i % spColors.length], roughness: 0.4 })
       );
-      b.position.y = 0.08;
-      hG.add(b);
-
-      const d = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.85, 1.08, 0.12, 48, 1, false, 0, Math.PI),
-        cookieMat
-      );
-      d.position.y = 0.22;
-      hG.add(d);
-
-      const c = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.40, 0.85, 0.06, 48, 1, false, 0, Math.PI),
-        cookieMat
-      );
-      c.position.y = 0.31;
-      hG.add(c);
-
-      const w = new THREE.Mesh(new THREE.PlaneGeometry(2.30, 0.34), crumbMat);
-      w.position.set(0, 0.17, 0);
-      if (isHalf2) w.rotation.y = Math.PI;
-      hG.add(w);
-
-      const fMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.40, 0.20), fillMat);
-      fMesh.position.set(0, 0.16, isHalf2 ? -0.003 : 0.003);
-      if (isHalf2) fMesh.rotation.y = Math.PI;
-      hG.add(fMesh);
-
-      [-0.40, 0, 0.40].forEach((dx) => {
-        const drop = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), fillMat);
-        drop.scale.set(1.0, 1.4, 0.8);
-        drop.position.set(dx, 0.11, isHalf2 ? -0.02 : 0.02);
-        hG.add(drop);
-      });
-
-      [-0.60, -0.20, 0.25, 0.65].forEach((cx) => {
-        const ch = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.16, 7), chipMat);
-        ch.position.set(cx, 0.17, isHalf2 ? -0.04 : 0.04);
-        ch.rotation.x = isHalf2 ? -Math.PI / 2 : Math.PI / 2;
-        hG.add(ch);
-      });
-
-      [
-        [0.25, 0.33, 0.35],
-        [-0.35, 0.30, 0.45],
-        [0.55, 0.25, 0.25],
-        [-0.15, 0.34, 0.62],
-      ].forEach(([x, y, z]) => {
-        const ch = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.15, 7), chipMat);
-        ch.position.set(x, y, z);
-        hG.add(ch);
-      });
-
-      return hG;
-    };
-
-    const half1 = buildHalf(false);
-    half1.position.set(-0.10, 0, 0.16);
-    half1.rotation.y = 0.12;
-    g.add(half1);
-
-    const half2 = buildHalf(true);
-    half2.position.set(0.18, 0, -0.20);
-    half2.rotation.y = -0.32;
-    g.add(half2);
-
-    const crumbGeo = new THREE.DodecahedronGeometry(0.028);
-    for (let i = 0; i < 14; i++) {
-      const cr = new THREE.Mesh(crumbGeo, crumbMat);
-      const crSc = 0.5 + Math.random() * 0.9;
-      cr.scale.setScalar(crSc);
-      cr.position.set((Math.random() - 0.5) * 1.2, 0.012, (Math.random() - 0.5) * 0.35);
-      g.add(cr);
+      sp.position.set(Math.cos(a) * r, 0.32, Math.sin(a) * r);
+      sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
+      g.add(sp);
     }
+  }
 
-    [[-0.22, 0.015, -0.05], [0.32, 0.015, 0.08], [0.05, 0.015, -0.08]].forEach(([cx, cy, cz]) => {
-      const chDrop = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 5), chipMat);
-      chDrop.position.set(cx, cy, cz);
-      g.add(chDrop);
+  if (S.deco && S.deco.drip) {
+    const dripMat = new THREE.MeshStandardMaterial({
+      color: "#3B1E11",
+      roughness: 0.25,
+      metalness: 0.1,
     });
+    for (let i = 0; i < 4; i++) {
+      const dr = new THREE.Mesh(new THREE.TorusGeometry(0.25 + i * 0.2, 0.022, 8, 32), dripMat);
+      dr.rotation.x = Math.PI / 2;
+      dr.position.y = 0.32;
+      g.add(dr);
+    }
   }
 
   return g;
 }
 
-function build3DCookies(add, M, MB, S, sliced) {
+function build3DCookies(add, M, MB, S) {
   const g = new THREE.Group();
   const cookieTex = getCookieTextures();
 
@@ -2508,21 +2400,21 @@ function build3DCookies(add, M, MB, S, sliced) {
   const isSmall = S.size === "small";
 
   if (isMini) {
-    const c1 = makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced);
+    const c1 = makeOneCookie(cookieTex, cookieMat, chipMat, S);
     c1.scale.setScalar(baseScale * 1.15);
     g.add(c1);
   } else if (isSmall) {
-    const c1 = makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced);
+    const c1 = makeOneCookie(cookieTex, cookieMat, chipMat, S);
     c1.scale.setScalar(baseScale * 0.95);
     c1.position.set(-0.35, 0, -0.1);
     g.add(c1);
 
-    const c2 = makeOneCookie(cookieTex, cookieMat, chipMat, S, false);
+    const c2 = makeOneCookie(cookieTex, cookieMat, chipMat, S);
     c2.scale.setScalar(baseScale * 0.95);
     c2.position.set(0.35, 0, -0.1);
     g.add(c2);
 
-    const c3 = makeOneCookie(cookieTex, cookieMat, chipMat, S, false);
+    const c3 = makeOneCookie(cookieTex, cookieMat, chipMat, S);
     c3.scale.setScalar(baseScale * 0.95);
     c3.position.set(0, 0.12, 0.2);
     g.add(c3);
@@ -2535,8 +2427,8 @@ function build3DCookies(add, M, MB, S, sliced) {
       [-0.1, 0.14, 0],
       [0.1, 0.14, 0],
     ];
-    offsets.forEach(([x, y, z], i) => {
-      const c = makeOneCookie(cookieTex, cookieMat, chipMat, S, i === 4 && sliced);
+    offsets.forEach(([x, y, z]) => {
+      const c = makeOneCookie(cookieTex, cookieMat, chipMat, S);
       c.scale.setScalar(baseScale * 0.85);
       c.position.set(x, y, z);
       g.add(c);
@@ -4392,6 +4284,12 @@ export default function PesanPage() {
   }, []);
 
   useEffect(() => {
+    if (S.itemType === "cookies" && sliced) {
+      setSliced(false);
+    }
+  }, [S.itemType, sliced]);
+
+  useEffect(() => {
     setHasWebGL(cekAdaWebGL());
 
     async function muatData() {
@@ -4927,7 +4825,7 @@ export default function PesanPage() {
       return;
     }
     if (S.itemType === "cookies") {
-      build3DCookies(add, M, MB, S, sliced);
+      build3DCookies(add, M, MB, S);
       return;
     }
     if (S.itemType === "donut") {
@@ -7963,21 +7861,23 @@ export default function PesanPage() {
                       >
                         ↷
                       </button>
-                      <button
-                        className={`ib ${sliced ? "on" : ""}`}
-                        onClick={() => {
-                          const next = !sliced;
-                          setSliced(next);
-                          if (next) {
-                            threeStateRef.current.th = -0.9;
-                            setAutoSpin(false);
-                          }
-                        }}
-                        aria-label="Potong kue"
-                        title="Potong kue"
-                      >
-                        🍰
-                      </button>
+                      {S.itemType !== "cookies" && (
+                        <button
+                          className={`ib ${sliced ? "on" : ""}`}
+                          onClick={() => {
+                            const next = !sliced;
+                            setSliced(next);
+                            if (next) {
+                              threeStateRef.current.th = -0.9;
+                              setAutoSpin(false);
+                            }
+                          }}
+                          aria-label="Potong kue"
+                          title="Potong kue"
+                        >
+                          🍰
+                        </button>
+                      )}
                     </div>
                     {hasWebGL && (
                       <div className="seg">
@@ -8009,22 +7909,24 @@ export default function PesanPage() {
                     <span></span>
                     {hasWebGL && (
                       <div className="col">
-                        <button
-                          type="button"
-                          className={`ib ${sliced ? "on" : ""}`}
-                          onClick={() => {
-                            const next = !sliced;
-                            setSliced(next);
-                            if (next) {
-                              threeStateRef.current.th = -0.9;
-                              setAutoSpin(false);
-                            }
-                          }}
-                          aria-label="Potong kue"
-                          title="Potong kue"
-                        >
-                          🍰
-                        </button>
+                        {S.itemType !== "cookies" && (
+                          <button
+                            type="button"
+                            className={`ib ${sliced ? "on" : ""}`}
+                            onClick={() => {
+                              const next = !sliced;
+                              setSliced(next);
+                              if (next) {
+                                threeStateRef.current.th = -0.9;
+                                setAutoSpin(false);
+                              }
+                            }}
+                            aria-label="Potong kue"
+                            title="Potong kue"
+                          >
+                            🍰
+                          </button>
+                        )}
                         <button
                           type="button"
                           className={`ib ${isStudioView ? "on" : ""}`}
