@@ -81,10 +81,10 @@ const STEPS = [
 const STEPS_PER_TYPE = {
   cake:    [0, 1, 2, 3, 4, 5, 6, 7, 8],
   cupcake: [0, 1, 3, 4, 6, 7, 8],
-  tart:    [0, 1, 3, 6, 7, 8],
-  donut:   [0, 1, 3, 6, 7, 8],
-  roti:    [0, 1, 3, 6, 7, 8],
-  cookies: [0, 1, 3, 6, 7, 8],
+  tart:    [0, 1, 3, 4, 6, 7, 8],
+  donut:   [0, 1, 3, 4, 6, 7, 8],
+  roti:    [0, 1, 3, 4, 6, 7, 8],
+  cookies: [0, 1, 3, 4, 6, 7, 8],
 };
 
 function getActiveSteps(itemType) {
@@ -92,19 +92,78 @@ function getActiveSteps(itemType) {
 }
 
 const STEP_LABEL_OVERRIDE = {
-  cupcake: { 1: "Jumlah", 3: "Rasa" },
-  tart:    { 1: "Jumlah", 3: "Rasa Isian" },
-  donut:   { 1: "Jumlah", 3: "Rasa Adonan" },
-  roti:    { 1: "Jumlah", 3: "Rasa Isian" },
-  cookies: { 1: "Jumlah", 3: "Rasa" },
+  cupcake: { 1: "Porsi", 3: "Rasa Muffin", 4: "Topping & Krim" },
+  tart:    { 1: "Ukuran Tart", 3: "Rasa Custard", 4: "Topping Buah" },
+  donut:   { 1: "Jumlah Donat", 3: "Rasa Adonan", 4: "Glaze & Topping" },
+  roti:    { 1: "Porsi Roti", 3: "Rasa Isian", 4: "Taburan & Topping" },
+  cookies: { 1: "Jumlah Cookies", 3: "Varian Rasa", 4: "Topping & Extra" },
 };
 
 const STEP_DESC_OVERRIDE = {
-  cupcake: { 1: "Tentukan berapa buah cupcake yang ingin kamu pesan.", 3: "Pilih rasa adonan cupcake." },
-  tart:    { 1: "Tentukan berapa buah kue pie yang ingin kamu pesan.", 3: "Pilih rasa isian custard kue pie." },
-  donut:   { 1: "Tentukan berapa buah donat yang ingin kamu pesan.", 3: "Pilih rasa adonan donat." },
-  roti:    { 1: "Tentukan berapa loyang atau buah roti yang ingin kamu pesan.", 3: "Pilih rasa isian roti." },
-  cookies: { 1: "Tentukan berapa keping cookies yang ingin kamu pesan.", 3: "Pilih rasa adonan cookies." },
+  cupcake: {
+    1: "Pilih jumlah atau paket cupcake yang ingin kamu pesan.",
+    3: "Pilih rasa adonan muffin cupcake favoritmu.",
+    4: "Pilih frosting krim swirl dan hiasan di atas cupcake.",
+  },
+  tart: {
+    1: "Pilih ukuran kue pie atau fruit tart sesuai kebutuhanmu.",
+    3: "Pilih rasa isian custard lembut di dalam pie.",
+    4: "Pilih topping buah segar atau hiasan di atas pie.",
+  },
+  donut: {
+    1: "Pilih jumlah donat satuan atau paket boks pesta.",
+    3: "Pilih rasa adonan donat kentang lembut.",
+    4: "Pilih lelehan glaze berkilau dan taburan topping donat.",
+  },
+  roti: {
+    1: "Pilih ukuran loyang roti kasur atau roti sobek menul.",
+    3: "Pilih rasa isian manis atau gurih khas bakery.",
+    4: "Pilih taburan meses cokelat atau keju panggang di atasnya.",
+  },
+  cookies: {
+    1: "Pilih jumlah keping soft-baked cookies atau toples.",
+    3: "Pilih varian rasa adonan cookies renyah lumer.",
+    4: "Pilih ekstra taburan choco chips atau sprinkles pelangi.",
+  },
+};
+
+const SIZE_CONFIG = {
+  cake: {
+    mini: { label: "Mini", sub: "Diameter 10 cm (1–2 orang)" },
+    small: { label: "Small", sub: "Diameter 14 cm (3–5 orang)" },
+    medium: { label: "Medium", sub: "Diameter 18 cm (6–10 orang)" },
+    large: { label: "Large", sub: "Diameter 22 cm (10–15 orang)" },
+  },
+  cupcake: {
+    mini: { label: "Satuan (1 Pcs)", sub: "1 buah cupcake manis" },
+    small: { label: "Paket 2 Pcs", sub: "2 buah cupcake favorit" },
+    medium: { label: "Box 4 Pcs", sub: "Box isi 4 cupcake pesta" },
+    large: { label: "Box 6 Pcs", sub: "Box isi 6 cupcake hampers" },
+  },
+  tart: {
+    mini: { label: "Mini Tart", sub: "Diameter 8 cm (1 orang)" },
+    small: { label: "Medium Tart", sub: "Diameter 14 cm (2–3 orang)" },
+    medium: { label: "Large Tart", sub: "Diameter 18 cm (4–6 orang)" },
+    large: { label: "Party Tart", sub: "Diameter 22 cm (8–10 orang)" },
+  },
+  donut: {
+    mini: { label: "Satuan (1 Pcs)", sub: "1 buah donat empuk" },
+    small: { label: "Paket 3 Pcs", sub: "3 buah donat kombinasi" },
+    medium: { label: "Half Dozen (6 Pcs)", sub: "Box isi 6 donat lezat" },
+    large: { label: "One Dozen (12 Pcs)", sub: "Box isi 12 donat pesta" },
+  },
+  roti: {
+    mini: { label: "Personal (4 Bun)", sub: "Roti kasur 4 deret" },
+    small: { label: "Reguler (6 Bun)", sub: "Roti kasur 6 deret standar" },
+    medium: { label: "Family (8 Bun)", sub: "Roti kasur 8 deret keluarga" },
+    large: { label: "Party (12 Bun)", sub: "Roti kasur 12 deret besar" },
+  },
+  cookies: {
+    mini: { label: "1 Giant Cookie", sub: "1 keping cookie jumbo" },
+    small: { label: "Paket 3 Cookies", sub: "3 keping cookie lezat" },
+    medium: { label: "Box 6 Cookies", sub: "Box isi 6 keping cookie" },
+    large: { label: "Jar / Toples", sub: "Toples cookies istimewa" },
+  },
 };
 
 const BASE_TYPES = [
@@ -1451,6 +1510,14 @@ function build3DCupcake(add, M, MB, S) {
   const paperTex = getCupcakePaperTextures();
   const muffinTex = getCupcakeMuffinTextures();
 
+  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
+  g.scale.setScalar(sc);
+
+  let muffinColor = "#D89B54";
+  if (S.flavor === "choco") muffinColor = "#462715";
+  else if (S.flavor === "velvet") muffinColor = "#8A1C25";
+  else if (S.flavor === "straw") muffinColor = "#C96D7A";
+
   const paperMat = new THREE.MeshStandardMaterial({
     color: "#FAF2E5",
     roughness: 0.65,
@@ -1460,7 +1527,7 @@ function build3DCupcake(add, M, MB, S) {
   });
 
   const muffinMat = new THREE.MeshStandardMaterial({
-    color: "#D89B54",
+    color: muffinColor,
     roughness: 0.82,
     map: muffinTex.map,
     bumpMap: muffinTex.bump,
@@ -1488,6 +1555,21 @@ function build3DCupcake(add, M, MB, S) {
   collar.position.y = 0.68;
   g.add(collar);
 
+  const hasDeco = S.deco && (S.deco.straw || S.deco.drip || S.deco.flower || S.deco.spr || S.deco.berry);
+  if (hasDeco || (S.icing && S.icing !== "#FFFDF9")) {
+    const creamColor = S.icing || "#FFFDF8";
+    const swirl = new THREE.Mesh(swirlGeo(0.26, 0.42), MM(creamColor, { roughness: 0.35 }));
+    swirl.position.y = 1.08;
+    g.add(swirl);
+
+    if (S.deco && S.deco.straw) {
+      const berry = new THREE.Mesh(getBerryG(), MB("#d62234", { roughness: 0.3 }));
+      berry.position.set(0, 1.5, 0);
+      berry.scale.setScalar(1.25);
+      g.add(berry);
+    }
+  }
+
   add(g);
 }
 
@@ -1495,6 +1577,14 @@ function build3DTart(add, M, MB, S) {
   const g = new THREE.Group();
   const crustTex = getPieCrustTextures();
   const custardTex = getPieCustardTextures();
+
+  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
+  g.scale.setScalar(sc);
+
+  let custardColor = "#FFBD28";
+  if (S.flavor === "choco") custardColor = "#3B2113";
+  else if (S.flavor === "velvet") custardColor = "#8E1E28";
+  else if (S.flavor === "straw") custardColor = "#DE4A5B";
 
   const crustMat = new THREE.MeshStandardMaterial({
     color: "#DCA052",
@@ -1505,7 +1595,7 @@ function build3DTart(add, M, MB, S) {
   });
 
   const custardMat = new THREE.MeshStandardMaterial({
-    color: "#FFBD28",
+    color: custardColor,
     roughness: 0.20,
     metalness: 0.04,
     envMapIntensity: 0.85,
@@ -1539,6 +1629,23 @@ function build3DTart(add, M, MB, S) {
   custard.position.y = 0.31;
   g.add(custard);
 
+  if (S.deco && S.deco.straw) {
+    [
+      [0, 0],
+      [0.45, 0.3],
+      [-0.45, 0.3],
+      [0.45, -0.3],
+      [-0.45, -0.3],
+      [0, 0.6],
+      [0, -0.6],
+    ].forEach(([bx, bz]) => {
+      const berry = new THREE.Mesh(getBerryG(), MB("#D62234", { roughness: 0.28 }));
+      berry.position.set(bx, 0.42, bz);
+      berry.scale.setScalar(0.95);
+      g.add(berry);
+    });
+  }
+
   add(g);
 }
 
@@ -1546,8 +1653,16 @@ function build3DDonat(add, M, MB, S) {
   const g = new THREE.Group();
   const donutTex = getDonutTextures();
 
+  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
+  g.scale.setScalar(sc);
+
+  let donutColor = "#D28338";
+  if (S.flavor === "choco") donutColor = "#4A2814";
+  else if (S.flavor === "velvet") donutColor = "#861D24";
+  else if (S.flavor === "straw") donutColor = "#C65868";
+
   const donutMat = new THREE.MeshStandardMaterial({
-    color: "#D28338",
+    color: donutColor,
     roughness: 0.62,
     envMapIntensity: 0.3,
     map: donutTex.map,
@@ -1563,6 +1678,45 @@ function build3DDonat(add, M, MB, S) {
   torus.position.y = 0.38;
   g.add(torus);
 
+  const hasGlaze = S.deco && (S.deco.drip || S.deco.straw || S.deco.spr || S.deco.flower);
+  if (hasGlaze || (S.icing && S.icing !== "#FFFDF9")) {
+    let glazeColor = S.icing || "#4A2814";
+    if (S.deco && S.deco.straw) glazeColor = "#F06292";
+    else if (S.deco && S.deco.drip) glazeColor = "#3E2211";
+
+    const glazeMat = new THREE.MeshStandardMaterial({
+      color: glazeColor,
+      roughness: 0.22,
+      metalness: 0.08,
+      envMapIntensity: 0.9,
+    });
+    const glaze = new THREE.Mesh(
+      new THREE.TorusGeometry(0.72, 0.385, 24, 64, Math.PI),
+      glazeMat
+    );
+    glaze.rotation.x = Math.PI / 2;
+    glaze.rotation.z = Math.PI;
+    glaze.position.y = 0.385;
+    g.add(glaze);
+
+    if (S.deco && S.deco.spr) {
+      const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6);
+      const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
+      for (let i = 0; i < 28; i++) {
+        const a = (i * Math.PI * 2) / 28 + (Math.random() - 0.5) * 0.2;
+        const r = 0.72 + (Math.random() - 0.5) * 0.3;
+        const spMat = new THREE.MeshStandardMaterial({
+          color: spColors[i % spColors.length],
+          roughness: 0.4,
+        });
+        const sp = new THREE.Mesh(spGeo, spMat);
+        sp.position.set(Math.cos(a) * r, 0.76, Math.sin(a) * r);
+        sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
+        g.add(sp);
+      }
+    }
+  }
+
   add(g);
 }
 
@@ -1571,8 +1725,16 @@ function build3DRotiManis(add, M, MB, S) {
   const crustTex = getRotiCrustTextures();
   const crumbTex = getRotiCrumbTextures();
 
+  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
+  g.scale.setScalar(sc);
+
+  let crustColor = "#BA6820";
+  if (S.flavor === "choco") crustColor = "#4F2B14";
+  else if (S.flavor === "straw") crustColor = "#B04F5E";
+  else if (S.flavor === "velvet") crustColor = "#781C24";
+
   const crustMat = new THREE.MeshStandardMaterial({
-    color: "#BA6820",
+    color: crustColor,
     roughness: 0.30,
     map: crustTex.map,
     bumpMap: crustTex.bump,
@@ -1608,6 +1770,19 @@ function build3DRotiManis(add, M, MB, S) {
     }
   }
 
+  if (S.deco && S.deco.spr) {
+    const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.07, 6);
+    const mesesMat = new THREE.MeshStandardMaterial({ color: "#2B160B", roughness: 0.5 });
+    for (let i = 0; i < 40; i++) {
+      const sp = new THREE.Mesh(spGeo, mesesMat);
+      const bx = (Math.random() - 0.5) * 1.5;
+      const bz = (Math.random() - 0.5) * 2.2;
+      sp.position.set(bx, 0.98, bz);
+      sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
+      g.add(sp);
+    }
+  }
+
   add(g);
 }
 
@@ -1615,8 +1790,24 @@ function build3DCookies(add, M, MB, S) {
   const g = new THREE.Group();
   const cookieTex = getCookieTextures();
 
+  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
+  g.scale.setScalar(sc);
+
+  let cookieColor = "#CD9854";
+  let chipColor = "#25140A";
+  if (S.flavor === "choco") {
+    cookieColor = "#3E2211";
+    chipColor = "#FAF0E6";
+  } else if (S.flavor === "velvet") {
+    cookieColor = "#7E1B23";
+    chipColor = "#FAF0E6";
+  } else if (S.flavor === "straw") {
+    cookieColor = "#C45B6B";
+    chipColor = "#25140A";
+  }
+
   const cookieMat = new THREE.MeshStandardMaterial({
-    color: "#CD9854",
+    color: cookieColor,
     roughness: 0.78,
     map: cookieTex.map,
     bumpMap: cookieTex.bump,
@@ -1624,7 +1815,7 @@ function build3DCookies(add, M, MB, S) {
   });
 
   const chipMat = new THREE.MeshStandardMaterial({
-    color: "#25140A",
+    color: chipColor,
     roughness: 0.52,
   });
 
@@ -1661,6 +1852,22 @@ function build3DCookies(add, M, MB, S) {
     ch.rotation.set(rx, ry, rz);
     g.add(ch);
   });
+
+  if (S.deco && S.deco.spr) {
+    const spGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.08, 6);
+    const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
+    for (let i = 0; i < 20; i++) {
+      const a = (i * Math.PI * 2) / 20;
+      const r = 0.4 + Math.random() * 0.45;
+      const sp = new THREE.Mesh(
+        spGeo,
+        new THREE.MeshStandardMaterial({ color: spColors[i % spColors.length], roughness: 0.4 })
+      );
+      sp.position.set(Math.cos(a) * r, 0.32, Math.sin(a) * r);
+      sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
+      g.add(sp);
+    }
+  }
 
   add(g);
 }
@@ -3600,6 +3807,14 @@ export default function PesanPage() {
     } catch {}
   }, [S]);
 
+  useEffect(() => {
+    const active = getActiveSteps(S.itemType);
+    if (!active.includes(step)) {
+      const nextValid = active.find((s) => s >= step) ?? active[0] ?? 0;
+      setStep(nextValid);
+    }
+  }, [S.itemType, step]);
+
   const selItem = (S.items || []).find((i) => i.id === S.sel);
 
   useEffect(() => {
@@ -4010,12 +4225,13 @@ export default function PesanPage() {
     if (sliced) lp = sliceLoop(lp);
     const top = H + 0.06;
 
+    const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
     let standRadius = R * 1.3 + 0.5;
-    if (S.itemType === "cupcake") standRadius = 1.35;
-    else if (S.itemType === "tart") standRadius = 2.0;
-    else if (S.itemType === "cookies") standRadius = 1.45;
-    else if (S.itemType === "donut") standRadius = 1.45;
-    else if (S.itemType === "roti" || S.itemType === "brioche") standRadius = 2.0;
+    if (S.itemType === "cupcake") standRadius = 1.35 * sc;
+    else if (S.itemType === "tart") standRadius = 2.0 * sc;
+    else if (S.itemType === "cookies") standRadius = 1.45 * sc;
+    else if (S.itemType === "donut") standRadius = 1.45 * sc;
+    else if (S.itemType === "roti" || S.itemType === "brioche") standRadius = 2.0 * sc;
     add(stand(standRadius));
 
     if (!ts.isStudio) {
@@ -5299,7 +5515,11 @@ export default function PesanPage() {
     if (i > step) {
       const myPos = active.indexOf(i);
       const curPos = active.indexOf(step);
-      const isNextAllowed = myPos === curPos + 1 || active.indexOf(i) <= active.indexOf(maxStep);
+      const maxPos = active.reduce(
+        (acc, sIdx, pos) => (sIdx <= maxStep ? Math.max(acc, pos) : acc),
+        0
+      );
+      const isNextAllowed = myPos === curPos + 1 || myPos <= maxPos;
       if (!isNextAllowed) {
         showToast("Selesaikan langkah sebelumnya terlebih dahulu ya.");
         return;
@@ -5528,28 +5748,33 @@ export default function PesanPage() {
   }
 
   function handleNext() {
+    const active = getActiveSteps(S.itemType);
+    let curPos = active.indexOf(step);
+    if (curPos < 0) {
+      const nextValid = active.find((s) => s > step) ?? active[0] ?? 0;
+      go(nextValid);
+      return;
+    }
     const err = validateStep(step);
     if (err) {
       showToast(err);
       return;
     }
-    const active = getActiveSteps(S.itemType);
-    const curPos = active.indexOf(step);
     if (step === 8) {
       handleOrderSubmit();
       return;
     }
-    if (curPos >= 0 && curPos < active.length - 1) {
-      go(active[curPos + 1]);
-      return;
-    }
-    if (step === 7) {
-      const m = checkValidation();
-      if (m) {
-        showToast(m);
-        return;
+    if (curPos < active.length - 1) {
+      const nextStep = active[curPos + 1];
+      if (nextStep === 8) {
+        const m = checkValidation();
+        if (m) {
+          showToast(m);
+          return;
+        }
       }
-      go(8);
+      go(nextStep);
+      return;
     }
   }
 
@@ -5600,6 +5825,13 @@ export default function PesanPage() {
         })}
       </svg>
     );
+  }
+
+  function renderSizeIcon(itemType, sz) {
+    if (itemType === "cake") {
+      return renderCakeSVG(sz, "#fbefd5", S.icing || "#f6b4c2");
+    }
+    return renderBaseItemSVG(itemType);
   }
 
   function renderShapeSVG(k) {
@@ -5936,7 +6168,11 @@ export default function PesanPage() {
             const myPos = activeSteps.indexOf(idx);
             const isDone = myPos < posInActive;
             const isCur = idx === step;
-            const isUnlocked = myPos <= activeSteps.indexOf(maxStep);
+            const maxPos = activeSteps.reduce(
+              (acc, sIdx, pos) => (sIdx <= maxStep ? Math.max(acc, pos) : acc),
+              0
+            );
+            const isUnlocked = myPos <= Math.max(posInActive, maxPos);
             const override = STEP_LABEL_OVERRIDE[S.itemType] || {};
             const label = override[idx] || item[0];
             return (
@@ -5998,11 +6234,11 @@ export default function PesanPage() {
                             deco: {},
                             candles: [],
                             items: [],
-                            shape: item.key !== "cake" ? null : S.shape,
-                            fill: item.key !== "cake" ? null : S.fill,
-                            icing: item.key !== "cake" ? "#f6b4c2" : S.icing,
-                            flavor: null,
-                            size: null,
+                            shape: item.key === "cake" ? (S.shape || "round") : "round",
+                            fill: item.key === "cake" ? (S.fill || "cream") : null,
+                            icing: item.key === "cake" ? (S.icing || "#f6b4c2") : "#f6b4c2",
+                            flavor: S.flavor || "vanilla",
+                            size: S.size || "small",
                           };
                           setS(nextS);
                           setMaxStep(0);
@@ -6054,9 +6290,9 @@ export default function PesanPage() {
                 </div>
                 <div className="grid">
                   {itemsUkuran.map((item) => {
-                    const visual = VISUAL_SIZE[item.kode_visual] || {
-                      d: 14,
-                      s: "3–5 orang",
+                    const cfg = (SIZE_CONFIG[S.itemType] || SIZE_CONFIG.cake)[item.kode_visual] || {
+                      label: formatNamaItem(item.nama),
+                      sub: "Pilihan ukuran",
                     };
                     const isSelected = S.size === item.kode_visual;
                     return (
@@ -6065,26 +6301,20 @@ export default function PesanPage() {
                         className={`opt ${isSelected ? "on" : ""}`}
                         onClick={() => handleSet("size", item.kode_visual)}
                       >
-                        {renderCakeSVG(
-                          item.kode_visual,
-                          "#fbefd5",
-                          S.icing || "#f6b4c2"
-                        )}
-                        <b>{formatNamaItem(item.nama)}</b>
-                        {S.itemType === "cake" ? (
-                          <small>Diameter {visual.d} cm</small>
-                        ) : (
-                          <small>{visual.s}</small>
-                        )}
+                        {renderSizeIcon(S.itemType, item.kode_visual)}
+                        <b>{cfg.label}</b>
+                        <small>{cfg.sub}</small>
                         <em>{item.harga ? formatRupiah(item.harga) : "Termasuk"}</em>
                       </button>
                     );
                   })}
                 </div>
                 <div className="tip">
-                  {S.itemType === "cake"
-                    ? `Ukuran ${S.size.charAt(0).toUpperCase() + S.size.slice(1)} cocok untuk ${VISUAL_SIZE[S.size]?.s || "keluarga"}.`
-                    : `Pilih ukuran yang sesuai dengan kebutuhanmu.`}
+                  {S.size ? (
+                    S.itemType === "cake"
+                      ? `Ukuran ${S.size.charAt(0).toUpperCase() + S.size.slice(1)} cocok untuk ${VISUAL_SIZE[S.size]?.s || "keluarga"}.`
+                      : `Ukuran atau porsi terpilih cocok untuk pesananmu.`
+                  ) : "Pilih salah satu ukuran atau porsi di atas."}
                 </div>
               </div>
             )}
@@ -6211,8 +6441,8 @@ export default function PesanPage() {
                 <div className="ttl">
                   <span className="ti">☆</span>
                   <div>
-                    <h1>Pilih Dekorasi</h1>
-                    <p>Boleh pilih lebih dari satu.</p>
+                    <h1>{STEP_LABEL_OVERRIDE[S.itemType]?.[4] ? `Pilih ${STEP_LABEL_OVERRIDE[S.itemType][4]}` : "Pilih Dekorasi"}</h1>
+                    <p>{STEP_DESC_OVERRIDE[S.itemType]?.[4] || "Boleh pilih lebih dari satu."}</p>
                   </div>
                 </div>
                 <div className="grid">
@@ -6235,8 +6465,9 @@ export default function PesanPage() {
                   })}
                 </div>
                 <div className="tip">
-                  Di langkah berikutnya kamu bisa menambah stiker, topper, dan
-                  tulisan sendiri.
+                  {S.itemType === "cake"
+                    ? "Di langkah berikutnya kamu bisa menambah stiker, topper, dan tulisan sendiri."
+                    : "Topping terpilih akan langsung tampil menghiasi kue pada tampilan 3D di samping."}
                 </div>
               </div>
             )}
