@@ -1401,53 +1401,30 @@ function stand(pr) {
   return new THREE.Mesh(new THREE.LatheGeometry(pts, 96), M("#FFFDF9", 0.35));
 }
 
-function build3DCupcake(add, M, MB, S) {
+function makeOneCupcake(paperMat, muffinMat, S, sliced) {
   const g = new THREE.Group();
-  const paperTex = getCupcakePaperTextures();
-  const muffinTex = getCupcakeMuffinTextures();
-
-  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
-  g.scale.setScalar(sc);
-
-  let muffinColor = "#E5A75B";
-  if (S.flavor === "choco") muffinColor = "#4A2716";
-  else if (S.flavor === "velvet") muffinColor = "#8A1E26";
-  else if (S.flavor === "straw") muffinColor = "#DC5972";
-
-  const paperMat = new THREE.MeshStandardMaterial({
-    color: "#FAF2E5",
-    roughness: 0.65,
-    map: paperTex.map,
-    bumpMap: paperTex.bump,
-    bumpScale: 5.0,
-  });
-
-  const muffinMat = new THREE.MeshStandardMaterial({
-    color: muffinColor,
-    roughness: 0.82,
-    map: muffinTex.map,
-    bumpMap: muffinTex.bump,
-    bumpScale: 6.5,
-  });
+  const arc = sliced ? Math.PI * 1.5 : Math.PI * 2;
+  const thStart = sliced ? Math.PI * 0.25 : 0;
 
   const cup = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.78, 0.54, 0.68, 48),
+    new THREE.CylinderGeometry(0.78, 0.54, 0.68, 48, 1, false, thStart, arc),
     paperMat
   );
   cup.position.y = 0.34;
   g.add(cup);
 
-  const domeGeo = new THREE.SphereGeometry(0.86, 36, 24);
+  const domeGeo = new THREE.SphereGeometry(0.86, 36, 24, thStart, arc);
   domeGeo.scale(1.04, 0.62, 1.04);
   const dome = new THREE.Mesh(domeGeo, muffinMat);
   dome.position.y = 0.72;
   g.add(dome);
 
   const collar = new THREE.Mesh(
-    new THREE.TorusGeometry(0.78, 0.11, 16, 48),
+    new THREE.TorusGeometry(0.78, 0.11, 16, 48, arc),
     muffinMat
   );
   collar.rotation.x = Math.PI / 2;
+  collar.rotation.z = thStart;
   collar.position.y = 0.68;
   g.add(collar);
 
@@ -1485,22 +1462,115 @@ function build3DCupcake(add, M, MB, S) {
       }
     }
     if (S.deco && S.deco.flower) {
-      const fl = new THREE.Mesh(flowerGeo(), MM("#FF85A2", { roughness: 0.4 }));
-      fl.position.set(0, 1.46, 0);
-      fl.scale.setScalar(0.7);
+      const fl = new THREE.Group();
+      flowerB(fl, "#FF85A2", 5, 0.08);
+      fl.position.set(0, 1.48, 0);
       g.add(fl);
     }
+  }
+
+  if (sliced) {
+    const cutCrumbMat = muffinMat.clone();
+    cutCrumbMat.roughness = 0.95;
+    const f1 = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.72), cutCrumbMat);
+    f1.position.set(Math.cos(thStart) * 0.41, 0.52, -Math.sin(thStart) * 0.41);
+    f1.rotation.y = -thStart + Math.PI / 2;
+    g.add(f1);
+
+    const endAng = thStart + arc;
+    const f2 = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.72), cutCrumbMat);
+    f2.position.set(Math.cos(endAng) * 0.41, 0.52, -Math.sin(endAng) * 0.41);
+    f2.rotation.y = -endAng - Math.PI / 2;
+    g.add(f2);
+  }
+
+  return g;
+}
+
+function build3DCupcake(add, M, MB, S, sliced) {
+  const g = new THREE.Group();
+  const paperTex = getCupcakePaperTextures();
+  const muffinTex = getCupcakeMuffinTextures();
+
+  let muffinColor = "#E5A75B";
+  if (S.flavor === "choco") muffinColor = "#4A2716";
+  else if (S.flavor === "velvet") muffinColor = "#8A1E26";
+  else if (S.flavor === "straw") muffinColor = "#DC5972";
+
+  const paperMat = new THREE.MeshStandardMaterial({
+    color: "#FAF2E5",
+    roughness: 0.65,
+    map: paperTex.map,
+    bumpMap: paperTex.bump,
+    bumpScale: 5.0,
+  });
+
+  const muffinMat = new THREE.MeshStandardMaterial({
+    color: muffinColor,
+    roughness: 0.82,
+    map: muffinTex.map,
+    bumpMap: muffinTex.bump,
+    bumpScale: 6.5,
+  });
+
+  const baseScale = 0.52;
+  const isMini = S.size === "mini";
+  const isSmall = S.size === "small";
+  const isMed = S.size === "medium";
+
+  if (isMini) {
+    const c1 = makeOneCupcake(paperMat, muffinMat, S, sliced);
+    c1.scale.setScalar(baseScale);
+    g.add(c1);
+  } else if (isSmall) {
+    const c1 = makeOneCupcake(paperMat, muffinMat, S, sliced);
+    c1.scale.setScalar(baseScale * 0.95);
+    c1.position.set(-0.35, 0, 0);
+    g.add(c1);
+
+    const c2 = makeOneCupcake(paperMat, muffinMat, S, false);
+    c2.scale.setScalar(baseScale * 0.95);
+    c2.position.set(0.35, 0, 0);
+    g.add(c2);
+  } else if (isMed) {
+    const pts = [
+      [-0.32, -0.32],
+      [0.32, -0.32],
+      [-0.32, 0.32],
+      [0.32, 0.32],
+    ];
+    pts.forEach(([x, z], i) => {
+      const c = makeOneCupcake(paperMat, muffinMat, S, i === 2 && sliced);
+      c.scale.setScalar(baseScale * 0.82);
+      c.position.set(x, 0, z);
+      g.add(c);
+    });
+  } else {
+    const pts = [
+      [-0.42, -0.28],
+      [0, -0.28],
+      [0.42, -0.28],
+      [-0.42, 0.28],
+      [0, 0.28],
+      [0.42, 0.28],
+    ];
+    pts.forEach(([x, z], i) => {
+      const c = makeOneCupcake(paperMat, muffinMat, S, i === 3 && sliced);
+      c.scale.setScalar(baseScale * 0.72);
+      c.position.set(x, 0, z);
+      g.add(c);
+    });
   }
 
   add(g);
 }
 
-function build3DTart(add, M, MB, S) {
+function build3DTart(add, M, MB, S, sliced) {
   const g = new THREE.Group();
   const crustTex = getPieCrustTextures();
   const custardTex = getPieCustardTextures();
 
-  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
+  const sc = S.size === "large" ? 0.88 : S.size === "medium" ? 0.76 : S.size === "mini" ? 0.58 : 0.68;
   g.scale.setScalar(sc);
 
   let custardColor = "#FFBD28";
@@ -1526,8 +1596,11 @@ function build3DTart(add, M, MB, S) {
     bumpScale: 1.2,
   });
 
+  const arc = sliced ? Math.PI * 1.65 : Math.PI * 2;
+  const thStart = sliced ? Math.PI * 0.35 : 0;
+
   const shell = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.62, 1.45, 0.16, 64),
+    new THREE.CylinderGeometry(1.62, 1.45, 0.16, 64, 1, false, thStart, arc),
     crustMat
   );
   shell.position.y = 0.08;
@@ -1535,9 +1608,10 @@ function build3DTart(add, M, MB, S) {
 
   const fluteGeo = new THREE.SphereGeometry(0.12, 12, 10);
   fluteGeo.scale(0.85, 1.2, 1.35);
-  for (let i = 0; i < 34; i++) {
+  const totalFlutes = sliced ? 28 : 34;
+  for (let i = 0; i < totalFlutes; i++) {
+    const a = thStart + (i * arc) / totalFlutes;
     const fl = new THREE.Mesh(fluteGeo, crustMat);
-    const a = (i * Math.PI * 2) / 34;
     fl.position.set(Math.cos(a) * 1.60, 0.22, Math.sin(a) * 1.60);
     fl.rotation.y = -a;
     fl.rotation.x = 0.25;
@@ -1545,7 +1619,7 @@ function build3DTart(add, M, MB, S) {
   }
 
   const custard = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.52, 1.50, 0.14, 64),
+    new THREE.CylinderGeometry(1.52, 1.50, 0.14, 64, 1, false, thStart, arc),
     custardMat
   );
   custard.position.y = 0.21;
@@ -1556,11 +1630,8 @@ function build3DTart(add, M, MB, S) {
       [0, 0],
       [0.5, 0.35],
       [-0.5, 0.35],
-      [0.5, -0.35],
       [-0.5, -0.35],
-      [0, 0.7],
       [0, -0.7],
-      [0.75, 0],
       [-0.75, 0],
     ].forEach(([bx, bz]) => {
       const berry = new THREE.Mesh(getBerryG(), MB("#D62234", { roughness: 0.28 }));
@@ -1572,11 +1643,8 @@ function build3DTart(add, M, MB, S) {
 
   if (S.deco && S.deco.berry) {
     [
-      [0.28, 0.2],
       [-0.28, 0.2],
-      [0.28, -0.2],
       [-0.28, -0.2],
-      [0, 0.38],
       [0, -0.38],
     ].forEach(([bx, bz]) => {
       const bk = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), MB("#1C1524", { roughness: 0.3 }));
@@ -1588,8 +1656,8 @@ function build3DTart(add, M, MB, S) {
   if (S.deco && S.deco.spr) {
     const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6);
     const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
-    for (let i = 0; i < 30; i++) {
-      const a = (i * Math.PI * 2) / 30 + 0.1;
+    for (let i = 0; i < 24; i++) {
+      const a = thStart + (i * arc) / 24;
       const rad = 0.3 + (i % 5) * 0.24;
       const spMat = new THREE.MeshStandardMaterial({
         color: spColors[i % spColors.length],
@@ -1608,43 +1676,62 @@ function build3DTart(add, M, MB, S) {
       roughness: 0.2,
       metalness: 0.1,
     });
-    for (let i = 0; i < 5; i++) {
-      const dr = new THREE.Mesh(new THREE.TorusGeometry(0.3 + i * 0.25, 0.02, 8, 32), dripMat);
+    for (let i = 0; i < 4; i++) {
+      const dr = new THREE.Mesh(new THREE.TorusGeometry(0.3 + i * 0.25, 0.02, 8, 24, arc), dripMat);
       dr.rotation.x = Math.PI / 2;
+      dr.rotation.z = thStart;
       dr.position.y = 0.285;
       g.add(dr);
     }
   }
 
+  if (sliced) {
+    const f1 = new THREE.Mesh(new THREE.PlaneGeometry(1.52, 0.28), custardMat);
+    f1.position.set(Math.cos(thStart) * 0.76, 0.14, Math.sin(thStart) * 0.76);
+    f1.rotation.y = -thStart + Math.PI / 2;
+    g.add(f1);
+
+    const endAng = thStart + arc;
+    const f2 = new THREE.Mesh(new THREE.PlaneGeometry(1.52, 0.28), custardMat);
+    f2.position.set(Math.cos(endAng) * 0.76, 0.14, Math.sin(endAng) * 0.76);
+    f2.rotation.y = -endAng - Math.PI / 2;
+    g.add(f2);
+
+    const sliceG = new THREE.Group();
+    const sliceArc = Math.PI * 2 - arc - 0.06;
+    const sShell = new THREE.Mesh(new THREE.CylinderGeometry(1.62, 1.45, 0.16, 16, 1, false, 0, sliceArc), crustMat);
+    sShell.position.y = 0.08;
+    sliceG.add(sShell);
+
+    const sCustard = new THREE.Mesh(new THREE.CylinderGeometry(1.52, 1.50, 0.14, 16, 1, false, 0, sliceArc), custardMat);
+    sCustard.position.y = 0.21;
+    sliceG.add(sCustard);
+
+    if (S.deco && S.deco.straw) {
+      const sBerry = new THREE.Mesh(getBerryG(), MB("#D62234", { roughness: 0.28 }));
+      sBerry.position.set(Math.cos(sliceArc / 2) * 0.8, 0.36, Math.sin(sliceArc / 2) * 0.8);
+      sBerry.scale.setScalar(0.95);
+      sliceG.add(sBerry);
+    }
+
+    sliceG.position.set(0.35, 0, 0.35);
+    g.add(sliceG);
+  }
+
   add(g);
 }
 
-function build3DDonat(add, M, MB, S) {
+function makeOneDonut(donutTex, donutMat, S, sliced) {
   const g = new THREE.Group();
-  const donutTex = getDonutTextures();
-
-  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
-  g.scale.setScalar(sc);
-
-  let donutColor = "#DCA052";
-  if (S.flavor === "choco") donutColor = "#4A2816";
-  else if (S.flavor === "velvet") donutColor = "#8A1E27";
-  else if (S.flavor === "straw") donutColor = "#DC5770";
-
-  const donutMat = new THREE.MeshStandardMaterial({
-    color: donutColor,
-    roughness: 0.62,
-    envMapIntensity: 0.3,
-    map: donutTex.map,
-    bumpMap: donutTex.bump,
-    bumpScale: 3.8,
-  });
+  const arc = sliced ? Math.PI * 1.62 : Math.PI * 2;
+  const thStart = sliced ? Math.PI * 0.2 : 0;
 
   const torus = new THREE.Mesh(
-    new THREE.TorusGeometry(0.72, 0.38, 36, 64),
+    new THREE.TorusGeometry(0.72, 0.38, 36, 64, arc),
     donutMat
   );
   torus.rotation.x = Math.PI / 2;
+  torus.rotation.z = thStart;
   torus.position.y = 0.38;
   g.add(torus);
 
@@ -1661,20 +1748,21 @@ function build3DDonat(add, M, MB, S) {
       envMapIntensity: 0.95,
     });
     const glaze = new THREE.Mesh(
-      new THREE.TorusGeometry(0.72, 0.385, 24, 64, Math.PI),
+      new THREE.TorusGeometry(0.72, 0.385, 24, 64, arc),
       glazeMat
     );
     glaze.rotation.x = Math.PI / 2;
-    glaze.rotation.z = Math.PI;
+    glaze.rotation.z = thStart;
     glaze.position.y = 0.385;
     g.add(glaze);
 
     if (S.deco && S.deco.spr) {
       const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6);
       const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
-      for (let i = 0; i < 32; i++) {
-        const a = (i * Math.PI * 2) / 32 + (Math.random() - 0.5) * 0.2;
-        const r = 0.72 + (Math.random() - 0.5) * 0.3;
+      const spCount = sliced ? 22 : 32;
+      for (let i = 0; i < spCount; i++) {
+        const a = thStart + (i * arc) / spCount + (Math.random() - 0.5) * 0.15;
+        const r = 0.72 + (Math.random() - 0.5) * 0.28;
         const spMat = new THREE.MeshStandardMaterial({
           color: spColors[i % spColors.length],
           roughness: 0.4,
@@ -1687,15 +1775,234 @@ function build3DDonat(add, M, MB, S) {
     }
   }
 
+  if (sliced) {
+    const crumbColor = S.flavor === "choco" ? "#3A1E11" : S.flavor === "velvet" ? "#7A1C24" : S.flavor === "straw" ? "#C8556A" : "#F7E6CC";
+    const capMat = new THREE.MeshStandardMaterial({
+      color: crumbColor,
+      roughness: 0.9,
+    });
+    const capGeo = new THREE.CircleGeometry(0.38, 24);
+
+    const a1 = thStart;
+    const c1 = new THREE.Mesh(capGeo, capMat);
+    c1.position.set(Math.cos(a1) * 0.72, 0.38, Math.sin(a1) * 0.72);
+    c1.rotation.y = -a1;
+    c1.rotation.x = Math.PI / 2;
+    g.add(c1);
+
+    const a2 = thStart + arc;
+    const c2 = new THREE.Mesh(capGeo, capMat);
+    c2.position.set(Math.cos(a2) * 0.72, 0.38, Math.sin(a2) * 0.72);
+    c2.rotation.y = -a2 + Math.PI;
+    c2.rotation.x = Math.PI / 2;
+    g.add(c2);
+
+    const slicePiece = new THREE.Group();
+    const cutArc = Math.PI * 2 - arc - 0.08;
+    const cutTorus = new THREE.Mesh(
+      new THREE.TorusGeometry(0.72, 0.38, 36, 16, cutArc),
+      donutMat
+    );
+    cutTorus.rotation.x = Math.PI / 2;
+    cutTorus.position.y = 0.38;
+    slicePiece.add(cutTorus);
+    if (hasGlaze) {
+      let glazeColor = "#3E2211";
+      if (S.deco && S.deco.straw) glazeColor = "#F06292";
+      else if (S.deco && (S.deco.flower || S.deco.berry)) glazeColor = "#FFF8EE";
+      const gMat = new THREE.MeshStandardMaterial({ color: glazeColor, roughness: 0.18, metalness: 0.08 });
+      const cutGlaze = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.385, 24, 16, cutArc), gMat);
+      cutGlaze.rotation.x = Math.PI / 2;
+      cutGlaze.position.y = 0.385;
+      slicePiece.add(cutGlaze);
+    }
+    slicePiece.position.set(0.32, 0, 0.32);
+    slicePiece.rotation.y = 0.2;
+    g.add(slicePiece);
+  }
+
+  return g;
+}
+
+function build3DDonat(add, M, MB, S, sliced) {
+  const g = new THREE.Group();
+  const donutTex = getDonutTextures();
+
+  let donutColor = "#DCA052";
+  if (S.flavor === "choco") donutColor = "#4A2816";
+  else if (S.flavor === "velvet") donutColor = "#8A1E27";
+  else if (S.flavor === "straw") donutColor = "#DC5770";
+
+  const donutMat = new THREE.MeshStandardMaterial({
+    color: donutColor,
+    roughness: 0.62,
+    envMapIntensity: 0.3,
+    map: donutTex.map,
+    bumpMap: donutTex.bump,
+    bumpScale: 3.8,
+  });
+
+  const baseScale = 0.52;
+  const isMini = S.size === "mini";
+  const isSmall = S.size === "small";
+
+  if (isMini) {
+    const d1 = makeOneDonut(donutTex, donutMat, S, sliced);
+    d1.scale.setScalar(baseScale);
+    g.add(d1);
+  } else if (isSmall) {
+    const d1 = makeOneDonut(donutTex, donutMat, S, sliced);
+    d1.scale.setScalar(baseScale * 0.95);
+    d1.position.set(-0.35, 0, -0.12);
+    g.add(d1);
+
+    const d2 = makeOneDonut(donutTex, donutMat, S, false);
+    d2.scale.setScalar(baseScale * 0.95);
+    d2.position.set(0.35, 0, -0.12);
+    g.add(d2);
+
+    const d3 = makeOneDonut(donutTex, donutMat, S, false);
+    d3.scale.setScalar(baseScale * 0.95);
+    d3.position.set(0, 0.38 * baseScale, 0.18);
+    g.add(d3);
+  } else {
+    const d1 = makeOneDonut(donutTex, donutMat, S, sliced);
+    d1.scale.setScalar(baseScale * 0.85);
+    d1.position.set(-0.4, 0, -0.2);
+    g.add(d1);
+
+    const d2 = makeOneDonut(donutTex, donutMat, S, false);
+    d2.scale.setScalar(baseScale * 0.85);
+    d2.position.set(0.4, 0, -0.2);
+    g.add(d2);
+
+    const d3 = makeOneDonut(donutTex, donutMat, S, false);
+    d3.scale.setScalar(baseScale * 0.85);
+    d3.position.set(0, 0, 0.35);
+    g.add(d3);
+
+    const d4 = makeOneDonut(donutTex, donutMat, S, false);
+    d4.scale.setScalar(baseScale * 0.85);
+    d4.position.set(-0.2, 0.36 * baseScale, 0);
+    g.add(d4);
+
+    const d5 = makeOneDonut(donutTex, donutMat, S, false);
+    d5.scale.setScalar(baseScale * 0.85);
+    d5.position.set(0.2, 0.36 * baseScale, 0);
+    g.add(d5);
+
+    const d6 = makeOneDonut(donutTex, donutMat, S, false);
+    d6.scale.setScalar(baseScale * 0.85);
+    d6.position.set(0, 0.72 * baseScale, 0);
+    g.add(d6);
+  }
+
   add(g);
 }
 
-function build3DCookies(add, M, MB, S) {
+function makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced) {
+  const g = new THREE.Group();
+
+  if (!sliced) {
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.05, 1.12, 0.26, 48),
+      cookieMat
+    );
+    base.position.y = 0.13;
+    g.add(base);
+
+    const topDome = new THREE.Mesh(
+      new THREE.SphereGeometry(1.12, 36, 20),
+      cookieMat
+    );
+    topDome.scale.set(1.0, 0.32, 1.0);
+    topDome.position.y = 0.12;
+    g.add(topDome);
+
+    const chipGeo = new THREE.ConeGeometry(0.13, 0.16, 7);
+    const chipPositions = [
+      [0.22, 0.30, 0.18, 0.2, 0.4, 0.1],
+      [-0.32, 0.28, -0.22, -0.3, 0.8, 0.2],
+      [0.05, 0.33, -0.38, 0.4, -0.2, 0.5],
+      [-0.45, 0.24, 0.28, 0.1, 1.2, -0.3],
+      [0.48, 0.24, -0.15, -0.2, -0.5, 0.4],
+      [-0.08, 0.32, 0.35, 0.3, 0.6, 0.2],
+      [0.35, 0.26, 0.42, -0.4, 0.3, -0.1],
+      [-0.55, 0.20, -0.12, 0.1, -0.7, 0.3],
+    ];
+
+    chipPositions.forEach(([x, y, z, rx, ry, rz]) => {
+      const ch = new THREE.Mesh(chipGeo, chipMat);
+      ch.position.set(x, y, z);
+      ch.rotation.set(rx, ry, rz);
+      g.add(ch);
+    });
+
+    if (S.deco && S.deco.spr) {
+      const spGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.08, 6);
+      const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
+      for (let i = 0; i < 20; i++) {
+        const a = (i * Math.PI * 2) / 20;
+        const r = 0.4 + Math.random() * 0.45;
+        const sp = new THREE.Mesh(
+          spGeo,
+          new THREE.MeshStandardMaterial({ color: spColors[i % spColors.length], roughness: 0.4 })
+        );
+        sp.position.set(Math.cos(a) * r, 0.32, Math.sin(a) * r);
+        sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
+        g.add(sp);
+      }
+    }
+
+    if (S.deco && S.deco.drip) {
+      const dripMat = new THREE.MeshStandardMaterial({
+        color: "#3B1E11",
+        roughness: 0.25,
+        metalness: 0.1,
+      });
+      for (let i = 0; i < 4; i++) {
+        const dr = new THREE.Mesh(new THREE.TorusGeometry(0.25 + i * 0.2, 0.022, 8, 32), dripMat);
+        dr.rotation.x = Math.PI / 2;
+        dr.position.y = 0.32;
+        g.add(dr);
+      }
+    }
+  } else {
+    const half1 = new THREE.Group();
+    const b1 = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.12, 0.26, 32, 1, false, 0, Math.PI), cookieMat);
+    b1.position.y = 0.13;
+    half1.add(b1);
+    const d1 = new THREE.Mesh(new THREE.SphereGeometry(1.12, 24, 16, 0, Math.PI), cookieMat);
+    d1.scale.set(1.0, 0.32, 1.0);
+    d1.position.y = 0.12;
+    half1.add(d1);
+
+    const chBreak = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), chipMat);
+    chBreak.position.set(0, 0.22, 0.05);
+    half1.add(chBreak);
+    half1.position.set(0, 0, -0.15);
+    half1.rotation.y = -0.08;
+    g.add(half1);
+
+    const half2 = new THREE.Group();
+    const b2 = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.12, 0.26, 32, 1, false, Math.PI, Math.PI), cookieMat);
+    b2.position.y = 0.13;
+    half2.add(b2);
+    const d2 = new THREE.Mesh(new THREE.SphereGeometry(1.12, 24, 16, Math.PI, Math.PI), cookieMat);
+    d2.scale.set(1.0, 0.32, 1.0);
+    d2.position.y = 0.12;
+    half2.add(d2);
+    half2.position.set(0, 0, 0.15);
+    half2.rotation.y = 0.08;
+    g.add(half2);
+  }
+
+  return g;
+}
+
+function build3DCookies(add, M, MB, S, sliced) {
   const g = new THREE.Group();
   const cookieTex = getCookieTextures();
-
-  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
-  g.scale.setScalar(sc);
 
   let cookieColor = "#D59B58";
   let chipColor = "#25140A";
@@ -1723,68 +2030,44 @@ function build3DCookies(add, M, MB, S) {
     roughness: 0.52,
   });
 
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.05, 1.12, 0.26, 48),
-    cookieMat
-  );
-  base.position.y = 0.13;
-  g.add(base);
+  const baseScale = 0.52;
+  const isMini = S.size === "mini";
+  const isSmall = S.size === "small";
 
-  const topDome = new THREE.Mesh(
-    new THREE.SphereGeometry(1.12, 36, 20),
-    cookieMat
-  );
-  topDome.scale.set(1.0, 0.32, 1.0);
-  topDome.position.y = 0.12;
-  g.add(topDome);
+  if (isMini) {
+    const c1 = makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced);
+    c1.scale.setScalar(baseScale * 1.15);
+    g.add(c1);
+  } else if (isSmall) {
+    const c1 = makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced);
+    c1.scale.setScalar(baseScale * 0.95);
+    c1.position.set(-0.35, 0, -0.1);
+    g.add(c1);
 
-  const chipGeo = new THREE.ConeGeometry(0.13, 0.16, 7);
-  const chipPositions = [
-    [0.22, 0.30, 0.18, 0.2, 0.4, 0.1],
-    [-0.32, 0.28, -0.22, -0.3, 0.8, 0.2],
-    [0.05, 0.33, -0.38, 0.4, -0.2, 0.5],
-    [-0.45, 0.24, 0.28, 0.1, 1.2, -0.3],
-    [0.48, 0.24, -0.15, -0.2, -0.5, 0.4],
-    [-0.08, 0.32, 0.35, 0.3, 0.6, 0.2],
-    [0.35, 0.26, 0.42, -0.4, 0.3, -0.1],
-    [-0.55, 0.20, -0.12, 0.1, -0.7, 0.3],
-  ];
+    const c2 = makeOneCookie(cookieTex, cookieMat, chipMat, S, false);
+    c2.scale.setScalar(baseScale * 0.95);
+    c2.position.set(0.35, 0, -0.1);
+    g.add(c2);
 
-  chipPositions.forEach(([x, y, z, rx, ry, rz]) => {
-    const ch = new THREE.Mesh(chipGeo, chipMat);
-    ch.position.set(x, y, z);
-    ch.rotation.set(rx, ry, rz);
-    g.add(ch);
-  });
-
-  if (S.deco && S.deco.spr) {
-    const spGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.08, 6);
-    const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
-    for (let i = 0; i < 20; i++) {
-      const a = (i * Math.PI * 2) / 20;
-      const r = 0.4 + Math.random() * 0.45;
-      const sp = new THREE.Mesh(
-        spGeo,
-        new THREE.MeshStandardMaterial({ color: spColors[i % spColors.length], roughness: 0.4 })
-      );
-      sp.position.set(Math.cos(a) * r, 0.32, Math.sin(a) * r);
-      sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
-      g.add(sp);
-    }
-  }
-
-  if (S.deco && S.deco.drip) {
-    const dripMat = new THREE.MeshStandardMaterial({
-      color: "#3B1E11",
-      roughness: 0.25,
-      metalness: 0.1,
+    const c3 = makeOneCookie(cookieTex, cookieMat, chipMat, S, false);
+    c3.scale.setScalar(baseScale * 0.95);
+    c3.position.set(0, 0.12, 0.2);
+    g.add(c3);
+  } else {
+    const offsets = [
+      [-0.38, 0, -0.22],
+      [0.38, 0, -0.22],
+      [-0.35, 0, 0.22],
+      [0.35, 0, 0.22],
+      [-0.1, 0.14, 0],
+      [0.1, 0.14, 0],
+    ];
+    offsets.forEach(([x, y, z], i) => {
+      const c = makeOneCookie(cookieTex, cookieMat, chipMat, S, i === 4 && sliced);
+      c.scale.setScalar(baseScale * 0.85);
+      c.position.set(x, y, z);
+      g.add(c);
     });
-    for (let i = 0; i < 4; i++) {
-      const dr = new THREE.Mesh(new THREE.TorusGeometry(0.25 + i * 0.2, 0.022, 8, 32), dripMat);
-      dr.rotation.x = Math.PI / 2;
-      dr.position.y = 0.32;
-      g.add(dr);
-    }
   }
 
   add(g);
@@ -4145,10 +4428,10 @@ export default function PesanPage() {
 
     const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
     let standRadius = R * 1.3 + 0.5;
-    if (S.itemType === "cupcake") standRadius = 1.35 * sc;
-    else if (S.itemType === "tart") standRadius = 2.0 * sc;
-    else if (S.itemType === "cookies") standRadius = 1.45 * sc;
-    else if (S.itemType === "donut") standRadius = 1.45 * sc;
+    if (S.itemType === "cupcake") standRadius = 0.85;
+    else if (S.itemType === "tart") standRadius = 1.35;
+    else if (S.itemType === "cookies") standRadius = 0.85;
+    else if (S.itemType === "donut") standRadius = 0.85;
     add(stand(standRadius));
 
     if (!ts.isStudio) {
@@ -4163,19 +4446,19 @@ export default function PesanPage() {
     }
 
     if (S.itemType === "cupcake") {
-      build3DCupcake(add, M, MB, S);
+      build3DCupcake(add, M, MB, S, sliced);
       return;
     }
     if (S.itemType === "tart") {
-      build3DTart(add, M, MB, S);
+      build3DTart(add, M, MB, S, sliced);
       return;
     }
     if (S.itemType === "cookies") {
-      build3DCookies(add, M, MB, S);
+      build3DCookies(add, M, MB, S, sliced);
       return;
     }
     if (S.itemType === "donut") {
-      build3DDonat(add, M, MB, S);
+      build3DDonat(add, M, MB, S, sliced);
       return;
     }
 
