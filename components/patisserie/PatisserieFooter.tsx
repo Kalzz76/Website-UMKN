@@ -176,7 +176,7 @@ export const PatisserieFooter: React.FC<PatisserieFooterProps> = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/kasir" className="hover:text-[#E8A5AC] hover:translate-x-1 inline-block transition">
+                <Link href="/keranjang" className="hover:text-[#E8A5AC] hover:translate-x-1 inline-block transition">
                   Meja Kasir &amp; Keranjang
                 </Link>
               </li>

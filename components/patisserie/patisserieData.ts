@@ -458,6 +458,7 @@ export const PATISSIER_CLICK_LINES = [
   'Terima kasih sudah mampir ke Cravely!',
 ];
 
-export function formatRupiah(angka: number): string {
-  return 'Rp ' + angka.toLocaleString('id-ID');
+export function formatRupiah(angka?: number | null): string {
+  const val = Number(angka) || 0;
+  return 'Rp ' + val.toLocaleString('id-ID');
 }

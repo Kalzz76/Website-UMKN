@@ -19,8 +19,8 @@ export default function TokoPage() {
       router.push("/pesan");
     } else if (view === "katalog" || view === "menu") {
       router.push("/menu");
-    } else if (view === "kasir") {
-      router.push("/kasir");
+    } else if (view === "kasir" || view === "checkout") {
+      router.push("/keranjang");
     } else if (view === "etalase") {
       setShowCloseUpEtalase(true);
     } else {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -18,18 +19,32 @@ import {
   Phone,
   Cake,
   Sparkles,
+  AlertTriangle,
+  RefreshCcw,
 } from "lucide-react";
 import { formatRupiah, type CartItem, type ViewType } from "./patisserieData";
 
 export interface KasirViewProps {
-  cart: CartItem[];
-  customerName: string;
-  pickupDate: string;
-  onCustomerNameChange: (v: string) => void;
-  onPickupDateChange: (v: string) => void;
-  onUpdateQty: (index: number, delta: number) => void;
-  onNavigate: (view: ViewType) => void;
-  onNotify: (msg: string) => void;
+  keranjang?: any[];
+  ringkasan?: {
+    subtotal_custom?: number;
+    subtotal_katalog?: number;
+    total_kue?: number;
+  };
+  sedangMemuat?: boolean;
+  pesanError?: string;
+  onRefresh?: () => void;
+  onUbahJumlah?: (item: any, jumlah: number) => void;
+  onHapusItem?: (id: number) => void;
+  onHapusTidakTersedia?: () => void;
+  cart?: CartItem[];
+  customerName?: string;
+  pickupDate?: string;
+  onCustomerNameChange?: (v: string) => void;
+  onPickupDateChange?: (v: string) => void;
+  onUpdateQty?: (index: number, delta: number) => void;
+  onNavigate?: (view: ViewType) => void;
+  onNotify?: (msg: string) => void;
 }
 
 const CAKE_PHOTO_MAP: Record<string, string> = {
@@ -80,6 +95,14 @@ const CAKE_DESC_MAP: Record<string, string> = {
 };
 
 export const KasirView: React.FC<KasirViewProps> = ({
+  keranjang = [],
+  ringkasan = { subtotal_custom: 0, subtotal_katalog: 0, total_kue: 0 },
+  sedangMemuat = false,
+  pesanError = "",
+  onRefresh = () => {},
+  onUbahJumlah = () => {},
+  onHapusItem = () => {},
+  onHapusTidakTersedia = () => {},
   cart = [],
   customerName = "",
   pickupDate = "",
@@ -104,20 +127,30 @@ export const KasirView: React.FC<KasirViewProps> = ({
   const [deliveryType, setDeliveryType] = useState<"kurir" | "ambil">("kurir");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  let subtotal = 0;
-  let totalItemCount = 0;
-  const itemsList = Array.isArray(cart) ? cart : [];
-  for (let i = 0; i < itemsList.length; i++) {
-    const item = itemsList[i];
-    if (item) {
-      subtotal += (Number(item.harga) || 0) * (Number(item.qty) || 1);
-      totalItemCount += Number(item.qty) || 1;
-    }
-  }
-  const shippingFee = itemsList.length > 0 ? 15000 : 0;
-  const grandTotal = Math.max(0, subtotal + shippingFee - discountAmount);
+  const activeItems = Array.isArray(keranjang) && keranjang.length > 0 ? keranjang : cart;
+  const isDynamicCart = Array.isArray(keranjang);
 
-  // Handle Voucher Apply
+  const customItems = isDynamicCart
+    ? keranjang.filter((item) => item.jenis === "Custom")
+    : [];
+  const katalogItems = isDynamicCart
+    ? keranjang.filter((item) => item.jenis === "Katalog")
+    : activeItems;
+
+  const totalSubtotal = isDynamicCart
+    ? (ringkasan.subtotal_custom || 0) + (ringkasan.subtotal_katalog || 0)
+    : activeItems.reduce((acc, it) => acc + (Number(it.harga) || 0) * (Number(it.qty) || 1), 0);
+
+  const totalItemCount = isDynamicCart
+    ? (ringkasan.total_kue || keranjang.reduce((acc, it) => acc + (Number(it.jumlah) || 1), 0))
+    : activeItems.reduce((acc, it) => acc + (Number(it.qty) || 1), 0);
+
+  const adaItemTidakTersedia = isDynamicCart
+    ? keranjang.some((it) => it.tersedia === false)
+    : false;
+
+  const grandTotal = totalSubtotal;
+
   const handleApplyVoucher = (e: React.FormEvent) => {
     e.preventDefault();
     const code = voucherCode.trim().toUpperCase();
@@ -127,7 +160,7 @@ export const KasirView: React.FC<KasirViewProps> = ({
     }
 
     if (code === "CRAVELY20" || code === "PROMO20") {
-      const discount = Math.round(subtotal * 0.2);
+      const discount = Math.round(totalSubtotal * 0.2);
       setDiscountAmount(discount);
       setAppliedVoucher(code);
       onNotify(`Voucher ${code} berhasil! Hemat ${formatRupiah(discount)}`);
@@ -153,16 +186,13 @@ export const KasirView: React.FC<KasirViewProps> = ({
     onNotify("Voucher telah dihapus.");
   };
 
-  // Open Checkout Page
   const handleOpenCheckout = () => {
-    if (cart.length === 0) {
-      onNotify("Keranjang belanja masih kosong.");
+    if (activeItems.length === 0 || adaItemTidakTersedia) {
       return;
     }
     router.push("/checkout");
   };
 
-  // Finalize WhatsApp Order
   const handleSendWhatsAppOrder = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName.trim()) {
@@ -189,14 +219,16 @@ export const KasirView: React.FC<KasirViewProps> = ({
       specialRequest.trim() ? `*Catatan Khusus:* ${specialRequest.trim()}` : "",
       "",
       "📋 *DAFTAR PESANAN:*",
-      ...cart.map(
-        (item, idx) =>
-          `${idx + 1}. ${item.nama} (${item.qty} pcs) - ${formatRupiah(item.harga * item.qty)}`
+      ...activeItems.map(
+        (item: any, idx: number) => {
+          const harga = Number(item.harga ?? item.harga_satuan ?? 0);
+          const qty = Number(item.jumlah || item.qty || 1);
+          const sub = Number(item.subtotal ?? (harga * qty));
+          return `${idx + 1}. ${item.nama || "Kue"} (${qty} pcs) - ${formatRupiah(sub)}`;
+        }
       ),
       "─────────────────────────",
-      `*Subtotal (${totalItemCount} Produk):* ${formatRupiah(subtotal)}`,
-      `*Ongkos Kirim:* ${formatRupiah(shippingFee)}`,
-      appliedVoucher ? `*Diskon Voucher (${appliedVoucher}):* -${formatRupiah(discountAmount)}` : "",
+      `*Subtotal (${totalItemCount} Produk):* ${formatRupiah(totalSubtotal)}`,
       `*TOTAL PEMBAYARAN:* ${formatRupiah(grandTotal)}`,
       "─────────────────────────",
       "Mohon konfirmasi ketersediaan pesanan & nomor rekening transfer / QRIS. Terima kasih banyak! ♡",
@@ -217,7 +249,6 @@ export const KasirView: React.FC<KasirViewProps> = ({
 
   return (
     <div className="w-full relative pb-4">
-      {/* ==================== HEADER: KERANJANG BELANJA ==================== */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-4 sm:gap-6 w-full">
           <h1
@@ -233,333 +264,529 @@ export const KasirView: React.FC<KasirViewProps> = ({
         </p>
       </div>
 
-      {/* ==================== 2-COLUMN SHOPPING LAYOUT ==================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-        {/* ==================== LEFT COLUMN: PRODUCT TABLE ==================== */}
-        <div className="lg:col-span-8 w-full">
-          {itemsList.length === 0 ? (
-            /* Empty Cart Container */
-            <div className="bg-[#FAF4ED] rounded-[28px] border border-[#ECDCCE] p-10 sm:p-14 text-center shadow-xs">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-[#F3E5D8] flex items-center justify-center text-[#7D2330] mb-4">
-                <ShoppingBag className="w-8 h-8 sm:w-10 sm:h-10 stroke-[1.5]" />
-              </div>
-              <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#4A2E2B]">
-                Keranjang Belanja Kamu Kosong
-              </h3>
-              <p className="text-xs sm:text-sm text-[#7D5A50] max-w-md mx-auto mt-2 leading-relaxed">
-                Belum ada kue di keranjangmu. Yuk jelajahi etalase dan temukan kue favorit untuk momen bahagiamu!
-              </p>
-              <button
-                type="button"
-                onClick={() => onNavigate("menu")}
-                className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#7D2330] hover:bg-[#681C27] text-white text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
-              >
-                <span>Lihat Menu Kue</span>
-                <span>→</span>
-              </button>
-            </div>
-          ) : (
+      {adaItemTidakTersedia && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
             <div>
-              {/* Product Table Card Container */}
-              <div className="bg-[#FAF4ED] rounded-[26px] border border-[#ECDCCE] overflow-hidden p-5 sm:p-7 shadow-[0_2px_12px_rgba(90,56,47,0.03)]">
-                {/* Table Header Bar */}
-                <div className="grid grid-cols-12 items-center text-xs sm:text-sm font-serif font-bold text-[#4A2E2B] pb-4 border-b border-[#EEDBCE]">
-                  <div className="col-span-12 sm:col-span-5 lg:col-span-5 pl-1">Produk</div>
-                  <div className="hidden sm:block sm:col-span-2 text-center">Harga</div>
-                  <div className="hidden sm:block sm:col-span-2 text-center">Jumlah</div>
-                  <div className="hidden sm:block sm:col-span-2 text-center">Subtotal</div>
-                  <div className="hidden sm:block sm:col-span-1 text-center"></div>
+              <p className="text-xs font-bold text-amber-900">
+                Ada kue yang saat ini tidak tersedia
+              </p>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                Salah satu produk atau bahan kue telah dinonaktifkan. Harap hapus item tersebut sebelum melanjutkan ke checkout.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onHapusTidakTersedia}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold transition cursor-pointer self-start sm:self-center shrink-0"
+          >
+            Hapus yang Tidak Tersedia
+          </button>
+        </div>
+      )}
+
+      {sedangMemuat ? (
+        <div className="bg-[#FAF4ED] rounded-[28px] border border-[#ECDCCE] p-16 text-center text-[#7D5A50] space-y-3 shadow-xs">
+          <RefreshCcw className="w-8 h-8 animate-spin mx-auto text-[#7D2330]" />
+          <p className="text-sm font-semibold">Memuat keranjang Anda...</p>
+        </div>
+      ) : pesanError ? (
+        <div className="bg-[#FAF4ED] rounded-[28px] border border-rose-300 p-10 text-center text-rose-800 space-y-3 shadow-xs">
+          <p className="text-sm font-bold">{pesanError}</p>
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="px-5 py-2 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white text-xs font-bold transition cursor-pointer"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+          <div className="lg:col-span-8 w-full">
+            {activeItems.length === 0 ? (
+              <div className="bg-[#FAF4ED] rounded-[28px] border border-[#ECDCCE] p-10 sm:p-14 text-center shadow-xs">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-[#F3E5D8] flex items-center justify-center text-[#7D2330] mb-4">
+                  <ShoppingBag className="w-8 h-8 sm:w-10 sm:h-10 stroke-[1.5]" />
                 </div>
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#4A2E2B]">
+                  Keranjang Belanja Kamu Kosong
+                </h3>
+                <p className="text-xs sm:text-sm text-[#7D5A50] max-w-md mx-auto mt-2 leading-relaxed">
+                  Belum ada kue di keranjangmu. Yuk jelajahi etalase dan temukan kue favorit untuk momen bahagiamu!
+                </p>
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <Link
+                    href="/menu"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#7D2330] hover:bg-[#681C27] text-white text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span>Lihat Menu Kue</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {customItems.length > 0 && (
+                  <div className="bg-[#FAF4ED] rounded-[26px] border border-[#ECDCCE] overflow-hidden p-5 sm:p-7 shadow-[0_2px_12px_rgba(90,56,47,0.03)]">
+                    <div className="flex items-center gap-2 pb-3 border-b border-[#EEDBCE] mb-2">
+                      <Cake className="w-4 h-4 text-[#7D2330]" />
+                      <h3 className="font-serif font-bold text-sm sm:text-base text-[#4A2E2B]">
+                        Kue Custom Studio ({customItems.length})
+                      </h3>
+                    </div>
 
-                {/* Product Rows List */}
-                <div className="divide-y divide-[#EEDBCE]">
-                  <AnimatePresence>
-                    {itemsList.map((item, index) => {
-                      const photoSrc =
-                        CAKE_PHOTO_MAP[item.nama] ||
-                        "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
-                      const descText =
-                        CAKE_DESC_MAP[item.nama] || "Kue lembut dengan krim stroberi segar";
-                      const itemSubtotal = item.harga * item.qty;
+                    <div className="grid grid-cols-12 items-center text-xs sm:text-sm font-serif font-bold text-[#4A2E2B] pb-3 border-b border-[#EEDBCE]">
+                      <div className="col-span-12 sm:col-span-5 lg:col-span-5 pl-1">Produk</div>
+                      <div className="hidden sm:block sm:col-span-2 text-center">Harga</div>
+                      <div className="hidden sm:block sm:col-span-2 text-center">Jumlah</div>
+                      <div className="hidden sm:block sm:col-span-2 text-center">Subtotal</div>
+                      <div className="hidden sm:block sm:col-span-1 text-center"></div>
+                    </div>
 
-                      return (
-                        <motion.div
-                          key={item.id || `${item.nama}-${index}`}
-                          layout
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className="py-5 sm:py-6 grid grid-cols-12 items-center gap-3 sm:gap-4"
-                        >
-                          {/* Col 1: Product Thumbnail & Name */}
-                          <div className="col-span-12 sm:col-span-5 lg:col-span-5 flex items-center gap-3.5 sm:gap-4 pl-1">
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#E6D4C6] shadow-xs">
-                              <img
-                                src={photoSrc}
-                                alt={item.nama}
-                                className="w-full h-full object-cover object-center"
-                              />
-                            </div>
+                    <div className="divide-y divide-[#EEDBCE]">
+                      <AnimatePresence>
+                        {customItems.map((item: any, index: number) => {
+                          const itemHarga = Number(item.harga ?? item.harga_satuan ?? 0);
+                          const itemSubtotal = Number(item.subtotal ?? itemHarga);
+                          const rincianStr = Array.isArray(item.rincian_custom)
+                            ? item.rincian_custom.map((r: any) => r.nama_item).filter(Boolean).join(" · ")
+                            : "";
 
-                            <div className="min-w-0 flex-1">
-                              <h4 className="font-serif font-bold text-base sm:text-lg text-[#3E2522] leading-tight">
-                                {item.nama}
-                              </h4>
-                              <p className="text-xs text-[#8C6D62] mt-1 line-clamp-2 leading-relaxed">
-                                {descText}
-                              </p>
-                              {/* Mobile-only price row */}
-                              <div className="sm:hidden flex items-center justify-between mt-2 pt-2 border-t border-[#EEDBCE]/70">
-                                <span className="font-serif font-medium text-xs text-[#3E2522]">
-                                  {formatRupiah(item.harga)}
-                                </span>
-                                <span className="font-serif font-bold text-xs text-[#7D2330]">
-                                  Subtotal: {formatRupiah(itemSubtotal)}
+                          return (
+                            <motion.div
+                              key={item.id || `custom-${index}`}
+                              layout
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              transition={{ duration: 0.2 }}
+                              className={`py-5 sm:py-6 grid grid-cols-12 items-center gap-3 sm:gap-4 ${
+                                item.tersedia === false ? "opacity-70 bg-rose-50/40 rounded-xl px-2" : ""
+                              }`}
+                            >
+                              <div className="col-span-12 sm:col-span-5 lg:col-span-5 flex items-center gap-3.5 sm:gap-4 pl-1">
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#E6D4C6] shadow-xs flex items-center justify-center">
+                                  {item.foto_preview_url ? (
+                                    <img
+                                      src={item.foto_preview_url}
+                                      alt={item.nama || "Kue Custom"}
+                                      className="w-full h-full object-cover object-center"
+                                    />
+                                  ) : (
+                                    <Cake className="w-8 h-8 text-[#7D2330]/50" />
+                                  )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-serif font-bold text-base sm:text-lg text-[#3E2522] leading-tight">
+                                      {item.nama || "Kue Custom Studio"}
+                                    </h4>
+                                    {item.tersedia === false && (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                                        Tidak Tersedia
+                                      </span>
+                                    )}
+                                  </div>
+                                  {rincianStr ? (
+                                    <p className="text-xs text-[#8C6D62] mt-1 line-clamp-2 leading-relaxed">
+                                      {rincianStr}
+                                    </p>
+                                  ) : null}
+                                  {item.tulisan_kue ? (
+                                    <p className="text-[11px] text-[#7D2330] italic mt-0.5 font-serif">
+                                      Tulisan: &ldquo;{item.tulisan_kue}&rdquo;
+                                    </p>
+                                  ) : null}
+                                  <div className="sm:hidden flex items-center justify-between mt-2 pt-2 border-t border-[#EEDBCE]/70">
+                                    <span className="font-serif font-medium text-xs text-[#3E2522]">
+                                      {formatRupiah(itemHarga)}
+                                    </span>
+                                    <span className="font-serif font-bold text-xs text-[#7D2330]">
+                                      Subtotal: {formatRupiah(itemSubtotal)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="hidden sm:block sm:col-span-2 text-center font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
+                                {formatRupiah(itemHarga)}
+                              </div>
+
+                              <div className="col-span-6 sm:col-span-2 flex items-center justify-start sm:justify-center">
+                                <span className="bg-[#FAF0E6] border border-[#E8DACB] rounded-full px-3 py-1 text-xs font-serif font-bold text-[#4A2E2B] tabular-nums">
+                                  1 pcs (Custom)
                                 </span>
                               </div>
-                            </div>
-                          </div>
 
-                          {/* Col 2: Price (Desktop) */}
-                          <div className="hidden sm:block sm:col-span-2 text-center font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
-                            {formatRupiah(item.harga)}
-                          </div>
+                              <div className="hidden sm:block sm:col-span-2 text-center font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
+                                {formatRupiah(itemSubtotal)}
+                              </div>
 
-                          {/* Col 3: Quantity Pill */}
-                          <div className="col-span-6 sm:col-span-2 flex items-center justify-start sm:justify-center">
-                            <div className="bg-[#FAF0E6] border border-[#E8DACB] rounded-full px-3.5 py-1.5 flex items-center gap-3 shadow-none">
-                              <button
-                                type="button"
-                                onClick={() => onUpdateQty(index, -1)}
-                                className="text-[#6E4238] hover:text-[#7D2330] p-0.5 transition active:scale-90 cursor-pointer"
-                                aria-label="Kurangi jumlah"
-                              >
-                                <Minus className="w-3.5 h-3.5 stroke-[2.2]" />
-                              </button>
-
-                              <span className="text-xs sm:text-sm font-serif font-bold text-[#4A2E2B] min-w-[16px] text-center tabular-nums">
-                                {item.qty}
-                              </span>
-
-                              <button
-                                type="button"
-                                onClick={() => onUpdateQty(index, 1)}
-                                className="text-[#6E4238] hover:text-[#7D2330] p-0.5 transition active:scale-90 cursor-pointer"
-                                aria-label="Tambah jumlah"
-                              >
-                                <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Col 4: Subtotal */}
-                          <div className="hidden sm:block sm:col-span-2 text-center font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
-                            {formatRupiah(itemSubtotal)}
-                          </div>
-
-                          {/* Col 5: Trash Icon (Bare Icon matching mockup) */}
-                          <div className="col-span-6 sm:col-span-1 flex items-center justify-end sm:justify-center">
-                            <button
-                              type="button"
-                              onClick={() => onUpdateQty(index, -item.qty)}
-                              className="text-[#7D5A50] hover:text-[#7D2330] p-1.5 transition active:scale-90 cursor-pointer"
-                              title="Hapus produk"
-                              aria-label={`Hapus ${item.nama}`}
-                            >
-                              <Trash2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] stroke-[1.6]" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Back to Shopping Button */}
-              <div className="mt-5 flex items-center justify-start">
-                <button
-                  type="button"
-                  onClick={() => onNavigate("menu")}
-                  className="px-5 py-2.5 rounded-2xl bg-[#FAF4ED] hover:bg-[#F3E5D8] border border-[#ECDCCE] text-[#5C3D32] text-xs sm:text-sm font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer shadow-xs"
-                >
-                  <ArrowLeft className="w-4 h-4 stroke-[2]" />
-                  <span>Lanjut Belanja</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ==================== RIGHT COLUMN: ORDER SUMMARY CARD ==================== */}
-        <div className="lg:col-span-4 w-full">
-          <div className="rounded-[26px] border border-[#ECDCCE] bg-[#FAF4ED] shadow-sm overflow-hidden">
-            {/* Header: Deep Burgundy with Line-Art Cake Illustration */}
-            <div className="bg-[#7D2330] text-white px-6 py-4.5 flex items-center justify-between relative overflow-hidden">
-              <h2 className="font-serif text-lg sm:text-xl font-bold tracking-tight text-white relative z-10">
-                Ringkasan Pesanan
-              </h2>
-
-              {/* Cake Sketch Illustration in Header */}
-              <div className="relative z-10 opacity-90 text-[#FFF5ED]">
-                <svg width="68" height="46" viewBox="0 0 74 50" fill="none" stroke="currentColor" strokeWidth="1.25">
-                  {/* Plate Ellipse */}
-                  <ellipse cx="37" cy="42" rx="33" ry="5.5" stroke="currentColor" opacity="0.6" />
-                  {/* Bottom Cake Slice Triangle/Prism */}
-                  <path d="M12,41 L58,41 L66,24 L20,24 Z" strokeLinejoin="round" />
-                  {/* Vertical Cake Height */}
-                  <path d="M12,41 L12,30 L20,13 L66,13 L66,24" strokeLinejoin="round" />
-                  {/* Frosting Layer Divider */}
-                  <path d="M12,35 L58,35 L66,18" strokeDasharray="2,1.5" opacity="0.75" />
-                  {/* Top Cake Face */}
-                  <path d="M12,30 L58,30 L66,13" strokeLinejoin="round" />
-                  {/* Cherry on Top */}
-                  <circle cx="43" cy="8.5" r="4" stroke="currentColor" fill="#FFF5ED" fillOpacity="0.25" />
-                  <path d="M43,4.5 Q45,1 48,2" strokeLinecap="round" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Body: Clean Summary Details */}
-            <div className="p-6 sm:p-7 space-y-4 text-xs sm:text-sm">
-              {/* Subtotal */}
-              <div className="flex items-center justify-between text-[#5C3D32]">
-                <span>Subtotal ({totalItemCount} Produk)</span>
-                <span className="font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
-                  {formatRupiah(subtotal)}
-                </span>
-              </div>
-
-              {/* Ongkos Kirim with Info Icon */}
-              <div className="flex items-center justify-between text-[#5C3D32] relative">
-                <div className="flex items-center gap-1.5">
-                  <span>Ongkos Kirim</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowShippingTooltip(!showShippingTooltip)}
-                    onMouseEnter={() => setShowShippingTooltip(true)}
-                    onMouseLeave={() => setShowShippingTooltip(false)}
-                    className="w-4 h-4 rounded-full border border-[#7D5A50] text-[#7D5A50] flex items-center justify-center text-[10px] font-serif italic hover:text-[#7D2330] hover:border-[#7D2330] cursor-pointer"
-                    aria-label="Info ongkos kirim"
-                  >
-                    i
-                  </button>
-
-                  {/* Info Tooltip */}
-                  <AnimatePresence>
-                    {showShippingTooltip && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 4 }}
-                        className="absolute left-0 bottom-7 z-30 bg-[#4A2E2B] text-white text-[11px] p-2.5 rounded-xl shadow-lg w-56 leading-snug"
-                      >
-                        Pengiriman menggunakan kurir khusus kue dengan wadah berpendingin agar kue tetap dingin, utuh, dan cantik saat sampai.
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <span className="font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
-                  {formatRupiah(shippingFee)}
-                </span>
-              </div>
-
-              {/* Voucher Discount Row (If Applied) */}
-              {appliedVoucher && (
-                <div className="flex items-center justify-between text-emerald-800 font-semibold bg-emerald-50/80 px-2.5 py-1.5 rounded-lg border border-emerald-200">
-                  <div className="flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5" />
-                    <span>Diskon ({appliedVoucher})</span>
+                              <div className="col-span-6 sm:col-span-1 flex items-center justify-end sm:justify-center">
+                                <button
+                                  type="button"
+                                  onClick={() => onHapusItem(item.id)}
+                                  className="text-[#7D5A50] hover:text-[#7D2330] p-1.5 transition active:scale-90 cursor-pointer"
+                                  title="Hapus kue custom"
+                                  aria-label="Hapus kue custom"
+                                >
+                                  <Trash2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] stroke-[1.6]" />
+                                </button>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-serif tabular-nums">-{formatRupiah(discountAmount)}</span>
+                )}
+
+                {katalogItems.length > 0 && (
+                  <div className="bg-[#FAF4ED] rounded-[26px] border border-[#ECDCCE] overflow-hidden p-5 sm:p-7 shadow-[0_2px_12px_rgba(90,56,47,0.03)]">
+                    {customItems.length > 0 && (
+                      <div className="flex items-center gap-2 pb-3 border-b border-[#EEDBCE] mb-2">
+                        <ShoppingBag className="w-4 h-4 text-[#7D2330]" />
+                        <h3 className="font-serif font-bold text-sm sm:text-base text-[#4A2E2B]">
+                          Kue Katalog ({katalogItems.length})
+                        </h3>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-12 items-center text-xs sm:text-sm font-serif font-bold text-[#4A2E2B] pb-4 border-b border-[#EEDBCE]">
+                      <div className="col-span-12 sm:col-span-5 lg:col-span-5 pl-1">Produk</div>
+                      <div className="hidden sm:block sm:col-span-2 text-center">Harga</div>
+                      <div className="hidden sm:block sm:col-span-2 text-center">Jumlah</div>
+                      <div className="hidden sm:block sm:col-span-2 text-center">Subtotal</div>
+                      <div className="hidden sm:block sm:col-span-1 text-center"></div>
+                    </div>
+
+                    <div className="divide-y divide-[#EEDBCE]">
+                      <AnimatePresence>
+                        {katalogItems.map((item: any, index: number) => {
+                          const photoSrc =
+                            item.produk?.fotoUrl ||
+                            item.fotoUrl ||
+                            CAKE_PHOTO_MAP[item.nama] ||
+                            "/images/patisserie/etalase_chiffon_strawberry_1795156812551.jpg";
+                          const descText =
+                            item.produk?.deskripsi ||
+                            item.kategori ||
+                            CAKE_DESC_MAP[item.nama] ||
+                            "Pilihan kue katalog lezat berkualitas dari Cravely.";
+                          const itemQty = Number(item.jumlah || item.qty || 1);
+                          const itemHarga = Number(item.harga ?? item.harga_satuan ?? 0);
+                          const itemSubtotal = Number(item.subtotal ?? (itemHarga * itemQty));
+
+                          return (
+                            <motion.div
+                              key={item.id || `${item.nama}-${index}`}
+                              layout
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              transition={{ duration: 0.2 }}
+                              className={`py-5 sm:py-6 grid grid-cols-12 items-center gap-3 sm:gap-4 ${
+                                item.tersedia === false ? "opacity-70 bg-rose-50/40 rounded-xl px-2" : ""
+                              }`}
+                            >
+                              <div className="col-span-12 sm:col-span-5 lg:col-span-5 flex items-center gap-3.5 sm:gap-4 pl-1">
+                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#E6D4C6] shadow-xs">
+                                  <img
+                                    src={photoSrc}
+                                    alt={item.nama}
+                                    className="w-full h-full object-cover object-center"
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-serif font-bold text-base sm:text-lg text-[#3E2522] leading-tight">
+                                      {item.nama}
+                                    </h4>
+                                    {item.tersedia === false && (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                                        Tidak Tersedia
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-[#8C6D62] mt-1 line-clamp-2 leading-relaxed">
+                                    {descText}
+                                  </p>
+                                  <div className="sm:hidden flex items-center justify-between mt-2 pt-2 border-t border-[#EEDBCE]/70">
+                                    <span className="font-serif font-medium text-xs text-[#3E2522]">
+                                      {formatRupiah(itemHarga)}
+                                    </span>
+                                    <span className="font-serif font-bold text-xs text-[#7D2330]">
+                                      Subtotal: {formatRupiah(itemSubtotal)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="hidden sm:block sm:col-span-2 text-center font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
+                                {formatRupiah(itemHarga)}
+                              </div>
+
+                              <div className="col-span-6 sm:col-span-2 flex items-center justify-start sm:justify-center">
+                                <div className="bg-[#FAF0E6] border border-[#E8DACB] rounded-full px-3.5 py-1.5 flex items-center gap-3 shadow-none">
+                                  <button
+                                    type="button"
+                                    disabled={itemQty <= 1}
+                                    onClick={() => {
+                                      if (isDynamicCart) {
+                                        onUbahJumlah(item, itemQty - 1);
+                                      } else {
+                                        onUpdateQty(index, -1);
+                                      }
+                                    }}
+                                    className="text-[#6E4238] hover:text-[#7D2330] p-0.5 transition active:scale-90 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                    aria-label="Kurangi jumlah"
+                                  >
+                                    <Minus className="w-3.5 h-3.5 stroke-[2.2]" />
+                                  </button>
+
+                                  <span className="text-xs sm:text-sm font-serif font-bold text-[#4A2E2B] min-w-[16px] text-center tabular-nums">
+                                    {itemQty}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    disabled={itemQty >= 20}
+                                    onClick={() => {
+                                      if (isDynamicCart) {
+                                        onUbahJumlah(item, itemQty + 1);
+                                      } else {
+                                        onUpdateQty(index, 1);
+                                      }
+                                    }}
+                                    className="text-[#6E4238] hover:text-[#7D2330] p-0.5 transition active:scale-90 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                    aria-label="Tambah jumlah"
+                                  >
+                                    <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="hidden sm:block sm:col-span-2 text-center font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
+                                {formatRupiah(itemSubtotal)}
+                              </div>
+
+                              <div className="col-span-6 sm:col-span-1 flex items-center justify-end sm:justify-center">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isDynamicCart) {
+                                      onHapusItem(item.id);
+                                    } else {
+                                      onUpdateQty(index, -itemQty);
+                                    }
+                                  }}
+                                  className="text-[#7D5A50] hover:text-[#7D2330] p-1.5 transition active:scale-90 cursor-pointer"
+                                  title="Hapus produk"
+                                  aria-label={`Hapus ${item.nama}`}
+                                >
+                                  <Trash2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] stroke-[1.6]" />
+                                </button>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-5 flex items-center justify-start">
+                  <Link
+                    href="/menu"
+                    className="px-5 py-2.5 rounded-2xl bg-[#FAF4ED] hover:bg-[#F3E5D8] border border-[#ECDCCE] text-[#5C3D32] text-xs sm:text-sm font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer shadow-xs"
+                  >
+                    <ArrowLeft className="w-4 h-4 stroke-[2]" />
+                    <span>Lanjut Belanja</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-4 w-full">
+            <div className="rounded-[26px] border border-[#ECDCCE] bg-[#FAF4ED] shadow-sm overflow-hidden">
+              <div className="bg-[#7D2330] text-white px-6 py-4.5 flex items-center justify-between relative overflow-hidden">
+                <h2 className="font-serif text-lg sm:text-xl font-bold tracking-tight text-white relative z-10">
+                  Ringkasan Pesanan
+                </h2>
+
+                <div className="relative z-10 opacity-90 text-[#FFF5ED]">
+                  <svg width="68" height="46" viewBox="0 0 74 50" fill="none" stroke="currentColor" strokeWidth="1.25">
+                    <ellipse cx="37" cy="42" rx="33" ry="5.5" stroke="currentColor" opacity="0.6" />
+                    <path d="M12,41 L58,41 L66,24 L20,24 Z" strokeLinejoin="round" />
+                    <path d="M12,41 L12,30 L20,13 L66,13 L66,24" strokeLinejoin="round" />
+                    <path d="M12,35 L58,35 L66,18" strokeDasharray="2,1.5" opacity="0.75" />
+                    <path d="M12,30 L58,30 L66,13" strokeLinejoin="round" />
+                    <circle cx="43" cy="8.5" r="4" stroke="currentColor" fill="#FFF5ED" fillOpacity="0.25" />
+                    <path d="M43,4.5 Q45,1 48,2" strokeLinecap="round" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-7 space-y-4 text-xs sm:text-sm">
+                {isDynamicCart && ringkasan.subtotal_custom ? (
+                  <div className="flex items-center justify-between text-[#5C3D32]">
+                    <span>Subtotal Kue Custom</span>
+                    <span className="font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
+                      {formatRupiah(ringkasan.subtotal_custom)}
+                    </span>
+                  </div>
+                ) : null}
+
+                {isDynamicCart && ringkasan.subtotal_katalog ? (
+                  <div className="flex items-center justify-between text-[#5C3D32]">
+                    <span>Subtotal Kue Katalog</span>
+                    <span className="font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
+                      {formatRupiah(ringkasan.subtotal_katalog)}
+                    </span>
+                  </div>
+                ) : null}
+
+                {!isDynamicCart || (!ringkasan.subtotal_custom && !ringkasan.subtotal_katalog) ? (
+                  <div className="flex items-center justify-between text-[#5C3D32]">
+                    <span>Subtotal ({totalItemCount} Produk)</span>
+                    <span className="font-serif font-bold text-sm sm:text-base text-[#4A2E2B] tabular-nums">
+                      {formatRupiah(totalSubtotal)}
+                    </span>
+                  </div>
+                ) : null}
+
+                <div className="flex items-center justify-between text-[#5C3D32] relative">
+                  <div className="flex items-center gap-1.5">
+                    <span>Ongkos Kirim</span>
                     <button
                       type="button"
-                      onClick={handleRemoveVoucher}
-                      className="text-xs text-red-600 hover:text-red-800 font-bold cursor-pointer"
+                      onClick={() => setShowShippingTooltip(!showShippingTooltip)}
+                      onMouseEnter={() => setShowShippingTooltip(true)}
+                      onMouseLeave={() => setShowShippingTooltip(false)}
+                      className="w-4 h-4 rounded-full border border-[#7D5A50] text-[#7D5A50] flex items-center justify-center text-[10px] font-serif italic hover:text-[#7D2330] hover:border-[#7D2330] cursor-pointer"
+                      aria-label="Info ongkos kirim"
                     >
-                      ✕
+                      i
                     </button>
+
+                    <AnimatePresence>
+                      {showShippingTooltip && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 4 }}
+                          className="absolute left-0 bottom-7 z-30 bg-[#4A2E2B] text-white text-[11px] p-2.5 rounded-xl shadow-lg w-56 leading-snug"
+                        >
+                          Ongkos kirim dihitung berdasarkan jarak tujuan pengiriman pada halaman checkout.
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
+                  <span className="font-serif font-semibold text-xs sm:text-sm text-[#7D5A50] italic">
+                    Dihitung di checkout
+                  </span>
                 </div>
-              )}
 
-              {/* Total Pembayaran */}
-              <div className="pt-2 flex items-center justify-between">
-                <span className="font-serif font-bold text-base sm:text-lg text-[#4A2E2B]">
-                  Total Pembayaran
-                </span>
-                <span className="font-serif font-bold text-2xl sm:text-[26px] text-[#4A2E2B] tabular-nums tracking-tight">
-                  {formatRupiah(grandTotal)}
-                </span>
-              </div>
-
-              {/* Voucher Input Bar */}
-              <form onSubmit={handleApplyVoucher} className="pt-2">
-                <div className="flex items-center bg-[#FAF0E6] border border-[#E8DACB] rounded-2xl p-1.5 focus-within:ring-1 focus-within:ring-[#7D2330] transition">
-                  <div className="pl-2 text-[#7D5A50]">
-                    <Ticket className="w-4 h-4 stroke-[1.8]" />
+                {false && appliedVoucher && (
+                  <div className="flex items-center justify-between text-emerald-800 font-semibold bg-emerald-50/80 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5" />
+                      <span>Diskon ({appliedVoucher})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif tabular-nums">-{formatRupiah(discountAmount)}</span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveVoucher}
+                        className="text-xs text-red-600 hover:text-red-800 font-bold cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    value={voucherCode}
-                    onChange={(e) => setVoucherCode(e.target.value)}
-                    placeholder="Kode Voucher"
-                    className="w-full px-2.5 py-1 text-xs bg-transparent text-[#4A2E2B] placeholder-[#9E8278] focus:outline-none uppercase font-medium"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-[#7D2330] hover:bg-[#681C27] text-white px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
+                )}
+
+                <div className="pt-2 border-t border-[#EEDBCE] flex items-center justify-between">
+                  <span className="font-serif font-bold text-base sm:text-lg text-[#4A2E2B]">
+                    Total Pesanan
+                  </span>
+                  <span
+                    className="font-serif font-bold text-2xl sm:text-[26px] text-[#4A2E2B] tabular-nums tracking-tight"
+                    style={{ fontVariantNumeric: "lining-nums" }}
                   >
-                    Gunakan
+                    {formatRupiah(grandTotal)}
+                  </span>
+                </div>
+
+                {false && (
+                  <form onSubmit={handleApplyVoucher} className="pt-2">
+                    <div className="flex items-center bg-[#FAF0E6] border border-[#E8DACB] rounded-2xl p-1.5 focus-within:ring-1 focus-within:ring-[#7D2330] transition">
+                      <div className="pl-2 text-[#7D5A50]">
+                        <Ticket className="w-4 h-4 stroke-[1.8]" />
+                      </div>
+                      <input
+                        type="text"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
+                        placeholder="Kode Voucher"
+                        className="w-full px-2.5 py-1 text-xs bg-transparent text-[#4A2E2B] placeholder-[#9E8278] focus:outline-none uppercase font-medium"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-[#7D2330] hover:bg-[#681C27] text-white px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
+                      >
+                        Gunakan
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenCheckout}
+                    disabled={activeItems.length === 0 || adaItemTidakTersedia}
+                    className="w-full py-3.5 px-4 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-md active:scale-98 transition cursor-pointer"
+                  >
+                    <ShoppingBag className="w-4 h-4 stroke-[2]" />
+                    <span>Lanjut ke Checkout →</span>
                   </button>
                 </div>
-              </form>
-
-              {/* Main Checkout Button */}
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleOpenCheckout}
-                  disabled={cart.length === 0}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-md active:scale-98 transition cursor-pointer"
-                >
-                  <ShoppingBag className="w-4 h-4 stroke-[2]" />
-                  <span>Checkout Sekarang →</span>
-                </button>
               </div>
             </div>
-          </div>
 
-          {/* Subtext: "Terima kasih sudah memilih Cakely ♡" with Cursive Script */}
-          <div className="mt-7 text-center sm:text-right pr-2 sm:pr-4">
-            <p
-              className="text-xl sm:text-2xl text-[#7D5A50] leading-snug select-none"
-              style={{ fontFamily: "'Alex Brush', 'Great Vibes', 'Dancing Script', cursive" }}
-            >
-              Terima kasih<br />
-              <span className="relative inline-block mt-0.5">
-                sudah memilih Cakely ♡
-                {/* Underline Swoop */}
-                <svg
-                  className="w-full h-2.5 text-[#7D5A50]/70 -mt-0.5"
-                  viewBox="0 0 160 12"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                >
-                  <path d="M4,3 Q80,11 156,2" strokeLinecap="round" />
-                </svg>
-              </span>
-            </p>
+            <div className="mt-7 text-center sm:text-right pr-2 sm:pr-4">
+              <p
+                className="text-xl sm:text-2xl text-[#7D5A50] leading-snug select-none"
+                style={{ fontFamily: "'Alex Brush', 'Great Vibes', 'Dancing Script', cursive" }}
+              >
+                Terima kasih<br />
+                <span className="relative inline-block mt-0.5">
+                  sudah memilih Cravely ♡
+                  <svg
+                    className="w-full h-2.5 text-[#7D5A50]/70 -mt-0.5"
+                    viewBox="0 0 160 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                  >
+                    <path d="M4,3 Q80,11 156,2" strokeLinecap="round" />
+                  </svg>
+                </span>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ==================== INTERACTIVE CHECKOUT MODAL ==================== */}
-      <AnimatePresence>
-        {isCheckoutModalOpen && (
+      {false && isCheckoutModalOpen && (
+        <AnimatePresence>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -720,7 +947,6 @@ export const KasirView: React.FC<KasirViewProps> = ({
                   />
                 </div>
 
-                {/* Total Recap */}
                 <div className="bg-[#FAF0E6] rounded-xl p-3 border border-[#E8DACB] flex items-center justify-between font-serif">
                   <span className="font-bold text-[#4A2E2B]">Total Bayar:</span>
                   <span className="font-bold text-lg text-[#7D2330]">{formatRupiah(grandTotal)}</span>
@@ -737,8 +963,8 @@ export const KasirView: React.FC<KasirViewProps> = ({
               </form>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      )}
     </div>
   );
 };

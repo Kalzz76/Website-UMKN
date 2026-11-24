@@ -5,11 +5,29 @@ import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import PreviewKue from "@/components/PreviewKue";
 import { BadgeStatusPesanan, BadgeStatusBayar } from "@/components/BadgeStatus";
 import TombolBayarMidtrans from "@/components/TombolBayarMidtrans";
-import { formatRupiah, formatTanggalIndonesia, formatTanggalWaktu } from "@/lib/format";
+import { formatRupiah, formatTanggal, formatTanggalIndonesia, formatTanggalWaktu } from "@/lib/format";
 
 export const metadata = {
   title: "Tiket Pesanan - Toko Kue Custom",
 };
+
+function formatRentangTanggal(awal, akhir) {
+  if (!awal) return "";
+  if (!akhir || awal === akhir) return formatTanggal(awal);
+  const [y1, m1, d1] = awal.split("-").map(Number);
+  const [y2, m2, d2] = akhir.split("-").map(Number);
+  const dt1 = new Date(Date.UTC(y1, m1 - 1, d1));
+  const dt2 = new Date(Date.UTC(y2, m2 - 1, d2));
+  const bulanTahun = new Intl.DateTimeFormat("id-ID", {
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  }).format(dt2);
+  if (y1 === y2 && m1 === m2) {
+    return `${d1} sampai ${d2} ${bulanTahun}`;
+  }
+  return `${formatTanggal(awal)} sampai ${formatTanggal(akhir)}`;
+}
 
 export default async function DetailTiketPage(props) {
   const params = await props.params;
@@ -155,8 +173,20 @@ export default async function DetailTiketPage(props) {
     });
   }
 
+  const batasJam = Number(pengaturan?.batas_bayar_jam ?? 24);
+  const dibuatMs = new Date(pesanan.dibuat_pada).getTime();
+  const batasBayarIso = new Date(dibuatMs + batasJam * 3600000).toISOString();
+
+  let teksJadwalKirim = "";
+  if (pesanan.metode_pengiriman === "Kirim" && pesanan.tanggal_ambil) {
+    const [y, m, d] = pesanan.tanggal_ambil.split("-").map(Number);
+    const dtAkhir = new Date(Date.UTC(y, m - 1, d + 1));
+    const tglAkhir = dtAkhir.toISOString().slice(0, 10);
+    teksJadwalKirim = `Estimasi tiba ${formatRentangTanggal(pesanan.tanggal_ambil, tglAkhir)}`;
+  }
+
   return (
-    <div className="min-h-screen bg-[#faf6ef] py-8 px-4">
+    <div className="min-h-screen bg-[#faf6ef] py-8 px-4 font-sans">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <Link
@@ -171,6 +201,18 @@ export default async function DetailTiketPage(props) {
             Tiket Digital Pelanggan
           </span>
         </div>
+
+        {pesanan.perlu_refund && (
+          <div className="p-4 sm:p-5 rounded-3xl bg-amber-50 border-2 border-amber-300 text-amber-900 shadow-sm flex items-start gap-3">
+            <i className="fa-solid fa-circle-exclamation text-amber-600 text-lg mt-0.5" />
+            <div>
+              <h4 className="font-bold text-sm">Pemberitahuan Pengembalian Dana</h4>
+              <p className="text-xs text-amber-800 mt-0.5 font-medium">
+                Pembayaran diterima setelah pesanan dibatalkan; toko akan menghubungi Anda.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 md:p-8">
           <div className="flex flex-col md:flex-row items-center justify-between pb-6 border-b border-stone-100 gap-6">
@@ -211,8 +253,6 @@ export default async function DetailTiketPage(props) {
               <div className="space-y-4">
                 {itemsWithUrls.map((it, idx) => {
                   const isCustom = it.jenis === "Custom";
-                  const itTeks = (it.desain_json?.items || []).filter((x) => x.type === "text" || (x.t === "text" && x.text));
-                  const itStiker = (it.desain_json?.items || []).filter((x) => x.type === "sticker" || x.t === "emoji");
 
                   return (
                     <div
@@ -360,7 +400,7 @@ export default async function DetailTiketPage(props) {
                         Pengiriman
                       </span>
                       <span className="font-semibold text-stone-800">
-                        {pesanan.zona_ongkir?.nama || "Ongkos Kirim"}
+                        Ongkos Kirim {pesanan.jarak_km ? `(${pesanan.jarak_km} km)` : ""}
                       </span>
                     </div>
                     <span className="font-medium text-stone-700 lining-nums tabular-nums">
@@ -412,31 +452,57 @@ export default async function DetailTiketPage(props) {
               <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">
                 Jadwal & Lokasi
               </h3>
-              <div className="space-y-2 text-xs text-stone-700">
-                <div className="flex items-start space-x-2">
-                  <i className="fa-solid fa-calendar text-rose-500 mt-0.5"></i>
-                  <span>
-                    Tanggal: <strong>{formatTanggalIndonesia(pesanan.tanggal_ambil)}</strong>
-                  </span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <i className="fa-solid fa-clock text-rose-500 mt-0.5"></i>
-                  <span>
-                    Jam: <strong>Pukul {pesanan.jam_ambil?.slice(0, 5)} WIB</strong>
-                  </span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <i className="fa-solid fa-location-dot text-rose-500 mt-0.5"></i>
-                  <div>
-                    <span>Pengambilan: </span>
-                    <strong>
-                      {pesanan.metode_pengiriman === "Ambil" ? "Ambil di Toko" : "Kirim ke Alamat"}
-                    </strong>
+              <div className="space-y-2.5 text-xs text-stone-700">
+                {pesanan.metode_pengiriman === "Kirim" ? (
+                  <>
+                    <div className="flex items-start space-x-2">
+                      <i className="fa-solid fa-truck text-rose-500 mt-0.5" />
+                      <div>
+                        <span>Metode: <strong>Kirim ke Alamat</strong></span>
+                        {pesanan.jarak_km && (
+                          <span className="text-stone-500 block">Jarak: {pesanan.jarak_km} km</span>
+                        )}
+                        <span className="text-stone-500 block">Ongkir: {formatRupiah(pesanan.ongkir)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <i className="fa-solid fa-calendar-check text-rose-500 mt-0.5" />
+                      <span>
+                        <strong>{teksJadwalKirim}</strong>
+                      </span>
+                    </div>
                     {pesanan.alamat && (
-                      <p className="text-stone-500 mt-1">{pesanan.alamat}</p>
+                      <div className="flex items-start space-x-2">
+                        <i className="fa-solid fa-location-dot text-rose-500 mt-0.5" />
+                        <div>
+                          <span className="font-semibold block text-stone-900">Alamat Tujuan:</span>
+                          <p className="text-stone-600 mt-0.5">{pesanan.alamat}</p>
+                          {pesanan.patokan && (
+                            <p className="text-stone-400 text-[11px] mt-0.5">Patokan: {pesanan.patokan}</p>
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start space-x-2">
+                      <i className="fa-solid fa-calendar text-rose-500 mt-0.5" />
+                      <span>
+                        Diambil pada <strong>{formatTanggalIndonesia(pesanan.tanggal_ambil)}</strong> pukul <strong>{pesanan.jam_ambil?.slice(0, 5)} WIB</strong>
+                      </span>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <i className="fa-solid fa-store text-rose-500 mt-0.5" />
+                      <div>
+                        <span>Metode: <strong>Ambil di Toko ({pengaturan?.nama_toko || "Cravely"})</strong></span>
+                        {pengaturan?.alamat && (
+                          <p className="text-stone-500 mt-1">{pengaturan.alamat}</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -444,7 +510,12 @@ export default async function DetailTiketPage(props) {
               <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">
                 Pembayaran
               </h3>
-              <TombolBayarMidtrans pesanan={pesanan} />
+              <TombolBayarMidtrans
+                pesanan={pesanan}
+                batasBayarIso={batasBayarIso}
+                transferManualAktif={Boolean(pengaturan?.transfer_manual_aktif)}
+                pengaturan={pengaturan}
+              />
             </div>
           </div>
 

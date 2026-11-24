@@ -49,7 +49,7 @@ export async function GET() {
 
   const { data: daftarProduk } = await supabase
     .from("produk")
-    .select("*");
+    .select("*, kategori_produk(nama)");
 
   const { data: pengaturan } = await supabase
     .from("pengaturan_toko")

@@ -2,14 +2,21 @@ import { NextResponse } from "next/server";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
 
-export async function GET() {
+export async function GET(request) {
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
+  const { searchParams } = new URL(request.url);
+  const semua = searchParams.get("semua") === "1";
+
+  let query = supabase
     .from("kategori_produk")
-    .select("id, nama, urutan, aktif")
-    .eq("aktif", true)
-    .order("urutan", { ascending: true })
+    .select("id, nama, aktif")
     .order("id", { ascending: true });
+
+  if (!semua) {
+    query = query.eq("aktif", true);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json(
@@ -36,7 +43,6 @@ export async function POST(request) {
 
   if (aksi === "tambah") {
     const nama = (body.nama || "").trim();
-    const urutan = Number(body.urutan) || 0;
     const aktif = body.aktif !== false;
 
     if (!nama) {
@@ -61,7 +67,7 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from("kategori_produk")
-      .insert({ nama, urutan, aktif })
+      .insert({ nama, aktif })
       .select()
       .single();
 
@@ -82,7 +88,6 @@ export async function POST(request) {
   if (aksi === "ubah") {
     const id = Number(body.id);
     const nama = (body.nama || "").trim();
-    const urutan = Number(body.urutan) || 0;
     const aktif = body.aktif !== false;
 
     if (!id) {
@@ -115,7 +120,7 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from("kategori_produk")
-      .update({ nama, urutan, aktif })
+      .update({ nama, aktif })
       .eq("id", id)
       .select()
       .single();

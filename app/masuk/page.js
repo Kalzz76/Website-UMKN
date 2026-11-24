@@ -78,10 +78,20 @@ function FormMasuk() {
       return;
     }
 
-    if (tujuan && tujuan.startsWith("/")) {
-      router.push(tujuan);
+    function sanitizeKe(target) {
+      if (!target || typeof target !== "string") return null;
+      const clean = target.trim();
+      if (clean.startsWith("/") && !clean.startsWith("//") && !clean.includes("://")) {
+        return clean;
+      }
+      return null;
+    }
+
+    const pathTujuan = sanitizeKe(tujuan);
+    if (pathTujuan) {
+      router.push(pathTujuan);
     } else {
-      router.push("/user");
+      router.push("/");
     }
     router.refresh();
   }
@@ -190,7 +200,10 @@ function FormMasuk() {
 
       <div className="mt-6 text-center text-sm text-stone-600">
         Belum punya akun?{" "}
-        <Link href="/daftar" className="text-rose-600 font-semibold hover:underline">
+        <Link
+          href={tujuan ? `/daftar?ke=${encodeURIComponent(tujuan)}` : "/daftar"}
+          className="text-rose-600 font-semibold hover:underline"
+        >
           Daftar Sekarang
         </Link>
       </div>

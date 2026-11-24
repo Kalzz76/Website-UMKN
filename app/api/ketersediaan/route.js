@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta, hitungTanggalMinimal } from "@/lib/format";
 import { jamBukaTutupUntukTanggal } from "@/lib/jam";
+import { hitungEstimasi } from "@/lib/estimasi";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const tanggalParam = searchParams.get("tanggal");
+  const tanggalParam = searchParams.get("tanggal") || "";
+  const metodeParam = searchParams.get("metode") || "Ambil";
 
   const supabaseUser = await getSupabaseServer();
   const supabase = getSupabaseAdmin();
@@ -115,6 +117,17 @@ export async function GET(request) {
     }
   }
 
+  const hasilEstimasi = hitungEstimasi({
+    adaCustom,
+    adaKatalog,
+    metode: metodeParam,
+    tanggalDiminta: tanggalParam,
+    hariIni,
+    pengaturan: toko,
+    tanggalTutup: listTutup || [],
+    tanggalPenuh,
+  });
+
   return NextResponse.json({
     tanggal_minimal: tanggalMinimal,
     tanggal_tutup: listTutup || [],
@@ -132,5 +145,12 @@ export async function GET(request) {
     ada_custom: adaCustom,
     ada_katalog: adaKatalog,
     ada_siap: adaKatalog,
+    estimasi: {
+      tanggalAwal: hasilEstimasi.tanggalAwal,
+      tanggalAkhir: hasilEstimasi.tanggalAkhir,
+      tanggalPasti: hasilEstimasi.tanggalPasti,
+      valid: hasilEstimasi.valid,
+      pesan: hasilEstimasi.pesan || "",
+    },
   });
 }

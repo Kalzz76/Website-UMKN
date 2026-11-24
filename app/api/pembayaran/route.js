@@ -94,6 +94,19 @@ export async function POST(request) {
     );
   }
 
+  const { data: pengaturan } = await supabase
+    .from("pengaturan_toko")
+    .select("transfer_manual_aktif")
+    .eq("id", 1)
+    .single();
+
+  if (metode !== "Tunai di Tempat" && !pengaturan?.transfer_manual_aktif) {
+    return NextResponse.json(
+      { pesan: "Pembayaran transfer manual dengan bukti transfer saat ini dinonaktifkan. Silakan selesaikan pembayaran melalui Midtrans." },
+      { status: 400 }
+    );
+  }
+
   let bukti_path = null;
   if (metode !== "Tunai di Tempat") {
     if (!fileBukti || typeof fileBukti !== "object" || fileBukti.size === 0) {

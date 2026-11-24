@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
+import { cekStatusMidtrans } from "@/lib/midtrans";
+import { sinkronkanStatusMidtrans } from "@/lib/midtransSinkron";
 
 export async function GET(request) {
   const authHeader = request.headers.get("authorization");
@@ -36,21 +38,63 @@ export async function GET(request) {
   if (pesananKadaluarsa && pesananKadaluarsa.length > 0) {
     for (let i = 0; i < pesananKadaluarsa.length; i++) {
       const p = pesananKadaluarsa[i];
-      await supabase
+
+      const { data: bayarMenunggu } = await supabase
+        .from("pembayaran")
+        .select("*")
+        .eq("id_pesanan", p.id)
+        .eq("status", "Menunggu");
+
+      if (bayarMenunggu && bayarMenunggu.length > 0) {
+        for (const bayar of bayarMenunggu) {
+          const orderId = bayar.midtrans_order_id || (bayar.bukti?.startsWith("midtrans-") ? bayar.bukti.replace("midtrans-", "") : null);
+          if (orderId) {
+            try {
+              const statusRes = await cekStatusMidtrans(orderId);
+              if (statusRes && statusRes.transaction_status) {
+                await sinkronkanStatusMidtrans({
+                  orderId: statusRes.order_id || orderId,
+                  statusCode: statusRes.status_code,
+                  grossAmount: statusRes.gross_amount,
+                  transactionStatus: statusRes.transaction_status,
+                  paymentType: statusRes.payment_type,
+                  fraudStatus: statusRes.fraud_status,
+                });
+              }
+            } catch {}
+          }
+        }
+      }
+
+      const { data: pesananTerkini } = await supabase
         .from("pesanan")
-        .update({
-          status_pesanan: "Dibatalkan",
-          alasan_batal: "Batas waktu pembayaran telah habis (dibatalkan otomatis oleh sistem)",
-        })
-        .eq("id", p.id);
+        .select("status_pesanan, status_bayar, jumlah_terbayar")
+        .eq("id", p.id)
+        .single();
 
-      await supabase.from("riwayat_pesanan").insert({
-        id_pesanan: p.id,
-        keterangan: "Dibatalkan Otomatis oleh Sistem (Batas Bayar Habis)",
-        id_user: null,
-      });
+      if (
+        pesananTerkini &&
+        pesananTerkini.status_pesanan === "Menunggu Pembayaran" &&
+        pesananTerkini.status_bayar === "Belum Bayar" &&
+        Number(pesananTerkini.jumlah_terbayar || 0) === 0
+      ) {
+        await supabase
+          .from("pesanan")
+          .update({
+            status_pesanan: "Dibatalkan",
+            dibatalkan_oleh: "Sistem",
+            alasan_batal: "Batas waktu pembayaran telah habis (dibatalkan otomatis oleh sistem)",
+          })
+          .eq("id", p.id);
 
-      dibatalkanCount++;
+        await supabase.from("riwayat_pesanan").insert({
+          id_pesanan: p.id,
+          keterangan: "Dibatalkan Otomatis oleh Sistem (Batas Bayar Habis)",
+          id_user: null,
+        });
+
+        dibatalkanCount++;
+      }
     }
   }
 

@@ -38,7 +38,23 @@ export async function GET(request, { params }) {
     );
   }
 
-  const [itemsRes, pilRes, bayarRes, riwRes] = await Promise.all([
+  const { data: prof } = await supabase
+    .from("profil")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdminOrStaf = prof && (prof.role === "admin" || prof.role === "staf");
+  const isOwner = pesanan.id_pelanggan === user.id;
+
+  if (!isAdminOrStaf && !isOwner) {
+    return NextResponse.json(
+      { pesan: "Akses ditolak." },
+      { status: 403 }
+    );
+  }
+
+  const [itemsRes, pilRes, bayarRes, riwRes, tokoRes] = await Promise.all([
     supabase
       .from("pesanan_item")
       .select("*, produk(*)")
@@ -60,6 +76,11 @@ export async function GET(request, { params }) {
       .select("*, profil(nama)")
       .eq("id_pesanan", pesanan.id)
       .order("dibuat_pada", { ascending: false }),
+    supabase
+      .from("pengaturan_toko")
+      .select("batas_bayar_jam, nama_toko, no_wa, alamat")
+      .eq("id", 1)
+      .single(),
   ]);
 
   let fotoPrevUrl = null;
@@ -178,13 +199,40 @@ export async function GET(request, { params }) {
   for (let i = 0; i < bayarList.length; i++) {
     const item = bayarList[i];
     let url = null;
-    if (item.bukti) {
+    if (item.bukti && !item.bukti.startsWith("midtrans-")) {
       const { data: signed } = await supabase.storage
         .from("bukti-bayar")
         .createSignedUrl(item.bukti, 3600);
       if (signed) url = signed.signedUrl;
     }
     bayarWithUrl.push({ ...item, buktiUrl: url });
+  }
+
+  const sisa = Math.max(0, pesanan.total_bayar - (pesanan.jumlah_terbayar || 0));
+  let bayarSekarang = pesanan.total_bayar;
+  if (pesanan.status_bayar === "DP Dibayar") {
+    bayarSekarang = sisa;
+  } else if (pesanan.status_bayar === "Belum Bayar") {
+    bayarSekarang = pesanan.jumlah_dp || pesanan.total_bayar;
+  } else {
+    bayarSekarang = 0;
+  }
+
+  const batasJam = Number(tokoRes?.data?.batas_bayar_jam ?? 24);
+  const dibuatMs = new Date(pesanan.dibuat_pada).getTime();
+  const batasBayarIso = new Date(dibuatMs + batasJam * 3600000).toISOString();
+  const statusPembayaranTerakhir = bayarList.length > 0 ? bayarList[0].status : null;
+
+  let estimasi = null;
+  if (pesanan.metode_pengiriman === "Kirim" && pesanan.tanggal_ambil) {
+    const [y, m, d] = pesanan.tanggal_ambil.split("-").map(Number);
+    const dtAkhir = new Date(Date.UTC(y, m - 1, d + 1));
+    const tglAkhir = dtAkhir.toISOString().slice(0, 10);
+    estimasi = {
+      tanggalAwal: pesanan.tanggal_ambil,
+      tanggalAkhir: tglAkhir,
+      tanggalPasti: pesanan.tanggal_ambil,
+    };
   }
 
   return NextResponse.json({
@@ -194,6 +242,14 @@ export async function GET(request, { params }) {
     pilihan: pilRes.data || [],
     pembayaran: bayarWithUrl,
     riwayat: riwRes.data || [],
+    estimasi,
+    jarak: pesanan.jarak_km,
+    alamat: pesanan.alamat,
+    patokan: pesanan.patokan,
+    bayar_sekarang: bayarSekarang,
+    sisa,
+    batas_bayar: batasBayarIso,
+    status_pembayaran_terakhir: statusPembayaranTerakhir,
     urls: {
       fotoPreview: fotoPrevUrl,
       fotoReferensi: fotoRefUrl,

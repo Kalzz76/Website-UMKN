@@ -6,9 +6,8 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("produk")
-    .select("id, nama, deskripsi, harga, foto, aktif, urutan, id_kategori, komposisi, porsi, label_teks, unggulan, kategori_produk(nama)")
-    .order("urutan", { ascending: true })
-    .order("id", { ascending: false });
+    .select("id, nama, deskripsi, harga, foto, aktif, id_kategori, label_teks, unggulan, dibuat_pada, kategori_produk(nama)")
+    .order("dibuat_pada", { ascending: false });
 
   if (error) {
     return NextResponse.json({ pesan: "Gagal memuat produk: " + error.message }, { status: 500 });
@@ -35,13 +34,11 @@ export async function GET() {
       foto: p.foto,
       fotoUrl,
       aktif: p.aktif,
-      urutan: p.urutan,
       id_kategori: p.id_kategori || null,
       kategori: p.kategori_produk?.nama || "",
-      komposisi: p.komposisi || "",
-      porsi: p.porsi || "",
       label_teks: p.label_teks || "",
       unggulan: Boolean(p.unggulan),
+      dibuat_pada: p.dibuat_pada,
     };
   });
 
@@ -63,14 +60,11 @@ export async function POST(request) {
     const nama = formData.get("nama");
     const deskripsi = formData.get("deskripsi") || "";
     const harga = Number(formData.get("harga"));
-    const urutan = Number(formData.get("urutan") || 0);
     const aktif = formData.get("aktif") !== "false";
     const file = formData.get("foto");
 
     const idKategoriRaw = formData.get("id_kategori");
     const id_kategori = idKategoriRaw && !isNaN(Number(idKategoriRaw)) ? Number(idKategoriRaw) : null;
-    const komposisi = (formData.get("komposisi") || "").trim();
-    const porsi = (formData.get("porsi") || "").trim();
     const label_teks = (formData.get("label_teks") || "").trim();
     const unggulan = formData.get("unggulan") === "true" || formData.get("unggulan") === true;
 
@@ -79,6 +73,20 @@ export async function POST(request) {
     }
     if (isNaN(harga) || harga < 0) {
       return NextResponse.json({ pesan: "Harga harus berupa angka valid." }, { status: 400 });
+    }
+    if (label_teks.length > 24) {
+      return NextResponse.json({ pesan: "Label teks maksimal 24 karakter." }, { status: 400 });
+    }
+
+    if (unggulan) {
+      let q = supabase.from("produk").select("id", { count: "exact" }).eq("unggulan", true);
+      if (id) {
+        q = q.neq("id", id);
+      }
+      const { count: jmlUnggulan } = await q;
+      if ((jmlUnggulan || 0) >= 4) {
+        return NextResponse.json({ pesan: "Maksimal 4 produk unggulan untuk Beranda." }, { status: 400 });
+      }
     }
 
     let fotoPath = null;
@@ -111,11 +119,8 @@ export async function POST(request) {
         nama: nama.trim(),
         deskripsi: deskripsi.trim(),
         harga: Math.round(harga),
-        urutan: Math.round(urutan),
         aktif: Boolean(aktif),
         id_kategori,
-        komposisi,
-        porsi,
         label_teks,
         unggulan,
       };
@@ -132,12 +137,9 @@ export async function POST(request) {
         nama: nama.trim(),
         deskripsi: deskripsi.trim(),
         harga: Math.round(harga),
-        urutan: Math.round(urutan),
         aktif: Boolean(aktif),
         foto: fotoPath,
         id_kategori,
-        komposisi,
-        porsi,
         label_teks,
         unggulan,
       };

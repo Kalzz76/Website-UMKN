@@ -16,12 +16,29 @@ import { usePatisserieCart } from "@/lib/patisserieCart";
 export function DynamicIslandNavbar({ showEntered = true }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { totalQty } = usePatisserieCart();
   const [userSession, setUserSession] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [jumlahKeranjang, setJumlahKeranjang] = useState(0);
   const leaveTimeoutRef = useRef(null);
+
+  async function muatJumlahKeranjang() {
+    try {
+      const res = await fetch("/api/keranjang/jumlah", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setJumlahKeranjang(Number(data.jumlah || 0));
+      }
+    } catch {}
+  }
+
+  useEffect(() => {
+    muatJumlahKeranjang();
+    const handleUpdate = () => muatJumlahKeranjang();
+    window.addEventListener("cravely_cart_updated", handleUpdate);
+    return () => window.removeEventListener("cravely_cart_updated", handleUpdate);
+  }, [userSession]);
 
   useEffect(() => {
     let isMounted = true;
@@ -114,7 +131,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     if (pathname.startsWith("/toko")) return "Toko";
     if (pathname.startsWith("/menu")) return "Menu";
     if (pathname.startsWith("/pesan")) return "Cake Studio";
-    if (pathname.startsWith("/kasir")) return "Kasir";
+    if (pathname.startsWith("/keranjang")) return "Keranjang";
     if (
       pathname.startsWith("/profil") ||
       pathname.startsWith("/dashboard/profil") ||
@@ -135,7 +152,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
   ];
 
   const profileHref = !userSession
-    ? "/masuk"
+    ? `/masuk?ke=${encodeURIComponent(pathname)}`
     : userRole === "admin" || userRole === "staf"
     ? "/dashboard/profil"
     : "/profil";
@@ -219,10 +236,10 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 {activeTitle}
               </span>
 
-              {totalQty > 0 && (
+              {jumlahKeranjang > 0 && (
                 <span className="ml-0.5 px-2 py-0.5 rounded-full bg-[#9E3B42] text-white text-[10px] font-extrabold tabular-nums shadow-xs flex items-center gap-1">
                   <ShoppingBag className="w-2.5 h-2.5 shrink-0" />
-                  <span>{totalQty}</span>
+                  <span>{jumlahKeranjang}</span>
                 </span>
               )}
 
@@ -282,28 +299,28 @@ export function DynamicIslandNavbar({ showEntered = true }) {
 
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <Link
-                  href="/kasir"
+                  href="/keranjang"
                   onClick={() => setIsExpanded(false)}
                   className={`px-2.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 border border-[#D9B37C]/60 shadow-xs shrink-0 whitespace-nowrap ${
-                    pathname.startsWith("/kasir")
+                    pathname.startsWith("/keranjang")
                       ? "bg-[#9E3B42] text-white border-transparent"
                       : "bg-[#F5ECE2] hover:bg-[#EBDDD0] text-[#3D2B28]"
                   }`}
-                  title="Meja Kasir"
+                  title="Keranjang Belanja"
                 >
                   <ShoppingBag
                     className={`w-3.5 h-3.5 shrink-0 ${
-                      pathname.startsWith("/kasir") ? "text-white" : "text-[#B8925A]"
+                      pathname.startsWith("/keranjang") ? "text-white" : "text-[#B8925A]"
                     }`}
                   />
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold tabular-nums shadow-xs ${
-                      pathname.startsWith("/kasir")
+                      pathname.startsWith("/keranjang")
                         ? "bg-white text-[#9E3B42]"
                         : "bg-[#9E3B42] text-white"
                     }`}
                   >
-                    {totalQty}
+                    {jumlahKeranjang}
                   </span>
                 </Link>
 
@@ -373,7 +390,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                   </Link>
                 ) : (
                   <Link
-                    href="/masuk"
+                    href={`/masuk?ke=${encodeURIComponent(pathname)}`}
                     onClick={() => setIsExpanded(false)}
                     className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5ECE2] hover:bg-[#EBDDD0] border border-[#D9B37C]/60 text-[#3D2B28] flex items-center justify-center transition shrink-0"
                     title="Masuk / Akun"

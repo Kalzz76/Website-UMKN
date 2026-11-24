@@ -26,15 +26,24 @@ export default function KatalogOpsiPage() {
   const [sedangSimpanResep, setSedangSimpanResep] = useState(false);
 
   const [daftarProduk, setDaftarProduk] = useState([]);
+  const [daftarKategori, setDaftarKategori] = useState([]);
   const [sedangMemuatProduk, setSedangMemuatProduk] = useState(false);
   const [modalProdukBuka, setModalProdukBuka] = useState(false);
+  const [modalKategoriBuka, setModalKategoriBuka] = useState(false);
+  const [kategoriBaruNama, setKategoriBaruNama] = useState("");
+  const [editKategoriId, setEditKategoriId] = useState(null);
+  const [editKategoriNama, setEditKategoriNama] = useState("");
+  const [editKategoriAktif, setEditKategoriAktif] = useState(true);
+  const [sedangSimpanKategori, setSedangSimpanKategori] = useState(false);
   const [editProdukId, setEditProdukId] = useState(null);
   const [formProduk, setFormProduk] = useState({
     nama: "",
+    id_kategori: "",
     deskripsi: "",
-    harga: 0,
-    urutan: 0,
+    label_teks: "",
+    harga: "",
     aktif: true,
+    unggulan: false,
   });
   const [fileFotoProduk, setFileFotoProduk] = useState(null);
   const [previewFotoProduk, setPreviewFotoProduk] = useState(null);
@@ -101,9 +110,20 @@ export default function KatalogOpsiPage() {
     setSedangMemuatProduk(false);
   }
 
+  async function muatKategori() {
+    try {
+      const res = await fetch("/api/kategori-produk?semua=1");
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setDaftarKategori(json.data);
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     muatData();
     muatProduk();
+    muatKategori();
   }, []);
 
   function toggleGrupBuka(grupId) {
@@ -301,10 +321,12 @@ export default function KatalogOpsiPage() {
     setEditProdukId(null);
     setFormProduk({
       nama: "",
+      id_kategori: daftarKategori[0]?.id ? String(daftarKategori[0].id) : "",
       deskripsi: "",
-      harga: 100000,
-      urutan: daftarProduk.length + 1,
+      label_teks: "",
+      harga: "",
       aktif: true,
+      unggulan: false,
     });
     setFileFotoProduk(null);
     setPreviewFotoProduk(null);
@@ -315,10 +337,12 @@ export default function KatalogOpsiPage() {
     setEditProdukId(prod.id);
     setFormProduk({
       nama: prod.nama || "",
+      id_kategori: prod.id_kategori ? String(prod.id_kategori) : "",
       deskripsi: prod.deskripsi || "",
-      harga: prod.harga || 0,
-      urutan: prod.urutan ?? 0,
+      label_teks: prod.label_teks || "",
+      harga: prod.harga !== undefined && prod.harga !== null ? String(prod.harga) : "",
       aktif: prod.aktif !== false,
+      unggulan: Boolean(prod.unggulan),
     });
     setFileFotoProduk(null);
     setPreviewFotoProduk(prod.fotoUrl || null);
@@ -367,6 +391,16 @@ export default function KatalogOpsiPage() {
       return;
     }
 
+    if (formProduk.label_teks && formProduk.label_teks.length > 24) {
+      setNotifikasi({
+        terbuka: true,
+        judul: "Peringatan",
+        pesan: "Label teks maksimal 24 karakter.",
+        tipe: "error",
+      });
+      return;
+    }
+
     setSedangSimpanProduk(true);
     const fd = new FormData();
     if (editProdukId) {
@@ -375,8 +409,11 @@ export default function KatalogOpsiPage() {
     fd.append("nama", formProduk.nama);
     fd.append("deskripsi", formProduk.deskripsi);
     fd.append("harga", formProduk.harga);
-    fd.append("urutan", formProduk.urutan);
     fd.append("aktif", formProduk.aktif ? "true" : "false");
+    fd.append("id_kategori", formProduk.id_kategori || "");
+    fd.append("label_teks", formProduk.label_teks || "");
+    fd.append("unggulan", formProduk.unggulan ? "true" : "false");
+
     if (fileFotoProduk) {
       fd.append("foto", fileFotoProduk);
     }
@@ -467,6 +504,96 @@ export default function KatalogOpsiPage() {
     }
   }
 
+  async function handleTambahKategori(e) {
+    e.preventDefault();
+    if (!kategoriBaruNama.trim()) return;
+    setSedangSimpanKategori(true);
+    try {
+      const res = await fetch("/api/kategori-produk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aksi: "tambah",
+          nama: kategoriBaruNama.trim(),
+        }),
+      });
+      const json = await res.json();
+      setSedangSimpanKategori(false);
+      if (!res.ok) {
+        setNotifikasi({
+          terbuka: true,
+          judul: "Gagal",
+          pesan: json.pesan || "Gagal menambah kategori.",
+          tipe: "error",
+        });
+        return;
+      }
+      setKategoriBaruNama("");
+      muatKategori();
+    } catch {
+      setSedangSimpanKategori(false);
+    }
+  }
+
+  async function handleUbahKategori(id, nama, aktif) {
+    setSedangSimpanKategori(true);
+    try {
+      const res = await fetch("/api/kategori-produk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aksi: "ubah", id, nama, aktif }),
+      });
+      const json = await res.json();
+      setSedangSimpanKategori(false);
+      if (!res.ok) {
+        setNotifikasi({
+          terbuka: true,
+          judul: "Gagal",
+          pesan: json.pesan || "Gagal mengubah kategori.",
+          tipe: "error",
+        });
+        return;
+      }
+      setEditKategoriId(null);
+      muatKategori();
+      muatProduk();
+    } catch {
+      setSedangSimpanKategori(false);
+    }
+  }
+
+  async function handleHapusKategori(id) {
+    setSedangSimpanKategori(true);
+    try {
+      const res = await fetch("/api/kategori-produk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aksi: "hapus", id }),
+      });
+      const json = await res.json();
+      setSedangSimpanKategori(false);
+      if (!res.ok) {
+        setNotifikasi({
+          terbuka: true,
+          judul: "Peringatan",
+          pesan: json.pesan || "Gagal menghapus kategori.",
+          tipe: "error",
+        });
+        return;
+      }
+      muatKategori();
+      muatProduk();
+    } catch {
+      setSedangSimpanKategori(false);
+    }
+  }
+
+  const totalUnggulan = daftarProduk.filter((p) => p.unggulan).length;
+  const isCurrentUnggulan = editProdukId
+    ? Boolean(daftarProduk.find((p) => p.id === editProdukId)?.unggulan)
+    : false;
+  const batasUnggulanTercapai = totalUnggulan >= 4 && !isCurrentUnggulan;
+
   return (
     <div className="space-y-6">
       <div className="content-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -519,14 +646,24 @@ export default function KatalogOpsiPage() {
           )}
 
           {tabAktif === "katalog" && (
-            <button
-              type="button"
-              onClick={bukaModalTambahProduk}
-              className="h-[40px] px-4 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 shadow-xs"
-            >
-              <i className="fa-solid fa-plus text-xs" />
-              <span>Tambah Produk</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setModalKategoriBuka(true)}
+                className="h-[40px] px-3.5 sm:px-4 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 shadow-xs"
+              >
+                <i className="fa-solid fa-tags text-xs" />
+                <span>Kelola Kategori</span>
+              </button>
+              <button
+                type="button"
+                onClick={bukaModalTambahProduk}
+                className="h-[40px] px-4 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 shadow-xs"
+              >
+                <i className="fa-solid fa-plus text-xs" />
+                <span>Tambah Produk</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -735,7 +872,8 @@ export default function KatalogOpsiPage() {
                   <tr>
                     <th className="py-2.5 px-3 rounded-l-xl w-14">Foto</th>
                     <th className="py-2.5 px-3">Nama Produk</th>
-                    <th className="py-2.5 px-3">Deskripsi</th>
+                    <th className="py-2.5 px-3">Kategori</th>
+                    <th className="py-2.5 px-3">Label</th>
                     <th className="py-2.5 px-3">Harga</th>
                     <th className="py-2.5 px-3 text-center">Status</th>
                     <th className="py-2.5 px-3 text-right rounded-r-xl">Aksi</th>
@@ -763,25 +901,49 @@ export default function KatalogOpsiPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-stone-900">
-                        {p.nama}
+                      <td className="py-2.5 px-3">
+                        <div className="font-bold text-stone-900">{p.nama}</div>
+                        {p.deskripsi && (
+                          <div className="text-[11px] text-stone-500 max-w-xs truncate">
+                            {p.deskripsi}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-2.5 px-3 text-stone-500 max-w-xs truncate">
-                        {p.deskripsi || "-"}
+                      <td className="py-2.5 px-3">
+                        <span className="px-2 py-0.5 rounded-md bg-[#ede2cd] text-[#1d3b2e] font-semibold text-[11px]">
+                          {p.kategori || "-"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-stone-600 text-[11px]">
+                        {p.label_teks ? (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold text-[10px]">
+                            {p.label_teks}
+                          </span>
+                        ) : (
+                          <span className="text-stone-400">-</span>
+                        )}
                       </td>
                       <td className="py-2.5 px-3 font-bold text-stone-900 lining-nums tabular-nums">
                         {formatRupiah(p.harga)}
                       </td>
                       <td className="py-2.5 px-3 text-center">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            p.aktif !== false
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-stone-100 text-stone-500"
-                          }`}
-                        >
-                          {p.aktif !== false ? "Aktif" : "Nonaktif"}
-                        </span>
+                        <div className="inline-flex items-center gap-1.5 flex-wrap justify-center">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              p.aktif !== false
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-stone-100 text-stone-500"
+                            }`}
+                          >
+                            {p.aktif !== false ? "Aktif" : "Nonaktif"}
+                          </span>
+                          {p.unggulan ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300 inline-flex items-center gap-1">
+                              <i className="fa-solid fa-star text-[9px] text-amber-500" />
+                              <span>Unggulan</span>
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         <div className="inline-flex items-center space-x-1">
@@ -838,18 +1000,76 @@ export default function KatalogOpsiPage() {
             </div>
 
             <form onSubmit={handleSimpanProduk} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                  Nama Produk <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formProduk.nama}
-                  onChange={(e) => setFormProduk({ ...formProduk, nama: e.target.value })}
-                  placeholder="Contoh: Strawberry Shortcake"
-                  className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                    Nama Produk <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formProduk.nama}
+                    onChange={(e) => setFormProduk({ ...formProduk, nama: e.target.value })}
+                    placeholder="Contoh: Strawberry Shortcake"
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                    Kategori Produk
+                  </label>
+                  <select
+                    value={formProduk.id_kategori}
+                    onChange={(e) => setFormProduk({ ...formProduk, id_kategori: e.target.value })}
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition"
+                  >
+                    <option value="">Pilih Kategori...</option>
+                    {daftarKategori
+                      .filter((k) => k.aktif || k.id === Number(formProduk.id_kategori))
+                      .map((k) => (
+                        <option key={k.id} value={k.id}>
+                          {k.nama} {!k.aktif ? "(Nonaktif)" : ""}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                    Harga (Rp) <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="Contoh: 150000"
+                    value={formProduk.harga}
+                    onChange={(e) => setFormProduk({ ...formProduk, harga: e.target.value })}
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition lining-nums"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-stone-700">
+                      Label Teks
+                    </label>
+                    <span className="text-[10px] text-stone-400">
+                      {formProduk.label_teks.length}/24
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={24}
+                    value={formProduk.label_teks}
+                    onChange={(e) => setFormProduk({ ...formProduk, label_teks: e.target.value })}
+                    placeholder="Contoh: Terlaris / Signature"
+                    className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition"
+                  />
+                </div>
               </div>
 
               <div>
@@ -863,20 +1083,9 @@ export default function KatalogOpsiPage() {
                   placeholder="Deskripsi singkat kue, rasa, dan keunggulan..."
                   className="w-full p-3 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition resize-none"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                  Harga (Rp) <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  value={formProduk.harga}
-                  onChange={(e) => setFormProduk({ ...formProduk, harga: Number(e.target.value) })}
-                  className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition lining-nums"
-                />
+                <p className="text-[11px] text-stone-400 mt-1">
+                  Tulis juga info penting seperti alergen (kacang, susu, gluten) kalau ada.
+                </p>
               </div>
 
               <div>
@@ -923,18 +1132,49 @@ export default function KatalogOpsiPage() {
                 </div>
               </div>
 
-              <label htmlFor="produk-aktif" className="flex items-center gap-2.5 pt-1 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  id="produk-aktif"
-                  checked={formProduk.aktif}
-                  onChange={(e) => setFormProduk({ ...formProduk, aktif: e.target.checked })}
-                  className="w-4 h-4 rounded text-[#17382d] accent-[#17382d] cursor-pointer"
-                />
-                <span className="text-xs font-medium text-stone-700">
-                  Produk Aktif <span className="text-stone-400 font-normal">(Tampil di menu dan katalog toko)</span>
-                </span>
-              </label>
+              <div className="p-3 bg-[#ede2cd]/50 rounded-2xl border border-[#dfd4bd] space-y-2">
+                <label
+                  htmlFor="produk-unggulan"
+                  className={`flex items-start gap-2.5 cursor-pointer select-none ${
+                    batasUnggulanTercapai ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    id="produk-unggulan"
+                    disabled={batasUnggulanTercapai}
+                    checked={formProduk.unggulan}
+                    onChange={(e) => setFormProduk({ ...formProduk, unggulan: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#17382d] accent-[#17382d] mt-0.5 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-stone-800">
+                      Tampil di Beranda (maks 4)
+                    </span>
+                    <span className="ml-2 text-[11px] font-semibold text-stone-500">
+                      ({totalUnggulan} dari 4 unggulan)
+                    </span>
+                    {batasUnggulanTercapai && (
+                      <p className="text-[10px] text-amber-800 font-semibold mt-0.5">
+                        Batas maksimal 4 unggulan sudah tercapai. Hapus status unggulan pada produk lain terlebih dahulu.
+                      </p>
+                    )}
+                  </div>
+                </label>
+
+                <label htmlFor="produk-aktif" className="flex items-center gap-2.5 pt-1.5 border-t border-[#dfd4bd]/60 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    id="produk-aktif"
+                    checked={formProduk.aktif}
+                    onChange={(e) => setFormProduk({ ...formProduk, aktif: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#17382d] accent-[#17382d] cursor-pointer"
+                  />
+                  <span className="text-xs font-medium text-stone-700">
+                    Produk Aktif <span className="text-stone-400 font-normal">(Tampil di menu dan etalase toko)</span>
+                  </span>
+                </label>
+              </div>
 
               <div className="pt-3.5 border-t border-[#dfd4bd] flex justify-end items-center gap-2.5">
                 <button
@@ -963,6 +1203,174 @@ export default function KatalogOpsiPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalKategoriBuka && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+            onClick={() => setModalKategoriBuka(false)}
+          />
+          <div className="relative bg-[#FFFDF9] rounded-3xl max-w-lg w-full p-6 sm:p-7 border border-[#dfd4bd] shadow-2xl space-y-4 my-auto z-10">
+            <div className="flex items-center justify-between pb-3.5 border-b border-[#dfd4bd]">
+              <div>
+                <h3 className="text-base font-bold text-[#1d3b2e]">
+                  Kelola Kategori Produk
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Atur kategori kue katalog untuk filter dan pengelompokan menu.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalKategoriBuka(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-[#ede2cd] text-stone-500 hover:text-stone-800 flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleTambahKategori}
+              className="flex items-end gap-2 p-3 bg-[#ede2cd]/40 border border-[#dfd4bd] rounded-2xl"
+            >
+              <div className="flex-1">
+                <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                  Kategori Baru
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={kategoriBaruNama}
+                  onChange={(e) => setKategoriBaruNama(e.target.value)}
+                  placeholder="Nama kategori..."
+                  className="w-full h-9 px-3 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 outline-none focus:border-[#17382d]"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={sedangSimpanKategori}
+                className="h-9 px-3.5 rounded-xl bg-[#17382d] hover:bg-[#122e25] text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 shrink-0"
+              >
+                <i className="fa-solid fa-plus text-[10px]" />
+                <span>Tambah</span>
+              </button>
+            </form>
+
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+              {daftarKategori.length === 0 ? (
+                <div className="p-6 text-center text-stone-400 text-xs">
+                  Belum ada kategori produk.
+                </div>
+              ) : (
+                daftarKategori.map((kat) => (
+                  <div
+                    key={kat.id}
+                    className="p-3 bg-white border border-[#dfd4bd] rounded-2xl flex items-center justify-between gap-3"
+                  >
+                    {editKategoriId === kat.id ? (
+                      <div className="flex-1 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editKategoriNama}
+                          onChange={(e) => setEditKategoriNama(e.target.value)}
+                          className="flex-1 h-8 px-2.5 rounded-lg border border-[#17382d] text-xs font-bold outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUbahKategori(
+                              kat.id,
+                              editKategoriNama,
+                              editKategoriAktif
+                            )
+                          }
+                          className="h-8 px-2.5 rounded-lg bg-[#17382d] text-white text-xs font-bold"
+                        >
+                          Simpan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditKategoriId(null)}
+                          className="h-8 px-2.5 rounded-lg border border-stone-300 text-xs text-stone-600"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-bold text-xs text-stone-800 truncate">
+                            {kat.nama}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                              kat.aktif
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-stone-100 text-stone-500"
+                            }`}
+                          >
+                            {kat.aktif ? "Aktif" : "Nonaktif"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleUbahKategori(
+                                kat.id,
+                                kat.nama,
+                                !kat.aktif
+                              )
+                            }
+                            className={`h-7 px-2 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
+                              kat.aktif
+                                ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                                : "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                            }`}
+                          >
+                            {kat.aktif ? "Nonaktifkan" : "Aktifkan"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditKategoriId(kat.id);
+                              setEditKategoriNama(kat.nama);
+                              setEditKategoriAktif(kat.aktif !== false);
+                            }}
+                            className="w-7 h-7 rounded-lg border border-[#dfd4bd] bg-stone-50 hover:bg-stone-100 text-stone-700 flex items-center justify-center transition cursor-pointer"
+                            title="Ubah Kategori"
+                          >
+                            <i className="fa-solid fa-pen text-[10px]" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleHapusKategori(kat.id)}
+                            className="w-7 h-7 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center transition cursor-pointer"
+                            title="Hapus Kategori"
+                          >
+                            <i className="fa-solid fa-trash-can text-[10px]" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-[#dfd4bd] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setModalKategoriBuka(false)}
+                className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition cursor-pointer"
+              >
+                Selesai
+              </button>
+            </div>
           </div>
         </div>
       )}

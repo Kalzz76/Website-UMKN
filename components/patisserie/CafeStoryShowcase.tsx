@@ -2,12 +2,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import type { ViewType } from './patisserieData';
-import { CravelyEditorialSections } from './CravelyEditorialSections';
+import { CravelyEditorialSections, type PopularCakeItem } from './CravelyEditorialSections';
 
 interface CafeStoryShowcaseProps {
   onNavigate: (view: ViewType) => void;
   onGoToMenuWithCake?: (menuId: number) => void;
   onNotify?: (msg: string) => void;
+  popularCakes?: PopularCakeItem[];
 }
 
 function clamp01(val: number): number {
@@ -59,6 +60,7 @@ export const CafeStoryShowcase: React.FC<CafeStoryShowcaseProps> = ({
   onNavigate,
   onGoToMenuWithCake,
   onNotify,
+  popularCakes,
 }) => {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef(0);
@@ -996,6 +998,7 @@ export const CafeStoryShowcase: React.FC<CafeStoryShowcaseProps> = ({
         onNavigate={onNavigate}
         onGoToMenuWithCake={onGoToMenuWithCake}
         onNotify={onNotify}
+        popularCakes={popularCakes}
       />
     </div>
   );

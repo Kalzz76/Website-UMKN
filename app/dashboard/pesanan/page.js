@@ -945,17 +945,41 @@ export default function PesananDashboardPage() {
               </span>
             </div>
             <div>
-              <span className="text-stone-400 block text-[9px]">Zona / Lokasi</span>
+              <span className="text-stone-400 block text-[9px]">
+                {detailPesanan.metode_pengiriman === "Kirim" ? "Jarak Pengiriman" : "Lokasi Toko"}
+              </span>
               <span className="font-bold text-stone-900">
-                {detailPesanan.zona_ongkir?.nama || "Toko Cravely"}
+                {detailPesanan.metode_pengiriman === "Kirim"
+                  ? (detailPesanan.jarak_km ? `${detailPesanan.jarak_km} km` : (detailPesanan.zona_ongkir?.nama || "Kurir"))
+                  : "Toko Cravely"}
               </span>
             </div>
             {detailPesanan.metode_pengiriman === "Kirim" && detailPesanan.alamat && (
-              <div className="col-span-2 pt-1 border-t border-dashed border-stone-200">
-                <span className="text-stone-400 block text-[9px]">Alamat</span>
-                <p className="font-medium text-stone-800 bg-[#fbf6e9] border border-[#e0d5b8] p-1.5 rounded-lg mt-0.5">
-                  {detailPesanan.alamat}
-                </p>
+              <div className="col-span-2 pt-1 border-t border-dashed border-stone-200 space-y-1.5">
+                <div>
+                  <span className="text-stone-400 block text-[9px]">Alamat & Patokan</span>
+                  <p className="font-medium text-stone-800 bg-[#fbf6e9] border border-[#e0d5b8] p-1.5 rounded-lg mt-0.5">
+                    {detailPesanan.alamat}
+                    {detailPesanan.patokan && (
+                      <span className="block text-[10px] text-stone-500 mt-0.5">
+                        Patokan: {detailPesanan.patokan}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    detailPesanan.lat_tujuan && detailPesanan.lng_tujuan
+                      ? `${detailPesanan.lat_tujuan},${detailPesanan.lng_tujuan}`
+                      : detailPesanan.alamat
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-bold transition"
+                >
+                  <i className="fa-solid fa-map-location-dot" />
+                  <span>Lihat Lokasi di Google Maps</span>
+                </a>
               </div>
             )}
           </div>
@@ -1237,19 +1261,23 @@ export default function PesananDashboardPage() {
                       </div>
                       <span
                         className={`inline-block text-[8px] font-bold px-1.5 py-0.2 rounded ${
-                          bayar.status === "Dikonfirmasi"
+                          bayar.midtrans_order_id || bayar.bukti?.startsWith("midtrans-")
+                            ? "bg-emerald-100 text-emerald-800"
+                            : bayar.status === "Dikonfirmasi"
                             ? "bg-emerald-100 text-emerald-800"
                             : bayar.status === "Ditolak"
                             ? "bg-rose-100 text-rose-800"
                             : "bg-amber-100 text-amber-800"
                         }`}
                       >
-                        {bayar.status}
+                        {bayar.midtrans_order_id || bayar.bukti?.startsWith("midtrans-")
+                          ? "Dikonfirmasi otomatis (Midtrans)"
+                          : bayar.status}
                       </span>
                     </div>
 
                     <div className="flex items-center space-x-1 flex-shrink-0">
-                      {bayar.buktiUrl && (
+                      {bayar.buktiUrl && !bayar.bukti?.startsWith("midtrans-") && (
                         <a
                           href={bayar.buktiUrl}
                           target="_blank"
@@ -1260,7 +1288,7 @@ export default function PesananDashboardPage() {
                           <span>Foto</span>
                         </a>
                       )}
-                      {bayar.status === "Menunggu Konfirmasi" && (
+                      {!(bayar.midtrans_order_id || bayar.bukti?.startsWith("midtrans-")) && bayar.status === "Menunggu Konfirmasi" && (
                         <>
                           <button
                             type="button"
@@ -1519,7 +1547,9 @@ export default function PesananDashboardPage() {
                           </span>
                         </td>
                         <td className="py-3 px-3 text-stone-600 text-[11px] whitespace-nowrap">
-                          {formatTanggalSingkat(p.tanggal_ambil)} {p.jam_ambil?.slice(0, 5)}
+                          {p.metode_pengiriman === "Kirim"
+                            ? formatTanggalSingkat(p.tanggal_ambil)
+                            : `${formatTanggalSingkat(p.tanggal_ambil)} ${p.jam_ambil?.slice(0, 5) || ""}`}
                         </td>
                         <td className="py-3 px-3 whitespace-nowrap">
                           <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-stone-100 text-stone-700 whitespace-nowrap">
@@ -1534,6 +1564,11 @@ export default function PesananDashboardPage() {
                           >
                             {p.status_pesanan}
                           </span>
+                          {p.perlu_refund && (
+                            <span className="inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 ml-1 whitespace-nowrap">
+                              Perlu Refund
+                            </span>
+                          )}
                         </td>
                         {isAdmin && (
                           <td className="py-3 px-3 whitespace-nowrap">

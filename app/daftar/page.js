@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ModalPesan from "@/components/ModalPesan";
 
-export default function DaftarPage() {
+function FormDaftar() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tujuan = searchParams.get("ke");
 
   const [nama, setNama] = useState("");
   const [noWa, setNoWa] = useState("");
@@ -74,7 +76,11 @@ export default function DaftarPage() {
 
   function handleTutupModal() {
     setModalSukses(false);
-    router.push("/masuk");
+    if (tujuan) {
+      router.push(`/masuk?ke=${encodeURIComponent(tujuan)}`);
+    } else {
+      router.push("/masuk");
+    }
   }
 
   return (
@@ -191,7 +197,10 @@ export default function DaftarPage() {
 
         <div className="mt-6 text-center text-sm text-stone-600">
           Sudah punya akun?{" "}
-          <Link href="/masuk" className="text-rose-600 font-semibold hover:underline">
+          <Link
+            href={tujuan ? `/masuk?ke=${encodeURIComponent(tujuan)}` : "/masuk"}
+            className="text-rose-600 font-semibold hover:underline"
+          >
             Masuk di sini
           </Link>
         </div>
@@ -205,5 +214,13 @@ export default function DaftarPage() {
         onTutup={handleTutupModal}
       />
     </main>
+  );
+}
+
+export default function DaftarPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center p-4 text-stone-500 text-sm">Memuat...</div>}>
+      <FormDaftar />
+    </Suspense>
   );
 }

@@ -15,10 +15,19 @@ import {
 } from 'lucide-react';
 import { formatRupiah, type ViewType } from './patisserieData';
 
+export interface PopularCakeItem {
+  id: number;
+  nama: string;
+  desc: string;
+  harga: number;
+  photo?: string | null;
+}
+
 interface CravelyEditorialSectionsProps {
   onNavigate: (view: ViewType) => void;
   onGoToMenuWithCake?: (menuId: number) => void;
   onNotify?: (msg: string) => void;
+  popularCakes?: PopularCakeItem[];
 }
 
 const PHOTOS = {
@@ -59,36 +68,6 @@ const STATS_DATA = [
   { target: 2018, suffix: '', label: 'Berdiri di Bandung' },
 ];
 
-const POPULAR_CAKES = [
-  {
-    menuId: 401,
-    nama: 'Coquette Birthday',
-    desc: 'Piping pita Lambeth lembut dengan krim vanila, stroberi Lembang & mutiara gula.',
-    harga: 245000,
-    photo: PHOTOS.ultahCoquette,
-  },
-  {
-    menuId: 402,
-    nama: 'Strawberry Chiffon',
-    desc: 'Chiffon sehalus awan berbalut krim chantilly segar dan potongan buah stroberi.',
-    harga: 165000,
-    photo: PHOTOS.chiffonStrawberry,
-  },
-  {
-    menuId: 403,
-    nama: 'Pandan Kaya Chiffon',
-    desc: 'Perasan daun suji asli dengan glaze srikaya kelapa gurih dan tekstur ultra lembut.',
-    harga: 138000,
-    photo: PHOTOS.chiffonPandan,
-  },
-  {
-    menuId: 404,
-    nama: 'Earl Grey Milk Tea',
-    desc: 'Seduhan daun teh Earl Grey bergamot berpadu milk tea cream & kelopak mawar.',
-    harga: 158000,
-    photo: PHOTOS.chiffonEarlGrey,
-  },
-];
 
 const PROCESS_STEPS = [
   {
@@ -239,6 +218,7 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
   onNavigate,
   onGoToMenuWithCake,
   onNotify,
+  popularCakes = [],
 }) => {
   // 1. Hero Cursor Photo Trail state (inspired by Arkopi video 0:02-0:04)
   const heroRef = useRef<HTMLElement | null>(null);
@@ -545,67 +525,89 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
       </section>
 
       {/* ==================== 4. MENU POPULER (4-CARD EDITORIAL SHOWCASE) ==================== */}
-      <section
-        aria-label="Menu Populer Cravely"
-        className="py-16 sm:py-22 px-4 sm:px-8 bg-[#F4E6DA] border-t border-dusty/45"
-      >
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-xl mx-auto mb-10">
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-ink">Menu Populer</h2>
-            <p className="text-xs sm:text-sm text-ink/72 mt-2">
-              Kue ulang tahun dan chiffon pilihan favorit pelanggan Bandung yang selalu hadir hangat
-              di etalase kaca kami.
-            </p>
-          </div>
+      {popularCakes && popularCakes.length > 0 && (
+        <section
+          aria-label="Menu Populer Cravely"
+          className="py-16 sm:py-22 px-4 sm:px-8 bg-[#F4E6DA] border-t border-dusty/45"
+        >
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center max-w-xl mx-auto mb-10">
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-ink">Menu Populer</h2>
+              <p className="text-xs sm:text-sm text-ink/72 mt-2">
+                Kue ulang tahun dan chiffon pilihan favorit pelanggan Bandung yang selalu hadir hangat
+                di etalase kaca kami.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {POPULAR_CAKES.map((cake) => (
-              <motion.button
-                key={cake.menuId}
-                type="button"
-                whileHover={{ y: -6 }}
-                transition={{ duration: 0.28 }}
-                onClick={() =>
-                  onGoToMenuWithCake ? onGoToMenuWithCake(cake.menuId) : onNavigate('katalog')
-                }
-                className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-kayuGelap text-left shadow-lg border border-kuningan/45"
-              >
-                <img
-                  src={cake.photo}
-                  alt={cake.nama}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#281612]/92 via-[#281612]/30 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5 text-ivory flex flex-col gap-1.5">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h3 className="font-serif text-lg font-bold leading-snug text-[#FFFDF9]">
-                      {cake.nama}
-                    </h3>
-                    <span className="text-xs font-extrabold text-blush tabular-nums shrink-0">
-                      {formatRupiah(cake.harga)}
-                    </span>
-                  </div>
-                  <p className="text-[11.5px] text-ivory/80 leading-relaxed line-clamp-2">
-                    {cake.desc}
-                  </p>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-
-          <div className="mt-9 text-center">
-            <button
-              type="button"
-              onClick={() => onNavigate('katalog')}
-              className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full bg-transparent hover:bg-cherry text-ink hover:text-white border border-kayu/50 hover:border-cherry text-xs font-bold tracking-wide transition-colors"
+            <div
+              className={`grid ${
+                popularCakes.length === 1
+                  ? "grid-cols-1 max-w-sm mx-auto"
+                  : popularCakes.length === 2
+                  ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto"
+                  : popularCakes.length === 3
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto"
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+              } gap-5`}
             >
-              <span>Lihat Menu Lengkap</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+              {popularCakes.map((cake) => (
+                <motion.button
+                  key={cake.id}
+                  type="button"
+                  whileHover={{ y: -6 }}
+                  transition={{ duration: 0.28 }}
+                  onClick={() =>
+                    onGoToMenuWithCake ? onGoToMenuWithCake(cake.id) : onNavigate('katalog')
+                  }
+                  className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-kayuGelap text-left shadow-lg border border-kuningan/45 cursor-pointer"
+                >
+                  {cake.photo ? (
+                    <img
+                      src={cake.photo}
+                      alt={cake.nama}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#281612] text-[#8C6D62]">
+                      <span className="font-serif text-sm">Cravely</span>
+                    </div>
+                  )}
+                  {/* Gradasi gelap tipis di bagian bawah kartu agar teks terbaca jelas */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#140806]/95 via-[#140806]/60 via-40% to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-5 text-ivory flex flex-col gap-1.5 z-10">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h3 className="font-serif text-lg font-bold leading-snug text-[#FFFDF9]">
+                        {cake.nama}
+                      </h3>
+                      <span
+                        className="text-xs font-extrabold text-blush tabular-nums shrink-0"
+                        style={{ fontVariantNumeric: "lining-nums" }}
+                      >
+                        {formatRupiah(cake.harga)}
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-ivory/80 leading-relaxed line-clamp-2">
+                      {cake.desc}
+                    </p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="mt-9 text-center">
+              <button
+                type="button"
+                onClick={() => onNavigate('katalog')}
+                className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full bg-transparent hover:bg-cherry text-ink hover:text-white border border-kayu/50 hover:border-cherry text-xs font-bold tracking-wide transition-colors cursor-pointer"
+              >
+                <span>Lihat Menu Lengkap</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ==================== 5. PROSES KAMI (DARK WALNUT 4-STEP CONNECTED JOURNEY) ==================== */}
       <section

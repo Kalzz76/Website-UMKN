@@ -26,7 +26,9 @@ export default function DashboardPelangganView({
   const { totalQty: totalKeranjangQty, totalPrice: totalKeranjangHarga } =
     usePatisserieCart();
 
-  const [tabAktif, setTabAktif] = useState("beranda");
+  const daftarTabValid = ["beranda", "pesanan", "riwayat", "profil", "bantuan"];
+  const tabAwal = tabQuery && daftarTabValid.includes(tabQuery) ? tabQuery : "beranda";
+  const [tabAktif, setTabAktif] = useState(tabAwal);
   const [sidebarTerbuka, setSidebarTerbuka] = useState(false);
   const [profil, setProfil] = useState(profilAwal || {});
 
@@ -36,6 +38,34 @@ export default function DashboardPelangganView({
 
   const [filterRiwayat, setFilterRiwayat] = useState("Semua");
   const [pesananInvoice, setPesananInvoice] = useState(null);
+  const [pesananBatalTarget, setPesananBatalTarget] = useState(null);
+  const [alasanBatalInput, setAlasanBatalInput] = useState("");
+  const [sedangBatal, setSedangBatal] = useState(false);
+  const [pesanBatalError, setPesanBatalError] = useState("");
+
+  async function handleKonfirmasiBatal() {
+    if (!pesananBatalTarget) return;
+    setSedangBatal(true);
+    setPesanBatalError("");
+    try {
+      const res = await fetch(`/api/pesanan/${pesananBatalTarget.kode_pesanan}/batal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alasan: alasanBatalInput.trim() }),
+      });
+      const data = await res.json();
+      setSedangBatal(false);
+      if (!res.ok) {
+        setPesanBatalError(data.pesan || "Gagal membatalkan pesanan.");
+        return;
+      }
+      setPesananBatalTarget(null);
+      window.location.reload();
+    } catch {
+      setSedangBatal(false);
+      setPesanBatalError("Terjadi kesalahan jaringan.");
+    }
+  }
 
   const [subTabProfil, setSubTabProfil] = useState("datadiri");
   const [formProfil, setFormProfil] = useState({
@@ -681,12 +711,12 @@ export default function DashboardPelangganView({
             </Link>
           </div>
           <Link
-            href="/kasir"
+            href="/keranjang"
             className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold text-[#3a5246] hover:bg-white transition"
           >
             <span className="flex items-center gap-3">
               <i className="fa-solid fa-bag-shopping w-4 text-center text-[#5f7a6c]"></i>
-              <span>Keranjang Kasir</span>
+              <span>Keranjang</span>
             </span>
             {totalKeranjangQty > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#9E3B42] text-white">
@@ -749,12 +779,12 @@ export default function DashboardPelangganView({
 
             <div className="flex items-center gap-2.5">
               <Link
-                href="/kasir"
+                href="/keranjang"
                 className="px-3.5 py-2.5 rounded-2xl bg-white border border-[#dce6de] hover:bg-[#f6f9f6] text-[#17382d] text-xs font-bold inline-flex items-center gap-2 shadow-xs transition"
-                title="Buka Meja Kasir / Keranjang"
+                title="Buka Keranjang Belanja"
               >
                 <i className="fa-solid fa-bag-shopping"></i>
-                <span className="hidden md:inline">Kasir</span>
+                <span className="hidden md:inline">Keranjang</span>
                 {totalKeranjangQty > 0 && (
                   <span className="px-1.5 py-0.5 rounded-full bg-[#9E3B42] text-white text-[10px] font-extrabold leading-none">
                     {totalKeranjangQty}
@@ -886,10 +916,10 @@ export default function DashboardPelangganView({
                         Lihat Menu
                       </Link>
                       <Link
-                        href="/kasir"
+                        href="/keranjang"
                         className="px-4 py-2 rounded-xl bg-[#9E3B42] hover:bg-[#822E34] text-white text-xs font-bold transition inline-flex items-center gap-1.5"
                       >
-                        <span>Buka Kasir</span>
+                        <span>Buka Keranjang</span>
                         <i className="fa-solid fa-arrow-right text-[10px]"></i>
                       </Link>
                     </div>
@@ -1098,7 +1128,30 @@ export default function DashboardPelangganView({
                                   {p.status_pesanan}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                              <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap" suppressHydrationWarning>
+                                {p.status_pesanan === "Menunggu Pembayaran" ? (
+                                  <>
+                                    <Link
+                                      href={`/pesanan-saya/${p.kode_pesanan}`}
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-[11px] shadow-xs"
+                                    >
+                                      <i className="fa-solid fa-credit-card text-[10px]"></i>
+                                      <span>Bayar</span>
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPesananBatalTarget(p);
+                                        setPesanBatalError("");
+                                        setAlasanBatalInput("");
+                                      }}
+                                      className="px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] cursor-pointer"
+                                      title="Batalkan Pesanan"
+                                    >
+                                      <i className="fa-solid fa-ban"></i>
+                                    </button>
+                                  </>
+                                ) : null}
                                 <button
                                   type="button"
                                   onClick={() => setPesananInvoice(p)}
@@ -1257,9 +1310,37 @@ export default function DashboardPelangganView({
                                     Belum Lunas: {formatRupiah(sisa)}
                                   </span>
                                 )}
+                                {p.status_pesanan === "Menunggu Pembayaran" ? (
+                                  <span className="block text-[10px] font-bold text-rose-600 mt-0.5" suppressHydrationWarning>
+                                    Batas: {formatTanggalWaktu(new Date(new Date(p.dibuat_pada).getTime() + (pengaturanToko?.batas_bayar_jam || 24) * 3600000))}
+                                  </span>
+                                ) : null}
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
+                                {p.status_pesanan === "Menunggu Pembayaran" ? (
+                                  <>
+                                    <Link
+                                      href={`/pesanan-saya/${p.kode_pesanan}`}
+                                      className="px-4 py-2 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-xs"
+                                    >
+                                      <i className="fa-solid fa-credit-card"></i>
+                                      <span>Bayar</span>
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPesananBatalTarget(p);
+                                        setPesanBatalError("");
+                                        setAlasanBatalInput("");
+                                      }}
+                                      className="px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5"
+                                    >
+                                      <i className="fa-solid fa-ban"></i>
+                                      <span>Batal</span>
+                                    </button>
+                                  </>
+                                ) : null}
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -2267,6 +2348,71 @@ export default function DashboardPelangganView({
               >
                 Buka Tiket QR
               </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pesananBatalTarget && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-stone-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[#eef3ee]">
+              <h3 className="text-sm font-bold text-[#17382d]">Konfirmasi Batalkan Pesanan</h3>
+              <button
+                type="button"
+                onClick={() => setPesananBatalTarget(null)}
+                className="text-stone-400 hover:text-stone-600 text-sm cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Apakah Anda yakin ingin membatalkan pesanan <strong>{pesananBatalTarget.kode_pesanan}</strong>? Tindakan ini tidak dapat dibatalkan dan kuota tanggal akan dilepas kembali.
+            </p>
+            {pesanBatalError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {pesanBatalError}
+              </div>
+            )}
+            <div>
+              <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                Alasan pembatalan (opsional):
+              </label>
+              <textarea
+                rows={2}
+                value={alasanBatalInput}
+                onChange={(e) => setAlasanBatalInput(e.target.value)}
+                placeholder="Contoh: Ingin mengubah jadwal atau menu"
+                className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl outline-none focus:border-[#17382d]"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#eef3ee]">
+              <button
+                type="button"
+                disabled={sedangBatal}
+                onClick={() => setPesananBatalTarget(null)}
+                className="px-4 py-2 rounded-xl border border-stone-200 text-xs font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer disabled:opacity-50"
+              >
+                Kembali
+              </button>
+              <button
+                type="button"
+                disabled={sedangBatal}
+                onClick={handleKonfirmasiBatal}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {sedangBatal ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                    <span>Membatalkan...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-ban text-xs"></i>
+                    <span>Ya, Batalkan</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -2,16 +2,29 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah, formatTanggalIndonesia } from "@/lib/format";
+import { cariTarifJarak } from "@/lib/ongkir";
 import ModalPesan from "@/components/ModalPesan";
+
+const PetaLokasi = dynamic(() => import("@/components/PetaLokasi"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[280px] rounded-2xl bg-[#ede2cd] flex items-center justify-center text-xs font-bold text-stone-500">
+      Memuat peta...
+    </div>
+  ),
+});
 
 export default function PengaturanPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [tabAktif, setTabAktif] = useState("toko");
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [sedangSimpanToko, setSedangSimpanToko] = useState(false);
+  const [sedangSimpanOngkir, setSedangSimpanOngkir] = useState(false);
+  const [sedangProsesTarifJarak, setSedangProsesTarifJarak] = useState(false);
   const [sedangProsesZona, setSedangProsesZona] = useState(false);
   const [sedangProsesTanggal, setSedangProsesTanggal] = useState(false);
 
@@ -32,14 +45,35 @@ export default function PengaturanPage() {
     no_rekening: "",
     atas_nama: "",
     gambar_qris: null,
+    transfer_manual_aktif: false,
+  });
+
+  const [formOngkir, setFormOngkir] = useState({
+    lat_toko: -6.9175,
+    lng_toko: 107.6191,
+    faktor_jalan: 1.3,
+    maks_jarak_kirim_km: 20,
   });
 
   const [fileQris, setFileQris] = useState(null);
   const [previewQris, setPreviewQris] = useState(null);
   const [hapusQrisFlag, setHapusQrisFlag] = useState(false);
 
+  const [daftarTarifJarak, setDaftarTarifJarak] = useState([]);
   const [daftarZona, setDaftarZona] = useState([]);
   const [daftarTanggalTutup, setDaftarTanggalTutup] = useState([]);
+
+  const [modalTarifJarakBuka, setModalTarifJarakBuka] = useState(false);
+  const [editTarifJarakId, setEditTarifJarakId] = useState(null);
+  const [formTarifJarak, setFormTarifJarak] = useState({
+    jarak_maks_km: "",
+    tarif: 0,
+    aktif: true,
+  });
+  const [errorTarifJarak, setErrorTarifJarak] = useState([]);
+
+  const [simulasiJarak, setSimulasiJarak] = useState("");
+  const [hasilSimulasi, setHasilSimulasi] = useState(null);
 
   const [modalZonaBuka, setModalZonaBuka] = useState(false);
   const [editZonaId, setEditZonaId] = useState(null);
@@ -56,6 +90,7 @@ export default function PengaturanPage() {
   });
 
   const [errorToko, setErrorToko] = useState([]);
+  const [errorOngkir, setErrorOngkir] = useState([]);
   const [errorZona, setErrorZona] = useState([]);
   const [errorTanggal, setErrorTanggal] = useState([]);
 
@@ -66,12 +101,16 @@ export default function PengaturanPage() {
     tipe: "info",
   });
 
+  const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+  const isMidtransSandbox = midtransClientKey.startsWith("SB-");
+  const isMidtransTerkoneksi = Boolean(midtransClientKey);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (modalZonaBuka || modalTanggalBuka || notifikasi.terbuka) {
+    if (modalZonaBuka || modalTanggalBuka || modalTarifJarakBuka || notifikasi.terbuka) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -79,7 +118,7 @@ export default function PengaturanPage() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [modalZonaBuka, modalTanggalBuka, notifikasi.terbuka]);
+  }, [modalZonaBuka, modalTanggalBuka, modalTarifJarakBuka, notifikasi.terbuka]);
 
   async function muatData() {
     setSedangMemuat(true);
@@ -101,7 +140,7 @@ export default function PengaturanPage() {
         jam_tutup: toko.jam_tutup?.slice(0, 5) || "20:00",
         kuota_harian: toko.kuota_harian ?? 5,
         minimal_hari_pesan: toko.minimal_hari_pesan ?? 2,
-        minimal_hari_siap: toko.minimal_hari_siap ?? 1,
+        minimal_hari_siap: toko.minimal_hari_siap ?? toko.minimal_hari_katalog ?? 1,
         mode_pembayaran: toko.mode_pembayaran || "DP",
         persen_dp: toko.persen_dp ?? 50,
         batas_bayar_jam: toko.batas_bayar_jam ?? 24,
@@ -109,9 +148,24 @@ export default function PengaturanPage() {
         no_rekening: toko.no_rekening || "",
         atas_nama: toko.atas_nama || "",
         gambar_qris: toko.gambar_qris || null,
+        transfer_manual_aktif: Boolean(toko.transfer_manual_aktif),
       });
       setPreviewQris(toko.gambar_qris || null);
+
+      setFormOngkir({
+        lat_toko: toko.lat_toko ?? -6.9175,
+        lng_toko: toko.lng_toko ?? 107.6191,
+        faktor_jalan: toko.faktor_jalan ?? 1.3,
+        maks_jarak_kirim_km: toko.maks_jarak_kirim_km ?? 20,
+      });
     }
+
+    const { data: tarifList } = await supabase
+      .from("tarif_jarak")
+      .select("*")
+      .order("jarak_maks_km", { ascending: true });
+
+    if (tarifList) setDaftarTarifJarak(tarifList);
 
     const { data: zonaList } = await supabase
       .from("zona_ongkir")
@@ -198,6 +252,7 @@ export default function PengaturanPage() {
     formData.append("nama_bank", formToko.nama_bank);
     formData.append("no_rekening", formToko.no_rekening);
     formData.append("atas_nama", formToko.atas_nama);
+    formData.append("transfer_manual_aktif", formToko.transfer_manual_aktif ? "true" : "false");
     formData.append("hapus_qris", hapusQrisFlag ? "true" : "false");
 
     if (fileQris) {
@@ -230,6 +285,173 @@ export default function PengaturanPage() {
       pesan: hasil.pesan,
       tipe: "sukses",
     });
+  }
+
+  async function simpanParameterOngkir(e) {
+    e.preventDefault();
+    setErrorOngkir([]);
+    setSedangSimpanOngkir(true);
+
+    const res = await fetch("/api/pengaturan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        aksi: "simpan_ongkir",
+        lat_toko: formOngkir.lat_toko,
+        lng_toko: formOngkir.lng_toko,
+        faktor_jalan: Number(formOngkir.faktor_jalan),
+        maks_jarak_kirim_km: Number(formOngkir.maks_jarak_kirim_km),
+      }),
+    });
+
+    const hasil = await res.json();
+    setSedangSimpanOngkir(false);
+
+    if (!res.ok) {
+      setErrorOngkir([hasil.pesan || "Gagal menyimpan parameter ongkir."]);
+      return;
+    }
+
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan,
+      tipe: "sukses",
+    });
+    muatData();
+  }
+
+  function jalankanSimulasiOngkir(e) {
+    e.preventDefault();
+    const jarak = Number(simulasiJarak);
+    if (isNaN(jarak) || jarak <= 0) {
+      setHasilSimulasi({ error: "Masukkan jarak yang valid (lebih dari 0 km)." });
+      return;
+    }
+
+    const aktifList = daftarTarifJarak.filter((t) => t.aktif);
+    const tarif = cariTarifJarak(jarak, aktifList, formOngkir.maks_jarak_kirim_km);
+
+    if (tarif === null) {
+      setHasilSimulasi({
+        error: `Jarak ${jarak} km di luar jangkauan pengiriman (maksimal ${formOngkir.maks_jarak_kirim_km} km) atau belum ada tarif yang cocok.`,
+      });
+    } else {
+      setHasilSimulasi({
+        jarak,
+        ongkir: tarif.tarif,
+        tierMaks: tarif.jarak_maks_km,
+      });
+    }
+  }
+
+  function bukaModalTambahTarifJarak() {
+    setEditTarifJarakId(null);
+    setFormTarifJarak({
+      jarak_maks_km: "",
+      tarif: 0,
+      aktif: true,
+    });
+    setErrorTarifJarak([]);
+    setModalTarifJarakBuka(true);
+  }
+
+  function bukaModalEditTarifJarak(item) {
+    setEditTarifJarakId(item.id);
+    setFormTarifJarak({
+      jarak_maks_km: item.jarak_maks_km,
+      tarif: item.tarif,
+      aktif: item.aktif,
+    });
+    setErrorTarifJarak([]);
+    setModalTarifJarakBuka(true);
+  }
+
+  async function simpanTarifJarak(e) {
+    e.preventDefault();
+    setErrorTarifJarak([]);
+
+    const jarak = Number(formTarifJarak.jarak_maks_km);
+    const tarif = Number(formTarifJarak.tarif);
+
+    if (isNaN(jarak) || jarak <= 0) {
+      setErrorTarifJarak(["Jarak maksimal tier harus berupa angka lebih dari 0."]);
+      return;
+    }
+
+    if (isNaN(tarif) || tarif < 0) {
+      setErrorTarifJarak(["Tarif ongkir minimal Rp 0."]);
+      return;
+    }
+
+    setSedangProsesTarifJarak(true);
+    const aksi = editTarifJarakId ? "edit_tarif_jarak" : "tambah_tarif_jarak";
+    const res = await fetch("/api/pengaturan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        aksi,
+        id: editTarifJarakId,
+        jarak_maks_km: jarak,
+        tarif,
+        aktif: formTarifJarak.aktif,
+      }),
+    });
+
+    const hasil = await res.json();
+    setSedangProsesTarifJarak(false);
+
+    if (!res.ok) {
+      setErrorTarifJarak([hasil.pesan || "Gagal menyimpan tarif jarak."]);
+      return;
+    }
+
+    setModalTarifJarakBuka(false);
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan,
+      tipe: "sukses",
+    });
+    muatData();
+  }
+
+  async function hapusTarifJarak(item) {
+    const yakin = window.confirm(
+      `Apakah Anda yakin ingin menghapus tier jarak sampai ${item.jarak_maks_km} km?`
+    );
+    if (!yakin) return;
+
+    setSedangProsesTarifJarak(true);
+    const res = await fetch("/api/pengaturan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        aksi: "hapus_tarif_jarak",
+        id: item.id,
+      }),
+    });
+
+    const hasil = await res.json();
+    setSedangProsesTarifJarak(false);
+
+    if (!res.ok) {
+      setNotifikasi({
+        terbuka: true,
+        judul: "Informasi",
+        pesan: hasil.pesan || "Gagal menghapus tarif jarak.",
+        tipe: "error",
+      });
+      return;
+    }
+
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan,
+      tipe: "sukses",
+    });
+    muatData();
   }
 
   function bukaModalTambahZona() {
@@ -463,7 +685,7 @@ export default function PengaturanPage() {
             Pengaturan Toko & Operasional
           </h2>
           <p className="text-xs text-stone-500 mt-0.5">
-            Kelola profil toko, jadwal pemesanan, kebijakan pembayaran, zona tarif pengiriman, dan hari libur
+            Kelola profil toko, jadwal pemesanan, kebijakan pembayaran, tarif pengiriman berbasis jarak, dan hari libur
           </p>
         </div>
 
@@ -471,11 +693,22 @@ export default function PengaturanPage() {
           {tabAktif === "ongkir" && (
             <button
               type="button"
+              onClick={bukaModalTambahTarifJarak}
+              className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 flex-shrink-0"
+            >
+              <i className="fa-solid fa-plus text-xs"></i>
+              <span>Tambah Tier Tarif Jarak</span>
+            </button>
+          )}
+
+          {tabAktif === "zona_lama" && (
+            <button
+              type="button"
               onClick={bukaModalTambahZona}
               className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 flex-shrink-0"
             >
               <i className="fa-solid fa-plus text-xs"></i>
-              <span>Tambah Zona</span>
+              <span>Tambah Zona Lama</span>
             </button>
           )}
 
@@ -529,7 +762,7 @@ export default function PengaturanPage() {
           }`}
         >
           <i className="fa-solid fa-credit-card text-xs"></i>
-          <span>Pembayaran & Rekening</span>
+          <span>Pembayaran & Midtrans</span>
         </button>
 
         <button
@@ -541,8 +774,21 @@ export default function PengaturanPage() {
               : "bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] hover:bg-[#e2d4bc]"
           }`}
         >
+          <i className="fa-solid fa-route text-xs"></i>
+          <span>Ongkir Jarak ({daftarTarifJarak.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTabAktif("zona_lama")}
+          className={`h-[42px] px-4 rounded-xl font-bold text-xs transition cursor-pointer inline-flex items-center space-x-2 ${
+            tabAktif === "zona_lama"
+              ? "bg-[#ba2b2b] text-white"
+              : "bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] hover:bg-[#e2d4bc]"
+          }`}
+        >
           <i className="fa-solid fa-truck-fast text-xs"></i>
-          <span>Zona Ongkir ({daftarZona.length})</span>
+          <span>Zona Ongkir (Versi Lama)</span>
         </button>
 
         <button
@@ -783,7 +1029,7 @@ export default function PengaturanPage() {
                   className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                 />
                 <span className="text-[11px] text-stone-500 mt-1 block">
-                  Contoh: 1 (pesan minimal 1 hari sebelumnya untuk kue siap/katalog)
+                  Contoh: 1 (pesan minimal 1 hari sebelumnya untuk kue katalog)
                 </span>
               </div>
             </div>
@@ -810,11 +1056,52 @@ export default function PengaturanPage() {
             </div>
             <div>
               <h3 className="text-base font-bold text-[#1d3b2e]">
-                Metode Pembayaran & Rekening
+                Metode Pembayaran & Midtrans
               </h3>
               <p className="text-xs text-stone-500">
-                Pilih apakah pelanggan membayar uang muka (DP) atau lunas penuh, batas waktu unggah bukti bayar, serta informasi rekening transfer dan QRIS.
+                Status integrasi payment gateway Midtrans dan pengaturan skema pembayaran (DP atau Lunas).
               </p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-[#dfd4bd] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3.5">
+              <div
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 ${
+                  isMidtransTerkoneksi
+                    ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
+                    : "bg-rose-100 text-rose-700 border border-rose-300"
+                }`}
+              >
+                <i className="fa-solid fa-shield-halved"></i>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-[#1d3b2e]">
+                    Status Gateway Midtrans:
+                  </h4>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                      isMidtransTerkoneksi
+                        ? isMidtransSandbox
+                          ? "bg-amber-100 text-amber-800 border border-amber-300"
+                          : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                        : "bg-rose-100 text-rose-800 border border-rose-300"
+                    }`}
+                  >
+                    {isMidtransTerkoneksi
+                      ? isMidtransSandbox
+                        ? "Sandbox (Terhubung)"
+                        : "Production (Terhubung)"
+                      : "Belum Terhubung"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-500 mt-0.5">
+                  {isMidtransTerkoneksi
+                    ? "Kunci Midtrans terdeteksi. Snap popup checkout aktif menggunakan integrasi ini."
+                    : "Variabel MIDTRANS_SERVER_KEY / NEXT_PUBLIC_MIDTRANS_CLIENT_KEY belum diatur di server."}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -868,7 +1155,7 @@ export default function PengaturanPage() {
                 <span className="text-[11px] text-stone-500 mt-1 block">
                   {formToko.mode_pembayaran === "Lunas"
                     ? "Terkunci untuk mode Lunas (100%)"
-                    : "Contoh: 50% saat memesan"}
+                    : "Contoh: 50% untuk pesanan kue custom"}
                 </span>
               </div>
 
@@ -889,15 +1176,48 @@ export default function PengaturanPage() {
                   className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                 />
                 <span className="text-[11px] text-stone-500 mt-1 block">
-                  Batas unggah bukti sebelum otomatis dibatalkan
+                  Batas pembayaran Midtrans sebelum otomatis kedaluwarsa
                 </span>
               </div>
             </div>
 
             <div className="pt-5 border-t border-[#e8dfc8]">
-              <h4 className="text-sm font-bold text-[#1d3b2e] mb-3">
-                Informasi Rekening Bank & QRIS Toko
-              </h4>
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#dcd3c1] mb-5">
+                <div>
+                  <h4 className="text-xs font-bold text-[#1d3b2e]">
+                    Aktifkan transfer manual dengan bukti
+                  </h4>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    Pembayaran utama memakai Midtrans. Jika diaktifkan, formulir transfer manual dan unggah bukti transfer akan tampil di tiket pesanan pelanggan.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={formToko.transfer_manual_aktif}
+                    onChange={(e) =>
+                      setFormToko({
+                        ...formToko,
+                        transfer_manual_aktif: e.target.checked,
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ba2b2b]"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h4 className="text-sm font-bold text-[#1d3b2e]">
+                  Rekening Bank & QRIS Manual
+                </h4>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-stone-200 text-stone-600">
+                  Cadangan Operasional
+                </span>
+              </div>
+              <p className="text-xs text-stone-500 mb-4">
+                Pembayaran utama toko diproses otomatis oleh Midtrans. Informasi rekening bank dan barcode QRIS di bawah ini hanya digunakan ketika transfer manual diaktifkan.
+              </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -970,7 +1290,7 @@ export default function PengaturanPage() {
 
                   <div>
                     <h5 className="text-xs font-bold text-[#1d3b2e]">
-                      Gambar Barcode QRIS Toko
+                      Gambar Barcode QRIS Manual
                     </h5>
                     <p className="text-[11px] text-stone-500 mt-0.5">
                       Format file JPG, PNG, atau WebP (maks. 2 MB).
@@ -1009,7 +1329,7 @@ export default function PengaturanPage() {
                 className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-2 disabled:opacity-50"
               >
                 <i className="fa-solid fa-floppy-disk text-xs"></i>
-                <span>{sedangSimpanToko ? "Menyimpan..." : "Simpan Pembayaran & Rekening"}</span>
+                <span>{sedangSimpanToko ? "Menyimpan..." : "Simpan Pengaturan Pembayaran"}</span>
               </button>
             </div>
           </form>
@@ -1017,6 +1337,300 @@ export default function PengaturanPage() {
       )}
 
       {tabAktif === "ongkir" && (
+        <div className="space-y-6">
+          <div className="content-card p-6 sm:p-8 space-y-6">
+            <div className="flex items-center space-x-3 pb-4 border-b border-[#e8dfc8]">
+              <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
+                <i className="fa-solid fa-location-crosshairs"></i>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#1d3b2e]">
+                  Lokasi Toko & Parameter Pengiriman
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Tentukan titik koordinat toko sebagai titik awal pengiriman, faktor kelokan jalan, serta radius batas maksimal kirim.
+                </p>
+              </div>
+            </div>
+
+            {errorOngkir.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
+                {errorOngkir.map((err, idx) => (
+                  <p key={idx}>{err}</p>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={simpanParameterOngkir} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Pin Lokasi Toko pada Peta
+                </label>
+                <p className="text-[11px] text-stone-500 mb-2">
+                  Geser pin toko atau klik peta untuk menetapkan koordinat outlet Anda.
+                </p>
+                <PetaLokasi
+                  posisiToko={{
+                    lat: Number(formOngkir.lat_toko),
+                    lng: Number(formOngkir.lng_toko),
+                  }}
+                  mode="toko"
+                  onUbahToko={(lat, lng) =>
+                    setFormOngkir((prev) => ({
+                      ...prev,
+                      lat_toko: Number(lat.toFixed(6)),
+                      lng_toko: Number(lng.toFixed(6)),
+                    }))
+                  }
+                  tinggi="320px"
+                  bisaDipilih={true}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Latitude Toko
+                  </label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    required
+                    value={formOngkir.lat_toko}
+                    onChange={(e) =>
+                      setFormOngkir({ ...formOngkir, lat_toko: Number(e.target.value) })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Longitude Toko
+                  </label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    required
+                    value={formOngkir.lng_toko}
+                    onChange={(e) =>
+                      setFormOngkir({ ...formOngkir, lng_toko: Number(e.target.value) })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Faktor Kelokan Jalan
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="1.0"
+                    required
+                    value={formOngkir.faktor_jalan}
+                    onChange={(e) =>
+                      setFormOngkir({
+                        ...formOngkir,
+                        faktor_jalan: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Standar: 1.3 (jarak jalan ≈ garis lurus × 1.3)
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Maks. Jarak Kirim (km)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    required
+                    value={formOngkir.maks_jarak_kirim_km}
+                    onChange={(e) =>
+                      setFormOngkir({
+                        ...formOngkir,
+                        maks_jarak_kirim_km: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Jarak lebih dari ini ditolak sistem
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#e8dfc8] flex justify-end">
+                <button
+                  type="submit"
+                  disabled={sedangSimpanOngkir}
+                  className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-2 disabled:opacity-50"
+                >
+                  <i className="fa-solid fa-floppy-disk text-xs"></i>
+                  <span>{sedangSimpanOngkir ? "Menyimpan..." : "Simpan Lokasi & Parameter"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="content-card p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#e8dfc8]">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
+                  <i className="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1d3b2e]">
+                    Tabel Tarif Ongkir Berundak (Tiered Rate)
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Sistem akan mencocokkan jarak pengiriman ke tier terkecil yang memuat jarak tersebut.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={bukaModalTambahTarifJarak}
+                className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 self-start sm:self-center"
+              >
+                <i className="fa-solid fa-plus text-xs"></i>
+                <span>Tambah Tier</span>
+              </button>
+            </div>
+
+            {daftarTarifJarak.length === 0 ? (
+              <div className="py-10 text-center text-stone-400">
+                <i className="fa-solid fa-truck-ramp-box text-3xl mb-2 block text-stone-300"></i>
+                <p className="text-sm font-bold text-[#1d3b2e]">Belum ada tier tarif jarak.</p>
+                <p className="text-xs text-stone-500 mt-1">Tambahkan minimal satu tier agar opsi pengiriman dapat dihitung.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[500px]">
+                  <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
+                    <tr>
+                      <th className="py-3 px-4 rounded-l-xl">Batas Jarak Maksimal</th>
+                      <th className="py-3 px-4">Tarif Ongkir</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right rounded-r-xl w-28">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#ede2cd]">
+                    {daftarTarifJarak.map((tier) => (
+                      <tr key={tier.id} className="hover:bg-black/[0.02] transition">
+                        <td className="py-3.5 px-4 font-bold text-[#1d3b2e]">
+                          Hingga {tier.jarak_maks_km} km
+                        </td>
+                        <td className="py-3.5 px-4 font-black text-[#1d3b2e]">
+                          {formatRupiah(tier.tarif)}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                              tier.aktif
+                                ? "bg-[#d8e3cf] text-[#215934] border border-[#bad1ab]"
+                                : "bg-stone-200 text-stone-600 border border-stone-300"
+                            }`}
+                          >
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                tier.aktif ? "bg-[#215934]" : "bg-stone-500"
+                              }`}
+                            ></span>
+                            <span>{tier.aktif ? "Aktif" : "Nonaktif"}</span>
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-1.5">
+                            <button
+                              type="button"
+                              onClick={() => bukaModalEditTarifJarak(tier)}
+                              className="w-8 h-8 rounded-lg border border-[#dcd3c1] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
+                              title="Edit Tier"
+                            >
+                              <i className="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => hapusTarifJarak(tier)}
+                              className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
+                              title="Hapus Tier"
+                            >
+                              <i className="fa-solid fa-trash text-xs"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-6 p-4 rounded-2xl bg-[#ede2cd]/40 border border-[#dfd4bd] space-y-3">
+              <h4 className="text-xs font-bold text-[#1d3b2e] flex items-center gap-1.5">
+                <i className="fa-solid fa-calculator text-[#ba2b2b]"></i>
+                <span>Simulasi Perhitungan Ongkir</span>
+              </h4>
+              <form onSubmit={jalankanSimulasiOngkir} className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone-600 font-semibold">Coba jarak:</span>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      placeholder="Contoh: 7.5"
+                      value={simulasiJarak}
+                      onChange={(e) => setSimulasiJarak(e.target.value)}
+                      className="w-32 h-[38px] px-3 pr-8 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e]"
+                    />
+                    <span className="absolute right-2.5 top-2.5 text-[11px] text-stone-400 font-bold pointer-events-none">
+                      km
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="h-[38px] px-4 rounded-xl font-bold bg-[#1d3b2e] hover:bg-[#142820] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5"
+                >
+                  <i className="fa-solid fa-magnifying-glass text-xs"></i>
+                  <span>Hitung Ongkir</span>
+                </button>
+              </form>
+
+              {hasilSimulasi && (
+                <div className="pt-2">
+                  {hasilSimulasi.error ? (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                      {hasilSimulasi.error}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
+                      <span>
+                        Jarak <b>{hasilSimulasi.jarak} km</b> masuk ke tier batas <b>{hasilSimulasi.tierMaks} km</b>
+                      </span>
+                      <span className="text-sm font-black text-emerald-900">
+                        {formatRupiah(hasilSimulasi.ongkir)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tabAktif === "zona_lama" && (
         <div className="content-card p-6 sm:p-8 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#e8dfc8]">
             <div className="flex items-center space-x-3">
@@ -1025,10 +1639,10 @@ export default function PengaturanPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-[#1d3b2e]">
-                  Zona & Tarif Ongkir Pengiriman
+                  Zona Ongkir (Hanya untuk /pesan versi lama)
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Pelanggan yang memilih opsi pengiriman &quot;Kirim&quot; akan memilih wilayah dari daftar zona ini.
+                  Daftar zona manual ini dipertahankan untuk kompatibilitas form pemesanan 3D lama pada rute /pesan.
                 </p>
               </div>
             </div>
@@ -1039,15 +1653,14 @@ export default function PengaturanPage() {
               className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 self-start sm:self-center"
             >
               <i className="fa-solid fa-plus text-xs"></i>
-              <span>Tambah Zona</span>
+              <span>Tambah Zona Lama</span>
             </button>
           </div>
 
           {daftarZona.length === 0 ? (
             <div className="py-12 text-center text-stone-400">
               <i className="fa-solid fa-truck-ramp-box text-3xl mb-2 block text-stone-300"></i>
-              <p className="text-sm font-bold text-[#1d3b2e]">Belum ada zona ongkir pengiriman.</p>
-              <p className="text-xs text-stone-500 mt-1">Opsi pengiriman &quot;Kirim&quot; akan disembunyikan sampai minimal ada satu zona aktif.</p>
+              <p className="text-sm font-bold text-[#1d3b2e]">Belum ada zona ongkir pengiriman lama.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -1187,6 +1800,113 @@ export default function PengaturanPage() {
         </div>
       )}
 
+      {isMounted && modalTarifJarakBuka && createPortal(
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalTarifJarakBuka(false);
+          }}
+          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
+        >
+          <div className="relative bg-[#fbf6e9] border border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
+              <h3 className="text-base font-bold text-[#1d3b2e]">
+                {editTarifJarakId ? "Edit Tier Tarif Jarak" : "Tambah Tier Tarif Jarak"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModalTarifJarakBuka(false)}
+                className="w-8 h-8 rounded-xl border border-[#dcd3c1] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center cursor-pointer transition"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            {errorTarifJarak.length > 0 && (
+              <div className="px-6 pt-4">
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
+                  {errorTarifJarak.map((err, idx) => (
+                    <p key={idx}>{err}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={simpanTarifJarak} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Batas Jarak Maksimal (km) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    required
+                    placeholder="Contoh: 5 (untuk radius hingga 5 km)"
+                    value={formTarifJarak.jarak_maks_km}
+                    onChange={(e) =>
+                      setFormTarifJarak({ ...formTarifJarak, jarak_maks_km: e.target.value })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Tarif Ongkir (Rp) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    required
+                    value={formTarifJarak.tarif}
+                    onChange={(e) =>
+                      setFormTarifJarak({ ...formTarifJarak, tarif: e.target.value })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+
+                <div className="pt-1">
+                  <label className="flex items-center space-x-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formTarifJarak.aktif}
+                      onChange={(e) =>
+                        setFormTarifJarak({ ...formTarifJarak, aktif: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#dcd3c1]"
+                    />
+                    <span className="text-xs font-bold text-[#1d3b2e]">
+                      Tier Aktif (Digunakan dalam kalkulator ongkir checkout)
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
+                <button
+                  type="button"
+                  onClick={() => setModalTarifJarakBuka(false)}
+                  className="h-[40px] px-5 rounded-xl border border-[#dcd3c1] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={sedangProsesTarifJarak}
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-xs"
+                >
+                  {sedangProsesTarifJarak ? "Menyimpan..." : "Simpan Tier"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {isMounted && modalZonaBuka && createPortal(
         <div
           onClick={(e) => {
@@ -1264,7 +1984,7 @@ export default function PengaturanPage() {
                       className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#dcd3c1]"
                     />
                     <span className="text-xs font-bold text-[#1d3b2e]">
-                      Zona Aktif (Tampil dan dapat dipilih pelanggan di opsi checkout kirim)
+                      Zona Aktif
                     </span>
                   </label>
                 </div>

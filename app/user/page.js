@@ -4,6 +4,9 @@ import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
 import DashboardPelangganView from "@/components/DashboardPelangganView";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Dashboard Pelanggan - Cravely Bakery",
 };

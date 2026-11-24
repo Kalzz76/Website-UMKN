@@ -17,9 +17,81 @@ function jamLebihBesar(buka, tutup) {
 
 export async function GET() {
   const supabase = getSupabaseAdmin();
+  const { profil, diizinkan } = await cekRole(["admin", "staf"]);
+
+  if (diizinkan && profil) {
+    const { data: toko, error } = await supabase
+      .from("pengaturan_toko")
+      .select("*")
+      .eq("id", 1)
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { pesan: "Gagal memuat pengaturan toko: " + error.message },
+        { status: 500 }
+      );
+    }
+
+    const { data: zonaList } = await supabase
+      .from("zona_ongkir")
+      .select("*")
+      .order("id", { ascending: true });
+
+    const { data: tanggalTutupList } = await supabase
+      .from("tanggal_tutup")
+      .select("*")
+      .order("tanggal", { ascending: true });
+
+    const { data: tarifJarakList } = await supabase
+      .from("tarif_jarak")
+      .select("*")
+      .order("jarak_maks_km", { ascending: true });
+
+    return NextResponse.json({
+      sukses: true,
+      data: {
+        ...toko,
+        zona: zonaList || [],
+        tanggal_tutup: tanggalTutupList || [],
+        tarif_jarak: tarifJarakList || [],
+      },
+    });
+  }
+
+  const kolomPublik = [
+    "nama_toko",
+    "alamat",
+    "no_wa",
+    "email",
+    "instagram",
+    "tautan_peta",
+    "deskripsi_footer",
+    "jam_buka",
+    "jam_tutup",
+    "jam_buka_senin_jumat",
+    "jam_tutup_senin_jumat",
+    "jam_buka_sabtu_minggu",
+    "jam_tutup_sabtu_minggu",
+    "minimal_hari_pesan",
+    "minimal_hari_katalog",
+    "mode_pembayaran",
+    "persen_dp",
+    "batas_bayar_jam",
+    "nama_bank",
+    "no_rekening",
+    "atas_nama",
+    "qris_url",
+    "lat_toko",
+    "lng_toko",
+    "faktor_jalan",
+    "maks_jarak_kirim_km",
+    "transfer_manual_aktif",
+  ].join(", ");
+
   const { data: toko, error } = await supabase
     .from("pengaturan_toko")
-    .select("*")
+    .select(kolomPublik)
     .eq("id", 1)
     .single();
 
@@ -30,21 +102,15 @@ export async function GET() {
     );
   }
 
-  const { data: zonaList } = await supabase
-    .from("zona_ongkir")
-    .select("*")
-    .order("id", { ascending: true });
-
   const { data: tanggalTutupList } = await supabase
     .from("tanggal_tutup")
-    .select("*")
+    .select("tanggal, keterangan")
     .order("tanggal", { ascending: true });
 
   return NextResponse.json({
     sukses: true,
     data: {
       ...toko,
-      zona: zonaList || [],
       tanggal_tutup: tanggalTutupList || [],
     },
   });
@@ -106,6 +172,7 @@ export async function POST(request) {
 
     const hapus_qris = formData.get("hapus_qris") === "true";
     const file_qris = formData.get("file_qris");
+    const transfer_manual_aktif = formData.get("transfer_manual_aktif") === "true";
 
     if (!nama_toko || nama_toko.trim() === "") {
       return NextResponse.json(
@@ -307,6 +374,7 @@ export async function POST(request) {
       lng_toko,
       faktor_jalan,
       maks_jarak_kirim_km,
+      transfer_manual_aktif,
     };
 
     let { error: errUpdate } = await supabase
@@ -535,6 +603,149 @@ export async function POST(request) {
     }
 
     return NextResponse.json({ pesan: "Tanggal tutup berhasil dihapus." });
+  }
+
+  if (aksi === "simpan_ongkir") {
+    const { lat_toko, lng_toko, faktor_jalan, maks_jarak_kirim_km } = body;
+
+    const latNum = lat_toko !== null && lat_toko !== undefined ? Number(lat_toko) : null;
+    const lngNum = lng_toko !== null && lng_toko !== undefined ? Number(lng_toko) : null;
+    const faktorNum = Number(faktor_jalan) || 1.3;
+    const maksNum = Number(maks_jarak_kirim_km) || 20;
+
+    if (latNum !== null && lngNum !== null && !validasiKoordinat(latNum, lngNum)) {
+      return NextResponse.json(
+        { pesan: "Koordinat pin toko tidak valid untuk wilayah Indonesia." },
+        { status: 400 }
+      );
+    }
+
+    if (faktorNum < 1) {
+      return NextResponse.json(
+        { pesan: "Faktor jalan minimal 1.0." },
+        { status: 400 }
+      );
+    }
+
+    if (maksNum <= 0) {
+      return NextResponse.json(
+        { pesan: "Maksimal jarak kirim harus lebih dari 0 km." },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("pengaturan_toko")
+      .update({
+        lat_toko: latNum,
+        lng_toko: lngNum,
+        faktor_jalan: faktorNum,
+        maks_jarak_kirim_km: maksNum,
+      })
+      .eq("id", 1);
+
+    if (error) {
+      return NextResponse.json(
+        { pesan: "Gagal menyimpan parameter ongkir: " + error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ pesan: "Parameter ongkir jarak berhasil disimpan." });
+  }
+
+  if (aksi === "tambah_tarif_jarak") {
+    const { jarak_maks_km, tarif, aktif } = body;
+    const jarak = Number(jarak_maks_km);
+    const tarifNum = Number(tarif);
+
+    if (isNaN(jarak) || jarak <= 0) {
+      return NextResponse.json(
+        { pesan: "Jarak maksimal tier harus berupa angka lebih dari 0." },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(tarifNum) || tarifNum < 0) {
+      return NextResponse.json(
+        { pesan: "Tarif ongkir minimal Rp 0." },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase.from("tarif_jarak").insert({
+      jarak_maks_km: jarak,
+      tarif: Math.round(tarifNum),
+      aktif: aktif === undefined ? true : Boolean(aktif),
+    });
+
+    if (error) {
+      return NextResponse.json(
+        { pesan: "Gagal menambah tarif jarak: " + error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ pesan: "Tarif jarak berhasil ditambahkan." });
+  }
+
+  if (aksi === "edit_tarif_jarak") {
+    const { id, jarak_maks_km, tarif, aktif } = body;
+    if (!id) {
+      return NextResponse.json({ pesan: "ID tarif tidak valid." }, { status: 400 });
+    }
+
+    const jarak = Number(jarak_maks_km);
+    const tarifNum = Number(tarif);
+
+    if (isNaN(jarak) || jarak <= 0) {
+      return NextResponse.json(
+        { pesan: "Jarak maksimal tier harus lebih dari 0." },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(tarifNum) || tarifNum < 0) {
+      return NextResponse.json(
+        { pesan: "Tarif ongkir minimal Rp 0." },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("tarif_jarak")
+      .update({
+        jarak_maks_km: jarak,
+        tarif: Math.round(tarifNum),
+        aktif: Boolean(aktif),
+      })
+      .eq("id", id);
+
+    if (error) {
+      return NextResponse.json(
+        { pesan: "Gagal memperbarui tarif jarak: " + error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ pesan: "Tarif jarak berhasil diperbarui." });
+  }
+
+  if (aksi === "hapus_tarif_jarak") {
+    const { id } = body;
+    if (!id) {
+      return NextResponse.json({ pesan: "ID tarif tidak valid." }, { status: 400 });
+    }
+
+    const { error } = await supabase.from("tarif_jarak").delete().eq("id", id);
+    if (error) {
+      return NextResponse.json(
+        { pesan: "Gagal menghapus tarif jarak: " + error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ pesan: "Tarif jarak berhasil dihapus." });
   }
 
   return NextResponse.json(

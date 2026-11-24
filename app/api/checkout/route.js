@@ -3,6 +3,15 @@ import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta, hitungTanggalMinimal } from "@/lib/format";
 import { hitungPesanan } from "@/lib/hitungHarga";
 import { jamBukaTutupUntukTanggal } from "@/lib/jam";
+import { hitungJarakJalan, validasiKoordinat, cariTarifJarak } from "@/lib/ongkir";
+import { hitungEstimasi } from "@/lib/estimasi";
+
+function validasiDanNormalisasiWa(noWaRaw) {
+  const bersih = (noWaRaw || "").trim().replace(/[\s\-]/g, "");
+  const match = bersih.match(/^(\+628|628|08)(\d{8,13})$/);
+  if (!match) return null;
+  return `628${match[2]}`;
+}
 
 export async function POST(request) {
   const supabaseUser = await getSupabaseServer();
@@ -32,34 +41,73 @@ export async function POST(request) {
     );
   }
 
+  const { data: keranjang, error: errCart } = await supabase
+    .from("keranjang_item")
+    .select("*")
+    .eq("id_pelanggan", user.id)
+    .order("dibuat_pada", { ascending: true });
+
+  if (errCart || !keranjang || keranjang.length === 0) {
+    const batasMenitLalu = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: pesananTerbaru } = await supabase
+      .from("pesanan")
+      .select("kode_pesanan")
+      .eq("id_pelanggan", user.id)
+      .gte("dibuat_pada", batasMenitLalu)
+      .order("dibuat_pada", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (pesananTerbaru) {
+      return NextResponse.json(
+        {
+          pesan: "Pesanan sudah diproses sebelumnya.",
+          kode_pesanan: pesananTerbaru.kode_pesanan,
+        },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      { pesan: "Keranjang belanja Anda masih kosong." },
+      { status: 400 }
+    );
+  }
+
+  const { data: pesananMenunggu } = await supabase
+    .from("pesanan")
+    .select("id")
+    .eq("id_pelanggan", user.id)
+    .eq("status_pesanan", "Menunggu Pembayaran");
+
+  if (pesananMenunggu && pesananMenunggu.length >= 3) {
+    return NextResponse.json(
+      {
+        pesan: "Anda memiliki 3 pesanan yang berstatus Menunggu Pembayaran. Silakan selesaikan pembayaran pesanan sebelumnya terlebih dahulu.",
+      },
+      { status: 400 }
+    );
+  }
+
   const body = await request.json();
   const nama_penerima = (body.nama_penerima || "").trim();
-  const no_wa = (body.no_wa || "").trim();
+  const noWaRaw = (body.no_wa || "").trim();
   const metode_pengiriman = body.metode_pengiriman || "Ambil";
   const alamat = (body.alamat || "").trim();
-  const id_zona = body.id_zona ? Number(body.id_zona) : null;
-  const tanggal_ambil = body.tanggal_ambil || "";
-  const jam_ambil = (body.jam_ambil || "").slice(0, 5);
+  const patokan = (body.patokan || "").trim();
   const catatan = (body.catatan || "").trim();
-  const metode_bayar = body.metode_bayar || "Transfer Bank";
 
   if (!nama_penerima) {
     return NextResponse.json(
-      { pesan: "Nama penerima wajib diisi." },
+      { pesan: "Nama pemesan wajib diisi." },
       { status: 400 }
     );
   }
 
+  const no_wa = validasiDanNormalisasiWa(noWaRaw);
   if (!no_wa) {
     return NextResponse.json(
-      { pesan: "Nomor WhatsApp wajib diisi." },
-      { status: 400 }
-    );
-  }
-
-  if (metode_bayar !== "Transfer Bank" && metode_bayar !== "QRIS") {
-    return NextResponse.json(
-      { pesan: "Metode pembayaran hanya mendukung Transfer Bank atau QRIS." },
+      { pesan: "Nomor WhatsApp tidak valid. Gunakan format Indonesia yang diawali 08, 628, atau +628." },
       { status: 400 }
     );
   }
@@ -71,46 +119,21 @@ export async function POST(request) {
     );
   }
 
-  if (metode_pengiriman === "Kirim") {
-    if (!alamat) {
-      return NextResponse.json(
-        { pesan: "Alamat pengiriman wajib diisi untuk metode kirim." },
-        { status: 400 }
-      );
-    }
-    if (!id_zona) {
-      return NextResponse.json(
-        { pesan: "Zona pengiriman wajib dipilih untuk metode kirim." },
-        { status: 400 }
-      );
-    }
-  }
-
-  if (!tanggal_ambil) {
-    return NextResponse.json(
-      { pesan: "Tanggal pengambilan/pengiriman harus dipilih." },
-      { status: 400 }
-    );
-  }
-
-  if (!jam_ambil) {
-    return NextResponse.json(
-      { pesan: "Jam pengambilan/pengiriman harus dipilih." },
-      { status: 400 }
-    );
-  }
-
-  const { data: keranjang, error: errCart } = await supabase
-    .from("keranjang_item")
+  const { data: pengaturan } = await supabase
+    .from("pengaturan_toko")
     .select("*")
-    .eq("id_pelanggan", user.id)
-    .order("dibuat_pada", { ascending: true });
+    .eq("id", 1)
+    .single();
 
-  if (errCart || !keranjang || keranjang.length === 0) {
-    return NextResponse.json(
-      { pesan: "Keranjang belanja Anda masih kosong." },
-      { status: 400 }
-    );
+  const minimalHariCustom = Number(pengaturan?.minimal_hari_pesan ?? 2);
+  const minimalHariKatalog = Number(pengaturan?.minimal_hari_katalog ?? pengaturan?.minimal_hari_siap ?? 1);
+  const kuotaHarian = Number(pengaturan?.kuota_harian ?? 5);
+
+  let customCount = 0;
+  let katalogCount = 0;
+  for (let i = 0; i < keranjang.length; i++) {
+    if (keranjang[i].jenis === "Custom") customCount++;
+    else katalogCount++;
   }
 
   if (keranjang.length > 20) {
@@ -120,13 +143,6 @@ export async function POST(request) {
     );
   }
 
-  let customCount = 0;
-  let katalogCount = 0;
-  for (let i = 0; i < keranjang.length; i++) {
-    if (keranjang[i].jenis === "Custom") customCount++;
-    else katalogCount++;
-  }
-
   if (customCount > 10) {
     return NextResponse.json(
       { pesan: "Keranjang melebihi batas maksimal 10 kue custom." },
@@ -134,10 +150,7 @@ export async function POST(request) {
     );
   }
 
-  const { data: semuaProduk } = await supabase
-    .from("produk")
-    .select("*");
-
+  const { data: semuaProduk } = await supabase.from("produk").select("*");
   const produkMap = new Map();
   for (let i = 0; i < (semuaProduk || []).length; i++) {
     produkMap.set(Number(semuaProduk[i].id), semuaProduk[i]);
@@ -157,7 +170,7 @@ export async function POST(request) {
   if (produkNonaktif.length > 0) {
     return NextResponse.json(
       {
-        pesan: `Produk berikut sudah tidak tersedia atau nonaktif: ${produkNonaktif.join(", ")}. Silakan hapus dari keranjang.`,
+        pesan: `Produk berikut sudah tidak tersedia: ${produkNonaktif.join(", ")}. Silakan periksa kembali keranjang Anda.`,
       },
       { status: 400 }
     );
@@ -191,122 +204,180 @@ export async function POST(request) {
   if (opsiNonaktif.length > 0) {
     return NextResponse.json(
       {
-        pesan: `Pilihan opsi custom berikut sudah tidak tersedia: ${opsiNonaktif.join(", ")}. Silakan racik ulang kue custom Anda.`,
+        pesan: `Pilihan opsi custom berikut sudah tidak tersedia: ${opsiNonaktif.join(", ")}.`,
       },
       { status: 400 }
     );
+  }
+
+  const hariIni = getTanggalHariIniJakarta();
+  const { data: listTutup } = await supabase
+    .from("tanggal_tutup")
+    .select("tanggal, alasan");
+
+  const { data: pesananAktif } = await supabase
+    .from("pesanan")
+    .select("id, tanggal_ambil")
+    .gte("tanggal_ambil", hariIni)
+    .neq("status_pesanan", "Dibatalkan");
+
+  const pesananIds = (pesananAktif || []).map((p) => p.id);
+  let customItemsPerPesanan = new Map();
+  if (pesananIds.length > 0) {
+    const { data: itemsAktif } = await supabase
+      .from("pesanan_item")
+      .select("id_pesanan, jenis")
+      .in("id_pesanan", pesananIds)
+      .eq("jenis", "Custom");
+
+    if (itemsAktif) {
+      for (let i = 0; i < itemsAktif.length; i++) {
+        const idPes = itemsAktif[i].id_pesanan;
+        customItemsPerPesanan.set(idPes, (customItemsPerPesanan.get(idPes) || 0) + 1);
+      }
+    }
+  }
+
+  const customPerTanggal = {};
+  for (let i = 0; i < (pesananAktif || []).length; i++) {
+    const p = pesananAktif[i];
+    const tgl = p.tanggal_ambil;
+    const count = customItemsPerPesanan.has(p.id)
+      ? customItemsPerPesanan.get(p.id)
+      : 1;
+    customPerTanggal[tgl] = (customPerTanggal[tgl] || 0) + count;
+  }
+
+  const tanggalPenuh = [];
+  for (const tgl in customPerTanggal) {
+    if (customPerTanggal[tgl] + (customCount > 0 ? customCount - 1 : 0) >= kuotaHarian) {
+      tanggalPenuh.push(tgl);
+    }
   }
 
   let ongkir = 0;
-  if (metode_pengiriman === "Kirim") {
-    const { data: zona } = await supabase
-      .from("zona_ongkir")
-      .select("*")
-      .eq("id", id_zona)
-      .eq("aktif", true)
-      .single();
+  let jarak_km = null;
+  let lat_tujuan = null;
+  let lng_tujuan = null;
+  let tanggal_ambil = "";
+  let jam_ambil = null;
 
-    if (!zona) {
+  if (metode_pengiriman === "Kirim") {
+    if (!alamat) {
       return NextResponse.json(
-        { pesan: "Zona pengiriman tidak valid atau sudah tidak aktif." },
+        { pesan: "Alamat pengiriman wajib diisi." },
         { status: 400 }
       );
     }
-    ongkir = Number(zona.tarif || 0);
-  }
 
-  const { data: pengaturan } = await supabase
-    .from("pengaturan_toko")
-    .select("*")
-    .eq("id", 1)
-    .single();
+    lat_tujuan = Number(body.lat_tujuan);
+    lng_tujuan = Number(body.lng_tujuan);
 
-  const minimalHariCustom = pengaturan?.minimal_hari_pesan ?? 2;
-  const minimalHariKatalog = pengaturan?.minimal_hari_katalog ?? pengaturan?.minimal_hari_siap ?? 1;
-  const kuotaHarian = pengaturan?.kuota_harian ?? 5;
-
-  const jamKhusus = jamBukaTutupUntukTanggal(tanggal_ambil, pengaturan);
-  const jamBuka = jamKhusus.buka;
-  const jamTutup = jamKhusus.tutup;
-
-  let minimalHari = minimalHariCustom;
-  if (customCount > 0 && katalogCount > 0) {
-    minimalHari = Math.max(minimalHariCustom, minimalHariKatalog);
-  } else if (customCount > 0 && katalogCount === 0) {
-    minimalHari = minimalHariCustom;
-  } else if (customCount === 0 && katalogCount > 0) {
-    minimalHari = minimalHariKatalog;
-  }
-
-  const tanggalMinimal = hitungTanggalMinimal(minimalHari);
-
-  if (tanggal_ambil < tanggalMinimal) {
-    return NextResponse.json(
-      {
-        pesan: `Tanggal pengambilan minimal adalah ${tanggalMinimal} berdasarkan isi keranjang Anda.`,
-      },
-      { status: 400 }
-    );
-  }
-
-  const { data: tutup } = await supabase
-    .from("tanggal_tutup")
-    .select("alasan")
-    .eq("tanggal", tanggal_ambil)
-    .single();
-
-  if (tutup) {
-    return NextResponse.json(
-      {
-        pesan: `Toko tutup pada tanggal tersebut: ${tutup.alasan || "Libur operasional"}. Silakan pilih tanggal lain.`,
-      },
-      { status: 400 }
-    );
-  }
-
-  if (customCount > 0) {
-    const hariIni = getTanggalHariIniJakarta();
-    const { data: pesananAktif } = await supabase
-      .from("pesanan")
-      .select("id")
-      .eq("tanggal_ambil", tanggal_ambil)
-      .gte("tanggal_ambil", hariIni)
-      .neq("status_pesanan", "Dibatalkan");
-
-    const pesananIds = (pesananAktif || []).map((p) => p.id);
-    let totalCustomAktif = 0;
-
-    if (pesananIds.length > 0) {
-      const { data: itemsAktif } = await supabase
-        .from("pesanan_item")
-        .select("id")
-        .in("id_pesanan", pesananIds)
-        .eq("jenis", "Custom");
-
-      if (itemsAktif && itemsAktif.length > 0) {
-        totalCustomAktif = itemsAktif.length;
-      } else {
-        totalCustomAktif = pesananIds.length;
-      }
+    if (!validasiKoordinat(lat_tujuan, lng_tujuan)) {
+      return NextResponse.json(
+        { pesan: "Koordinat lokasi pengiriman tidak valid untuk wilayah Indonesia." },
+        { status: 400 }
+      );
     }
 
-    if (totalCustomAktif + customCount > kuotaHarian) {
+    const latToko = Number(pengaturan?.lat_toko);
+    const lngToko = Number(pengaturan?.lng_toko);
+
+    if (!validasiKoordinat(latToko, lngToko)) {
+      return NextResponse.json(
+        { pesan: "Pengiriman belum tersedia (lokasi toko belum dikonfigurasi)." },
+        { status: 400 }
+      );
+    }
+
+    const faktorJalan = Number(pengaturan?.faktor_jalan) || 1.3;
+    const maksJarak = Number(pengaturan?.maks_jarak_kirim_km) || 20;
+
+    jarak_km = hitungJarakJalan(latToko, lngToko, lat_tujuan, lng_tujuan, faktorJalan);
+
+    if (jarak_km > maksJarak) {
       return NextResponse.json(
         {
-          pesan: `Kapasitas dapur untuk kue custom pada tanggal ${tanggal_ambil} sudah penuh. Silakan pilih tanggal lain.`,
+          pesan: `Alamat tujuan berjarak ${jarak_km} km, melebihi batas jangkauan pengiriman (${maksJarak} km).`,
         },
         { status: 400 }
       );
     }
-  }
 
-  if (jam_ambil < jamBuka || jam_ambil > jamTutup) {
-    return NextResponse.json(
-      {
-        pesan: `Jam pengambilan harus berada di antara jam buka (${jamBuka}) dan jam tutup (${jamTutup}).`,
-      },
-      { status: 400 }
-    );
+    const { data: daftarTarif } = await supabase
+      .from("tarif_jarak")
+      .select("id, jarak_maks_km, tarif, aktif")
+      .eq("aktif", true)
+      .order("jarak_maks_km", { ascending: true });
+
+    const tarifDitemukan = cariTarifJarak(jarak_km, daftarTarif || [], maksJarak);
+
+    if (tarifDitemukan === null) {
+      return NextResponse.json(
+        { pesan: `Tarif pengiriman untuk jarak ${jarak_km} km tidak tersedia.` },
+        { status: 400 }
+      );
+    }
+
+    ongkir = tarifDitemukan;
+
+    const estimasiKirim = hitungEstimasi({
+      adaCustom: customCount > 0,
+      adaKatalog: katalogCount > 0,
+      metode: "Kirim",
+      tanggalDiminta: body.tanggal_diminta || "",
+      hariIni,
+      pengaturan,
+      tanggalTutup: listTutup || [],
+      tanggalPenuh,
+    });
+
+    if (!estimasiKirim.valid) {
+      return NextResponse.json(
+        { pesan: estimasiKirim.pesan || "Tanggal pengiriman tidak valid." },
+        { status: 400 }
+      );
+    }
+
+    tanggal_ambil = estimasiKirim.tanggalPasti || estimasiKirim.tanggalAwal;
+    jam_ambil = null;
+  } else {
+    ongkir = 0;
+    tanggal_ambil = body.tanggal_ambil || "";
+    jam_ambil = (body.jam_ambil || "").slice(0, 5);
+
+    if (!tanggal_ambil) {
+      return NextResponse.json(
+        { pesan: "Tanggal pengambilan wajib dipilih." },
+        { status: 400 }
+      );
+    }
+
+    if (!jam_ambil) {
+      return NextResponse.json(
+        { pesan: "Jam pengambilan wajib dipilih." },
+        { status: 400 }
+      );
+    }
+
+    const estimasiAmbil = hitungEstimasi({
+      adaCustom: customCount > 0,
+      adaKatalog: katalogCount > 0,
+      metode: "Ambil",
+      tanggalDiminta: tanggal_ambil,
+      jamDiminta: jam_ambil,
+      hariIni,
+      pengaturan,
+      tanggalTutup: listTutup || [],
+      tanggalPenuh,
+    });
+
+    if (!estimasiAmbil.valid) {
+      return NextResponse.json(
+        { pesan: estimasiAmbil.pesan || "Jadwal pengambilan tidak valid." },
+        { status: 400 }
+      );
+    }
   }
 
   const hasilHitung = hitungPesanan(
@@ -329,7 +400,7 @@ export async function POST(request) {
       .from("pesanan")
       .select("id")
       .eq("kode_pesanan", calonKode)
-      .single();
+      .maybeSingle();
 
     if (!adaKode) {
       kodePesanan = calonKode;
@@ -353,7 +424,10 @@ export async function POST(request) {
       jam_ambil: jam_ambil,
       metode_pengiriman: metode_pengiriman,
       alamat: metode_pengiriman === "Kirim" ? alamat : null,
-      id_zona: metode_pengiriman === "Kirim" ? id_zona : null,
+      patokan: metode_pengiriman === "Kirim" ? patokan : null,
+      lat_tujuan: metode_pengiriman === "Kirim" ? lat_tujuan : null,
+      lng_tujuan: metode_pengiriman === "Kirim" ? lng_tujuan : null,
+      jarak_km: metode_pengiriman === "Kirim" ? jarak_km : null,
       ongkir: ongkir,
       total_kue: hasilHitung.total_kue,
       total_bayar: hasilHitung.total_bayar,
@@ -373,7 +447,6 @@ export async function POST(request) {
     );
   }
 
-  let gagalRollback = false;
   const filesDipindahkan = [];
 
   try {
@@ -465,10 +538,7 @@ export async function POST(request) {
       id_user: user.id,
     });
 
-    const oldFilesToDelete = [];
-    for (let i = 0; i < filesDipindahkan.length; i++) {
-      oldFilesToDelete.push(filesDipindahkan[i].oldPath);
-    }
+    const oldFilesToDelete = filesDipindahkan.map((f) => f.oldPath);
     if (oldFilesToDelete.length > 0) {
       await supabase.storage.from("referensi-kue").remove(oldFilesToDelete);
     }
@@ -478,7 +548,8 @@ export async function POST(request) {
       .delete()
       .eq("id_pelanggan", user.id);
   } catch (err) {
-    gagalRollback = true;
+    await supabase.from("pesanan_pilihan").delete().eq("id_pesanan", pesananBaru.id);
+    await supabase.from("pesanan_item").delete().eq("id_pesanan", pesananBaru.id);
     await supabase.from("pesanan").delete().eq("id", pesananBaru.id);
 
     return NextResponse.json(

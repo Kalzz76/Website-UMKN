@@ -130,6 +130,7 @@ export async function POST(request, { params }) {
   const updateData = { status_pesanan: status_baru };
   if (status_baru === "Dibatalkan") {
     updateData.alasan_batal = alasan_batal.trim();
+    updateData.dibatalkan_oleh = "Admin";
   }
 
   await supabase

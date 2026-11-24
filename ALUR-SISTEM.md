@@ -21,15 +21,16 @@
 * **Atribut Produk**:
   1. `nama`: Nama produk kue/dessert.
   2. `id_kategori`: Relasi foreign key ke tabel `kategori_produk(id)` on delete set null.
-  3. `deskripsi`: Penjelasan rasa dan tekstur.
-  4. `komposisi`: Bahan-bahan utama pembuatan (text default '').
-  5. `porsi`: Estimasi porsi (contoh: *Whole Cake Ø16 cm · 6–8 Porsi*).
-  6. `harga`: Nominal harga pasti (Rupiah).
-  7. `foto`: Berkas gambar produk yang tersimpan di storage publik.
-  8. `label_teks`: Tag visual singkat (contoh: *"Best Seller"*, *"Signature"*, *"Favorit"*).
-  9. `unggulan`: Penanda *boolean* untuk produk yang otomatis tampil di seksi Menu Populer Beranda.
-  10. `urutan`: Urutan prioritas tampil di katalog.
-  11. `aktif`: Status ketersediaan produk (*boolean*).
+  3. `deskripsi`: Penjelasan rasa, keunggulan, serta informasi penting seperti alergen (kacang, susu, gluten).
+  4. `harga`: Nominal harga pasti (Rupiah).
+  5. `foto`: Berkas gambar produk yang tersimpan di storage publik.
+  6. `label_teks`: Tag visual singkat (contoh: *"Best Seller"*, *"Signature"*, *"Favorit"*), maksimal 24 karakter.
+  7. `unggulan`: Penanda *boolean* untuk produk yang otomatis tampil di seksi Menu Populer Beranda (maksimal 4 produk).
+  8. `aktif`: Status ketersediaan produk (*boolean*).
+* **Penyederhanaan Katalog**:
+  * Produk katalog **tidak memakai urutan tampil, porsi, dan komposisi bahan** di form admin maupun antarmuka pengguna.
+  * Pengurutan katalog secara baku mengikuti waktu pembuatan produk (`dibuat_pada` menurun / terbaru).
+  * Kategori produk diurutkan berdasarkan waktu pembuatan (`id` terlama dulu agar chip kategori stabil).
 * **Tanpa Manajemen Stok & Resep**: Produk katalog **tidak memakai tabel stok bahan maupun resep item**. Apabila suatu produk katalog habis di toko fisik, Admin cukup menonaktifkannya (`aktif = false`).
 * **Rating Dihapus dari UI**: Semua angka rating statis (seperti "4.9") dan badge terjual dummy dihapus dari antarmuka menu hingga fitur ulasan terverifikasi pelanggan diimplementasikan di kemudian hari.
 
@@ -152,3 +153,53 @@ Pengaturan toko diakses oleh Admin melalui `/dashboard/pengaturan` yang terbagi 
 ## 10. Ketentuan Format Angka & Waktu Pengambilan
 * **Jam Pengambilan**: Pilihan slot jam pengambilan/pengiriman pada formulir checkout divalidasi oleh fungsi `jamBukaTutupUntukTanggal` di `lib/jam.js` menyesuaikan batasan jam buka dan tutup dari kelompok hari tanggal yang dipilih pelanggan (Senin–Jumat atau Sabtu–Minggu).
 * **Tipografi Angka Rupiah**: Seluruh tampilan nominal mata uang Rupiah wajib menggunakan kelas utilitas `lining-nums` (serta `tabular-nums` pada tabel/rincian) agar angka tidak bertingkat atau memiliki ekor kebawah (*oldstyle figures*), menghasilkan tampilan angka yang rata dan rapi.
+
+---
+
+## 11. Catatan Implementasi & Perbaikan Fase 2A
+1. **Aturan Integritas Berkas**:
+   * **DILARANG menghapus berkas, halaman, atau komponen apa pun** tanpa persetujuan eksplisit dari pengguna. Komponen yang tidak dipakai wajib dilaporkan dan ditanyakan terlebih dahulu.
+2. **Halaman & Komponen Dibuat/Diperbarui**:
+   * `components/patisserie/KasirView.tsx`: Dipulihkan dan dijadikan desain antarmuka resmi halaman `/keranjang` dengan mempertahankan seluruh kelas styling, warna, tipografi, dan animasi aslinya. Sumber data dihubungkan ke `GET /api/keranjang` (dua kelompok Custom dan Katalog, kontrol kuantitas 1–20, hapus item, penanda item tidak tersedia, dan event `cravely_cart_updated`). Bagian yang belum memiliki dasar sistem (voucher dan modal simulasi WhatsApp) dipertahankan di dalam kode tanpa dirender (`false && (...)`).
+   * `app/keranjang/page.js`: Merender komponen `KasirView` secara dinamis, mengelola data keranjang dari server, serta memproteksi autentikasi (redirect ke `/masuk?ke=/keranjang` jika unauthenticated).
+   * `app/menu/page.js` & `components/patisserie/DessertsMenuView.tsx`: Tampilan katalog dinamis dari database tanpa dummy data `MENU_ITEMS`, tanpa rating, tanpa opsi "Urutan Toko" (hanya Terbaru, Harga Terendah, Harga Tertinggi). Panel pratinjau kiri disederhanakan tanpa porsi dan komposisi bahan. Pencarian memeriksa nama dan deskripsi.
+   * `app/dashboard/katalog-opsi/page.js`: Form produk disederhanakan tanpa field urutan tampil, tanpa porsi, dan tanpa komposisi bahan. Harga diawali kosong dengan placeholder (tanpa default 100000). Deskripsi dilengkapi bantuan info alergen. Modal "Kelola Kategori" disederhanakan tanpa input urutan.
+   * `lib/menuPopuler.js`: Menu Populer pada landing page dibaca dari database (`aktif = true` dan `unggulan = true`, maksimal 4 item) diurutkan berdasarkan `dibuat_pada` menurun.
+   * `app/kasir/page.js`: Dialihkan (*redirect*) permanen ke `/keranjang`. Seluruh tautan kasir di footer, toko, dan dashboard pelanggan telah dialihkan ke `/keranjang`.
+3. **Autentikasi & Navigasi**:
+   * Standardisasi parameter redirect login menggunakan `?ke=` pada `middleware.js`, `app/masuk/page.js`, dan `app/daftar/page.js`. Sanitasi URL diterapkan ketat (hanya single leading slash `/` dan mencegah open redirect).
+   * Indikator keranjang belanja pada `DynamicIslandNavbar` terhubung ke API `/api/keranjang/jumlah` dan merespons event `cravely_cart_updated`.
+4. **Keamanan API Pengaturan**:
+   * Endpoint publik `GET /api/pengaturan` dibatasi hanya mengembalikan kolom-kolom aman toko, jam operasional, parameter jarak, dan informasi publik rekening/QRIS tanpa mengekspos data internal/sensitif.
+
+---
+
+## 12. Ketentuan & Arsitektur Fase 2B (Midtrans, Estimasi, Ongkir Jarak)
+1. **Aturan Mutlak Integritas Berkas**:
+   * **DILARANG MENGHAPUS berkas, halaman, atau komponen apa pun** tanpa instruksi eksplisit pengguna dengan menyebut nama filenya.
+2. **Integrasi Midtrans Snap**:
+   * Midtrans digunakan sebagai **satu-satunya gerbang pembayaran pada saat checkout**.
+   * Form bank manual dan gambar QRIS manual di checkout dihapus dari alur checkout dan dialihkan menjadi cadangan operasional toko pada dashboard admin.
+   * Tombol "Bayar Sekarang" di `/checkout` membuat pesanan via `POST /api/checkout`, meminta snap token via `POST /api/midtrans/token`, lalu membuka jendela pop-up Snap.
+   * Seluruh callback Snap (`onSuccess`, `onPending`, `onClose`) mengarahkan pelanggan ke `/pesanan-saya/[kode]?bayar=1`. Status pembayaran **selalu bersumber dari server**, bukan mempercayai callback browser.
+   * Sinkronisasi status dilakukan idempotensial lewat `lib/midtransSinkron.js` yang digunakan bersama oleh Webhook (`/api/midtrans/webhook`) dan pengecekan manual (`/api/midtrans/cek`).
+   * Jika pelanggan membayar setelah pesanan kedaluwarsa/dibatalkan, pesanan ditandai `perlu_refund = true` untuk ditindaklanjuti toko secara manual tanpa mengubah status pesanan yang telah dibatalkan.
+3. **Rumus Perhitungan DP Campuran (Hitung Harga)**:
+   * Rumus baku:
+     $$\text{Bayar Sekarang} = (\text{Persen DP} \times \text{Subtotal Custom}) + \text{Subtotal Katalog} + \text{Ongkir}$$
+     $$\text{Sisa Pelunasan} = (100\% - \text{Persen DP}) \times \text{Subtotal Custom}$$
+   * Jika mode pembayaran toko disetel `Lunas`, maka $\text{Bayar Sekarang} = \text{Total Tagihan}$ dan $\text{Sisa Pelunasan} = 0$.
+4. **Perhitungan Ongkir Berbasis Jarak**:
+   * Checkout metode `Kirim` mewajibkan pin lokasi pada `PetaLokasi` (Leaflet dinamis + OpenStreetMap) dan alamat lengkap.
+   * Ongkir dihitung ulang secara mutlak di server lewat `lib/ongkir.js` berdasarkan koordinat pin toko, koordinat tujuan, `faktor_jalan` (default 1.3), dan batas tier jarak `tarif_jarak`.
+   * Pilihan zona tarif manual lama dinonaktifkan dari checkout dan dilabeli khusus untuk rute lama `/pesan`.
+   * Pencarian alamat menggunakan proxy server `/api/cari-alamat` ke Nominatim OpenStreetMap dengan header identifikasi aplikasi dan pembatasan negara Indonesia.
+5. **Estimasi Pengiriman & Pengambilan (`lib/estimasi.js`)**:
+   * Untuk `Kirim`: tanggal paling awal dihitung dari `hariIni + max(hari_persiapan)`, melewati tanggal libur/tutup toko dan tanggal kuota custom penuh. Sistem menampilkan rentang estimasi tiba "tanggalAwal sampai tanggalAkhir" (hari kalender berikutnya yang juga melewati libur) tanpa jam ambil. Pelanggan dapat memilih opsi tiba pada tanggal pasti.
+   * Untuk `Ambil`: pelanggan memilih tanggal pengambilan dan jam pengambilan yang divalidasi ketat terhadap jam buka-tutup operasional hari tersebut.
+6. **Dashboard Operasional Hari Ini (`/dashboard/hari-ini`)**:
+   * Memantau antrean pesanan yang dijadwalkan diserahkan hari ini dan pesanan yang menunggu pelunasan.
+   * Mendukung pencarian instan berdasarkan kode pesanan, nama, dan nomor WhatsApp.
+   * Menyediakan tindakan serah terima cepat ("Kirim", "Siap", "Selesai") serta pencatatan pelunasan tunai di toko (`pembayaran` metode Tunai).
+   * Menampilkan peringatan dini stok menipis dari tabel `bahan`.
+

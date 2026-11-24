@@ -28,6 +28,16 @@ Kode di project ini harus sederhana dan bersih, terlihat ditulis manual oleh pel
 11. Tampilan memakai **Next.js App Router + Tailwind CSS + Font Awesome 6.4 (lewat CDN di layout)**. Tidak memakai library komponen (shadcn, MUI, dll).
 12. Library yang diizinkan hanya: `next`, `react`, `react-dom`, `tailwindcss`, `@supabase/supabase-js`, `@supabase/ssr`, `gsap` (animasi scroll di landing), `qrcode` (membuat QR tiket), `chart.js` (dipakai langsung di client component lewat `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`, tanpa `react-chartjs-2`), dan `three` (Three.js diizinkan hanya di `/pesan` dan wajib dimuat secara dinamis). File CSS eksternal studio `app/pesan/cakecraft.css` khusus digunakan di `/pesan`. Library lain tanya dulu.
 13. Fitur yang tidak ada di `CLAUDE.md` ini tidak boleh ditambahkan hanya karena ada di referensi. Referensi dipakai untuk **tampilan**, bukan untuk menambah fitur.
+14. **DILARANG menghapus file, halaman, atau komponen apa pun** kecuali pengguna menyebut nama filenya secara eksplisit di pesan permintaan. Kalau menurut analisis ada yang perlu dihapus atau tidak dipakai, daftarkan di laporan dan tanyakan terlebih dahulu.
+15. **Keputusan Katalog & Keranjang**:
+    - Halaman keranjang belanja resmi berada di `/keranjang` dengan memakai desain antarmuka `components/patisserie/KasirView.tsx`.
+    - Katalog produk (`/menu`, form admin, API) disederhanakan: tanpa kolom urutan tampil, tanpa porsi, dan tanpa komposisi bahan. Pengurutan produk otomatis terbaru (`dibuat_pada` menurun). Kategori produk diurutkan berdasarkan `id` terlama.
+16. **Keputusan Midtrans, Estimasi & Ongkir Jarak (Fase 2B)**:
+    - **Midtrans Snap**: Satu-satunya metode bayar pada checkout. Callback Snap mengarahkan ke `/pesanan-saya/[kode]?bayar=1`; status pembayaran diverifikasi mutlak dari server. Webhook (`/api/midtrans/webhook`) dan cek manual (`/api/midtrans/cek`) bersifat idempoten via `lib/midtransSinkron.js`.
+    - **Rumus DP Campuran**: DP% hanya berlaku dan dihitung dari subtotal kue Custom. Subtotal Katalog dan Ongkir wajib 100% di awal.
+    - **Ongkir Berbasis Jarak**: Untuk metode Kirim, wajib pin koordinat via `PetaLokasi` (Leaflet) dan ongkir dihitung ulang di server via `lib/ongkir.js` berdasarkan tabel `tarif_jarak` dan faktor jalan toko.
+    - **Estimasi Pengiriman**: Dihitung via `lib/estimasi.js` dalam zona Asia/Jakarta melewati hari libur (`tanggal_tutup`) dan kuota custom.
+    - **Operasional Hari Ini**: Dikelola di `/dashboard/hari-ini` untuk memantau jadwal hari ini, serah terima, dan pelunasan tunai di toko.
 
 Aturan ini berlaku untuk semua perubahan berikutnya, tanpa perlu diingatkan lagi.
 
@@ -67,6 +77,9 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
 CRON_SECRET
+MIDTRANS_SERVER_KEY
+NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
+NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` **hanya boleh dipakai di kode server** (Route Handler dan server component). Dilarang di-import dari file yang memakai `"use client"`, dan dilarang diberi awalan `NEXT_PUBLIC_`. File `.env.local` tidak ikut di-commit.
@@ -77,17 +90,21 @@ CRON_SECRET
 toko-kue/
 ├── app/
 │   ├── layout.js
-│   ├── page.js                          landing page publik
+│   ├── page.js                          landing page publik (server component Menu Populer)
+│   ├── menu/page.js                     katalog produk dessert & kue (dinamis DB)
+│   ├── keranjang/page.js                keranjang belanja (custom + katalog)
+│   ├── checkout/page.js                 checkout pesanan terpadu
+│   ├── kasir/page.js                    redirect ke /keranjang
 │   ├── pesan/page.js                    alur pemesanan bertahap
-│   ├── masuk/page.js
-│   ├── daftar/page.js
+│   ├── masuk/page.js                    login dengan sanitasi ?ke=
+│   ├── daftar/page.js                   registrasi akun
 │   ├── pesanan-saya/page.js             daftar pesanan pelanggan
 │   ├── pesanan-saya/[kode]/page.js      detail, status, tiket QR
 │   ├── dashboard/
 │   │   ├── dashboard.css                CSS dashboard referensi (semua class dipertahankan, tanpa komentar)
 │   │   ├── layout.js                    sidebar & topbar sesuai role
 │   │   ├── page.js                      ringkasan dashboard admin & staf
-│   │   ├── katalog-opsi/page.js         admin
+│   │   ├── katalog-opsi/page.js         admin (opsi custom, produk katalog, kelola kategori)
 │   │   ├── pesanan/page.js              admin + staf
 │   │   ├── pesanan/[kode]/page.js       admin + staf
 │   │   ├── stok/page.js                 admin + staf
@@ -95,6 +112,8 @@ toko-kue/
 │   │   ├── pengaturan/page.js           admin
 │   │   └── akun/page.js                 admin
 │   └── api/
+│       ├── keranjang/route.js           item keranjang (custom & katalog)
+│       ├── keranjang/jumlah/route.js    total kuantitas keranjang
 │       ├── pesanan/route.js             buat pesanan (harga dihitung di server)
 │       ├── pesanan/[kode]/status/route.js
 │       ├── pembayaran/route.js          unggah bukti bayar
