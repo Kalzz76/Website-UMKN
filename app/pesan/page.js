@@ -1401,10 +1401,173 @@ function stand(pr) {
   return new THREE.Mesh(new THREE.LatheGeometry(pts, 96), M("#FFFDF9", 0.35));
 }
 
+function makeItemPlatter(itemType, pr, M, S) {
+  if (!itemType || itemType === "cake") {
+    return stand(pr);
+  }
+  const g = new THREE.Group();
+  if (itemType === "tart") {
+    const basePts = [
+      [0, -0.7],
+      [pr * 0.9, -0.7],
+      [pr * 0.94, -0.68],
+      [pr * 0.94, -0.08],
+      [pr * 0.98, -0.04],
+      [pr * 0.98, -0.01],
+      [0, -0.01],
+    ].map((p) => new THREE.Vector2(p[0], p[1]));
+    const woodBlock = new THREE.Mesh(
+      new THREE.LatheGeometry(basePts, 64),
+      new THREE.MeshStandardMaterial({ color: "#BD8C58", roughness: 0.65 })
+    );
+    g.add(woodBlock);
+
+    const panPts = [
+      [0, -0.01],
+      [pr * 0.86, -0.01],
+      [pr * 0.98, 0.01],
+      [pr * 1.06, 0.035],
+      [pr * 1.04, 0.04],
+      [pr * 0.96, 0.018],
+      [0, 0.018],
+    ].map((p) => new THREE.Vector2(p[0], p[1]));
+    const piePan = new THREE.Mesh(
+      new THREE.LatheGeometry(panPts, 64),
+      new THREE.MeshStandardMaterial({
+        color: "#C2C9CF",
+        metalness: 0.75,
+        roughness: 0.28,
+      })
+    );
+    g.add(piePan);
+    return g;
+  }
+  if (itemType === "cupcake") {
+    const pts = [
+      [0, -0.7],
+      [0.9, -0.7],
+      [0.95, -0.68],
+      [0.45, -0.62],
+      [0.28, -0.42],
+      [0.26, -0.15],
+      [0.38, -0.03],
+      [pr * 0.95, -0.005],
+      [pr * 1.12, 0.032],
+      [pr * 1.08, 0.036],
+      [pr * 0.96, 0.014],
+      [0, 0.014],
+    ].map((p) => new THREE.Vector2(p[0], p[1]));
+    const plate = new THREE.Mesh(
+      new THREE.LatheGeometry(pts, 64),
+      new THREE.MeshStandardMaterial({
+        color: "#FAF7F2",
+        roughness: 0.22,
+        metalness: 0.04,
+      })
+    );
+    g.add(plate);
+
+    const goldRim = new THREE.Mesh(
+      new THREE.TorusGeometry(pr * 1.1, 0.012, 12, 64),
+      new THREE.MeshStandardMaterial({
+        color: "#D4AF37",
+        metalness: 0.85,
+        roughness: 0.25,
+      })
+    );
+    goldRim.rotation.x = Math.PI / 2;
+    goldRim.position.y = 0.032;
+    g.add(goldRim);
+    return g;
+  }
+  if (itemType === "donut") {
+    const blockPts = [
+      [0, -0.7],
+      [pr * 0.84, -0.7],
+      [pr * 0.88, -0.68],
+      [pr * 0.42, -0.52],
+      [pr * 0.35, -0.18],
+      [pr * 0.45, -0.05],
+      [0, -0.05],
+    ].map((p) => new THREE.Vector2(p[0], p[1]));
+    const riser = new THREE.Mesh(
+      new THREE.LatheGeometry(blockPts, 48),
+      new THREE.MeshStandardMaterial({ color: "#8E5429", roughness: 0.72 })
+    );
+    g.add(riser);
+
+    const board = new THREE.Mesh(
+      new THREE.CylinderGeometry(pr * 1.18, pr * 1.14, 0.06, 48),
+      new THREE.MeshStandardMaterial({ color: "#A86D3C", roughness: 0.65 })
+    );
+    board.position.y = -0.025;
+    g.add(board);
+
+    const paper = new THREE.Mesh(
+      new THREE.PlaneGeometry(pr * 1.85, pr * 1.85),
+      new THREE.MeshStandardMaterial({
+        color: "#FAF4E8",
+        roughness: 0.85,
+        transparent: true,
+        opacity: 0.95,
+      })
+    );
+    paper.rotation.x = -Math.PI / 2;
+    paper.rotation.z = 0.12;
+    paper.position.y = 0.008;
+    g.add(paper);
+    return g;
+  }
+  if (itemType === "cookies") {
+    const blockPts = [
+      [0, -0.7],
+      [pr * 0.84, -0.7],
+      [pr * 0.88, -0.68],
+      [pr * 0.38, -0.45],
+      [pr * 0.32, -0.15],
+      [pr * 0.48, -0.04],
+      [0, -0.04],
+    ].map((p) => new THREE.Vector2(p[0], p[1]));
+    const riser = new THREE.Mesh(
+      new THREE.LatheGeometry(blockPts, 48),
+      new THREE.MeshStandardMaterial({ color: "#484038", roughness: 0.75 })
+    );
+    g.add(riser);
+
+    const slate = new THREE.Mesh(
+      new THREE.CylinderGeometry(pr * 1.18, pr * 1.22, 0.05, 48),
+      new THREE.MeshStandardMaterial({
+        color: "#28292C",
+        roughness: 0.88,
+        metalness: 0.12,
+      })
+    );
+    slate.position.y = -0.02;
+    g.add(slate);
+
+    const bevel = new THREE.Mesh(
+      new THREE.TorusGeometry(pr * 1.17, 0.014, 8, 48),
+      new THREE.MeshStandardMaterial({ color: "#3B3C40", roughness: 0.9 })
+    );
+    bevel.rotation.x = Math.PI / 2;
+    bevel.position.y = 0.006;
+    g.add(bevel);
+    return g;
+  }
+  return stand(pr);
+}
+
 function makeOneCupcake(paperMat, muffinMat, S, sliced) {
   const g = new THREE.Group();
-  const arc = sliced ? Math.PI * 1.5 : Math.PI * 2;
-  const thStart = sliced ? Math.PI * 0.25 : 0;
+  const crumbTex = getCrumbTexture();
+  let muffinColor = "#E5A75B";
+  if (S.flavor === "choco") muffinColor = "#4A2716";
+  else if (S.flavor === "velvet") muffinColor = "#8A1E26";
+  else if (S.flavor === "straw") muffinColor = "#DC5972";
+
+  const cutAngle = sliced ? Math.PI * 0.5 : 0;
+  const arc = Math.PI * 2 - cutAngle;
+  const thStart = cutAngle * 0.5;
 
   const cup = new THREE.Mesh(
     new THREE.CylinderGeometry(0.78, 0.54, 0.68, 48, 1, false, thStart, arc),
@@ -1470,18 +1633,74 @@ function makeOneCupcake(paperMat, muffinMat, S, sliced) {
   }
 
   if (sliced) {
-    const cutCrumbMat = muffinMat.clone();
-    cutCrumbMat.roughness = 0.95;
-    const f1 = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.72), cutCrumbMat);
-    f1.position.set(Math.cos(thStart) * 0.41, 0.52, -Math.sin(thStart) * 0.41);
-    f1.rotation.y = -thStart + Math.PI / 2;
-    g.add(f1);
+    const crumbMat = new THREE.MeshStandardMaterial({
+      color: muffinColor,
+      roughness: 0.92,
+      map: crumbTex.map,
+      bumpMap: crumbTex.bump,
+      bumpScale: 3.5,
+      side: THREE.DoubleSide,
+    });
+    const fillMat = new THREE.MeshStandardMaterial({
+      color: S.flavor === "choco" ? "#2B1408" : S.flavor === "straw" ? "#B71C1C" : "#E8B258",
+      roughness: 0.25,
+      side: THREE.DoubleSide,
+    });
 
-    const endAng = thStart + arc;
-    const f2 = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.72), cutCrumbMat);
-    f2.position.set(Math.cos(endAng) * 0.41, 0.52, -Math.sin(endAng) * 0.41);
-    f2.rotation.y = -endAng - Math.PI / 2;
-    g.add(f2);
+    const cutShape = new THREE.Shape();
+    cutShape.moveTo(0, 0.01);
+    cutShape.lineTo(0.53, 0.01);
+    cutShape.lineTo(0.77, 0.68);
+    cutShape.quadraticCurveTo(0.86, 0.94, 0.54, 1.11);
+    cutShape.quadraticCurveTo(0.26, 1.21, 0, 1.21);
+    cutShape.lineTo(0, 0.01);
+    const cutGeo = new THREE.ShapeGeometry(cutShape);
+
+    const w1 = new THREE.Mesh(cutGeo, crumbMat);
+    w1.rotation.y = -thStart;
+    const fCore1 = new THREE.Mesh(new THREE.CircleGeometry(0.18, 16), fillMat);
+    fCore1.position.set(0.26, 0.58, 0.003);
+    w1.add(fCore1);
+    g.add(w1);
+
+    const w2 = new THREE.Mesh(cutGeo, crumbMat);
+    w2.rotation.y = -(thStart + arc);
+    const fCore2 = new THREE.Mesh(new THREE.CircleGeometry(0.18, 16), fillMat);
+    fCore2.position.set(0.26, 0.58, -0.003);
+    w2.add(fCore2);
+    g.add(w2);
+
+    const sliceG = new THREE.Group();
+    const slArc = cutAngle - 0.06;
+    const slCup = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.78, 0.54, 0.68, 16, 1, false, 0, slArc),
+      paperMat
+    );
+    slCup.position.y = 0.34;
+    sliceG.add(slCup);
+
+    const slDomeGeo = new THREE.SphereGeometry(0.86, 16, 12, 0, slArc);
+    slDomeGeo.scale(1.04, 0.62, 1.04);
+    const slDome = new THREE.Mesh(slDomeGeo, muffinMat);
+    slDome.position.y = 0.72;
+    sliceG.add(slDome);
+
+    const sw1 = new THREE.Mesh(cutGeo, crumbMat);
+    sw1.rotation.y = 0;
+    const sCore1 = new THREE.Mesh(new THREE.CircleGeometry(0.18, 16), fillMat);
+    sCore1.position.set(0.26, 0.58, -0.003);
+    sw1.add(sCore1);
+    sliceG.add(sw1);
+
+    const sw2 = new THREE.Mesh(cutGeo, crumbMat);
+    sw2.rotation.y = -slArc;
+    const sCore2 = new THREE.Mesh(new THREE.CircleGeometry(0.18, 16), fillMat);
+    sCore2.position.set(0.26, 0.58, 0.003);
+    sw2.add(sCore2);
+    sliceG.add(sw2);
+
+    sliceG.position.set(0.32, 0, 0.08);
+    g.add(sliceG);
   }
 
   return g;
@@ -1596,8 +1815,9 @@ function build3DTart(add, M, MB, S, sliced) {
     bumpScale: 1.2,
   });
 
-  const arc = sliced ? Math.PI * 1.65 : Math.PI * 2;
-  const thStart = sliced ? Math.PI * 0.35 : 0;
+  const cutAngle = sliced ? Math.PI * 0.35 : 0;
+  const arc = Math.PI * 2 - cutAngle;
+  const thStart = cutAngle * 0.5;
 
   const shell = new THREE.Mesh(
     new THREE.CylinderGeometry(1.62, 1.45, 0.16, 64, 1, false, thStart, arc),
@@ -1610,7 +1830,7 @@ function build3DTart(add, M, MB, S, sliced) {
   fluteGeo.scale(0.85, 1.2, 1.35);
   const totalFlutes = sliced ? 28 : 34;
   for (let i = 0; i < totalFlutes; i++) {
-    const a = thStart + (i * arc) / totalFlutes;
+    const a = thStart + 0.04 + (i * (arc - 0.08)) / Math.max(1, totalFlutes - 1);
     const fl = new THREE.Mesh(fluteGeo, crustMat);
     fl.position.set(Math.cos(a) * 1.60, 0.22, Math.sin(a) * 1.60);
     fl.rotation.y = -a;
@@ -1634,6 +1854,7 @@ function build3DTart(add, M, MB, S, sliced) {
       [0, -0.7],
       [-0.75, 0],
     ].forEach(([bx, bz]) => {
+      if (sliced && bx > 0.3 && Math.abs(bz) < 0.5) return;
       const berry = new THREE.Mesh(getBerryG(), MB("#D62234", { roughness: 0.28 }));
       berry.position.set(bx, 0.36, bz);
       berry.scale.setScalar(0.95);
@@ -1686,35 +1907,81 @@ function build3DTart(add, M, MB, S, sliced) {
   }
 
   if (sliced) {
-    const f1 = new THREE.Mesh(new THREE.PlaneGeometry(1.52, 0.28), custardMat);
-    f1.position.set(Math.cos(thStart) * 0.76, 0.14, Math.sin(thStart) * 0.76);
-    f1.rotation.y = -thStart + Math.PI / 2;
-    g.add(f1);
+    const pieCutShape = new THREE.Shape();
+    pieCutShape.moveTo(0, 0.01);
+    pieCutShape.lineTo(1.48, 0.01);
+    pieCutShape.lineTo(1.62, 0.24);
+    pieCutShape.lineTo(1.46, 0.25);
+    pieCutShape.lineTo(0, 0.23);
+    pieCutShape.lineTo(0, 0.01);
+    const pieCutGeo = new THREE.ShapeGeometry(pieCutShape);
 
-    const endAng = thStart + arc;
-    const f2 = new THREE.Mesh(new THREE.PlaneGeometry(1.52, 0.28), custardMat);
-    f2.position.set(Math.cos(endAng) * 0.76, 0.14, Math.sin(endAng) * 0.76);
-    f2.rotation.y = -endAng - Math.PI / 2;
-    g.add(f2);
+    const cutFaceMat = new THREE.MeshStandardMaterial({
+      color: custardColor,
+      roughness: 0.3,
+      side: THREE.DoubleSide,
+    });
+    const crustBaseMat = new THREE.MeshStandardMaterial({
+      color: "#DCA052",
+      roughness: 0.8,
+      side: THREE.DoubleSide,
+    });
+
+    const pw1 = new THREE.Mesh(pieCutGeo, cutFaceMat);
+    pw1.rotation.y = -thStart;
+    const bCrust1 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.06), crustBaseMat);
+    bCrust1.position.set(0.75, 0.03, 0.002);
+    pw1.add(bCrust1);
+    g.add(pw1);
+
+    const pw2 = new THREE.Mesh(pieCutGeo, cutFaceMat);
+    pw2.rotation.y = -(thStart + arc);
+    const bCrust2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.06), crustBaseMat);
+    bCrust2.position.set(0.75, 0.03, -0.002);
+    pw2.add(bCrust2);
+    g.add(pw2);
 
     const sliceG = new THREE.Group();
-    const sliceArc = Math.PI * 2 - arc - 0.06;
-    const sShell = new THREE.Mesh(new THREE.CylinderGeometry(1.62, 1.45, 0.16, 16, 1, false, 0, sliceArc), crustMat);
+    const slArc = cutAngle - 0.06;
+    const sShell = new THREE.Mesh(new THREE.CylinderGeometry(1.62, 1.45, 0.16, 16, 1, false, 0, slArc), crustMat);
     sShell.position.y = 0.08;
     sliceG.add(sShell);
 
-    const sCustard = new THREE.Mesh(new THREE.CylinderGeometry(1.52, 1.50, 0.14, 16, 1, false, 0, sliceArc), custardMat);
+    const sCustard = new THREE.Mesh(new THREE.CylinderGeometry(1.52, 1.50, 0.14, 16, 1, false, 0, slArc), custardMat);
     sCustard.position.y = 0.21;
     sliceG.add(sCustard);
 
+    for (let i = 0; i < 4; i++) {
+      const flA = 0.04 + (i * (slArc - 0.08)) / 3;
+      const sFl = new THREE.Mesh(fluteGeo, crustMat);
+      sFl.position.set(Math.cos(flA) * 1.60, 0.22, Math.sin(flA) * 1.60);
+      sFl.rotation.y = -flA;
+      sFl.rotation.x = 0.25;
+      sliceG.add(sFl);
+    }
+
+    const sw1 = new THREE.Mesh(pieCutGeo, cutFaceMat);
+    sw1.rotation.y = 0;
+    const sb1 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.06), crustBaseMat);
+    sb1.position.set(0.75, 0.03, -0.002);
+    sw1.add(sb1);
+    sliceG.add(sw1);
+
+    const sw2 = new THREE.Mesh(pieCutGeo, cutFaceMat);
+    sw2.rotation.y = -slArc;
+    const sb2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.06), crustBaseMat);
+    sb2.position.set(0.75, 0.03, 0.002);
+    sw2.add(sb2);
+    sliceG.add(sw2);
+
     if (S.deco && S.deco.straw) {
       const sBerry = new THREE.Mesh(getBerryG(), MB("#D62234", { roughness: 0.28 }));
-      sBerry.position.set(Math.cos(sliceArc / 2) * 0.8, 0.36, Math.sin(sliceArc / 2) * 0.8);
+      sBerry.position.set(Math.cos(slArc / 2) * 0.9, 0.36, Math.sin(slArc / 2) * 0.9);
       sBerry.scale.setScalar(0.95);
       sliceG.add(sBerry);
     }
 
-    sliceG.position.set(0.35, 0, 0.35);
+    sliceG.position.set(0.35, 0, 0.05);
     g.add(sliceG);
   }
 
@@ -1723,8 +1990,10 @@ function build3DTart(add, M, MB, S, sliced) {
 
 function makeOneDonut(donutTex, donutMat, S, sliced) {
   const g = new THREE.Group();
-  const arc = sliced ? Math.PI * 1.62 : Math.PI * 2;
-  const thStart = sliced ? Math.PI * 0.2 : 0;
+  const crumbTex = getCrumbTexture();
+  const cutAngle = sliced ? Math.PI * 0.35 : 0;
+  const arc = Math.PI * 2 - cutAngle;
+  const thStart = cutAngle * 0.5;
 
   const torus = new THREE.Mesh(
     new THREE.TorusGeometry(0.72, 0.38, 36, 64, arc),
@@ -1736,12 +2005,13 @@ function makeOneDonut(donutTex, donutMat, S, sliced) {
   g.add(torus);
 
   const hasGlaze = S.deco && (S.deco.drip || S.deco.straw || S.deco.spr || S.deco.flower || S.deco.berry);
+  let glazeMat = null;
   if (hasGlaze) {
     let glazeColor = "#3E2211";
     if (S.deco && S.deco.straw) glazeColor = "#F06292";
     else if (S.deco && (S.deco.flower || S.deco.berry)) glazeColor = "#FFF8EE";
 
-    const glazeMat = new THREE.MeshStandardMaterial({
+    glazeMat = new THREE.MeshStandardMaterial({
       color: glazeColor,
       roughness: 0.18,
       metalness: 0.08,
@@ -1779,46 +2049,52 @@ function makeOneDonut(donutTex, donutMat, S, sliced) {
     const crumbColor = S.flavor === "choco" ? "#3A1E11" : S.flavor === "velvet" ? "#7A1C24" : S.flavor === "straw" ? "#C8556A" : "#F7E6CC";
     const capMat = new THREE.MeshStandardMaterial({
       color: crumbColor,
-      roughness: 0.9,
+      roughness: 0.95,
+      map: crumbTex.map,
+      bumpMap: crumbTex.bump,
+      bumpScale: 3.5,
+      side: THREE.DoubleSide,
     });
     const capGeo = new THREE.CircleGeometry(0.38, 24);
 
-    const a1 = thStart;
+    const u1 = thStart;
     const c1 = new THREE.Mesh(capGeo, capMat);
-    c1.position.set(Math.cos(a1) * 0.72, 0.38, Math.sin(a1) * 0.72);
-    c1.rotation.y = -a1;
-    c1.rotation.x = Math.PI / 2;
+    c1.position.set(0.72 * Math.cos(u1), 0.38, -0.72 * Math.sin(u1));
+    c1.lookAt(0.72 * Math.cos(u1) - Math.sin(u1), 0.38, -0.72 * Math.sin(u1) - Math.cos(u1));
     g.add(c1);
 
-    const a2 = thStart + arc;
+    const u2 = thStart + arc;
     const c2 = new THREE.Mesh(capGeo, capMat);
-    c2.position.set(Math.cos(a2) * 0.72, 0.38, Math.sin(a2) * 0.72);
-    c2.rotation.y = -a2 + Math.PI;
-    c2.rotation.x = Math.PI / 2;
+    c2.position.set(0.72 * Math.cos(u2), 0.38, -0.72 * Math.sin(u2));
+    c2.lookAt(0.72 * Math.cos(u2) + Math.sin(u2), 0.38, -0.72 * Math.sin(u2) + Math.cos(u2));
     g.add(c2);
 
-    const slicePiece = new THREE.Group();
-    const cutArc = Math.PI * 2 - arc - 0.08;
-    const cutTorus = new THREE.Mesh(
-      new THREE.TorusGeometry(0.72, 0.38, 36, 16, cutArc),
-      donutMat
-    );
-    cutTorus.rotation.x = Math.PI / 2;
-    cutTorus.position.y = 0.38;
-    slicePiece.add(cutTorus);
-    if (hasGlaze) {
-      let glazeColor = "#3E2211";
-      if (S.deco && S.deco.straw) glazeColor = "#F06292";
-      else if (S.deco && (S.deco.flower || S.deco.berry)) glazeColor = "#FFF8EE";
-      const gMat = new THREE.MeshStandardMaterial({ color: glazeColor, roughness: 0.18, metalness: 0.08 });
-      const cutGlaze = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.385, 24, 16, cutArc), gMat);
-      cutGlaze.rotation.x = Math.PI / 2;
-      cutGlaze.position.y = 0.385;
-      slicePiece.add(cutGlaze);
+    const chunkG = new THREE.Group();
+    const slArc = cutAngle - 0.08;
+    const slTorus = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.38, 24, 20, slArc), donutMat);
+    slTorus.rotation.x = Math.PI / 2;
+    slTorus.position.y = 0.38;
+    chunkG.add(slTorus);
+
+    if (glazeMat) {
+      const slGlaze = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.385, 16, 20, slArc), glazeMat);
+      slGlaze.rotation.x = Math.PI / 2;
+      slGlaze.position.y = 0.385;
+      chunkG.add(slGlaze);
     }
-    slicePiece.position.set(0.32, 0, 0.32);
-    slicePiece.rotation.y = 0.2;
-    g.add(slicePiece);
+
+    const sc1 = new THREE.Mesh(capGeo, capMat);
+    sc1.position.set(0.72, 0.38, 0);
+    sc1.lookAt(0.72, 0.38, -1);
+    chunkG.add(sc1);
+
+    const sc2 = new THREE.Mesh(capGeo, capMat);
+    sc2.position.set(0.72 * Math.cos(slArc), 0.38, -0.72 * Math.sin(slArc));
+    sc2.lookAt(0.72 * Math.cos(slArc) - Math.sin(slArc), 0.38, -0.72 * Math.sin(slArc) - Math.cos(slArc));
+    chunkG.add(sc2);
+
+    chunkG.position.set(0.24, 0, 0.06);
+    g.add(chunkG);
   }
 
   return g;
@@ -1902,6 +2178,7 @@ function build3DDonat(add, M, MB, S, sliced) {
 
 function makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced) {
   const g = new THREE.Group();
+  const crumbTex = getCrumbTexture();
 
   if (!sliced) {
     const base = new THREE.Mesh(
@@ -1968,33 +2245,82 @@ function makeOneCookie(cookieTex, cookieMat, chipMat, S, sliced) {
       }
     }
   } else {
+    const crumbMat = new THREE.MeshStandardMaterial({
+      color: cookieMat.color,
+      roughness: 0.95,
+      map: crumbTex.map,
+      bumpMap: crumbTex.bump,
+      bumpScale: 5.0,
+      side: THREE.DoubleSide,
+    });
+
     const half1 = new THREE.Group();
     const b1 = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.12, 0.26, 32, 1, false, 0, Math.PI), cookieMat);
     b1.position.y = 0.13;
     half1.add(b1);
+
     const d1 = new THREE.Mesh(new THREE.SphereGeometry(1.12, 24, 16, 0, Math.PI), cookieMat);
     d1.scale.set(1.0, 0.32, 1.0);
     d1.position.y = 0.12;
     half1.add(d1);
 
-    const chBreak = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), chipMat);
-    chBreak.position.set(0, 0.22, 0.05);
-    half1.add(chBreak);
-    half1.position.set(0, 0, -0.15);
-    half1.rotation.y = -0.08;
+    const w1 = new THREE.Mesh(new THREE.PlaneGeometry(2.24, 0.28), crumbMat);
+    w1.position.set(0, 0.14, 0);
+    half1.add(w1);
+
+    [[-0.55, 0.14, 0.01], [0.1, 0.16, 0.01], [0.65, 0.13, 0.01]].forEach(([cx, cy, cz]) => {
+      const ch = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), chipMat);
+      ch.position.set(cx, cy, cz);
+      half1.add(ch);
+    });
+
+    [[0.22, 0.30, 0.3], [-0.35, 0.28, 0.45], [0.45, 0.24, 0.2]].forEach(([x, y, z]) => {
+      const ch = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.16, 7), chipMat);
+      ch.position.set(x, y, z);
+      half1.add(ch);
+    });
+
+    half1.position.set(0, 0, 0.13);
+    half1.rotation.y = 0.08;
     g.add(half1);
 
     const half2 = new THREE.Group();
     const b2 = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.12, 0.26, 32, 1, false, Math.PI, Math.PI), cookieMat);
     b2.position.y = 0.13;
     half2.add(b2);
+
     const d2 = new THREE.Mesh(new THREE.SphereGeometry(1.12, 24, 16, Math.PI, Math.PI), cookieMat);
     d2.scale.set(1.0, 0.32, 1.0);
     d2.position.y = 0.12;
     half2.add(d2);
-    half2.position.set(0, 0, 0.15);
-    half2.rotation.y = 0.08;
+
+    const w2 = new THREE.Mesh(new THREE.PlaneGeometry(2.24, 0.28), crumbMat);
+    w2.position.set(0, 0.14, 0);
+    w2.rotation.y = Math.PI;
+    half2.add(w2);
+
+    [[-0.3, 0.15, -0.01], [0.4, 0.14, -0.01]].forEach(([cx, cy, cz]) => {
+      const ch = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), chipMat);
+      ch.position.set(cx, cy, cz);
+      half2.add(ch);
+    });
+
+    [[-0.32, 0.28, -0.35], [0.25, 0.29, -0.4], [-0.45, 0.24, -0.25]].forEach(([x, y, z]) => {
+      const ch = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.16, 7), chipMat);
+      ch.position.set(x, y, z);
+      half2.add(ch);
+    });
+
+    half2.position.set(0, 0, -0.13);
+    half2.rotation.y = -0.08;
     g.add(half2);
+
+    const crumbGeo = new THREE.DodecahedronGeometry(0.022);
+    for (let i = 0; i < 6; i++) {
+      const cr = new THREE.Mesh(crumbGeo, crumbMat);
+      cr.position.set((Math.random() - 0.5) * 0.9, 0.01, (Math.random() - 0.5) * 0.15);
+      g.add(cr);
+    }
   }
 
   return g;
@@ -4432,7 +4758,7 @@ export default function PesanPage() {
     else if (S.itemType === "tart") standRadius = 1.35;
     else if (S.itemType === "cookies") standRadius = 0.85;
     else if (S.itemType === "donut") standRadius = 0.85;
-    add(stand(standRadius));
+    add(makeItemPlatter(S.itemType, standRadius, M, S));
 
     if (!ts.isStudio) {
       const gs = new THREE.Mesh(
