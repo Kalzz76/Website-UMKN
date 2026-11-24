@@ -244,7 +244,7 @@ export default function OvenAuth({ defaultMode = "welcome", initialTarget = "log
       if (profil.role === "admin" || profil.role === "staf") {
         router.push("/dashboard");
       } else {
-        const cleanTujuan = tujuan && typeof tujuan === "string" && tujuan.startsWith("/") && !tujuan.startsWith("//") ? tujuan : "/";
+        const cleanTujuan = tujuan && typeof tujuan === "string" && tujuan.startsWith("/") && !tujuan.startsWith("//") && tujuan !== "/" ? tujuan : "/user";
         router.push(cleanTujuan);
       }
       router.refresh();

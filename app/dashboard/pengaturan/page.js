@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -694,7 +695,18 @@ export default function PengaturanPage() {
       return;
     }
 
-    const tier = cariTarifJarak(d, daftarTarifJarak);
+    const aktif = (daftarTarifJarak || [])
+      .filter((t) => t && t.aktif !== false)
+      .sort((a, b) => Number(a.jarak_maks_km) - Number(b.jarak_maks_km));
+
+    let tier = null;
+    for (let i = 0; i < aktif.length; i++) {
+      if (Number(aktif[i].jarak_maks_km) >= d) {
+        tier = aktif[i];
+        break;
+      }
+    }
+
     if (!tier) {
       setHasilSimulasi({
         error: `Tidak ada tier tarif aktif yang mencakup jarak ${d} km. Periksa daftar tier Anda.`,
@@ -704,8 +716,8 @@ export default function PengaturanPage() {
 
     setHasilSimulasi({
       jarak: d,
-      ongkir: tier.tarif,
-      tierMaks: tier.jarak_maks_km,
+      ongkir: Number(tier.tarif || 0),
+      tierMaks: Number(tier.jarak_maks_km),
     });
   }
 
@@ -2185,8 +2197,8 @@ export default function PengaturanPage() {
         </div>
       )}
 
-      {modalTarifJarakBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      {isMounted && modalTarifJarakBuka && createPortal(
+        <div className="portal-modal-backdrop flex items-center justify-center p-4">
           <div className="bg-[#fcfbf7] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#ede2cd] space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#ede2cd]">
               <h3 className="font-extrabold text-[#1d3b2e] text-base">
@@ -2277,11 +2289,12 @@ export default function PengaturanPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {modalZonaBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      {isMounted && modalZonaBuka && createPortal(
+        <div className="portal-modal-backdrop flex items-center justify-center p-4">
           <div className="bg-[#fcfbf7] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#ede2cd] space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#ede2cd]">
               <h3 className="font-extrabold text-[#1d3b2e] text-base">
@@ -2370,11 +2383,12 @@ export default function PengaturanPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {modalTanggalBuka && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      {isMounted && modalTanggalBuka && createPortal(
+        <div className="portal-modal-backdrop flex items-center justify-center p-4">
           <div className="bg-[#fcfbf7] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#ede2cd] space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#ede2cd]">
               <h3 className="font-extrabold text-[#1d3b2e] text-base">
@@ -2445,7 +2459,8 @@ export default function PengaturanPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {isMounted && (

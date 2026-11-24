@@ -110,7 +110,7 @@ function MenuContent() {
     if (view === "custom") {
       router.push("/pesan");
     } else if (view === "toko" || view === "etalase") {
-      router.push("/toko");
+      router.push("/#toko");
     } else if (view === "kasir" || view === "checkout") {
       router.push("/keranjang");
     } else {
@@ -157,7 +157,7 @@ export default function MenuPage() {
     if (view === "custom") {
       router.push("/pesan");
     } else if (view === "toko") {
-      router.push("/toko");
+      router.push("/#toko");
     } else if (view === "kasir") {
       router.push("/keranjang");
     } else {

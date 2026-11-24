@@ -717,6 +717,7 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
       {/* ==================== CONTINUOUS TWO-WAY STICKY SCROLL PARALLAX STAGE ==================== */}
       <div
         ref={stageRef}
+        data-cafe-stage="true"
         className="relative w-full bg-ivory"
         style={{ height: alwaysInside ? '100dvh' : '240vh' }}
       >
@@ -1370,37 +1371,6 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
                 Tentang Cravely
               </span>
             </button>
-
-            {/* 2. Prominent Café Wall Menu Board -> Direct to Full Split-Screen Menu */}
-            {(() => {
-              const isVisible =
-                p > 0.72 &&
-                !zoomingEtalase &&
-                (activeZone === 'menu_papan' || (activeZone === null && spotlightIdx === 0));
-              return (
-                <button
-                  type="button"
-                  onClick={() => onNavigate('katalog')}
-                  onMouseEnter={() => setActiveZone('menu_papan')}
-                  onMouseLeave={() => setActiveZone(null)}
-                  aria-label="Papan Menu Lengkap — Pesan Disini"
-                  className="zona-klik group absolute left-[15.3%] top-[31.2%] -translate-x-1/2 -translate-y-1/2 w-[18.8%] h-[30%] flex items-end justify-center pb-1"
-                >
-                  <span
-                    className={`pointer-events-none transition-all duration-400 ease-out inline-flex flex-col items-center rounded-xl border px-3.5 py-1.5 shadow-lg whitespace-nowrap ${
-                      isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-2 scale-95'
-                    } bg-cherry text-ivory border-[#F5D7A1]`}
-                  >
-                    <span className="text-[11px] sm:text-xs font-extrabold tracking-wide">
-                      Pesan Disini
-                    </span>
-                    <span className="text-[9.5px] font-bold text-blush">
-                      Menu Lengkap &amp; Harga
-                    </span>
-                  </span>
-                </button>
-              );
-            })()}
 
             {/* 3. Brass Wall Lamp Switch */}
             <button

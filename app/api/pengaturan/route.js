@@ -262,7 +262,6 @@ export async function POST(request) {
           kuota_harian,
           minimal_hari_pesan,
           minimal_hari_katalog,
-          minimal_hari_siap: minimal_hari_katalog,
         })
         .eq("id", 1);
 
@@ -534,7 +533,6 @@ export async function POST(request) {
       kuota_harian,
       minimal_hari_pesan,
       minimal_hari_katalog,
-      minimal_hari_siap: minimal_hari_katalog,
       mode_pembayaran,
       persen_dp: mode_pembayaran === "DP" ? persen_dp : 100,
       batas_bayar_jam,
@@ -671,7 +669,6 @@ export async function POST(request) {
         kuota_harian: kuota,
         minimal_hari_pesan: minCustom,
         minimal_hari_katalog: minKatalog,
-        minimal_hari_siap: minKatalog,
       })
       .eq("id", 1);
 

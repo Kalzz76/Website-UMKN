@@ -604,8 +604,8 @@ export default function KatalogOpsiPage() {
 
   return (
     <div className="space-y-6">
-      <div className="content-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      <div className="content-card p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="min-w-0">
           <h2 className="text-lg font-bold text-[#1d3b2e]">
             Kelola Harga & Katalog Kue
           </h2>
@@ -614,12 +614,12 @@ export default function KatalogOpsiPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="inline-flex p-1 bg-[#ede2cd] border border-[#dfd4bd] rounded-2xl">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+          <div className="inline-flex p-1 bg-[#ede2cd] border border-[#dfd4bd] rounded-2xl shrink-0">
             <button
               type="button"
               onClick={() => setTabAktif("custom")}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer inline-flex items-center space-x-1.5 ${
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer inline-flex items-center space-x-1.5 whitespace-nowrap ${
                 tabAktif === "custom"
                   ? "bg-[#17382d] text-white shadow-2xs"
                   : "text-[#1d3b2e] hover:bg-stone-50/50"
@@ -631,7 +631,7 @@ export default function KatalogOpsiPage() {
             <button
               type="button"
               onClick={() => setTabAktif("katalog")}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer inline-flex items-center space-x-1.5 ${
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer inline-flex items-center space-x-1.5 whitespace-nowrap ${
                 tabAktif === "katalog"
                   ? "bg-[#17382d] text-white shadow-2xs"
                   : "text-[#1d3b2e] hover:bg-stone-50/50"
@@ -646,7 +646,7 @@ export default function KatalogOpsiPage() {
             <button
               type="button"
               onClick={toggleSemuaGrup}
-              className="h-[40px] px-4 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer inline-flex items-center space-x-2 shadow-xs"
+              className="h-[40px] px-4 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer inline-flex items-center space-x-2 shadow-xs whitespace-nowrap shrink-0"
             >
               <i className={`fa-solid ${apakahSemuaTutup ? "fa-angles-down" : "fa-angles-up"} text-xs`} />
               <span>{apakahSemuaTutup ? "Buka Semua" : "Tutup Semua"}</span>
@@ -654,24 +654,14 @@ export default function KatalogOpsiPage() {
           )}
 
           {tabAktif === "katalog" && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setModalKategoriBuka(true)}
-                className="h-[40px] px-3.5 sm:px-4 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 shadow-xs"
-              >
-                <i className="fa-solid fa-tags text-xs" />
-                <span>Kelola Kategori</span>
-              </button>
-              <button
-                type="button"
-                onClick={bukaModalTambahProduk}
-                className="h-[40px] px-4 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 shadow-xs"
-              >
-                <i className="fa-solid fa-plus text-xs" />
-                <span>Tambah Produk</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={bukaModalTambahProduk}
+              className="h-[40px] px-4 rounded-xl bg-[#ba2b2b] hover:bg-[#a62525] text-white font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 shadow-xs whitespace-nowrap shrink-0"
+            >
+              <i className="fa-solid fa-plus text-xs" />
+              <span>Tambah Produk</span>
+            </button>
           )}
         </div>
       </div>
@@ -864,16 +854,36 @@ export default function KatalogOpsiPage() {
             <i className="fa-solid fa-store text-4xl mb-3 text-stone-300" />
             <p className="text-base font-semibold text-stone-700">Belum ada kue katalog.</p>
             <p className="text-xs text-stone-400 mt-1">Tambahkan kue siap pesan pertama Anda.</p>
-            <button
-              type="button"
-              onClick={bukaModalTambahProduk}
-              className="mt-4 px-4 py-2 bg-[#ba2b2b] text-white rounded-xl text-xs font-bold cursor-pointer"
-            >
-              Tambah Produk
-            </button>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setModalKategoriBuka(true)}
+                className="px-4 py-2 border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Kelola Kategori
+              </button>
+              <button
+                type="button"
+                onClick={bukaModalTambahProduk}
+                className="px-4 py-2 bg-[#ba2b2b] text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Tambah Produk
+              </button>
+            </div>
           </div>
         ) : (
           <div className="content-card p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-bold text-[#1d3b2e]">Daftar Produk Katalog</h3>
+              <button
+                type="button"
+                onClick={() => setModalKategoriBuka(true)}
+                className="h-[36px] px-3.5 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 shadow-xs whitespace-nowrap shrink-0"
+              >
+                <i className="fa-solid fa-tags text-xs" />
+                <span>Kelola Kategori</span>
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs min-w-[650px]">
                 <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-[11px] font-bold">

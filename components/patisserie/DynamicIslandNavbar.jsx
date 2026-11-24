@@ -179,7 +179,6 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
   };
 
   const getPageTitle = () => {
-    if (pathname.startsWith("/toko")) return "Toko";
     if (pathname.startsWith("/menu")) return "Menu";
     if (pathname.startsWith("/pesan")) return "Cake Studio";
     if (pathname.startsWith("/keranjang") || pathname.startsWith("/kasir")) return "Keranjang";
@@ -201,7 +200,6 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
 
   const navLinks = [
     { label: "Home", href: "/", active: pathname === "/" },
-    { label: "Toko", href: "/toko", active: pathname.startsWith("/toko") },
     { label: "Menu", href: "/menu", active: pathname.startsWith("/menu") },
   ];
 
@@ -295,7 +293,13 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
             >
               <Link
                 href="/"
-                onClick={() => setIsExpanded(false)}
+                onClick={(e) => {
+                  if (pathname === "/") {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    setIsExpanded(false);
+                  }
+                }}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:bg-[#F5ECE2] transition font-coquette font-bold text-xs sm:text-sm tracking-widest text-[#3D2B28] shrink-0 whitespace-nowrap"
               >
                 <span className="w-2.5 h-2.5 rounded-full bg-[#B8925A] shadow-[0_0_8px_#C59B62] animate-pulse shrink-0" />
@@ -309,7 +313,15 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
                   <Link
                     key={link.href}
                     href={link.href}
-                    onClick={() => setIsExpanded(false)}
+                    onClick={(e) => {
+                      if (link.label === "Home" && pathname === "/") {
+                        e.preventDefault();
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        setIsExpanded(false);
+                        return;
+                      }
+                      if (link.active) setIsExpanded(false);
+                    }}
                     className={`px-3 py-1.5 rounded-full transition whitespace-nowrap ${
                       link.active
                         ? "bg-[#9E3B42] text-white font-bold shadow-sm"
@@ -325,7 +337,9 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
 
               <Link
                 href="/pesan"
-                onClick={() => setIsExpanded(false)}
+                onClick={() => {
+                  if (pathname.startsWith("/pesan")) setIsExpanded(false);
+                }}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold shadow-[0_4px_14px_rgba(158,59,66,0.35)] border border-[#E8A5AC]/40 flex items-center gap-1.5 shrink-0 transition whitespace-nowrap ${
                   pathname.startsWith("/pesan")
                     ? "bg-[#7A2C32] text-white brightness-110"
@@ -339,7 +353,9 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <Link
                   href="/keranjang"
-                  onClick={() => setIsExpanded(false)}
+                  onClick={() => {
+                    if (pathname.startsWith("/keranjang")) setIsExpanded(false);
+                  }}
                   className={`px-2.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 border border-[#D9B37C]/60 shadow-xs shrink-0 whitespace-nowrap ${
                     pathname.startsWith("/keranjang")
                       ? "bg-[#9E3B42] text-white border-transparent"

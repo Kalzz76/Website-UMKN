@@ -32,7 +32,16 @@ export const PatisserieFooter: React.FC<PatisserieFooterProps> = ({ toko = null 
   const [clientToko, setClientToko] = React.useState<any>(toko);
 
   React.useEffect(() => {
-    if (toko) {
+    const punyaIsi = Boolean(
+      toko &&
+        (toko.nama_toko ||
+          toko.alamat ||
+          toko.no_wa ||
+          toko.wa_link ||
+          toko.jam?.senin_jumat ||
+          toko.jam?.sabtu_minggu)
+    );
+    if (punyaIsi) {
       setClientToko(toko);
       return;
     }
@@ -237,7 +246,18 @@ export const PatisserieFooter: React.FC<PatisserieFooterProps> = ({ toko = null 
                 </Link>
               </li>
               <li>
-                <Link href="/toko" className="hover:text-[#EFA7B8] hover:translate-x-1 inline-block transition">
+                <Link
+                  href="/#toko"
+                  onClick={(e) => {
+                    if (typeof window !== 'undefined' && window.location.pathname === '/') {
+                      e.preventDefault();
+                      const stage = document.querySelector('[data-cafe-stage="true"]') as HTMLElement | null;
+                      const top = stage ? Math.max(0, stage.offsetHeight - window.innerHeight) : 0;
+                      window.scrollTo({ top, behavior: 'smooth' });
+                    }
+                  }}
+                  className="hover:text-[#EFA7B8] hover:translate-x-1 inline-block transition"
+                >
                   Ruang Toko &amp; Kafe
                 </Link>
               </li>

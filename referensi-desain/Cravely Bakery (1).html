@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cravely Bakery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+:root{
+  --cream:#FBF4E4;
+  --green-deep:#1F4D3A;
+  --green:#2F6B4F;
+  --sage:#CFE0D3;
+  --butter:#E8B96A;
+  --cherry:#C8374A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--green-deep)}
+
+/* ---------- Loader ---------- */
+#loader{
+  position:fixed;inset:0;z-index:100;
+  display:grid;place-items:center;
+  background:var(--cream);
+  transition:opacity .7s ease, visibility .7s;
+}
+#loader.hide{opacity:0;visibility:hidden}
+.loader-inner{display:flex;flex-direction:column;align-items:center;gap:6px;padding:24px;text-align:center}
+
+.cake{width:min(62vw,240px);height:auto;overflow:visible}
+.plate{fill:#B5CFBC}
+
+/* Tiap lapisan kue jatuh dari atas lalu memantul */
+.layer{opacity:0;transform:translateY(-70px)}
+.layer.on{animation:drop .7s cubic-bezier(.3,1.6,.5,1) forwards}
+.l5{transform-box:fill-box;transform-origin:center bottom;transform:translateY(-70px) scale(.6)}
+.l5.on{animation:cherry .8s cubic-bezier(.3,1.7,.5,1) forwards}
+
+@keyframes drop{
+  0%{opacity:0;transform:translateY(-70px)}
+  30%{opacity:1}
+  100%{opacity:1;transform:translateY(0)}
+}
+@keyframes cherry{
+  0%{opacity:0;transform:translateY(-70px) scale(.6)}
+  40%{opacity:1}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* Kue "melompat" senang saat selesai */
+.cake.done{animation:hop .6s ease-out}
+@keyframes hop{
+  0%{transform:translateY(0)}
+  40%{transform:translateY(-16px) rotate(-2deg)}
+  70%{transform:translateY(0) rotate(1deg)}
+  100%{transform:translateY(0)}
+}
+
+/* Kilau muncul setelah kue jadi */
+.sp{opacity:0;transform-box:fill-box;transform-origin:center}
+.cake.done .sp{animation:twinkle 1.2s ease-in-out infinite}
+.cake.done .s2{animation-delay:.25s}
+.cake.done .s3{animation-delay:.5s}
+@keyframes twinkle{
+  0%,100%{opacity:0;transform:scale(.3) rotate(0)}
+  50%{opacity:1;transform:scale(1) rotate(20deg)}
+}
+
+/* Teks */
+.brand{
+  font-family:'Fraunces',Georgia,serif;
+  font-weight:800;font-size:clamp(1.6rem,5vw,2.1rem);
+  letter-spacing:-.01em;margin-top:18px;
+}
+.status{min-height:1.4em;font-size:.95rem;opacity:.75}
+
+.bar{width:min(70vw,260px);height:8px;margin-top:14px;background:var(--sage);border-radius:99px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--green);border-radius:99px;transition:width .25s linear}
+.percent{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:1.05rem;margin-top:6px}
+
+/* ---------- Halaman utama ---------- */
+#app{
+  min-height:100%;display:grid;place-content:center;gap:8px;text-align:center;padding:24px;
+  opacity:0;transform:translateY(12px);transition:opacity .7s ease .15s, transform .7s ease .15s;
+}
+#app.show{opacity:1;transform:none}
+#app h2{font-family:'Fraunces',Georgia,serif;font-size:clamp(1.6rem,5vw,2.4rem)}
+
+/* Hormati pengaturan "kurangi gerakan" */
+@media (prefers-reduced-motion:reduce){
+  .layer,.l5{opacity:1;transform:none}
+  .layer.on,.l5.on,.cake.done,.cake.done .sp{animation:none}
+  .cake.done .sp{opacity:1}
+}
+
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#replay{margin-top:14px;justify-self:center;font:500 .95rem 'DM Sans',system-ui,sans-serif;color:var(--cream);background:var(--green);border:0;border-radius:99px;padding:12px 22px;cursor:pointer}
+#replay:hover{background:var(--green-deep)}
+#replay:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
+
+</style>
+</head>
+<body>
+
+  <!-- LOADING SCREEN -->
+  <div id="loader" role="status" aria-live="polite">
+    <div class="loader-inner">
+      <svg class="cake" viewBox="0 0 200 220" aria-hidden="true">
+        <ellipse class="plate" cx="100" cy="196" rx="78" ry="11"/>
+
+        <g class="layer l1"><rect x="36" y="150" width="128" height="38" rx="11" fill="#E8B96A"/><circle cx="62" cy="168" r="2.5" fill="#C98F3E"/><circle cx="98" cy="174" r="2.5" fill="#C98F3E"/><circle cx="136" cy="166" r="2.5" fill="#C98F3E"/></g>
+        <g class="layer l2"><rect x="32" y="140" width="136" height="14" rx="7" fill="#F2B8BE"/></g>
+        <g class="layer l3"><rect x="44" y="108" width="112" height="36" rx="11" fill="#E8B96A"/><circle cx="72" cy="126" r="2.5" fill="#C98F3E"/><circle cx="118" cy="132" r="2.5" fill="#C98F3E"/></g>
+        <g class="layer l4">
+          <rect x="40" y="94" width="120" height="20" rx="10" fill="#2F6B4F"/>
+          <rect x="52" y="104" width="13" height="24" rx="6.5" fill="#2F6B4F"/>
+          <rect x="88" y="104" width="13" height="18" rx="6.5" fill="#2F6B4F"/>
+          <rect x="124" y="104" width="13" height="28" rx="6.5" fill="#2F6B4F"/>
+        </g>
+        <g class="layer l5">
+          <path d="M100 76 Q104 62 116 58" stroke="#1F4D3A" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <circle cx="100" cy="84" r="10" fill="#C8374A"/>
+          <circle cx="97" cy="81" r="2.5" fill="#fff" opacity=".6"/>
+        </g>
+
+        <g class="sparkles">
+          <path class="sp s1" d="M30 70 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" fill="#4F8A68"/>
+          <path class="sp s2" d="M170 56 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" fill="#E8B96A"/>
+          <path class="sp s3" d="M160 120 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#4F8A68"/>
+        </g>
+      </svg>
+
+      <h1 class="brand">Cravely Bakery</h1>
+      <p class="status" id="status">Menyiapkan adonan...</p>
+
+      <div class="bar" aria-hidden="true"><span id="fill"></span></div>
+      <p class="percent"><span id="percent">0</span>%</p>
+    </div>
+  </div>
+
+  <!-- HALAMAN UTAMA (ganti dengan konten tokomu) -->
+  <main id="app">
+    <h2>Selamat datang di Cravely Bakery</h2>
+    <p>Kue segar, dipanggang setiap pagi.</p>
+    <button id="replay" type="button">Putar ulang loading</button>
+  </main>
+
+  <script>
+(() => {
+  const loader  = document.getElementById('loader');
+  const app     = document.getElementById('app');
+  const cake    = document.querySelector('.cake');
+  const fill    = document.getElementById('fill');
+  const percent = document.getElementById('percent');
+  const status  = document.getElementById('status');
+  const replay  = document.getElementById('replay');
+
+  const steps = [
+    { at: 8,  el: '.l1', text: 'Mengocok adonan...' },
+    { at: 28, el: '.l2', text: 'Mengoles krim...' },
+    { at: 48, el: '.l3', text: 'Memanggang lapisan kedua...' },
+    { at: 68, el: '.l4', text: 'Menuang glasir hijau...' },
+    { at: 88, el: '.l5', text: 'Menaruh ceri di atas...' },
+  ];
+  const MIN_TIME = 3600;
+
+  function run() {
+    let progress = 0;
+    const start = performance.now();
+    function tick(now) {
+      const target = Math.min(100, ((now - start) / MIN_TIME) * 100);
+      progress += (target - progress) * 0.12;
+      if (target - progress < 0.3) progress = target;
+      const p = Math.round(progress);
+      percent.textContent = p;
+      fill.style.width = p + '%';
+      steps.forEach(s => {
+        const node = document.querySelector(s.el);
+        if (p >= s.at && !node.classList.contains('on')) {
+          node.classList.add('on');
+          status.textContent = s.text;
+        }
+      });
+      if (p >= 100) return finish();
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function finish() {
+    status.textContent = 'Siap disantap!';
+    cake.classList.add('done');
+    setTimeout(() => {
+      loader.classList.add('hide');
+      app.classList.add('show');
+    }, 1100);
+  }
+
+  function reset() {
+    app.classList.remove('show');
+    loader.classList.remove('hide');
+    cake.classList.remove('done');
+    document.querySelectorAll('.layer').forEach(l => l.classList.remove('on'));
+    percent.textContent = '0';
+    fill.style.width = '0';
+    status.textContent = 'Menyiapkan adonan...';
+    setTimeout(run, 400);
+  }
+
+  replay.addEventListener('click', reset);
+  run();
+})();
+</script>
+</body>
+</html>

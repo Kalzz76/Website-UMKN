@@ -221,8 +221,78 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
   onGoToMenuWithCake,
   onNotify,
   popularCakes = [],
-  toko = null,
+  toko: tokoProp = null,
 }) => {
+  const [clientToko, setClientToko] = useState<any>(tokoProp);
+
+  useEffect(() => {
+    const punyaIsi = Boolean(
+      tokoProp &&
+        (tokoProp.nama_toko ||
+          tokoProp.alamat ||
+          tokoProp.no_wa ||
+          tokoProp.wa_link ||
+          tokoProp.jam?.senin_jumat ||
+          tokoProp.jam?.sabtu_minggu)
+    );
+    if (punyaIsi) {
+      setClientToko(tokoProp);
+      return;
+    }
+
+    let aktif = true;
+    fetch('/api/pengaturan')
+      .then((r) => r.json())
+      .then((res) => {
+        if (aktif && res?.sukses && res?.data) {
+          const d = res.data;
+          let bersihWa = String(d.no_wa || '').replace(/[^0-9]/g, '');
+          if (bersihWa.startsWith('0')) bersihWa = '62' + bersihWa.slice(1);
+          else if (bersihWa.startsWith('8')) bersihWa = '62' + bersihWa;
+
+          const formatJam = (b: any, t: any) =>
+            b && t
+              ? `${String(b).slice(0, 5).replace(':', '.')} – ${String(t).slice(0, 5).replace(':', '.')} WIB`
+              : '';
+          const seninJumat = formatJam(
+            d.jam_buka_senin_jumat || d.jam_buka,
+            d.jam_tutup_senin_jumat || d.jam_tutup
+          );
+          const sabtuMinggu = formatJam(
+            d.jam_buka_sabtu_minggu || d.jam_buka,
+            d.jam_tutup_sabtu_minggu || d.jam_tutup
+          );
+
+          let tautanPeta = (d.tautan_peta || '').trim();
+          if (
+            tautanPeta &&
+            !tautanPeta.startsWith('http://') &&
+            !tautanPeta.startsWith('https://')
+          ) {
+            tautanPeta = `https://${tautanPeta}`;
+          }
+
+          setClientToko({
+            nama_toko: (d.nama_toko || '').trim(),
+            alamat: (d.alamat || '').trim(),
+            no_wa: bersihWa,
+            wa_link: bersihWa ? `https://wa.me/${bersihWa}` : '',
+            tautan_peta: tautanPeta,
+            jam: {
+              senin_jumat: seninJumat,
+              sabtu_minggu: sabtuMinggu,
+            },
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      aktif = false;
+    };
+  }, [tokoProp]);
+
+  const toko = clientToko || tokoProp;
   const hariIni = getTanggalHariIniJakarta();
   const heroRef = useRef<HTMLElement | null>(null);
   const lastTrailPosRef = useRef<{ x: number; y: number; time: number }>({

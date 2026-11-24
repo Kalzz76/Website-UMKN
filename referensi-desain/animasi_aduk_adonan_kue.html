@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Animasi Aduk Adonan Kue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ==========================================================================
+       DESIGN TOKENS & COLOR THEMES
+       ========================================================================== */
+    :root {
+      /* Default Theme: Pink Pastel */
+      --bg-color: #fdf6ee;
+      --bg-accent: #f9ecdc;
+      --shadow-color: rgba(212, 165, 138, 0.34);
+
+      /* Bowl Colors */
+      --bowl-body: #f49ea8;
+      --bowl-shade: #e88491;
+      --bowl-rim-outer: #e67c8a;
+      --bowl-rim-inner: #f7b6be;
+      --bowl-inside-wall: #df7482;
+      --bowl-highlight: rgba(255, 255, 255, 0.42);
+      --bowl-dots: #fff9f5;
+      --bow-main: #e86e7e;
+      --bow-knot: #d45063;
+      --bow-shadow: rgba(180, 62, 82, 0.22);
+
+      /* Batter Colors */
+      --batter-base: #fceab8;
+      --batter-swirl-dark: #f3cf80;
+      --batter-swirl-light: #fff6dc;
+      --batter-ripple: rgba(255, 249, 232, 0.78);
+
+      /* Whisk Colors */
+      --whisk-handle: #ec687a;
+      --whisk-handle-shade: #d95266;
+      --whisk-handle-gloss: #f9a3ae;
+      --whisk-collar: #9eaab5;
+      --whisk-collar-dark: #82909d;
+      --whisk-wire: #7d8b99;
+
+      /* Particle Colors */
+      --drop-light: #fbe2a0;
+      --drop-dark: #f5ce75;
+      --sparkle-color: #f49ca8;
+
+      /* UI Controls */
+      --ui-bg: rgba(255, 252, 248, 0.88);
+      --ui-border: rgba(230, 124, 138, 0.22);
+      --ui-text: #5d3e44;
+      --ui-muted: #9b7980;
+      --ui-accent: #ec687a;
+      --ui-accent-hover: #df5467;
+      --ui-pill-bg: #fceef0;
+      --ui-shadow: 0 12px 32px rgba(196, 118, 128, 0.16);
+    }
+
+    /* Theme 2: Ungu Pop */
+    [data-theme="ungu"] {
+      --bg-color: #faf7ff;
+      --bg-accent: #f1e9ff;
+      --shadow-color: rgba(130, 102, 184, 0.24);
+
+      /* Bowl Colors */
+      --bowl-body: #9a82cb;
+      --bowl-shade: #8369b8;
+      --bowl-rim-outer: #7c62b3;
+      --bowl-rim-inner: #b39ee0;
+      --bowl-inside-wall: #7055a8;
+      --bowl-highlight: rgba(255, 255, 255, 0.32);
+      --bowl-dots: #f5f0ff;
+      --bow-main: #ff825c;
+      --bow-knot: #e3623d;
+      --bow-shadow: rgba(84, 52, 138, 0.24);
+
+      /* Batter Colors */
+      --batter-base: #fce6a4;
+      --batter-swirl-dark: #f2c96b;
+      --batter-swirl-light: #fff4d4;
+      --batter-ripple: rgba(255, 247, 224, 0.8);
+
+      /* Whisk Colors */
+      --whisk-handle: #5c1e2e;
+      --whisk-handle-shade: #42121f;
+      --whisk-handle-gloss: #8a3d52;
+      --whisk-collar: #764453;
+      --whisk-collar-dark: #542c38;
+      --whisk-wire: #5c1e2e;
+
+      /* Particle Colors */
+      --drop-light: #fde092;
+      --drop-dark: #f4c65d;
+      --sparkle-color: #ff8c69;
+
+      /* UI Controls */
+      --ui-bg: rgba(255, 255, 255, 0.9);
+      --ui-border: rgba(154, 130, 203, 0.28);
+      --ui-text: #3f3159;
+      --ui-muted: #7c6e96;
+      --ui-accent: #8a6dc7;
+      --ui-accent-hover: #7657b8;
+      --ui-pill-bg: #f1ebfc;
+      --ui-shadow: 0 12px 32px rgba(124, 98, 179, 0.16);
+    }
+
+    /* ==========================================================================
+       BASE & LAYOUT
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at 50% 42%, var(--bg-color) 45%, var(--bg-accent) 100%);
+      color: var(--ui-text);
+      transition: background 0.45s ease, color 0.35s ease;
+    }
+
+    .app-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 16px 16px 110px;
+    }
+
+    /* Stage wrapper for centered responsive SVG */
+    .stage-wrapper {
+      width: 100%;
+      max-width: 620px;
+      aspect-ratio: 6 / 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .stage-wrapper.manual-mode {
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .stage-wrapper.manual-mode:active {
+      cursor: grabbing;
+    }
+
+    svg#bakingStage {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      display: block;
+    }
+
+    /* Smooth SVG color transitions when switching theme */
+    .theme-fill {
+      transition: fill 0.4s ease, stroke 0.4s ease;
+    }
+
+    /* Floating hint badge for Manual Mode */
+    .manual-hint {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: var(--ui-bg);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: var(--ui-shadow);
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .manual-hint.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ==========================================================================
+       FLOATING CONTROL PILL BAR
+       ========================================================================== */
+    .controls-bar {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px 14px;
+      padding: 10px 16px;
+      background: var(--ui-bg);
+      border: 1.5px solid var(--ui-border);
+      border-radius: 28px;
+      box-shadow: var(--ui-shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      max-width: calc(100vw - 24px);
+      z-index: 20;
+      transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .control-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--ui-border);
+      flex-shrink: 0;
+    }
+
+    /* Primary Play/Pause Button */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--ui-accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.25s ease, box-shadow 0.25s ease;
+      box-shadow: 0 4px 12px rgba(236, 104, 122, 0.28);
+      min-height: 36px;
+    }
+
+    [data-theme="ungu"] .btn-primary {
+      box-shadow: 0 4px 12px rgba(138, 109, 199, 0.32);
+    }
+
+    .btn-primary:hover {
+      background: var(--ui-accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.96);
+    }
+
+    .btn-primary svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* Segmented Pill Toggle (Mode & Theme) */
+    .segmented-group {
+      display: inline-flex;
+      align-items: center;
+      background: var(--ui-pill-bg);
+      padding: 3px;
+      border-radius: 999px;
+      gap: 2px;
+      transition: background 0.35s ease;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: var(--ui-muted);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      white-space: nowrap;
+    }
+
+    .seg-btn.active {
+      background: #ffffff;
+      color: var(--ui-text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .seg-btn:hover:not(.active) {
+      color: var(--ui-text);
+    }
+
+    /* Theme Color Swatch Dots */
+    .swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1.5px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .swatch-pink {
+      background: linear-gradient(135deg, #f49ea8, #ec687a);
+    }
+
+    .swatch-ungu {
+      background: linear-gradient(135deg, #9a82cb, #5c1e2e);
+    }
+
+    /* Speed Slider Group */
+    .slider-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.25s ease;
+    }
+
+    .slider-group.disabled {
+      opacity: 0.42;
+      pointer-events: none;
+    }
+
+    .slider-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--ui-muted);
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 88px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--ui-pill-bg);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--ui-accent);
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.25s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--ui-accent);
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       RESPONSIVE ADJUSTMENTS (MOBILE)
+       ========================================================================== */
+    @media (max-width: 680px) {
+      .app-container {
+        padding: 12px 10px 150px;
+      }
+
+      .controls-bar {
+        bottom: 14px;
+        border-radius: 22px;
+        padding: 10px 12px;
+        gap: 8px 10px;
+        width: calc(100vw - 20px);
+      }
+
+      .control-divider {
+        display: none;
+      }
+
+      .btn-primary {
+        padding: 7px 14px;
+        font-size: 0.82rem;
+      }
+
+      .seg-btn {
+        padding: 6px 10px;
+        font-size: 0.76rem;
+      }
+
+      input[type="range"] {
+        width: 78px;
+      }
+
+      .manual-hint {
+        font-size: 0.78rem;
+        padding: 7px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-container">
+    <!-- Interactive Hint for Manual Stirring Mode -->
+    <div id="manualHint" class="manual-hint" aria-live="polite">
+      ✨ Geser kursor atau jari di atas mangkuk untuk mengaduk!
+    </div>
+
+    <!-- Centered Responsive Illustration Stage -->
+    <div id="stageWrapper" class="stage-wrapper">
+      <svg id="bakingStage" viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animasi mengaduk adonan kue di dalam mangkuk">
+        <defs>
+          <!-- Inner Bowl Clip Path for Swirling Batter -->
+          <clipPath id="batterClip">
+            <ellipse cx="300" cy="285" rx="146" ry="40" />
+          </clipPath>
+
+          <!-- Dynamic Clip Path so the lower ~50% of the whisk stays submerged inside the batter -->
+          <clipPath id="whiskSubmergeClip">
+            <path id="whiskClipPath" d="M 0,0 L 600,0 L 600,289 L 340,289 Q 300,297 260,289 L 0,289 Z" />
+          </clipPath>
+
+          <!-- Subtle shading gradient for the front of the bowl -->
+          <linearGradient id="bowlShadingGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#000000" stop-opacity="0" />
+            <stop offset="72%" stop-color="#000000" stop-opacity="0.03" />
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.14" />
+          </linearGradient>
+
+          <!-- Soft top-left inner shadow on batter -->
+          <radialGradient id="batterDepthGrad" cx="50%" cy="46%" r="55%">
+            <stop offset="68%" stop-color="#ffffff" stop-opacity="0" />
+            <stop offset="100%" stop-color="#d8a24a" stop-opacity="0.22" />
+          </radialGradient>
+
+          <!-- Subtle glossy gradient for whisk handle -->
+          <linearGradient id="handleShadeGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+            <stop offset="60%" stop-color="#000000" stop-opacity="0" />
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.18" />
+          </linearGradient>
+        </defs>
+
+        <!-- ====================================================================
+             LAYER 0: SOFT OVAL GROUND SHADOW
+             ==================================================================== -->
+        <ellipse
+          id="groundShadow"
+          cx="300"
+          cy="438"
+          rx="126"
+          ry="15"
+          fill="var(--shadow-color)"
+          class="theme-fill"
+        />
+
+        <!-- ====================================================================
+             BOWL & WHISK ASSEMBLY (Rocks subtly with stirring momentum)
+             ==================================================================== -->
+        <g id="bowlAssembly">
+          <!-- LAYER 1: BACK RIM & INNER BOWL WALL -->
+          <g id="bowlBackLayer">
+            <!-- Outer back rim -->
+            <ellipse
+              cx="300"
+              cy="280"
+              rx="162"
+              ry="48"
+              fill="var(--bowl-rim-outer)"
+              class="theme-fill"
+            />
+            <!-- Inner top bevel -->
+            <ellipse
+              cx="300"
+              cy="280"
+              rx="154"
+              ry="43"
+              fill="var(--bowl-rim-inner)"
+              class="theme-fill"
+            />
+            <!-- Deep inner bowl cavity -->
+            <ellipse
+              cx="300"
+              cy="284"
+              rx="147"
+              ry="40"
+              fill="var(--bowl-inside-wall)"
+              class="theme-fill"
+            />
+          </g>
+
+          <!-- LAYER 2: CREAMY YELLOW SWIRLING BATTER (Clipped to inner bowl) -->
+          <g id="batterLayer" clip-path="url(#batterClip)">
+            <!-- Batter Base -->
+            <ellipse
+              cx="300"
+              cy="288"
+              rx="150"
+              ry="44"
+              fill="var(--batter-base)"
+              class="theme-fill"
+            />
+
+            <!-- Perspective-squashed rotating swirl group (2.5D vortex) -->
+            <g transform="translate(300, 287) scale(1, 0.285)">
+              <g id="batterSwirlGroup">
+                <!-- Primary golden swirl arms -->
+                <path
+                  d="M 0,0
+                     C 20,-10 42,-2 48,18
+                     C 56,46 26,78 -14,82
+                     C -64,87 -106,46 -110,-12
+                     C -114,-74 -62,-124 8,-128
+                     C 80,-132 138,-78 144,-4"
+                  fill="none"
+                  stroke="var(--batter-swirl-dark)"
+                  stroke-width="24"
+                  stroke-linecap="round"
+                  opacity="0.88"
+                  class="theme-fill"
+                />
+                <path
+                  d="M 0,0
+                     C -22,12 -46,2 -52,-20
+                     C -60,-50 -24,-84 20,-86
+                     C 72,-88 114,-42 116,18
+                     C 118,82 62,132 -12,134"
+                  fill="none"
+                  stroke="var(--batter-swirl-dark)"
+                  stroke-width="20"
+                  stroke-linecap="round"
+                  opacity="0.72"
+                  class="theme-fill"
+                />
+                <!-- Creamy light highlight ribbons -->
+                <path
+                  d="M -6,-8
+                     C 14,-24 44,-18 62,4
+                     C 82,28 70,72 34,92
+                     C -14,118 -78,96 -104,48"
+                  fill="none"
+                  stroke="var(--batter-swirl-light)"
+                  stroke-width="18"
+                  stroke-linecap="round"
+                  opacity="0.92"
+                  class="theme-fill"
+                />
+                <path
+                  d="M 10,10
+                     C -12,26 -42,22 -64,-4
+                     C -86,-30 -72,-78 -30,-100
+                     C 22,-126 88,-100 116,-48"
+                  fill="none"
+                  stroke="var(--batter-swirl-light)"
+                  stroke-width="15"
+                  stroke-linecap="round"
+                  opacity="0.86"
+                  class="theme-fill"
+                />
+                <!-- Center creamy vortex highlight -->
+                <path
+                  d="M -18,-6 C -8,-22 18,-20 24,-2 C 28,12 12,24 -4,20"
+                  fill="none"
+                  stroke="var(--batter-swirl-light)"
+                  stroke-width="12"
+                  stroke-linecap="round"
+                  opacity="0.9"
+                  class="theme-fill"
+                />
+              </g>
+            </g>
+
+            <!-- Soft depth shading around inner batter edges -->
+            <ellipse cx="300" cy="285" rx="146" ry="40" fill="url(#batterDepthGrad)" />
+
+            <!-- Dynamic back ripple ring right behind where the whisk dips into the batter -->
+            <g id="whiskRipple" transform="translate(300, 289)">
+              <ellipse
+                cx="0"
+                cy="0"
+                rx="44"
+                ry="12.5"
+                fill="none"
+                stroke="var(--batter-ripple)"
+                stroke-width="3.2"
+                opacity="0.72"
+              />
+              <ellipse
+                cx="0"
+                cy="1"
+                rx="32"
+                ry="9"
+                fill="var(--batter-swirl-dark)"
+                opacity="0.32"
+                class="theme-fill"
+              />
+            </g>
+          </g>
+
+          <!-- LAYER 3: WIRE WHISK (~50% lower wire cage submerged below y=0 waterline) -->
+          <g id="whiskClipGroup" clip-path="url(#whiskSubmergeClip)">
+            <g id="whiskGroup" transform="translate(300, 289) rotate(24)">
+              <!-- 5 Overlapping Curved Metallic Wire Loops: tip at y=+48 (submerged), collar at y=-54 (above) -->
+              <g
+                fill="none"
+                stroke="var(--whisk-wire)"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="theme-fill"
+              >
+                <!-- Outermost wide loop -->
+                <path
+                  d="M 0,48 C -44,36 -46,-20 -8,-54 C 8,-58 8,-58 8,-54 C 46,-20 44,36 0,48 Z"
+                  stroke-width="3.6"
+                />
+                <!-- Medium-wide left/right loop -->
+                <path
+                  d="M 0,48 C -31,38 -32,-20 -6,-54 C 6,-57 6,-57 6,-54 C 32,-20 31,38 0,48 Z"
+                  stroke-width="3.4"
+                />
+                <!-- Inner-narrow loop -->
+                <path
+                  d="M 0,48 C -17,40 -18,-20 -3,-54 C 3,-56 3,-56 3,-54 C 18,-20 17,40 0,48 Z"
+                  stroke-width="3.2"
+                />
+                <!-- Center spine wire -->
+                <path d="M 0,48 L 0,-54" stroke-width="3" />
+              </g>
+
+              <!-- Metallic Collar / Ferrule -->
+              <path
+                d="M -11,-50 L 11,-50 L 13,-66 C 13,-69 9,-71 0,-71 C -9,-71 -13,-69 -13,-66 Z"
+                fill="var(--whisk-collar)"
+                stroke="var(--whisk-collar-dark)"
+                stroke-width="2"
+                stroke-linejoin="round"
+                class="theme-fill"
+              />
+              <!-- Collar subtle detail line -->
+              <line
+                x1="-9"
+                y1="-57"
+                x2="9"
+                y2="-57"
+                stroke="rgba(255,255,255,0.45)"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+
+              <!-- Hanging Loop at Top of Handle -->
+              <ellipse
+                cx="0"
+                cy="-178"
+                rx="6.5"
+                ry="11"
+                fill="none"
+                stroke="var(--whisk-handle)"
+                stroke-width="4.2"
+                class="theme-fill"
+              />
+
+              <!-- Rounded Whisk Handle -->
+              <rect
+                x="-11.5"
+                y="-170"
+                width="23"
+                height="104"
+                rx="11.5"
+                fill="var(--whisk-handle)"
+                class="theme-fill"
+              />
+              <!-- Handle shading overlay -->
+              <rect
+                x="-11.5"
+                y="-170"
+                width="23"
+                height="104"
+                rx="11.5"
+                fill="url(#handleShadeGrad)"
+              />
+              <!-- Glossy highlight stripe on handle -->
+              <rect
+                x="-6.5"
+                y="-160"
+                width="4.5"
+                height="80"
+                rx="2.25"
+                fill="var(--whisk-handle-gloss)"
+                opacity="0.72"
+                class="theme-fill"
+              />
+            </g>
+          </g>
+
+          <!-- LAYER 3.5: FRONT CREAMY MENISCUS & FOAM RING (Overlays the whisk entry seam) -->
+          <g id="meniscusLayer" clip-path="url(#batterClip)">
+            <g id="whiskMeniscusFront" transform="translate(300, 289)">
+              <!-- Thick creamy batter collar hugging the front of the submerged wires -->
+              <path
+                d="M -38,0 Q 0,13 38,0 Q 22,19 -22,19 Z"
+                fill="var(--batter-base)"
+                opacity="0.96"
+                class="theme-fill"
+              />
+              <!-- Golden creamy swirl wave curling in front of the whisk -->
+              <path
+                d="M -34,3 Q 0,15 34,3"
+                fill="none"
+                stroke="var(--batter-swirl-dark)"
+                stroke-width="5"
+                stroke-linecap="round"
+                opacity="0.72"
+                class="theme-fill"
+              />
+              <!-- Soft bright foam highlight right along the meniscus lip -->
+              <path
+                d="M -30,1 Q 0,10.5 30,1"
+                fill="none"
+                stroke="var(--batter-swirl-light)"
+                stroke-width="3.6"
+                stroke-linecap="round"
+                opacity="0.95"
+                class="theme-fill"
+              />
+              <!-- Outer delicate ripple arc -->
+              <path
+                d="M -42,4 Q 0,19 42,4"
+                fill="none"
+                stroke="var(--batter-ripple)"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                opacity="0.82"
+              />
+            </g>
+          </g>
+
+          <!-- LAYER 4: FRONT BOWL BODY (Clean & smooth on both sides, occludes lower batter & whisk) -->
+          <g id="bowlFrontLayer">
+            <!-- Main Front Bowl Silhouette (Starts cleanly at left/right rim equator) -->
+            <path
+              d="M 138,280
+                 A 162,48 0 0,0 462,280
+                 C 462,374 394,424 300,424
+                 C 206,424 138,374 138,280 Z"
+              fill="var(--bowl-body)"
+              class="theme-fill"
+            />
+
+            <!-- Subtle bottom curve shading -->
+            <path
+              d="M 138,280
+                 A 162,48 0 0,0 462,280
+                 C 462,374 394,424 300,424
+                 C 206,424 138,374 138,280 Z"
+              fill="url(#bowlShadingGrad)"
+            />
+
+            <!-- Front Outer Rim Lip (Flush with outer ellipse for smooth left & right edges) -->
+            <path
+              d="M 141,280 A 159,45 0 0,0 459,280"
+              fill="none"
+              stroke="var(--bowl-rim-outer)"
+              stroke-width="6"
+              stroke-linecap="round"
+              class="theme-fill"
+            />
+            <!-- Inner front rim highlight -->
+            <path
+              d="M 146,281 A 154,43 0 0,0 454,281"
+              fill="none"
+              stroke="var(--bowl-rim-inner)"
+              stroke-width="4.2"
+              stroke-linecap="round"
+              class="theme-fill"
+            />
+
+            <!-- Soft curved highlight on the lower-left -->
+            <path
+              d="M 164,338 C 176,374 206,399 246,410"
+              fill="none"
+              stroke="var(--bowl-highlight)"
+              stroke-width="8"
+              stroke-linecap="round"
+            />
+
+            <!-- Curved row of cute white polka dots wrapping across the middle -->
+            <path
+              d="M 150,334 Q 300,366 450,334"
+              fill="none"
+              stroke="var(--bowl-dots)"
+              stroke-width="6.5"
+              stroke-linecap="round"
+              stroke-dasharray="0.1 16.5"
+              class="theme-fill"
+            />
+
+            <!-- Cute Ribbon Bow centered on the front -->
+            <g id="bowlBow" transform="translate(300, 381)">
+              <!-- Subtle shadow under bow -->
+              <path
+                d="M -36,-10 L -5,0 L -34,15 C -39,8 -40,-3 -36,-10 Z
+                   M 36,-10 L 5,0 L 34,15 C 39,8 40,-3 36,-10 Z"
+                fill="var(--bow-shadow)"
+                transform="translate(0, 3)"
+              />
+              <!-- Left bow wing -->
+              <path
+                d="M -4,-3 L -34,-15 C -40,-8 -40,8 -34,15 L -4,3 Z"
+                fill="var(--bow-main)"
+                stroke="var(--bow-main)"
+                stroke-width="3"
+                stroke-linejoin="round"
+                class="theme-fill"
+              />
+              <!-- Right bow wing -->
+              <path
+                d="M 4,-3 L 34,-15 C 40,-8 40,8 34,15 L 4,3 Z"
+                fill="var(--bow-main)"
+                stroke="var(--bow-main)"
+                stroke-width="3"
+                stroke-linejoin="round"
+                class="theme-fill"
+              />
+              <!-- Center bow knot -->
+              <rect
+                x="-9"
+                y="-8.5"
+                width="18"
+                height="17"
+                rx="6"
+                fill="var(--bow-knot)"
+                class="theme-fill"
+              />
+              <!-- Tiny highlight on knot -->
+              <ellipse cx="-2.5" cy="-3" rx="2.5" ry="1.8" fill="rgba(255,255,255,0.28)" />
+            </g>
+          </g>
+        </g>
+
+        <!-- ====================================================================
+             LAYER 5: DYNAMIC PARTICLES (Batter droplets & 4-point sparkles)
+             ==================================================================== -->
+        <g id="particlesLayer" pointer-events="none"></g>
+      </svg>
+    </div>
+
+    <!-- ======================================================================
+         MINIMAL FLOATING CONTROLS PILL BAR (BAHASA INDONESIA)
+         ====================================================================== -->
+    <nav class="controls-bar" aria-label="Kontrol Animasi">
+      <!-- Play / Pause -->
+      <button id="playPauseBtn" class="btn-primary" type="button" aria-label="Jeda atau Mulai Animasi">
+        <svg id="playPauseIcon" viewBox="0 0 16 16" aria-hidden="true">
+          <!-- Default: Pause icon -->
+          <rect x="3" y="2" width="3.8" height="12" rx="1.4" />
+          <rect x="9.2" y="2" width="3.8" height="12" rx="1.4" />
+        </svg>
+        <span id="playPauseText">Jeda</span>
+      </button>
+
+      <div class="control-divider" aria-hidden="true"></div>
+
+      <!-- Mode Toggle: Otomatis vs Aduk Sendiri -->
+      <div class="segmented-group" role="group" aria-label="Mode Aduk">
+        <button id="modeAutoBtn" class="seg-btn active" type="button">Otomatis</button>
+        <button id="modeManualBtn" class="seg-btn" type="button">Aduk Sendiri</button>
+      </div>
+
+      <div class="control-divider" aria-hidden="true"></div>
+
+      <!-- Speed Slider -->
+      <div id="speedGroup" class="slider-group">
+        <label for="speedSlider" class="slider-label">Kecepatan</label>
+        <input
+          id="speedSlider"
+          type="range"
+          min="0.3"
+          max="2.8"
+          step="0.05"
+          value="1.15"
+          aria-label="Kecepatan Mengaduk"
+        />
+      </div>
+
+      <div class="control-divider" aria-hidden="true"></div>
+
+      <!-- Theme Switcher -->
+      <div class="segmented-group" role="group" aria-label="Tema Warna">
+        <button id="themePinkBtn" class="seg-btn active" type="button">
+          <span class="swatch swatch-pink"></span>Pink Pastel
+        </button>
+        <button id="themeUnguBtn" class="seg-btn" type="button">
+          <span class="swatch swatch-ungu"></span>Ungu Pop
+        </button>
+      </div>
+    </nav>
+  </main>
+
+  <script>
+    /**
+     * =========================================================================
+     * INTERACTIVE 2D CAKE-BATTER MIXING ANIMATION ENGINE
+     * Uses pure SVG + requestAnimationFrame with smooth physics & particles.
+     * =========================================================================
+     */
+    (function () {
+      'use strict';
+
+      // --- DOM References ---
+      const svgEl = document.getElementById('bakingStage');
+      const stageWrapper = document.getElementById('stageWrapper');
+      const manualHint = document.getElementById('manualHint');
+
+      const bowlAssembly = document.getElementById('bowlAssembly');
+      const groundShadow = document.getElementById('groundShadow');
+      const batterSwirlGroup = document.getElementById('batterSwirlGroup');
+      const whiskGroup = document.getElementById('whiskGroup');
+      const whiskClipPath = document.getElementById('whiskClipPath');
+      const whiskRipple = document.getElementById('whiskRipple');
+      const whiskMeniscusFront = document.getElementById('whiskMeniscusFront');
+      const particlesLayer = document.getElementById('particlesLayer');
+
+      const playPauseBtn = document.getElementById('playPauseBtn');
+      const playPauseIcon = document.getElementById('playPauseIcon');
+      const playPauseText = document.getElementById('playPauseText');
+      const modeAutoBtn = document.getElementById('modeAutoBtn');
+      const modeManualBtn = document.getElementById('modeManualBtn');
+      const speedGroup = document.getElementById('speedGroup');
+      const speedSlider = document.getElementById('speedSlider');
+      const themePinkBtn = document.getElementById('themePinkBtn');
+      const themeUnguBtn = document.getElementById('themeUnguBtn');
+
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+
+      // --- Geometry Constants ---
+      const CENTER_X = 300;
+      const CENTER_Y = 287;
+      const AUTO_RX = 64;
+      const AUTO_RY = 14;
+      const MANUAL_RX = 88;
+      const MANUAL_RY = 19;
+
+      // --- Animation & Physics State ---
+      const state = {
+        isPlaying: true,
+        mode: 'auto', // 'auto' | 'manual'
+        speed: parseFloat(speedSlider.value) || 1.15,
+        orbitAngle: 0,
+        swirlAngle: 0,
+        whiskX: CENTER_X,
+        whiskY: CENTER_Y + 2,
+        whiskTilt: 22,
+        targetX: CENTER_X,
+        targetY: CENTER_Y + 2,
+        prevManualX: CENTER_X,
+        prevManualY: CENTER_Y + 2,
+        manualVelocity: 0,
+        manualSwirlVel: 0,
+        isPointerActive: false,
+        bowlRock: 0,
+        lastTimestamp: 0,
+        dropletCooldown: 0,
+        sparkleCooldown: 0.4,
+        particles: []
+      };
+
+      // =======================================================================
+      // PARTICLE SYSTEM (Batter Droplets & 4-Point Sparkles)
+      // =======================================================================
+      function spawnDroplet(originX, originY, intensity) {
+        if (state.particles.length > 28) return;
+
+        const el = document.createElementNS(SVG_NS, 'ellipse');
+        const radius = 3.2 + Math.random() * 4.4;
+        const isLight = Math.random() > 0.45;
+        el.setAttribute('rx', radius.toFixed(2));
+        el.setAttribute('ry', (radius * 0.85).toFixed(2));
+        el.setAttribute('fill', isLight ? 'var(--drop-light)' : 'var(--drop-dark)');
+        el.setAttribute('class', 'theme-fill');
+
+        const angle = -Math.PI * 0.15 - Math.random() * Math.PI * 0.7;
+        const speedMag = (75 + Math.random() * 85) * Math.min(1.6, 0.7 + intensity * 0.45);
+        const startX = originX + (Math.random() - 0.5) * 34;
+        const startY = originY - 6 - Math.random() * 10;
+
+        particlesLayer.appendChild(el);
+        state.particles.push({
+          type: 'droplet',
+          el,
+          x: startX,
+          y: startY,
+          vx: Math.cos(angle) * speedMag,
+          vy: Math.sin(angle) * speedMag - 30,
+          gravity: 310,
+          age: 0,
+          maxAge: 0.55 + Math.random() * 0.35,
+          rot: Math.random() * 360,
+          vrot: (Math.random() - 0.5) * 260
+        });
+      }
+
+      function spawnSparkle() {
+        if (state.particles.length > 28) return;
+
+        const el = document.createElementNS(SVG_NS, 'path');
+        el.setAttribute(
+          'd',
+          'M 0,-12 Q 2,-2 12,0 Q 2,2 0,12 Q -2,2 -12,0 Q -2,-2 0,-12 Z'
+        );
+        el.setAttribute('fill', 'var(--sparkle-color)');
+        el.setAttribute('class', 'theme-fill');
+
+        // Spawn pleasantly around the upper sides of the bowl & whisk
+        const side = Math.random() > 0.5 ? 1 : -1;
+        const startX = CENTER_X + side * (115 + Math.random() * 90);
+        const startY = 140 + Math.random() * 125;
+
+        particlesLayer.appendChild(el);
+        state.particles.push({
+          type: 'sparkle',
+          el,
+          x: startX,
+          y: startY,
+          vx: side * (6 + Math.random() * 10),
+          vy: -14 - Math.random() * 16,
+          age: 0,
+          maxAge: 0.85 + Math.random() * 0.55,
+          maxScale: 0.55 + Math.random() * 0.65,
+          rot: Math.random() * 45,
+          vrot: (Math.random() - 0.5) * 70
+        });
+      }
+
+      function updateParticles(dt) {
+        for (let i = state.particles.length - 1; i >= 0; i--) {
+          const p = state.particles[i];
+          p.age += dt;
+
+          if (p.age >= p.maxAge) {
+            if (p.el.parentNode) p.el.parentNode.removeChild(p.el);
+            state.particles.splice(i, 1);
+            continue;
+          }
+
+          const progress = p.age / p.maxAge;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.rot += p.vrot * dt;
+
+          if (p.type === 'droplet') {
+            p.vy += p.gravity * dt;
+            const scale = Math.max(0.15, 1 - progress * 0.65);
+            const opacity = progress < 0.7 ? 0.95 : (1 - progress) / 0.3;
+            p.el.setAttribute(
+              'transform',
+              `translate(${p.x.toFixed(2)}, ${p.y.toFixed(2)}) rotate(${p.rot.toFixed(1)}) scale(${scale.toFixed(3)})`
+            );
+            p.el.setAttribute('opacity', Math.max(0, opacity).toFixed(3));
+          } else {
+            // Smooth pop-in and fade-out for sparkles
+            const scaleWave = Math.sin(progress * Math.PI);
+            const scale = p.maxScale * scaleWave;
+            p.el.setAttribute(
+              'transform',
+              `translate(${p.x.toFixed(2)}, ${p.y.toFixed(2)}) rotate(${p.rot.toFixed(1)}) scale(${scale.toFixed(3)})`
+            );
+            p.el.setAttribute('opacity', (scaleWave * 0.92).toFixed(3));
+          }
+        }
+      }
+
+      // =======================================================================
+      // POINTER / TOUCH INTERACTION (MANUAL STIRRING MODE)
+      // =======================================================================
+      function clientToSvgPoint(clientX, clientY) {
+        const rect = svgEl.getBoundingClientRect();
+        const scaleX = 600 / rect.width;
+        const scaleY = 500 / rect.height;
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      }
+
+      function clampToBatterEllipse(x, y) {
+        const dx = (x - CENTER_X) / MANUAL_RX;
+        const dy = (y - CENTER_Y) / MANUAL_RY;
+        const dist = Math.hypot(dx, dy);
+        if (dist <= 1) {
+          return { x, y };
+        }
+        return {
+          x: CENTER_X + (dx / dist) * MANUAL_RX,
+          y: CENTER_Y + (dy / dist) * MANUAL_RY
+        };
+      }
+
+      function handlePointerMove(e) {
+        if (state.mode !== 'manual') return;
+        const pt = clientToSvgPoint(e.clientX, e.clientY);
+        const clamped = clampToBatterEllipse(pt.x, pt.y);
+        state.targetX = clamped.x;
+        state.targetY = clamped.y;
+      }
+
+      stageWrapper.addEventListener('pointerdown', (e) => {
+        if (state.mode !== 'manual') return;
+        state.isPointerActive = true;
+        handlePointerMove(e);
+        if (stageWrapper.setPointerCapture) {
+          try {
+            stageWrapper.setPointerCapture(e.pointerId);
+          } catch (_) {
+            // Ignore capture errors on synthetic events
+          }
+        }
+      });
+
+      stageWrapper.addEventListener('pointermove', (e) => {
+        if (state.mode !== 'manual') return;
+        // Allow hovering with mouse or dragging with touch
+        if (e.pointerType === 'mouse' || state.isPointerActive) {
+          handlePointerMove(e);
+        }
+      });
+
+      const endPointer = () => {
+        state.isPointerActive = false;
+      };
+      stageWrapper.addEventListener('pointerup', endPointer);
+      stageWrapper.addEventListener('pointercancel', endPointer);
+      stageWrapper.addEventListener('pointerleave', endPointer);
+
+      // =======================================================================
+      // UI CONTROLS
+      // =======================================================================
+      function updatePlayPauseUI() {
+        if (state.isPlaying) {
+          playPauseText.textContent = 'Jeda';
+          playPauseIcon.innerHTML =
+            '<rect x="3" y="2" width="3.8" height="12" rx="1.4" />' +
+            '<rect x="9.2" y="2" width="3.8" height="12" rx="1.4" />';
+        } else {
+          playPauseText.textContent = 'Mulai';
+          playPauseIcon.innerHTML =
+            '<path d="M4.2 2.4 C3.6 2 3 2.4 3 3.1 L3 12.9 C3 13.6 3.6 14 4.2 13.6 L13.1 8.7 C13.7 8.4 13.7 7.6 13.1 7.3 Z" />';
+        }
+      }
+
+      playPauseBtn.addEventListener('click', () => {
+        state.isPlaying = !state.isPlaying;
+        updatePlayPauseUI();
+      });
+
+      function setMode(newMode) {
+        state.mode = newMode;
+        const isManual = newMode === 'manual';
+
+        modeAutoBtn.classList.toggle('active', !isManual);
+        modeManualBtn.classList.toggle('active', isManual);
+        stageWrapper.classList.toggle('manual-mode', isManual);
+        manualHint.classList.toggle('visible', isManual);
+        speedGroup.classList.toggle('disabled', isManual);
+
+        // Resume animation automatically if user switches to manual mode
+        if (isManual && !state.isPlaying) {
+          state.isPlaying = true;
+          updatePlayPauseUI();
+        }
+      }
+
+      modeAutoBtn.addEventListener('click', () => setMode('auto'));
+      modeManualBtn.addEventListener('click', () => setMode('manual'));
+
+      speedSlider.addEventListener('input', (e) => {
+        state.speed = parseFloat(e.target.value);
+      });
+
+      function setTheme(theme) {
+        if (theme === 'ungu') {
+          document.documentElement.setAttribute('data-theme', 'ungu');
+          themeUnguBtn.classList.add('active');
+          themePinkBtn.classList.remove('active');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          themePinkBtn.classList.add('active');
+          themeUnguBtn.classList.remove('active');
+        }
+      }
+
+      themePinkBtn.addEventListener('click', () => setTheme('pink'));
+      themeUnguBtn.addEventListener('click', () => setTheme('ungu'));
+
+      // =======================================================================
+      // MAIN ANIMATION LOOP
+      // =======================================================================
+      function animate(timestamp) {
+        try {
+          if (!state.lastTimestamp) state.lastTimestamp = timestamp;
+          const dt = Math.min(0.05, (timestamp - state.lastTimestamp) / 1000);
+          state.lastTimestamp = timestamp;
+
+          let activeStirIntensity = 0;
+
+          if (state.isPlaying) {
+            if (state.mode === 'auto') {
+              const omega = 3.2 * state.speed;
+              state.orbitAngle += omega * dt;
+              state.swirlAngle += 145 * state.speed * dt;
+
+              // Elliptical stirring orbit inside the batter
+              const targetWhiskX = CENTER_X + Math.cos(state.orbitAngle) * AUTO_RX;
+              const targetWhiskY = CENTER_Y + 2 + Math.sin(state.orbitAngle) * AUTO_RY;
+
+              // Smooth interpolation
+              const lerp = 1 - Math.exp(-14 * dt);
+              state.whiskX += (targetWhiskX - state.whiskX) * lerp;
+              state.whiskY += (targetWhiskY - state.whiskY) * lerp;
+
+              // Natural wrist tilt pivoting slightly opposite to horizontal offset
+              const targetTilt = 22 + ((state.whiskX - CENTER_X) / AUTO_RX) * 14;
+              state.whiskTilt += (targetTilt - state.whiskTilt) * lerp;
+
+              activeStirIntensity = state.speed;
+            } else {
+              // Manual stirring mode: smoothly follow pointer/finger inside bowl
+              const lerp = 1 - Math.exp(-18 * dt);
+              const prevX = state.whiskX;
+              const prevY = state.whiskY;
+
+              state.whiskX += (state.targetX - state.whiskX) * lerp;
+              state.whiskY += (state.targetY - state.whiskY) * lerp;
+
+              const vx = (state.whiskX - prevX) / Math.max(0.001, dt);
+              const vy = (state.whiskY - prevY) / Math.max(0.001, dt);
+              const speedMag = Math.hypot(vx, vy);
+
+              // Cross-product gives clockwise vs counter-clockwise stirring direction
+              const relX = state.whiskX - CENTER_X;
+              const relY = state.whiskY - CENTER_Y;
+              const angularMomentum = (relX * vy - relY * vx) * 0.015;
+
+              // Apply inertia to the batter swirl
+              state.manualSwirlVel += (angularMomentum - state.manualSwirlVel) * (1 - Math.exp(-5 * dt));
+              if (Math.abs(state.manualSwirlVel) < 0.2) state.manualSwirlVel *= 0.94;
+              state.swirlAngle += state.manualSwirlVel * dt * 2.2;
+
+              // Natural tilt reacting to whisk position
+              const targetTilt = 20 + ((state.whiskX - CENTER_X) / MANUAL_RX) * 18;
+              state.whiskTilt += (targetTilt - state.whiskTilt) * (1 - Math.exp(-12 * dt));
+
+              state.manualVelocity += (speedMag / 160 - state.manualVelocity) * (1 - Math.exp(-8 * dt));
+              activeStirIntensity = Math.min(2.8, state.manualVelocity);
+            }
+
+            // Subtle bowl rocking driven by whisk horizontal offset & intensity
+            const targetRock = ((state.whiskX - CENTER_X) / 90) * Math.min(3.2, 1.2 + activeStirIntensity * 0.9);
+            state.bowlRock += (targetRock - state.bowlRock) * (1 - Math.exp(-8 * dt));
+
+            // Spawn batter droplets & sparkles based on stirring intensity
+            state.dropletCooldown -= dt;
+            if (activeStirIntensity > 0.35 && state.dropletCooldown <= 0) {
+              spawnDroplet(state.whiskX, state.whiskY, activeStirIntensity);
+              state.dropletCooldown = Math.max(0.12, 0.52 / Math.max(0.4, activeStirIntensity));
+            }
+
+            state.sparkleCooldown -= dt;
+            if (activeStirIntensity > 0.25 && state.sparkleCooldown <= 0) {
+              spawnSparkle();
+              state.sparkleCooldown = Math.max(0.35, 1.15 / Math.max(0.5, activeStirIntensity));
+            }
+
+            updateParticles(dt);
+          }
+
+          // --- APPLY SVG TRANSFORMS ---
+          // 1. Batter vortex swirl rotation
+          batterSwirlGroup.setAttribute('transform', `rotate(${state.swirlAngle.toFixed(2)})`);
+
+          // 2. Whisk position & tilt (origin is at the ~50% submersion waterline)
+          whiskGroup.setAttribute(
+            'transform',
+            `translate(${state.whiskX.toFixed(2)}, ${state.whiskY.toFixed(2)}) rotate(${state.whiskTilt.toFixed(2)})`
+          );
+
+          // 2b. Update dynamic whisk submersion clipPath to cut cleanly at the batter surface
+          const wx = state.whiskX;
+          const wy = state.whiskY;
+          const meniscusCurveY = wy + 8;
+          whiskClipPath.setAttribute(
+            'd',
+            `M 0,0 L 600,0 L 600,${wy.toFixed(2)} L ${(wx + 42).toFixed(2)},${wy.toFixed(2)} Q ${wx.toFixed(2)},${meniscusCurveY.toFixed(2)} ${(wx - 42).toFixed(2)},${wy.toFixed(2)} L 0,${wy.toFixed(2)} Z`
+          );
+
+          // 3. Whisk contact ripple (behind whisk) & creamy meniscus (in front of whisk)
+          const rippleScale = 0.92 + Math.min(0.28, activeStirIntensity * 0.12) + Math.sin(timestamp * 0.015) * 0.05;
+          whiskRipple.setAttribute(
+            'transform',
+            `translate(${wx.toFixed(2)}, ${wy.toFixed(2)}) scale(${rippleScale.toFixed(3)})`
+          );
+          whiskMeniscusFront.setAttribute(
+            'transform',
+            `translate(${wx.toFixed(2)}, ${wy.toFixed(2)}) scale(${(0.96 + Math.sin(timestamp * 0.015) * 0.04).toFixed(3)}, 1)`
+          );
+
+          // 4. Bowl assembly rocking around bottom pivot & synchronized ground shadow
+          bowlAssembly.setAttribute('transform', `rotate(${state.bowlRock.toFixed(2)}, 300, 424)`);
+          const shadowShift = state.bowlRock * 1.4;
+          const shadowScale = 1 + Math.abs(state.bowlRock) * 0.008;
+          groundShadow.setAttribute(
+            'transform',
+            `translate(${shadowShift.toFixed(2)}, 0) scale(${shadowScale.toFixed(3)}, 1)`
+          );
+          groundShadow.setAttribute('transform-origin', '300 438');
+        } catch (err) {
+          console.error('Animation loop error:', err);
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      // Initialize animation loop once DOM is ready
+      window.addEventListener('load', () => {
+        requestAnimationFrame(animate);
+      });
+      if (document.readyState === 'complete') {
+        requestAnimationFrame(animate);
+      }
+    })();
+  </script>
+</body>
+</html>
