@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
-import {
-  hitungJarakJalan,
-  validasiKoordinat,
-  cariTarifJarak,
-} from "@/lib/ongkir";
+import { hitungJarakJalanKm, cariTarif, validasiKoordinat } from "@/lib/ongkir";
 
 export async function POST(request) {
   const supabaseUser = await getSupabaseServer();
@@ -19,16 +15,28 @@ export async function POST(request) {
     );
   }
 
-  const body = await request.json();
-  const latTujuan = Number(body.lat_tujuan);
-  const lngTujuan = Number(body.lng_tujuan);
-
-  if (!validasiKoordinat(latTujuan, lngTujuan)) {
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
     return NextResponse.json(
-      { pesan: "Koordinat tujuan tidak valid untuk wilayah Indonesia." },
+      { pesan: "Format data request tidak valid." },
       { status: 400 }
     );
   }
+
+  const rawLat = body.lat !== undefined ? body.lat : body.lat_tujuan;
+  const rawLng = body.lng !== undefined ? body.lng : body.lng_tujuan;
+
+  if (rawLat === undefined || rawLng === undefined || !validasiKoordinat(rawLat, rawLng)) {
+    return NextResponse.json(
+      { pesan: "Koordinat lokasi tidak valid atau di luar wilayah Indonesia." },
+      { status: 400 }
+    );
+  }
+
+  const latTujuan = Number(rawLat);
+  const lngTujuan = Number(rawLng);
 
   const supabase = getSupabaseAdmin();
   const { data: toko } = await supabase
@@ -37,57 +45,51 @@ export async function POST(request) {
     .eq("id", 1)
     .single();
 
-  if (!toko || toko.lat_toko === null || toko.lng_toko === null) {
-    return NextResponse.json({
-      status: "tokoBelumDiatur",
-      pesan: "Lokasi pengiriman toko belum dikonfigurasi oleh admin.",
-    });
-  }
-
-  const latToko = Number(toko.lat_toko);
-  const lngToko = Number(toko.lng_toko);
-  const faktorJalan = Number(toko.faktor_jalan) || 1.3;
-  const maksJarak = Number(toko.maks_jarak_kirim_km) || 20;
-
-  if (!validasiKoordinat(latToko, lngToko)) {
-    return NextResponse.json({
-      status: "tokoBelumDiatur",
-      pesan: "Koordinat lokasi toko tidak valid.",
-    });
-  }
-
-  const jarakJalanKm = hitungJarakJalan(latToko, lngToko, latTujuan, lngTujuan, faktorJalan);
-
-  if (jarakJalanKm > maksJarak) {
-    return NextResponse.json({
-      status: "diluarJangkauan",
-      jarak_km: jarakJalanKm,
-      maks_jarak_km: maksJarak,
-      pesan: `Alamat tujuan berada sejauh ${jarakJalanKm} km, melebihi batas jangkauan maksimal pengiriman toko (${maksJarak} km).`,
-    });
-  }
-
   const { data: daftarTarif } = await supabase
     .from("tarif_jarak")
     .select("id, jarak_maks_km, tarif, aktif")
     .eq("aktif", true)
     .order("jarak_maks_km", { ascending: true });
 
-  const tarifOngkir = cariTarifJarak(jarakJalanKm, daftarTarif || [], maksJarak);
+  const latToko = toko?.lat_toko !== null && toko?.lat_toko !== undefined ? Number(toko.lat_toko) : null;
+  const lngToko = toko?.lng_toko !== null && toko?.lng_toko !== undefined ? Number(toko.lng_toko) : null;
+  const tarifAktif = daftarTarif || [];
+  const maksKm = toko?.maks_jarak_kirim_km !== null && toko?.maks_jarak_kirim_km !== undefined ? Number(toko.maks_jarak_kirim_km) : null;
 
-  if (tarifOngkir === null) {
+  if (latToko === null || lngToko === null || !validasiKoordinat(latToko, lngToko) || tarifAktif.length === 0) {
+    return NextResponse.json({
+      status: "tokoBelumDiatur",
+      pesan: "Lokasi pengiriman toko belum dikonfigurasi oleh admin.",
+      jarak_km: 0,
+      ongkir: 0,
+      maks_km: maksKm,
+      maks_jarak_km: maksKm,
+      estimasi: true,
+    });
+  }
+
+  const faktor = toko?.faktor_jalan ? Number(toko.faktor_jalan) : 1.3;
+  const jarak_km = hitungJarakJalanKm(latToko, lngToko, latTujuan, lngTujuan, faktor);
+  const hasil = cariTarif(jarak_km, tarifAktif, maksKm);
+
+  if (hasil.status === "diluarJangkauan") {
     return NextResponse.json({
       status: "diluarJangkauan",
-      jarak_km: jarakJalanKm,
-      maks_jarak_km: maksJarak,
-      pesan: `Tidak ditemukan tier tarif ongkir untuk jarak ${jarakJalanKm} km.`,
+      jarak_km,
+      ongkir: 0,
+      maks_km: maksKm,
+      maks_jarak_km: maksKm,
+      estimasi: true,
+      pesan: `Alamat tujuan berada sejauh ${jarak_km} km, di luar jangkauan pengiriman maksimal.`,
     });
   }
 
   return NextResponse.json({
-    status: "ok",
-    jarak_km: jarakJalanKm,
-    ongkir: tarifOngkir,
+    status: hasil.status,
+    jarak_km,
+    ongkir: hasil.tarif,
+    maks_km: maksKm,
+    maks_jarak_km: maksKm,
     estimasi: true,
   });
 }

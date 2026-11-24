@@ -26,7 +26,7 @@ Kode di project ini harus sederhana dan bersih, terlihat ditulis manual oleh pel
 9. **DILARANG mengubah struktur tabel lewat kode aplikasi.** Struktur tabel hanya lewat file SQL di `supabase/migrations/`. Data awal (pengaturan toko, grup opsi contoh, zona ongkir contoh) lewat `supabase/seed.sql`.
 10. Query memakai Supabase client (`from().select().eq().insert().update().delete()`). Tidak memakai ORM. Tidak boleh menyambung string SQL dari input pengguna.
 11. Tampilan memakai **Next.js App Router + Tailwind CSS + Font Awesome 6.4 (lewat CDN di layout)**. Tidak memakai library komponen (shadcn, MUI, dll).
-12. Library yang diizinkan hanya: `next`, `react`, `react-dom`, `tailwindcss`, `@supabase/supabase-js`, `@supabase/ssr`, `gsap` (animasi scroll di landing), `qrcode` (membuat QR tiket), `chart.js` (dipakai langsung di client component lewat `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`, tanpa `react-chartjs-2`), dan `three` (Three.js diizinkan hanya di `/pesan` dan wajib dimuat secara dinamis). File CSS eksternal studio `app/pesan/cakecraft.css` khusus digunakan di `/pesan`. Library lain tanya dulu.
+12. Library yang diizinkan hanya: `next`, `react`, `react-dom`, `tailwindcss`, `@supabase/supabase-js`, `@supabase/ssr`, `gsap` (animasi scroll di landing), `qrcode` (membuat QR tiket), `leaflet` (peta interaktif pemilih lokasi pengantaran dan toko pada komponen client), `chart.js` (dipakai langsung di client component lewat `useEffect`, dihancurkan saat unmount dengan `chart.destroy()`, tanpa `react-chartjs-2`), dan `three` (Three.js diizinkan hanya di `/pesan` dan wajib dimuat secara dinamis). File CSS eksternal studio `app/pesan/cakecraft.css` khusus digunakan di `/pesan`. Library lain tanya dulu.
 13. Fitur yang tidak ada di `CLAUDE.md` ini tidak boleh ditambahkan hanya karena ada di referensi. Referensi dipakai untuk **tampilan**, bukan untuk menambah fitur.
 14. **DILARANG menghapus file, halaman, atau komponen apa pun** kecuali pengguna menyebut nama filenya secara eksplisit di pesan permintaan. Kalau menurut analisis ada yang perlu dihapus atau tidak dipakai, daftarkan di laporan dan tanyakan terlebih dahulu.
 15. **Keputusan Katalog & Keranjang**:
@@ -441,7 +441,8 @@ Form berisi:
 - **Info toko**: nama toko, slogan, alamat, nomor WhatsApp, jam operasional (teks)
 - **Jadwal pemesanan**: `jam_buka`, `jam_tutup`, `kuota_harian` (jumlah pesanan aktif per tanggal), `minimal_hari_pesan` (default 2)
 - **Pembayaran**: `mode_pembayaran` (`DP` atau `Lunas`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), nama bank + nomor rekening + atas nama, unggah gambar QRIS
-- **Zona ongkir**: tabel zona (nama zona, tarif, aktif) dengan Tambah, Edit, Hapus
+- **Ongkir berdasarkan jarak**: pemilih koordinat toko pada peta Leaflet (`lat_toko`, `lng_toko`), faktor jalan (`faktor_jalan`, default 1.3), batas jarak maksimal (`maks_jarak_kirim_km`, default 20), tabel tarif jarak berundak (`tarif_jarak`) dengan Tambah, Edit, Hapus, dan simulator perhitungan jarak.
+- **Zona ongkir (lama)**: tabel zona lama (nama zona, tarif, aktif) hanya digunakan untuk `/pesan` versi lama.
 - **Tanggal tutup**: daftar tanggal libur atau penuh (tanggal + alasan) dengan Tambah dan Hapus
 
 ### Menu Akun (admin)
@@ -506,9 +507,16 @@ Dibatalkan (hanya sebelum Sedang Dibuat)
 
 ## Pengiriman
 
-Dua pilihan di pesanan: `Ambil di Tempat` atau `Kirim`.
-- **Ambil di Tempat**: tanpa alamat dan tanpa ongkir. Jam ambil dipilih pelanggan.
-- **Kirim**: pelanggan mengisi alamat lengkap dan memilih **zona ongkir** dari daftar di Pengaturan. Ongkir dihitung dari tarif zona itu. Kalau tidak ada zona yang aktif, pilihan Kirim disembunyikan.
+Dua pilihan cara penerimaan: `Ambil di Tempat` atau `Kirim`.
+- **Ambil di Tempat**: tanpa alamat dan ongkir = Rp 0. Kolom lokasi tujuan kosong. Jam ambil dipilih pelanggan.
+- **Kirim**: ongkir dihitung otomatis dari jarak toko ke titik pengantaran pelanggan:
+  - Pelanggan menandai titik pengantaran pada peta interaktif Leaflet (`components/PetaLokasi.js`) dan mengisi alamat lengkap beserta patokan.
+  - Jarak lurus dihitung menggunakan rumus Haversine, lalu dikalikan `faktor_jalan` toko (default 1.3) dan dibulatkan ke atas ke 0,1 km (`lib/ongkir.js`).
+  - Tarif dicocokkan dengan tabel `tarif_jarak` aktif pada jarak terdekat yang masih mencakup jarak pengiriman (batas atas inklusif).
+  - Jika jarak melebihi batas tarif tertinggi atau `maks_jarak_kirim_km`, status menjadi `diluarJangkauan` dan sistem menolak pengiriman dengan pesan jelas.
+  - Jika titik lokasi toko atau tarif aktif belum diatur, status menjadi `tokoBelumDiatur` dan opsi Kirim disembunyikan.
+  - Server pada `POST /api/checkout` selalu menghitung ulang jarak dan ongkir secara independen, mengabaikan angka dari browser.
+- **Zona Ongkir Lama (`zona_ongkir`)**: hanya digunakan untuk form pesanan versi lama (`/pesan`) dan tetap dipertahankan untuk kompatibilitas ke belakang tanpa merusak alur lama.
 
 ## Database
 
@@ -526,7 +534,8 @@ Dibuat lewat **file SQL di `supabase/migrations/`** dan data awal lewat `seed.sq
 `id` (uuid, sama dengan `auth.users.id`), `nama`, `no_wa`, `role` (`admin` / `staf` / `pelanggan`, default `pelanggan`), `aktif` (boolean, default true), `dibuat_pada`. Dibuat otomatis lewat trigger saat ada pendaftaran baru di `auth.users`.
 
 ### pengaturan_toko
-Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `jam_buka_senin_jumat`, `jam_tutup_senin_jumat`, `jam_buka_sabtu_minggu`, `jam_tutup_sabtu_minggu`, `email`, `instagram`, `tautan_peta`, `deskripsi_footer`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `minimal_hari_katalog` (default 1), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`, `lat_toko`, `lng_toko`, `faktor_jalan` (default 1.3), `maks_jarak_kirim_km` (default 20).
+### pengaturan_toko
+Satu baris saja (id selalu 1): `nama_toko`, `slogan` (teks tagline toko), `alamat`, `no_wa`, `jam_operasional`, `jam_buka`, `jam_tutup`, `jam_buka_senin_jumat`, `jam_tutup_senin_jumat`, `jam_buka_sabtu_minggu`, `jam_tutup_sabtu_minggu`, `email`, `instagram`, `tautan_peta`, `deskripsi_footer`, `kuota_harian` (default 5), `minimal_hari_pesan` (default 2), `minimal_hari_siap` (default 1), `minimal_hari_katalog` (default 1), `mode_pembayaran` (`DP` / `Lunas`, default `DP`), `persen_dp` (default 50), `batas_bayar_jam` (default 24), `nama_bank`, `no_rekening`, `atas_nama`, `gambar_qris`, `lat_toko` (numeric, boleh kosong), `lng_toko` (numeric, boleh kosong), `faktor_jalan` (numeric default 1.3), `maks_jarak_kirim_km` (numeric default 20).
 
 ### kategori_produk
 Kategori produk kue katalog: `id` (bigint identity), `nama` (text, unik), `urutan` (integer, default 0), `aktif` (boolean, default true). RLS: publik membaca kategori aktif, admin mengelola penuh.
@@ -550,13 +559,13 @@ Tarif ongkos kirim bertingkat berbasis radius jarak: `id` (bigint identity), `ja
 `id`, `id_grup` (FK), `nama`, `harga` (integer, rupiah), `aktif` (boolean, default true), `urutan`, `warna` (hex, boleh kosong), `kode_visual` (boleh kosong).
 
 ### zona_ongkir
-`id`, `nama`, `tarif` (integer), `aktif` (boolean).
+`id`, `nama`, `tarif` (integer), `aktif` (boolean). Catatan: tabel ini khusus digunakan untuk `/pesan` versi lama; alur baru `/checkout` menggunakan `tarif_jarak` dan koordinat peta.
 
 ### tanggal_tutup
 `id`, `tanggal` (date, unik), `alasan`.
 
 ### pesanan
-`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `lat_tujuan` (numeric, boleh kosong), `lng_tujuan` (numeric, boleh kosong), `jarak_km` (numeric, boleh kosong), `id_zona` (FK, boleh kosong), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `stok_dipotong_pada` (timestamptz, boleh kosong), `dibuat_pada`.
+`id`, `nomor` (bigint identity, unik), `kode_pesanan` (unik, contoh `KUE-0012`, dibuat dari `nomor` dengan `padStart(4, "0")`), `id_pelanggan` (FK `profil`), `nama_penerima`, `no_wa`, `tulisan_kue`, `catatan`, `foto_referensi` (path di Storage, boleh kosong), `foto_preview`, `foto_bentuk_kustom`, `foto_gambar_kustom` (boleh kosong), `desain_json` (jsonb, boleh kosong), `tanggal_ambil` (date), `jam_ambil` (time), `metode_pengiriman` (`Ambil` / `Kirim`), `alamat` (boleh kosong), `id_zona` (FK, boleh kosong, hanya diisi `/pesan` lama), `lat_tujuan` (numeric, titik koordinat pengantaran), `lng_tujuan` (numeric), `jarak_km` (numeric, jarak jalan terhitung dalam km), `ongkir` (integer, default 0), `total_kue`, `total_bayar`, `persen_dp_saat_pesan` (boleh kosong untuk mode Lunas), `jumlah_dp`, `jumlah_terbayar` (default 0), `status_pesanan` (default `Menunggu Pembayaran`), `status_bayar` (default `Belum Bayar`), `alasan_batal` (boleh kosong), `stok_dipotong_pada` (timestamptz, boleh kosong), `dibuat_pada`.
 
 ### pesanan_pilihan
 Salinan pilihan saat pesan: `id`, `id_pesanan` (FK), `id_pesanan_item` (bigint FK `pesanan_item` on delete cascade, boleh kosong), `id_item` (bigint FK ke `opsi_item(id)` on delete set null, boleh kosong), `id_grup` (bigint FK ke `grup_opsi(id)` on delete set null), `nama_grup`, `nama_item`, `harga`, `jumlah` (integer, default 1), `warna`, `kode_visual`, `peran_visual`.
