@@ -78,6 +78,35 @@ const STEPS = [
   ["Review Pesanan", "💌"],
 ];
 
+const STEPS_PER_TYPE = {
+  cake:    [0, 1, 2, 3, 4, 5, 6, 7, 8],
+  cupcake: [0, 1, 3, 4, 6, 7, 8],
+  tart:    [0, 1, 3, 6, 7, 8],
+  donut:   [0, 1, 3, 6, 7, 8],
+  roti:    [0, 1, 3, 6, 7, 8],
+  cookies: [0, 1, 3, 6, 7, 8],
+};
+
+function getActiveSteps(itemType) {
+  return STEPS_PER_TYPE[itemType] || STEPS_PER_TYPE.cake;
+}
+
+const STEP_LABEL_OVERRIDE = {
+  cupcake: { 1: "Jumlah", 3: "Rasa" },
+  tart:    { 1: "Jumlah", 3: "Rasa Isian" },
+  donut:   { 1: "Jumlah", 3: "Rasa Adonan" },
+  roti:    { 1: "Jumlah", 3: "Rasa Isian" },
+  cookies: { 1: "Jumlah", 3: "Rasa" },
+};
+
+const STEP_DESC_OVERRIDE = {
+  cupcake: { 1: "Tentukan berapa buah cupcake yang ingin kamu pesan.", 3: "Pilih rasa adonan cupcake." },
+  tart:    { 1: "Tentukan berapa buah kue pie yang ingin kamu pesan.", 3: "Pilih rasa isian custard kue pie." },
+  donut:   { 1: "Tentukan berapa buah donat yang ingin kamu pesan.", 3: "Pilih rasa adonan donat." },
+  roti:    { 1: "Tentukan berapa loyang atau buah roti yang ingin kamu pesan.", 3: "Pilih rasa isian roti." },
+  cookies: { 1: "Tentukan berapa keping cookies yang ingin kamu pesan.", 3: "Pilih rasa adonan cookies." },
+};
+
 const BASE_TYPES = [
   {
     key: "cake",
@@ -5229,6 +5258,8 @@ export default function PesanPage() {
   }
 
   function validateStep(sIdx) {
+    const active = getActiveSteps(S.itemType);
+    if (!active.includes(sIdx)) return "";
     if (sIdx === 0) {
       if (!S.itemType) {
         return "Pilih salah satu bentuk dasar kue terlebih dahulu ya.";
@@ -5236,7 +5267,7 @@ export default function PesanPage() {
       return "";
     }
     if (sIdx === 1) {
-      if (!S.size) return "Pilih ukuran kue terlebih dahulu ya.";
+      if (!S.size) return "Pilih ukuran terlebih dahulu ya.";
       return "";
     }
     if (sIdx === 2) {
@@ -5244,9 +5275,9 @@ export default function PesanPage() {
       return "";
     }
     if (sIdx === 3) {
-      if (!S.flavor) return "Pilih rasa bolu kue terlebih dahulu ya.";
-      if (!S.fill) return "Pilih isian krim terlebih dahulu ya.";
-      if (!S.icing) return "Pilih warna krim icing terlebih dahulu ya.";
+      if (!S.flavor) return "Pilih rasa terlebih dahulu ya.";
+      if (S.itemType === "cake" && !S.fill) return "Pilih isian krim terlebih dahulu ya.";
+      if (S.itemType === "cake" && !S.icing) return "Pilih warna krim icing terlebih dahulu ya.";
       return "";
     }
     if (sIdx === 7) {
@@ -5256,30 +5287,25 @@ export default function PesanPage() {
   }
 
   function go(targetStep) {
+    const active = getActiveSteps(S.itemType);
     let i = Math.max(0, Math.min(8, targetStep));
     if (i === step) return;
 
-    if (mode === "tpl") {
-      if (i > 0 && tplI === null) {
-        showToast("Pilih salah satu template dulu ya");
-        return;
-      }
-      if (i >= 1 && i <= 5) {
-        i = i < step ? 0 : 6;
-      }
+    if (!active.includes(i)) {
+      showToast("Langkah ini tidak tersedia untuk jenis kue ini.");
+      return;
     }
 
     if (i > step) {
-      const isNextAllowed =
-        (mode === "tpl" && step === 0 && i === 6) ||
-        i === step + 1 ||
-        i <= maxStep;
+      const myPos = active.indexOf(i);
+      const curPos = active.indexOf(step);
+      const isNextAllowed = myPos === curPos + 1 || active.indexOf(i) <= active.indexOf(maxStep);
       if (!isNextAllowed) {
         showToast("Selesaikan langkah sebelumnya terlebih dahulu ya.");
         return;
       }
       for (let k = step; k < i; k++) {
-        if (mode === "tpl" && k >= 1 && k <= 5) continue;
+        if (!active.includes(k)) continue;
         const err = validateStep(k);
         if (err) {
           showToast(err);
@@ -5507,8 +5533,14 @@ export default function PesanPage() {
       showToast(err);
       return;
     }
-    if (step < 7) {
-      go(step + 1);
+    const active = getActiveSteps(S.itemType);
+    const curPos = active.indexOf(step);
+    if (step === 8) {
+      handleOrderSubmit();
+      return;
+    }
+    if (curPos >= 0 && curPos < active.length - 1) {
+      go(active[curPos + 1]);
       return;
     }
     if (step === 7) {
@@ -5518,10 +5550,6 @@ export default function PesanPage() {
         return;
       }
       go(8);
-      return;
-    }
-    if (step === 8) {
-      handleOrderSubmit();
     }
   }
 
@@ -5901,10 +5929,16 @@ export default function PesanPage() {
 
       <div className="wrap">
         <div className="steps">
-          {STEPS.map((item, idx) => {
-            const isDone = idx < step;
+          {getActiveSteps(S.itemType).map((idx) => {
+            const item = STEPS[idx];
+            const activeSteps = getActiveSteps(S.itemType);
+            const posInActive = activeSteps.indexOf(step);
+            const myPos = activeSteps.indexOf(idx);
+            const isDone = myPos < posInActive;
             const isCur = idx === step;
-            const isUnlocked = idx <= maxStep;
+            const isUnlocked = myPos <= activeSteps.indexOf(maxStep);
+            const override = STEP_LABEL_OVERRIDE[S.itemType] || {};
+            const label = override[idx] || item[0];
             return (
               <button
                 key={idx}
@@ -5918,12 +5952,12 @@ export default function PesanPage() {
                   }
                   go(idx);
                 }}
-                title={!isUnlocked ? "Langkah ini belum terbuka" : item[0]}
+                title={!isUnlocked ? "Langkah ini belum terbuka" : label}
               >
                 <span className="ic">
                   {!isUnlocked ? "🔒" : isDone ? "✓" : item[1]}
                 </span>
-                {item[0]}
+                {label}
               </button>
             );
           })}
@@ -5964,8 +5998,14 @@ export default function PesanPage() {
                             deco: {},
                             candles: [],
                             items: [],
+                            shape: item.key !== "cake" ? null : S.shape,
+                            fill: item.key !== "cake" ? null : S.fill,
+                            icing: item.key !== "cake" ? "#f6b4c2" : S.icing,
+                            flavor: null,
+                            size: null,
                           };
                           setS(nextS);
+                          setMaxStep(0);
                           snap(nextS);
                         }}
                       >
@@ -6008,8 +6048,8 @@ export default function PesanPage() {
                 <div className="ttl">
                   <span className="ti">⤢</span>
                   <div>
-                    <h1>Pilih Ukuran Kue</h1>
-                    <p>Tentukan ukuran kue sesuai kebutuhanmu.</p>
+                    <h1>{STEP_LABEL_OVERRIDE[S.itemType]?.[1] ? `Pilih ${STEP_LABEL_OVERRIDE[S.itemType][1]}` : "Pilih Ukuran Kue"}</h1>
+                    <p>{STEP_DESC_OVERRIDE[S.itemType]?.[1] || "Tentukan ukuran kue sesuai kebutuhanmu."}</p>
                   </div>
                 </div>
                 <div className="grid">
@@ -6031,15 +6071,20 @@ export default function PesanPage() {
                           S.icing || "#f6b4c2"
                         )}
                         <b>{formatNamaItem(item.nama)}</b>
-                        <small>Diameter {visual.d} cm</small>
+                        {S.itemType === "cake" ? (
+                          <small>Diameter {visual.d} cm</small>
+                        ) : (
+                          <small>{visual.s}</small>
+                        )}
                         <em>{item.harga ? formatRupiah(item.harga) : "Termasuk"}</em>
                       </button>
                     );
                   })}
                 </div>
                 <div className="tip">
-                  Ukuran {S.size.charAt(0).toUpperCase() + S.size.slice(1)} cocok
-                  untuk {VISUAL_SIZE[S.size]?.s || "keluarga"}.
+                  {S.itemType === "cake"
+                    ? `Ukuran ${S.size.charAt(0).toUpperCase() + S.size.slice(1)} cocok untuk ${VISUAL_SIZE[S.size]?.s || "keluarga"}.`
+                    : `Pilih ukuran yang sesuai dengan kebutuhanmu.`}
                 </div>
               </div>
             )}
@@ -6092,11 +6137,11 @@ export default function PesanPage() {
                 <div className="ttl">
                   <span className="ti">🎨</span>
                   <div>
-                    <h1>Pilih Rasa dan Isian</h1>
-                    <p>Rasa sponge, isian tengah, dan warna krim luar.</p>
+                    <h1>{STEP_LABEL_OVERRIDE[S.itemType]?.[3] ? `Pilih ${STEP_LABEL_OVERRIDE[S.itemType][3]}` : "Pilih Rasa dan Isian"}</h1>
+                    <p>{STEP_DESC_OVERRIDE[S.itemType]?.[3] || "Rasa sponge, isian tengah, dan warna krim luar."}</p>
                   </div>
                 </div>
-                <div className="lb">Rasa sponge</div>
+                <div className="lb">{S.itemType === "cake" ? "Rasa sponge" : "Rasa adonan"}</div>
                 <div className="grid">
                   {itemsRasa.map((item) => (
                     <button
@@ -6116,44 +6161,48 @@ export default function PesanPage() {
                   ))}
                 </div>
 
-                <div className="lb">Isian</div>
-                <div className="grid">
-                  {itemsIsian.map((item) => (
-                    <button
-                      key={item.id}
-                      className={`opt ${S.fill === item.kode_visual ? "on" : ""}`}
-                      onClick={() => handleSet("fill", item.kode_visual)}
-                    >
-                      <i
-                        className="sw"
-                        style={{ background: item.warna || "#fffaf0" }}
-                      ></i>
-                      <b>{item.nama}</b>
-                      <small>
-                        {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
-                      </small>
-                    </button>
-                  ))}
-                </div>
+                {S.itemType === "cake" && (
+                  <>
+                    <div className="lb">Isian</div>
+                    <div className="grid">
+                      {itemsIsian.map((item) => (
+                        <button
+                          key={item.id}
+                          className={`opt ${S.fill === item.kode_visual ? "on" : ""}`}
+                          onClick={() => handleSet("fill", item.kode_visual)}
+                        >
+                          <i
+                            className="sw"
+                            style={{ background: item.warna || "#fffaf0" }}
+                          ></i>
+                          <b>{item.nama}</b>
+                          <small>
+                            {item.harga ? `+${formatRupiah(item.harga)}` : "Termasuk"}
+                          </small>
+                        </button>
+                      ))}
+                    </div>
 
-                <div className="lb">Warna krim</div>
-                <div className="sc">
-                  {itemsWarnaKrim.map((item) => {
-                    const isSelected =
-                      (S.icing || "").toLowerCase() ===
-                      (item.warna || "").toLowerCase();
-                    return (
-                      <button
-                        key={item.id}
-                        className={`ch ${isSelected ? "on" : ""}`}
-                        onClick={() => handleSet("icing", item.warna)}
-                      >
-                        <i style={{ background: item.warna }}></i>
-                        {item.nama}
-                      </button>
-                    );
-                  })}
-                </div>
+                    <div className="lb">Warna krim</div>
+                    <div className="sc">
+                      {itemsWarnaKrim.map((item) => {
+                        const isSelected =
+                          (S.icing || "").toLowerCase() ===
+                          (item.warna || "").toLowerCase();
+                        return (
+                          <button
+                            key={item.id}
+                            className={`ch ${isSelected ? "on" : ""}`}
+                            onClick={() => handleSet("icing", item.warna)}
+                          >
+                            <i style={{ background: item.warna }}></i>
+                            {item.nama}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
