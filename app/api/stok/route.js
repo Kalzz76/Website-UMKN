@@ -19,11 +19,34 @@ export async function GET() {
   const kebutuhanAktifMap = {};
 
   if (pesananAktif && pesananAktif.length > 0) {
-    const idPesananList = pesananAktif.map((p) => p.id);
-    const { data: pilihanList } = await supabase
+    const rawIds = pesananAktif.map((p) => p.id);
+    const { data: allItems } = await supabase
+      .from("pesanan_item")
+      .select("id_pesanan, jenis")
+      .in("id_pesanan", rawIds);
+
+    const nonCustomOrderIds = new Set();
+    if (allItems && allItems.length > 0) {
+      const pesananItemMap = {};
+      for (let i = 0; i < allItems.length; i++) {
+        const pid = allItems[i].id_pesanan;
+        if (!pesananItemMap[pid]) pesananItemMap[pid] = [];
+        pesananItemMap[pid].push(allItems[i]);
+      }
+      for (const [pid, its] of Object.entries(pesananItemMap)) {
+        const hasCustom = its.some((it) => it.jenis === "Custom" || it.jenis === "custom");
+        if (!hasCustom) {
+          nonCustomOrderIds.add(Number(pid));
+        }
+      }
+    }
+
+    const idPesananList = rawIds.filter((id) => !nonCustomOrderIds.has(Number(id)));
+
+    const { data: pilihanList } = idPesananList.length > 0 ? await supabase
       .from("pesanan_pilihan")
       .select("id, id_item, nama_item, nama_grup, kode_visual, jumlah")
-      .in("id_pesanan", idPesananList);
+      .in("id_pesanan", idPesananList) : { data: [] };
 
     const validPilihan = pilihanList || [];
     const butuhLookupItem = validPilihan.some((p) => !p.id_item);

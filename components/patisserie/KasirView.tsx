@@ -193,7 +193,7 @@ export const KasirView: React.FC<KasirViewProps> = ({
     router.push("/checkout");
   };
 
-  const handleSendWhatsAppOrder = (e: React.FormEvent) => {
+  const handleSendWhatsAppOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName.trim()) {
       onNotify("Nama pemesan wajib diisi.");
@@ -237,7 +237,16 @@ export const KasirView: React.FC<KasirViewProps> = ({
       .join("\n");
 
     const encodedMessage = encodeURIComponent(messageLines);
-    const waUrl = `https://wa.me/6281234567890?text=${encodedMessage}`;
+    let waUrl = `https://wa.me/?text=${encodedMessage}`;
+    try {
+      const res = await fetch("/api/pengaturan").then((r) => r.json());
+      if (res?.data?.no_wa) {
+        let bersih = String(res.data.no_wa).replace(/[^0-9]/g, "");
+        if (bersih.startsWith("0")) bersih = "62" + bersih.slice(1);
+        else if (bersih.startsWith("8")) bersih = "62" + bersih;
+        if (bersih) waUrl = `https://wa.me/${bersih}?text=${encodedMessage}`;
+      }
+    } catch {}
 
     setTimeout(() => {
       setIsSubmitting(false);

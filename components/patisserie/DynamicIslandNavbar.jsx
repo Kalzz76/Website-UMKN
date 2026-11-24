@@ -13,15 +13,51 @@ import {
 } from "lucide-react";
 import { usePatisserieCart } from "@/lib/patisserieCart";
 
-export function DynamicIslandNavbar({ showEntered = true }) {
+export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [clientNamaToko, setClientNamaToko] = useState(toko?.nama_toko || "");
   const [userSession, setUserSession] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [dropdownAkunBuka, setDropdownAkunBuka] = useState(false);
   const [jumlahKeranjang, setJumlahKeranjang] = useState(0);
   const leaveTimeoutRef = useRef(null);
+
+  const handleKeluar = async () => {
+    setDropdownAkunBuka(false);
+    setIsExpanded(false);
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
+      const supabase = getSupabaseBrowser();
+      await supabase.auth.signOut();
+      window.location.href = "/masuk";
+    } catch {
+      window.location.href = "/masuk";
+    }
+  };
+
+  useEffect(() => {
+    if (toko?.nama_toko) {
+      setClientNamaToko(toko.nama_toko);
+      return;
+    }
+    let aktif = true;
+    fetch("/api/pengaturan")
+      .then((r) => r.json())
+      .then((res) => {
+        if (aktif && res?.data?.nama_toko) {
+          setClientNamaToko(res.data.nama_toko);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      aktif = false;
+    };
+  }, [toko]);
+
+  const labelBrand = (clientNamaToko || toko?.nama_toko || "").trim();
 
   async function muatJumlahKeranjang() {
     try {
@@ -44,6 +80,19 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     let isMounted = true;
 
     async function checkAuth() {
+      try {
+        const res = await fetch("/api/profil", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data?.data) {
+            setUserSession({ user: { id: data.data.id } });
+            if (data.data.role) setUserRole(data.data.role);
+            if (data.data.nama) setUserName(data.data.nama);
+            return;
+          }
+        }
+      } catch {}
+
       try {
         const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
         const supabase = getSupabaseBrowser();
@@ -108,6 +157,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
 
   useEffect(() => {
     setIsExpanded(false);
+    setDropdownAkunBuka(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -124,6 +174,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
   const handleMouseLeave = () => {
     leaveTimeoutRef.current = setTimeout(() => {
       setIsExpanded(false);
+      setDropdownAkunBuka(false);
     }, 380);
   };
 
@@ -151,41 +202,23 @@ export function DynamicIslandNavbar({ showEntered = true }) {
     { label: "Menu", href: "/menu", active: pathname.startsWith("/menu") },
   ];
 
+  const targetDashboard =
+    userRole === "admin" || userRole === "staf"
+      ? "/dashboard"
+      : "/user";
+
   const profileHref = !userSession
     ? `/masuk?ke=${encodeURIComponent(pathname)}`
-    : userRole === "admin" || userRole === "staf"
-    ? "/dashboard/profil"
-    : "/profil";
+    : targetDashboard;
 
-  const handleProfileClick = async (e) => {
+  const handleProfileClick = (e) => {
     setIsExpanded(false);
-    if (!userSession) return;
-    if (userRole === "admin" || userRole === "staf") {
+    setDropdownAkunBuka(false);
+    if (!userSession) {
+      router.push(`/masuk?ke=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (userRole === "pelanggan") {
-      return;
-    }
-    e.preventDefault();
-    try {
-      const { getSupabaseBrowser } = await import("@/lib/supabaseBrowser");
-      const supabase = getSupabaseBrowser();
-      const { data: profil } = await supabase
-        .from("profil")
-        .select("nama, role")
-        .eq("id", userSession.user.id)
-        .maybeSingle();
-      const role = profil?.role || "pelanggan";
-      setUserRole(role);
-      if (profil?.nama) setUserName(profil.nama);
-      if (role === "admin" || role === "staf") {
-        router.push("/dashboard/profil");
-      } else {
-        router.push("/profil");
-      }
-    } catch {
-      router.push("/profil");
-    }
+    router.push(targetDashboard);
   };
 
   return (
@@ -209,7 +242,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
           layout: { type: "spring", stiffness: 380, damping: 28, mass: 0.7 },
           opacity: { duration: 0.18 },
         }}
-        className="bg-[#FFFDF9]/96 backdrop-blur-2xl border-2 border-[#C59B62]/85 text-[#3D2B28] shadow-[0_16px_45px_rgba(45,20,15,0.28),0_4px_14px_rgba(0,0,0,0.08)] rounded-full overflow-hidden will-change-transform"
+        className="bg-[#FFFDF9]/96 backdrop-blur-2xl border-2 border-[#C59B62]/85 text-[#3D2B28] shadow-[0_16px_45px_rgba(45,20,15,0.28),0_4px_14px_rgba(0,0,0,0.08)] rounded-full overflow-visible will-change-transform"
       >
         <AnimatePresence mode="popLayout" initial={false}>
           {!isExpanded ? (
@@ -226,11 +259,14 @@ export function DynamicIslandNavbar({ showEntered = true }) {
             >
               <span className="w-2.5 h-2.5 rounded-full bg-[#B8925A] shadow-[0_0_8px_#C59B62] animate-pulse shrink-0" />
 
-              <span className="font-coquette font-bold text-xs sm:text-sm tracking-wider text-[#3D2B28]">
-                Cravely
-              </span>
-
-              <span className="text-[#C59B62] font-bold text-xs">·</span>
+              {labelBrand && (
+                <>
+                  <span className="font-coquette font-bold text-xs sm:text-sm tracking-wider text-[#3D2B28]">
+                    {labelBrand}
+                  </span>
+                  <span className="text-[#C59B62] font-bold text-xs">·</span>
+                </>
+              )}
 
               <span className="font-serif font-extrabold text-xs sm:text-sm text-[#9E3B42]">
                 {activeTitle}
@@ -243,7 +279,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 </span>
               )}
 
-              <ChevronDown className="w-3.5 h-3.5 text-[#8C6D62] shrink-0 ml-0.5" />
+              <ChevronDown className="w-3.5 h-3.5 text-[#4A2E2B] shrink-0 ml-0.5" />
             </motion.button>
           ) : (
             <motion.div
@@ -260,7 +296,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:bg-[#F5ECE2] transition font-coquette font-bold text-xs sm:text-sm tracking-widest text-[#3D2B28] shrink-0 whitespace-nowrap"
               >
                 <span className="w-2.5 h-2.5 rounded-full bg-[#B8925A] shadow-[0_0_8px_#C59B62] animate-pulse shrink-0" />
-                <span>Cravely</span>
+                {labelBrand && <span>{labelBrand}</span>}
               </Link>
 
               <div className="h-4 w-px bg-[#D9B37C]/60 shrink-0" />
@@ -274,7 +310,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                     className={`px-3 py-1.5 rounded-full transition whitespace-nowrap ${
                       link.active
                         ? "bg-[#9E3B42] text-white font-bold shadow-sm"
-                        : "text-[#5A3B33] hover:text-[#9E3B42] hover:bg-[#F5ECE2]"
+                        : "text-[#3D2B28] hover:text-[#9E3B42] hover:bg-[#F5ECE2] font-semibold"
                     }`}
                   >
                     {link.label}
@@ -325,69 +361,134 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 </Link>
 
                 {userSession ? (
-                  <Link
-                    href={profileHref}
-                    onClick={handleProfileClick}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border border-[#D9B37C]/80 shadow-xs flex items-center justify-center transition shrink-0 hover:scale-105 bg-[#f8e4d9]"
-                    title="Profil Saya"
-                  >
-                    <svg
-                      viewBox="0 0 100 100"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-full h-full object-cover shrink-0 select-none pointer-events-none"
+                  <div className="relative shrink-0 flex items-center z-20 pointer-events-auto">
+                    <Link
+                      href={profileHref}
+                      onClick={handleProfileClick}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border border-[#D9B37C]/80 shadow-xs flex items-center justify-center transition shrink-0 hover:scale-105 bg-[#f8e4d9] cursor-pointer"
+                      title={userRole === "admin" || userRole === "staf" ? "Dashboard Toko" : "Dashboard Pelanggan"}
                     >
-                      <rect width="100" height="100" fill="#f8e4d9" />
-                      <path
-                        d="M20 50 C15 30 30 10 50 10 C70 10 85 30 80 50 C85 65 75 75 75 75 C75 75 65 60 65 55 C35 55 25 75 25 75 C25 75 15 65 20 50 Z"
-                        fill="#2d2226"
-                      />
-                      <path
-                        d="M28 42 C28 65 38 78 50 78 C62 78 72 65 72 42 C72 25 28 25 28 42 Z"
-                        fill="#ffdfd2"
-                      />
-                      <ellipse
-                        cx="36"
-                        cy="56"
-                        rx="5"
-                        ry="3"
-                        fill="#ffb4a2"
-                        opacity="0.8"
-                      />
-                      <ellipse
-                        cx="64"
-                        cy="56"
-                        rx="5"
-                        ry="3"
-                        fill="#ffb4a2"
-                        opacity="0.8"
-                      />
-                      <ellipse cx="40" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
-                      <circle cx="41" cy="46" r="1.5" fill="#ffffff" />
-                      <ellipse cx="60" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
-                      <circle cx="61" cy="46" r="1.5" fill="#ffffff" />
-                      <path
-                        d="M47 62 Q50 65 53 62"
-                        stroke="#b25d5d"
-                        strokeWidth="2"
-                        strokeLinecap="round"
+                      <svg
+                        viewBox="0 0 100 100"
                         fill="none"
-                      />
-                      <path
-                        d="M25 35 C32 20 45 15 50 15 C55 15 68 20 75 35 C70 30 65 30 60 38 C55 28 48 26 42 36 C38 28 32 30 25 35 Z"
-                        fill="#3a2e33"
-                      />
-                      <path
-                        d="M38 25 L43 42 L47 28 L53 40 L56 26"
-                        fill="#3a2e33"
-                      />
-                      <path
-                        d="M25 88 C30 76 42 76 50 76 C58 76 70 76 75 88 L85 100 L15 100 Z"
-                        fill="#ffffff"
-                      />
-                      <path d="M46 76 L50 85 L54 76 Z" fill="#2d2226" />
-                    </svg>
-                  </Link>
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-full h-full object-cover shrink-0 select-none pointer-events-none"
+                      >
+                        <rect width="100" height="100" fill="#f8e4d9" />
+                        <path
+                          d="M20 50 C15 30 30 10 50 10 C70 10 85 30 80 50 C85 65 75 75 75 75 C75 75 65 60 65 55 C35 55 25 75 25 75 C25 75 15 65 20 50 Z"
+                          fill="#2d2226"
+                        />
+                        <path
+                          d="M28 42 C28 65 38 78 50 78 C62 78 72 65 72 42 C72 25 28 25 28 42 Z"
+                          fill="#ffdfd2"
+                        />
+                        <ellipse
+                          cx="36"
+                          cy="56"
+                          rx="5"
+                          ry="3"
+                          fill="#ffb4a2"
+                          opacity="0.8"
+                        />
+                        <ellipse
+                          cx="64"
+                          cy="56"
+                          rx="5"
+                          ry="3"
+                          fill="#ffb4a2"
+                          opacity="0.8"
+                        />
+                        <ellipse cx="40" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
+                        <circle cx="41" cy="46" r="1.5" fill="#ffffff" />
+                        <ellipse cx="60" cy="48" rx="3.5" ry="5.5" fill="#2d2226" />
+                        <circle cx="61" cy="46" r="1.5" fill="#ffffff" />
+                        <path
+                          d="M47 62 Q50 65 53 62"
+                          stroke="#b25d5d"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          fill="none"
+                        />
+                        <path
+                          d="M25 35 C32 20 45 15 50 15 C55 15 68 20 75 35 C70 30 65 30 60 38 C55 28 48 26 42 36 C38 28 32 30 25 35 Z"
+                          fill="#3a2e33"
+                        />
+                        <path
+                          d="M38 25 L43 42 L47 28 L53 40 L56 26"
+                          fill="#3a2e33"
+                        />
+                        <path
+                          d="M25 88 C30 76 42 76 50 76 C58 76 70 76 75 88 L85 100 L15 100 Z"
+                          fill="#ffffff"
+                        />
+                        <path d="M46 76 L50 85 L54 76 Z" fill="#2d2226" />
+                      </svg>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDropdownAkunBuka((v) => !v);
+                      }}
+                      className="w-4 h-7 flex items-center justify-center text-[#5A3B33] hover:text-[#9E3B42] transition cursor-pointer ml-0.5"
+                      title="Pilihan Akun"
+                    >
+                      <ChevronDown className={`w-3 h-3 transition-transform ${dropdownAkunBuka ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {dropdownAkunBuka && (
+                      <div className="absolute right-0 top-full mt-2 w-44 rounded-2xl bg-[#FFFDF9] border border-[#D9B37C]/60 shadow-[0_12px_30px_rgba(45,20,15,0.2)] py-1.5 z-50 text-xs font-semibold text-[#3D2B28]">
+                        {userRole === "admin" || userRole === "staf" ? (
+                          <Link
+                            href="/dashboard"
+                            onClick={() => {
+                              setDropdownAkunBuka(false);
+                              setIsExpanded(false);
+                            }}
+                            className="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F5ECE2] text-[#3D2B28] transition"
+                          >
+                            <User className="w-3.5 h-3.5 text-[#9E3B42]" />
+                            <span>Panel Dashboard</span>
+                          </Link>
+                        ) : (
+                          <>
+                            <Link
+                              href="/user"
+                              onClick={() => {
+                                setDropdownAkunBuka(false);
+                                setIsExpanded(false);
+                              }}
+                              className="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F5ECE2] text-[#3D2B28] transition"
+                            >
+                              <User className="w-3.5 h-3.5 text-[#9E3B42]" />
+                              <span>Akun Saya</span>
+                            </Link>
+                            <Link
+                              href="/user?tab=pesanan"
+                              onClick={() => {
+                                setDropdownAkunBuka(false);
+                                setIsExpanded(false);
+                              }}
+                              className="flex items-center gap-2 px-3.5 py-2 hover:bg-[#F5ECE2] text-[#3D2B28] transition"
+                            >
+                              <ShoppingBag className="w-3.5 h-3.5 text-[#9E3B42]" />
+                              <span>Pesanan Saya</span>
+                            </Link>
+                          </>
+                        )}
+                        <div className="my-1 border-t border-[#D9B37C]/30" />
+                        <button
+                          type="button"
+                          onClick={handleKeluar}
+                          className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-rose-50 text-rose-700 transition cursor-pointer text-left font-semibold"
+                        >
+                          <i className="fa-solid fa-arrow-right-from-bracket text-xs text-rose-600" />
+                          <span>Keluar</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <Link
                     href={`/masuk?ke=${encodeURIComponent(pathname)}`}
@@ -402,7 +503,7 @@ export function DynamicIslandNavbar({ showEntered = true }) {
                 <button
                   type="button"
                   onClick={() => setIsExpanded(false)}
-                  className="w-6 h-6 rounded-full hover:bg-[#F5ECE2] text-[#8C6D62] hover:text-[#3D2B28] flex items-center justify-center transition shrink-0 cursor-pointer"
+                  className="w-6 h-6 rounded-full hover:bg-[#F5ECE2] text-[#4A2E2B] hover:text-[#9E3B42] flex items-center justify-center transition shrink-0 cursor-pointer"
                   title="Tutup Menu"
                 >
                   <ChevronUp className="w-3.5 h-3.5" />

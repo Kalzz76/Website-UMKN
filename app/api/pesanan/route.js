@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta } from "@/lib/format";
 import { hitungTotal } from "@/lib/hitungHarga";
+import { batalkanKedaluwarsa } from "@/lib/kedaluwarsa";
+
+export async function GET() {
+  await batalkanKedaluwarsa();
+  return NextResponse.json({ sukses: true });
+}
 
 export async function POST(request) {
   const supabaseUser = await getSupabaseServer();
@@ -150,13 +156,23 @@ export async function POST(request) {
     );
   }
 
-  const { count: jumlahPesananHariItu } = await supabase
+  const { data: pesananHariItuRaw } = await supabase
     .from("pesanan")
-    .select("*", { count: "exact", head: true })
+    .select("id, status_pesanan, dibuat_pada")
     .eq("tanggal_ambil", tanggal_ambil)
     .neq("status_pesanan", "Dibatalkan");
 
-  if ((jumlahPesananHariItu || 0) >= kuotaHarian) {
+  const batasJamPesanan = Number(pengaturan?.batas_bayar_jam ?? 24);
+  const nowMs = Date.now();
+  const pesananHariItuValid = (pesananHariItuRaw || []).filter((p) => {
+    if (p.status_pesanan === "Menunggu Pembayaran") {
+      const expMs = new Date(p.dibuat_pada).getTime() + batasJamPesanan * 3600 * 1000;
+      if (expMs <= nowMs) return false;
+    }
+    return true;
+  });
+
+  if (pesananHariItuValid.length >= kuotaHarian) {
     return NextResponse.json(
       {
         pesan: `Kuota pesanan pada tanggal ${tanggal_ambil} sudah penuh (${kuotaHarian} pesanan). Silakan pilih tanggal lain.`,

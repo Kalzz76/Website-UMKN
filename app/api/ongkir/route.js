@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { hitungJarakJalanKm, cariTarif, validasiKoordinat } from "@/lib/ongkir";
+import { cekRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
   const supabaseUser = await getSupabaseServer();
@@ -12,6 +13,14 @@ export async function POST(request) {
     return NextResponse.json(
       { pesan: "Silakan masuk terlebih dahulu." },
       { status: 401 }
+    );
+  }
+
+  const { diizinkan, tungguDetik } = cekRateLimit(`ongkir:${user.id}`, 20, 10000);
+  if (!diizinkan) {
+    return NextResponse.json(
+      { pesan: `Terlalu banyak permintaan kalkulasi ongkir. Silakan tunggu ${tungguDetik} detik.` },
+      { status: 429 }
     );
   }
 

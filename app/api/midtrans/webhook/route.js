@@ -39,7 +39,7 @@ export async function POST(request) {
       fraudStatus: fraud_status,
     });
 
-    if (!hasil.sukses && !hasil.sudahDiproses) {
+    if (!hasil.sukses && !hasil.sudahDiproses && !hasil.tidakCocok) {
       return NextResponse.json({ status: "error", pesan: hasil.pesan }, { status: 400 });
     }
 

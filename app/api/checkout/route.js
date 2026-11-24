@@ -215,11 +215,21 @@ export async function POST(request) {
     .from("tanggal_tutup")
     .select("tanggal, alasan");
 
-  const { data: pesananAktif } = await supabase
+  const { data: pesananAktifRaw } = await supabase
     .from("pesanan")
-    .select("id, tanggal_ambil")
+    .select("id, tanggal_ambil, dibuat_pada, status_pesanan")
     .gte("tanggal_ambil", hariIni)
     .neq("status_pesanan", "Dibatalkan");
+
+  const batasBayarJam = Number(pengaturan?.batas_bayar_jam ?? 24);
+  const sekarangMs = Date.now();
+  const pesananAktif = (pesananAktifRaw || []).filter((p) => {
+    if (p.status_pesanan === "Menunggu Pembayaran") {
+      const expMs = new Date(p.dibuat_pada).getTime() + batasBayarJam * 3600 * 1000;
+      if (expMs <= sekarangMs) return false;
+    }
+    return true;
+  });
 
   const pesananIds = (pesananAktif || []).map((p) => p.id);
   let customItemsPerPesanan = new Map();

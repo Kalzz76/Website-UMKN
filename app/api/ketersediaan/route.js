@@ -3,6 +3,7 @@ import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta, hitungTanggalMinimal } from "@/lib/format";
 import { jamBukaTutupUntukTanggal } from "@/lib/jam";
 import { hitungEstimasi } from "@/lib/estimasi";
+import { batalkanKedaluwarsa } from "@/lib/kedaluwarsa";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -14,9 +15,11 @@ export async function GET(request) {
 
   const { data: toko } = await supabase
     .from("pengaturan_toko")
-    .select("jam_buka, jam_tutup, jam_buka_senin_jumat, jam_tutup_senin_jumat, jam_buka_sabtu_minggu, jam_tutup_sabtu_minggu, kuota_harian, minimal_hari_pesan, minimal_hari_katalog, minimal_hari_siap")
+    .select("jam_buka, jam_tutup, jam_buka_senin_jumat, jam_tutup_senin_jumat, jam_buka_sabtu_minggu, jam_tutup_sabtu_minggu, kuota_harian, minimal_hari_pesan, minimal_hari_katalog, minimal_hari_siap, batas_bayar_jam")
     .eq("id", 1)
     .single();
+
+  await batalkanKedaluwarsa();
 
   const minimalHariCustom = toko?.minimal_hari_pesan ?? 2;
   const minimalHariKatalog = toko?.minimal_hari_katalog ?? toko?.minimal_hari_siap ?? 1;
@@ -73,11 +76,21 @@ export async function GET(request) {
     .from("tanggal_tutup")
     .select("tanggal, alasan");
 
-  const { data: pesananAktif } = await supabase
+  const { data: pesananAktifRaw } = await supabase
     .from("pesanan")
-    .select("id, tanggal_ambil")
+    .select("id, tanggal_ambil, dibuat_pada, status_pesanan")
     .gte("tanggal_ambil", hariIni)
     .neq("status_pesanan", "Dibatalkan");
+
+  const batasBayarJam = Number(toko?.batas_bayar_jam ?? 24);
+  const sekarangMs = Date.now();
+  const pesananAktif = (pesananAktifRaw || []).filter((p) => {
+    if (p.status_pesanan === "Menunggu Pembayaran") {
+      const expMs = new Date(p.dibuat_pada).getTime() + batasBayarJam * 3600 * 1000;
+      if (expMs <= sekarangMs) return false;
+    }
+    return true;
+  });
 
   const pesananIds = (pesananAktif || []).map((p) => p.id);
 

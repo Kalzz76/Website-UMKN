@@ -18,6 +18,7 @@ export default function DashboardAdminView({
 }) {
   const [periodeAktif, setPeriodeAktif] = useState("bulan_ini");
   const [rentangGrafik, setRentangGrafik] = useState("7hari");
+  const [tabTerlaris, setTabTerlaris] = useState("rasa");
   const chartCanvasRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const donutCanvasRef = useRef(null);
@@ -26,7 +27,7 @@ export default function DashboardAdminView({
   const metrik = metrikPeriode[periodeAktif] || metrikPeriode.bulan_ini || {
     totalPesanan: 0,
     persenPesanan: null,
-    perluDikonfirmasi: 0,
+    perluDiproses: 0,
     totalPendapatan: 0,
     persenPendapatan: null,
     pelangganAktif: 0,
@@ -34,21 +35,24 @@ export default function DashboardAdminView({
   };
 
   const donutInfo = donutPerPeriode[periodeAktif] || {
-    adaGrup: false,
-    namaGrup: "",
+    adaGrup: true,
+    namaGrup: "Jenis Kue",
     kosong: true,
-    pesan: "Belum ada grup yang diset sebagai jenis kue di menu Katalog & Opsi",
+    pesan: "Belum ada pesanan pada periode ini",
     items: [],
     total: 0,
   };
 
-  const terlarisInfo = terlarisPerPeriode[periodeAktif] || {
-    adaGrup: false,
-    namaGrup: "",
+  const rawTerlaris = terlarisPerPeriode[periodeAktif] || {};
+  const infoRasa = rawTerlaris.rasa || rawTerlaris;
+  const infoProduk = rawTerlaris.produk || {
+    adaGrup: true,
+    namaGrup: "Produk Katalog",
     kosong: true,
-    pesan: "Belum ada grup yang diset sebagai terlaris di menu Katalog & Opsi",
+    pesan: "Belum ada produk katalog terjual pada periode ini",
     items: [],
   };
+  const terlarisInfo = tabTerlaris === "rasa" ? infoRasa : infoProduk;
 
   useEffect(() => {
     if (!chartCanvasRef.current) return;
@@ -243,13 +247,11 @@ export default function DashboardAdminView({
 
   const badgeRankClasses = ["gold", "silver", "bronze"];
 
-  const judulDonut = donutInfo.namaGrup
-    ? `Pesanan Berdasarkan ${donutInfo.namaGrup}`
-    : "Pesanan Berdasarkan Jenis Kue";
+  const judulDonut = "Pesanan Berdasarkan Jenis Kue";
 
-  const judulTerlaris = terlarisInfo.namaGrup
-    ? `${terlarisInfo.namaGrup} Terlaris`
-    : "Daftar Terlaris";
+  const judulTerlaris = tabTerlaris === "rasa"
+    ? (infoRasa.namaGrup ? `${infoRasa.namaGrup} Terlaris` : "Rasa Terlaris")
+    : "Produk Katalog Terlaris";
 
   return (
     <>
@@ -320,7 +322,7 @@ export default function DashboardAdminView({
                   )}
                 </div>
                 <span className="metric-sub-detail">
-                  {kueHariIni} kue harus dibuat hari ini
+                  {kueHariIni} kue custom harus dibuat hari ini
                 </span>
               </div>
               <svg className="metric-wave-svg" viewBox="0 0 100 50" fill="none">
@@ -343,16 +345,16 @@ export default function DashboardAdminView({
 
             <div className="metric-item-box">
               <div className="metric-icon-wrap cherry">
-                <i className="fa-solid fa-clock-rotate-left"></i>
+                <i className="fa-solid fa-box-open"></i>
               </div>
               <div className="metric-info-col">
-                <span className="metric-lbl">Perlu Dikonfirmasi</span>
+                <span className="metric-lbl">Perlu Diproses</span>
                 <div className="metric-val-row">
                   <span className="metric-val">
-                    {metrik.perluDikonfirmasi.toLocaleString("id-ID")}
+                    {(metrik.perluDiproses ?? 0).toLocaleString("id-ID")}
                   </span>
                 </div>
-                <span className="metric-sub-detail">bukti bayar</span>
+                <span className="metric-sub-detail">pesanan baru dibayar</span>
               </div>
               <svg className="metric-wave-svg" viewBox="0 0 100 50" fill="none">
                 <path
@@ -520,13 +522,22 @@ export default function DashboardAdminView({
                   <i className="fa-solid fa-crown"></i>
                   <h3 className="card-heading-text">{judulTerlaris}</h3>
                 </div>
-                <Link
-                  href="/dashboard/katalog-opsi"
-                  className="card-see-all-link"
-                >
-                  <span>Atur</span>
-                  <i className="fa-solid fa-arrow-right"></i>
-                </Link>
+                <div className="chart-filter-pills">
+                  <button
+                    type="button"
+                    className={`filter-pill-btn ${tabTerlaris === "rasa" ? "active" : ""}`}
+                    onClick={() => setTabTerlaris("rasa")}
+                  >
+                    Rasa
+                  </button>
+                  <button
+                    type="button"
+                    className={`filter-pill-btn ${tabTerlaris === "produk" ? "active" : ""}`}
+                    onClick={() => setTabTerlaris("produk")}
+                  >
+                    Produk
+                  </button>
+                </div>
               </div>
 
               {!terlarisInfo.adaGrup ? (

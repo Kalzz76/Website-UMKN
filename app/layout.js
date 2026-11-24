@@ -6,8 +6,31 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata = {
-  title: "Toko Kue Custom",
-  description: "Website pemesanan kue custom UMKM",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://cravely.id"),
+  title: {
+    default: "Cravely Bakery & Patisserie - Artisanal Custom Cakes",
+    template: "%s | Cravely Bakery",
+  },
+  description: "Pemesanan kue custom dan artisanal patisserie segar dari oven. Personalisasi bentuk, rasa, warna, dan pesan kue impian Anda.",
+  icons: {
+    icon: "/assets/images/Icon.png",
+    apple: "/assets/images/Icon.png",
+  },
+  openGraph: {
+    title: "Cravely Bakery & Patisserie",
+    description: "Pemesanan kue custom dan artisanal patisserie segar dari oven.",
+    siteName: "Cravely Bakery",
+    images: [
+      {
+        url: "/assets/images/Icon.png",
+        width: 512,
+        height: 512,
+        alt: "Cravely Bakery",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }) {

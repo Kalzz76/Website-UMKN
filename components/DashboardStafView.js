@@ -5,8 +5,9 @@ import PreviewKue from "@/components/PreviewKue";
 export default function DashboardStafView({
   namaToko,
   slogan,
-  antreanKue,
-  stokMenipis,
+  ringkasanStaf = {},
+  antreanKue = [],
+  stokMenipis = [],
 }) {
   function getBadgeStatusClass(status) {
     if (status === "Diterima") return "bg-[#dcf5e4] text-[#26804a]";
@@ -30,6 +31,80 @@ export default function DashboardStafView({
             </p>
           </div>
         </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "12px",
+          marginTop: "16px",
+        }}
+      >
+        <Link href="/dashboard/pesanan" className="metric-item-box" style={{ cursor: "pointer", textDecoration: "none" }}>
+          <div className="metric-icon-wrap cherry">
+            <i className="fa-solid fa-box-open"></i>
+          </div>
+          <div className="metric-info-col">
+            <span className="metric-lbl">Perlu Diproses</span>
+            <div className="metric-val-row">
+              <span className="metric-val">{(ringkasanStaf?.perluDiproses ?? 0).toLocaleString("id-ID")}</span>
+            </div>
+            <span className="metric-sub-detail">pesanan status Diterima</span>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/pesanan" className="metric-item-box" style={{ cursor: "pointer", textDecoration: "none" }}>
+          <div className="metric-icon-wrap green">
+            <i className="fa-solid fa-cake-candles"></i>
+          </div>
+          <div className="metric-info-col">
+            <span className="metric-lbl">Kue Custom Hari Ini</span>
+            <div className="metric-val-row">
+              <span className="metric-val">{(ringkasanStaf?.kueHariIni ?? 0).toLocaleString("id-ID")}</span>
+            </div>
+            <span className="metric-sub-detail">target produksi hari ini</span>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/pesanan" className="metric-item-box" style={{ cursor: "pointer", textDecoration: "none" }}>
+          <div className="metric-icon-wrap gold">
+            <i className="fa-solid fa-circle-check"></i>
+          </div>
+          <div className="metric-info-col">
+            <span className="metric-lbl">Siap Hari Ini</span>
+            <div className="metric-val-row">
+              <span className="metric-val">{(ringkasanStaf?.siapHariIni ?? 0).toLocaleString("id-ID")}</span>
+            </div>
+            <span className="metric-sub-detail">ambil di toko / antar</span>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/pesanan" className="metric-item-box" style={{ cursor: "pointer", textDecoration: "none" }}>
+          <div className="metric-icon-wrap blue" style={{ background: "#e0f2fe", color: "#0369a1" }}>
+            <i className="fa-solid fa-hand-holding-dollar"></i>
+          </div>
+          <div className="metric-info-col">
+            <span className="metric-lbl">Menunggu Pelunasan</span>
+            <div className="metric-val-row">
+              <span className="metric-val">{(ringkasanStaf?.menungguPelunasan ?? 0).toLocaleString("id-ID")}</span>
+            </div>
+            <span className="metric-sub-detail">pelunasan tunai / transfer</span>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/stok" className="metric-item-box" style={{ cursor: "pointer", textDecoration: "none" }}>
+          <div className="metric-icon-wrap cherry">
+            <i className="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div className="metric-info-col">
+            <span className="metric-lbl">Stok Menipis</span>
+            <div className="metric-val-row">
+              <span className="metric-val">{(ringkasanStaf?.stokMenipis ?? stokMenipis?.length ?? 0).toLocaleString("id-ID")}</span>
+            </div>
+            <span className="metric-sub-detail">bahan butuh restock</span>
+          </div>
+        </Link>
       </div>
 
       <div

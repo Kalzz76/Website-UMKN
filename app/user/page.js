@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
+import { ambilTokoPublik } from "@/lib/tokoPublik";
 import DashboardPelangganView from "@/components/DashboardPelangganView";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +13,12 @@ export const metadata = {
 };
 
 export default async function UserDashboardPage() {
-  const { user, profil, diizinkan } = await cekRole(["pelanggan", "admin", "staf"]);
+  const { user, profil, diizinkan } = await cekRole(["pelanggan"]);
 
   if (!diizinkan || !user) {
+    if (profil && (profil.role === "admin" || profil.role === "staf")) {
+      redirect("/dashboard");
+    }
     redirect("/masuk?ke=/user");
   }
 
@@ -24,6 +28,7 @@ export default async function UserDashboardPage() {
     { data: pesananRaw },
     { data: pengaturanToko },
     { data: zonaOngkirList },
+    tokoPublik,
   ] = await Promise.all([
     supabaseAdmin
       .from("pesanan")
@@ -31,6 +36,7 @@ export default async function UserDashboardPage() {
         *,
         zona_ongkir (id, nama, tarif),
         pesanan_pilihan (*),
+        pesanan_item (*, produk (nama, foto)),
         pembayaran (*),
         riwayat_pesanan (*)
       `)
@@ -46,6 +52,7 @@ export default async function UserDashboardPage() {
       .select("id, nama, tarif, aktif")
       .eq("aktif", true)
       .order("tarif", { ascending: true }),
+    ambilTokoPublik(),
   ]);
 
   const daftarPesanan = pesananRaw || [];
@@ -67,10 +74,27 @@ export default async function UserDashboardPage() {
         (a, b) => new Date(b.dibuat_pada).getTime() - new Date(a.dibuat_pada).getTime()
       );
 
+      let ringkasanItem = "";
+      const items = p.pesanan_item || [];
+      if (items.length > 0) {
+        ringkasanItem = items
+          .map((it) => {
+            const qty = it.jumlah || 1;
+            const nama = it.produk?.nama || (it.jenis === "Custom" ? "Custom Cake" : "Kue");
+            return `${qty}x ${nama}`;
+          })
+          .join(", ");
+      } else if (p.tulisan_kue || p.desain_json) {
+        ringkasanItem = "1x Custom Cake";
+      } else {
+        ringkasanItem = "Pesanan Kue";
+      }
+
       return {
         ...p,
         fotoPreviewUrl,
         riwayat_pesanan: riwayatUrut,
+        isi_singkat: ringkasanItem,
       };
     })
   );
@@ -92,6 +116,7 @@ export default async function UserDashboardPage() {
         profilAwal={profilLengkap}
         pesananList={pesananDenganPreview}
         pengaturanToko={pengaturanToko}
+        tokoPublik={tokoPublik}
         zonaOngkirList={zonaOngkirList || []}
       />
     </Suspense>

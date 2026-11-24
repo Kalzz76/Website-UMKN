@@ -21,6 +21,34 @@ export async function GET(request, { params }) {
     return NextResponse.json({ pesan: "Pesanan tidak ditemukan." }, { status: 404 });
   }
 
+  const { data: itemsList } = await supabase
+    .from("pesanan_item")
+    .select("id, jenis")
+    .eq("id_pesanan", pesanan.id);
+
+  const adaItem = itemsList && itemsList.length > 0;
+  const adaCustom = (itemsList || []).some(
+    (it) => it.jenis === "Custom" || it.jenis === "custom"
+  );
+
+  if (adaItem && !adaCustom) {
+    return NextResponse.json({
+      pesanan: {
+        id: pesanan.id,
+        kode_pesanan: pesanan.kode_pesanan,
+        status_pesanan: pesanan.status_pesanan,
+        stok_dipotong_pada: pesanan.stok_dipotong_pada,
+        nama_pemotong: null,
+      },
+      adaCustom: false,
+      daftarKebutuhan: [],
+      pilihanTanpaResep: 0,
+      daftarPilihanTanpaResep: [],
+      riwayatPengurangan: [],
+      pesan: "Pesanan hanya berisi produk katalog dan tidak membutuhkan stok bahan baku.",
+    });
+  }
+
   const { data: pilihanList } = await supabase
     .from("pesanan_pilihan")
     .select("id, id_item, nama_item, nama_grup, kode_visual, jumlah")
@@ -187,6 +215,23 @@ export async function POST(request, { params }) {
 
   if (errPesanan || !pesanan) {
     return NextResponse.json({ pesan: "Pesanan tidak ditemukan." }, { status: 404 });
+  }
+
+  const { data: itemsList } = await supabase
+    .from("pesanan_item")
+    .select("id, jenis")
+    .eq("id_pesanan", pesanan.id);
+
+  const adaItem = itemsList && itemsList.length > 0;
+  const adaCustom = (itemsList || []).some(
+    (it) => it.jenis === "Custom" || it.jenis === "custom"
+  );
+
+  if (adaItem && !adaCustom) {
+    return NextResponse.json(
+      { pesan: "Pesanan katalog tidak memerlukan pengelolaan stok bahan baku." },
+      { status: 400 }
+    );
   }
 
   if (aksi === "kurangi") {

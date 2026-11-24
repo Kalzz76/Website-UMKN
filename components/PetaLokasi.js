@@ -22,13 +22,14 @@ export default function PetaLokasi({
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
 
+    let dibatalkan = false;
     let map = mapInstanceRef.current;
 
     async function inisialisasiPeta() {
       const L = (await import("leaflet")).default;
       await import("leaflet/dist/leaflet.css");
 
-      if (!containerRef.current) return;
+      if (dibatalkan || !containerRef.current) return;
 
       const latAwal =
         mode === "toko"
@@ -39,7 +40,10 @@ export default function PetaLokasi({
           ? posisiToko?.lng || 107.6191
           : posisiTujuan?.lng || posisiToko?.lng || 107.6191;
 
-      if (!map) {
+      if (!map && !mapInstanceRef.current) {
+        if (containerRef.current._leaflet_id) {
+          containerRef.current._leaflet_id = null;
+        }
         map = L.map(containerRef.current, {
           center: [latAwal, lngAwal],
           zoom: 14,
@@ -141,6 +145,7 @@ export default function PetaLokasi({
     inisialisasiPeta();
 
     return () => {
+      dibatalkan = true;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

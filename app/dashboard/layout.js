@@ -29,14 +29,28 @@ export default async function DashboardLayout({ children }) {
     .eq("id", 1)
     .maybeSingle();
 
-  let notifPesananCount = 0;
+  let notifBayarManual = 0;
+  let notifPerluRefund = 0;
   if (profil.role === "admin") {
-    const { count } = await supabase
-      .from("pembayaran")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "Menunggu Konfirmasi");
-    notifPesananCount = count || 0;
+    const [{ count: cBayar }, { count: cRefund }] = await Promise.all([
+      supabase
+        .from("pembayaran")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "Menunggu Konfirmasi"),
+      supabase
+        .from("pesanan")
+        .select("*", { count: "exact", head: true })
+        .eq("perlu_refund", true),
+    ]);
+    notifBayarManual = cBayar || 0;
+    notifPerluRefund = cRefund || 0;
   }
+
+  const { count: cDiterima } = await supabase
+    .from("pesanan")
+    .select("*", { count: "exact", head: true })
+    .eq("status_pesanan", "Diterima");
+  const notifPesananDiterima = cDiterima || 0;
 
   const { data: listBahan } = await supabase
     .from("bahan")
@@ -94,8 +108,12 @@ export default async function DashboardLayout({ children }) {
     <DashboardShell
       profil={profil}
       namaToko={toko?.nama_toko || "Cravely Bakery"}
-      notifPesananCount={notifPesananCount}
-      notifStokCount={notifStokCount}
+      notifData={{
+        bayarManual: notifBayarManual,
+        perluRefund: notifPerluRefund,
+        stokBahan: notifStokCount,
+        pesananDiterima: notifPesananDiterima,
+      }}
     >
       {children}
     </DashboardShell>

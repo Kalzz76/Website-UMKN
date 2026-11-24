@@ -200,24 +200,49 @@ export function CheckoutView() {
       }
     } catch {}
 
+    let lokasiTerisi = false;
     try {
-      const resLast = await fetch("/api/pesanan/terakhir-kirim", { cache: "no-store" });
-      if (resLast.ok) {
-        const jsonLast = await resLast.json();
-        if (jsonLast?.data) {
-          if (jsonLast.data.alamat) setAlamat(jsonLast.data.alamat);
-          if (jsonLast.data.patokan) setPatokan(jsonLast.data.patokan);
-          if (jsonLast.data.lat_tujuan && jsonLast.data.lng_tujuan) {
-            const pos = {
-              lat: Number(jsonLast.data.lat_tujuan),
-              lng: Number(jsonLast.data.lng_tujuan),
-            };
-            setPosisiTujuan(pos);
-            hitungOngkirLokasi(pos.lat, pos.lng);
-          }
+      const resProf = await fetch("/api/profil", { cache: "no-store" });
+      if (resProf.ok) {
+        const jsonProf = await resProf.json();
+        const p = jsonProf?.profil;
+        if (p?.alamat) {
+          setAlamat(p.alamat);
+          lokasiTerisi = true;
+        }
+        if (p?.patokan) setPatokan(p.patokan);
+        if (p?.lat_alamat && p?.lng_alamat) {
+          const pos = {
+            lat: Number(p.lat_alamat),
+            lng: Number(p.lng_alamat),
+          };
+          setPosisiTujuan(pos);
+          hitungOngkirLokasi(pos.lat, pos.lng);
+          lokasiTerisi = true;
         }
       }
     } catch {}
+
+    if (!lokasiTerisi) {
+      try {
+        const resLast = await fetch("/api/pesanan/terakhir-kirim", { cache: "no-store" });
+        if (resLast.ok) {
+          const jsonLast = await resLast.json();
+          if (jsonLast?.data) {
+            if (jsonLast.data.alamat) setAlamat(jsonLast.data.alamat);
+            if (jsonLast.data.patokan) setPatokan(jsonLast.data.patokan);
+            if (jsonLast.data.lat_tujuan && jsonLast.data.lng_tujuan) {
+              const pos = {
+                lat: Number(jsonLast.data.lat_tujuan),
+                lng: Number(jsonLast.data.lng_tujuan),
+              };
+              setPosisiTujuan(pos);
+              hitungOngkirLokasi(pos.lat, pos.lng);
+            }
+          }
+        }
+      } catch {}
+    }
 
     await muatDataKeranjang();
     setSedangMemuat(false);
@@ -697,6 +722,12 @@ export function CheckoutView() {
 
                     <div className="space-y-4 pt-1">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {noWa && !validasiWa(noWa) && (
+                          <div className="sm:col-span-2 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs font-semibold flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>Nomor WhatsApp Anda belum berformat Indonesia yang valid (contoh: 081234567890). Silakan perbaiki agar toko dapat menghubungi Anda.</span>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-xs font-semibold text-[#4A2E2B] mb-1">
                             Nama Pemesan *
@@ -1145,6 +1176,21 @@ export function CheckoutView() {
                         <span>Bayar Sekarang {formatRupiah(bayarSekarang)}</span>
                       )}
                     </button>
+                    <p className="text-[11px] text-[#7D5A50] text-center sm:text-right mt-2 leading-relaxed">
+                      Dengan membayar, Anda menyetujui{" "}
+                      <Link href="/syarat-ketentuan" target="_blank" className="underline font-bold text-[#7D2330]">
+                        Syarat &amp; Ketentuan
+                      </Link>
+                      {", "}
+                      <Link href="/kebijakan-privasi" target="_blank" className="underline font-bold text-[#7D2330]">
+                        Kebijakan Privasi
+                      </Link>
+                      {", dan "}
+                      <Link href="/kebijakan-pembatalan" target="_blank" className="underline font-bold text-[#7D2330]">
+                        Kebijakan Pembatalan
+                      </Link>
+                      {"."}
+                    </p>
                   </div>
                 </div>
               )}

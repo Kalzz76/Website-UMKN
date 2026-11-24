@@ -9,6 +9,7 @@ interface CafeSceneProps {
   onEnteredChange: (isInside: boolean) => void;
   onNavigate: (view: ViewType) => void;
   onOpenInfo: () => void;
+  toko?: any;
 }
 
 export const CafeScene: React.FC<CafeSceneProps> = ({
@@ -17,6 +18,7 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
   onEnteredChange,
   onNavigate,
   onOpenInfo,
+  toko = null,
 }) => {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const cafeContainerRef = useRef<HTMLDivElement | null>(null);
@@ -1036,9 +1038,11 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
                 <text x="90" y="128" textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#FFFDF9" fontFamily="Quicksand, sans-serif">
                   Custom Cake 3D
                 </text>
-                <text x="90" y="156" textAnchor="middle" fontSize="10" fontWeight="700" fill="#E5C590" fontFamily="Quicksand, sans-serif">
-                  08.00 – 20.00 WIB
-                </text>
+                {(toko?.jam?.ringkas || toko?.jam?.senin_jumat) && (
+                  <text x="90" y="156" textAnchor="middle" fontSize="10" fontWeight="700" fill="#E5C590" fontFamily="Quicksand, sans-serif">
+                    {toko?.jam?.ringkas || toko?.jam?.senin_jumat}
+                  </text>
+                )}
               </svg>
             </div>
 

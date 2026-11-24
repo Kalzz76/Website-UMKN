@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { formatRupiah, type ViewType } from './patisserieData';
+import { formatTanggalIndonesia, getTanggalHariIniJakarta } from '@/lib/format';
 
 export interface PopularCakeItem {
   id: number;
@@ -28,6 +29,7 @@ interface CravelyEditorialSectionsProps {
   onGoToMenuWithCake?: (menuId: number) => void;
   onNotify?: (msg: string) => void;
   popularCakes?: PopularCakeItem[];
+  toko?: any;
 }
 
 const PHOTOS = {
@@ -219,8 +221,9 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
   onGoToMenuWithCake,
   onNotify,
   popularCakes = [],
+  toko = null,
 }) => {
-  // 1. Hero Cursor Photo Trail state (inspired by Arkopi video 0:02-0:04)
+  const hariIni = getTanggalHariIniJakarta();
   const heroRef = useRef<HTMLElement | null>(null);
   const lastTrailPosRef = useRef<{ x: number; y: number; time: number }>({
     x: -999,
@@ -231,15 +234,15 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
   const trailIdRef = useRef(0);
   const [trailItems, setTrailItems] = useState<TrailItem[]>([]);
 
-  // 2. Kunjungi Kami Spotlight state (inspired by Arkopi video 0:22-0:25)
   const [spotlightPhoto, setSpotlightPhoto] = useState<(typeof VISIT_GALLERY)[number] | null>(null);
 
-  // 3. Reservasi form state (inspired by Arkopi video 0:28-0:31)
   const [resNama, setResNama] = useState('');
   const [resWa, setResWa] = useState('');
   const [resJumlah, setResJumlah] = useState('');
   const [resTanggal, setResTanggal] = useState('');
   const [resSubmitted, setResSubmitted] = useState(false);
+  const [resError, setResError] = useState('');
+  const [waTargetUrl, setWaTargetUrl] = useState('');
 
   const handleHeroMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = heroRef.current?.getBoundingClientRect();
@@ -267,9 +270,46 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
 
   const handleReservationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resNama.trim() || !resWa.trim()) return;
+    setResError('');
+
+    if (!resNama.trim()) {
+      setResError('Nama lengkap wajib diisi.');
+      return;
+    }
+
+    const waBersih = resWa.replace(/[^0-9]/g, '');
+    const isWaIndo = /^(0|62|\+62)8[1-9][0-9]{6,11}$/.test(resWa.trim());
+    if (!isWaIndo || waBersih.length < 10) {
+      setResError('Nomor WhatsApp harus nomor Indonesia yang valid (contoh: 081234567890).');
+      return;
+    }
+
+    if (!resTanggal) {
+      setResError('Tanggal kunjungan atau ambil wajib dipilih.');
+      return;
+    }
+
+    if (resTanggal < hariIni) {
+      setResError('Tanggal tidak boleh sebelum hari ini.');
+      return;
+    }
+
+    if (!toko?.no_wa || !toko?.wa_link) {
+      setResError('Layanan WhatsApp toko belum tersedia.');
+      return;
+    }
+
+    const tglTampil = formatTanggalIndonesia(resTanggal);
+    const salamToko = toko?.nama_toko ? `Halo ${toko.nama_toko}` : 'Halo';
+    const pesanWa = `${salamToko}, saya ingin reservasi / pesan cepat:\n- Nama: ${resNama.trim()}\n- No. WhatsApp: ${resWa.trim()}\n- Keperluan: ${resJumlah.trim() || '-'}\n- Tanggal: ${tglTampil}`;
+    const url = `${toko.wa_link}?text=${encodeURIComponent(pesanWa)}`;
+
+    setWaTargetUrl(url);
+    try {
+      window.open(url, '_blank');
+    } catch {}
     setResSubmitted(true);
-    onNotify?.(`Reservasi atas nama ${resNama.trim()} berhasil dicatat!`);
+    onNotify?.(`Pesan reservasi atas nama ${resNama.trim()} telah disiapkan!`);
   };
 
   const scrollToStory = () => {
@@ -573,23 +613,24 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                       <span className="font-serif text-sm">Cravely</span>
                     </div>
                   )}
-                  {/* Gradasi gelap tipis di bagian bawah kartu agar teks terbaca jelas */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#140806]/95 via-[#140806]/60 via-40% to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-5 text-ivory flex flex-col gap-1.5 z-10">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <h3 className="font-serif text-lg font-bold leading-snug text-[#FFFDF9]">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#140806]/95 via-[#140806]/75 via-50% to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-ivory flex flex-col gap-1.5 z-10">
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                      <h3 className="font-serif text-base sm:text-lg font-bold leading-snug text-[#FFFDF9] drop-shadow-xs">
                         {cake.nama}
                       </h3>
                       <span
-                        className="text-xs font-extrabold text-blush tabular-nums shrink-0"
-                        style={{ fontVariantNumeric: "lining-nums" }}
+                        className="text-xs sm:text-sm font-extrabold text-[#F5C77F] tabular-nums lining-nums shrink-0 drop-shadow-xs"
+                        style={{ fontVariantNumeric: "lining-nums tabular-nums" }}
                       >
                         {formatRupiah(cake.harga)}
                       </span>
                     </div>
-                    <p className="text-[11.5px] text-ivory/80 leading-relaxed line-clamp-2">
-                      {cake.desc}
-                    </p>
+                    {cake.desc && (
+                      <p className="text-[11.5px] text-[#F3E8E2] leading-relaxed line-clamp-2 drop-shadow-xs">
+                        {cake.desc}
+                      </p>
+                    )}
                   </div>
                 </motion.button>
               ))}
@@ -860,42 +901,55 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                   <MapPin className="w-5 h-5" />
                 </div>
                 <h2 className="font-serif text-3xl sm:text-4xl font-bold text-ink">Lokasi Kami</h2>
-                <p className="text-sm text-ink/78 leading-relaxed max-w-md">
-                  Jl. Melati Manis No. 18, Kel. Citarum, Kec. Bandung Wetan, Kota Bandung 40115 · ±
-                  3 menit dari Gedung Sate.
-                </p>
+                {toko?.alamat && (
+                  <p className="text-sm text-ink/80 leading-relaxed max-w-md font-medium">
+                    {toko.alamat}
+                  </p>
+                )}
                 <div className="pt-2 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('lokasi')}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-kayuGelap hover:bg-cherry text-ivory text-xs font-bold shadow-sm transition-colors"
-                  >
-                    <span>Petunjuk Arah</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('contact')}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-ivory hover:bg-blush/60 text-ink border border-dusty/70 text-xs font-bold transition-colors"
-                  >
-                    <span>Hubungi Kasir</span>
-                  </button>
+                  {toko?.tautan_peta && (
+                    <a
+                      href={toko.tautan_peta}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-kayuGelap hover:bg-cherry text-ivory text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                    >
+                      <span>Petunjuk Arah</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  {toko?.wa_link && (
+                    <a
+                      href={toko.wa_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-ivory hover:bg-blush/60 text-ink border border-dusty/70 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <span>Hubungi Kasir</span>
+                    </a>
+                  )}
                 </div>
               </div>
 
-              <div className="md:col-span-5 md:border-l md:border-dusty/45 md:pl-8 space-y-3">
-                <h3 className="font-serif text-xl font-bold text-ink">Jam Operasional</h3>
-                <div className="space-y-2 text-xs sm:text-sm">
-                  <div className="flex items-center justify-between gap-4 border-b border-dashed border-dusty/45 pb-2">
-                    <span className="text-ink/70 font-semibold">Senin – Jumat</span>
-                    <span className="font-bold text-ink tabular-nums">08.00 – 20.00 WIB</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 pb-1">
-                    <span className="text-ink/70 font-semibold">Sabtu – Minggu</span>
-                    <span className="font-bold text-ink tabular-nums">08.00 – 21.00 WIB</span>
+              {(toko?.jam?.senin_jumat || toko?.jam?.sabtu_minggu) && (
+                <div className="md:col-span-5 md:border-l md:border-dusty/45 md:pl-8 space-y-3">
+                  <h3 className="font-serif text-xl font-bold text-ink">Jam Operasional</h3>
+                  <div className="space-y-2 text-xs sm:text-sm">
+                    {toko?.jam?.senin_jumat && (
+                      <div className="flex items-center justify-between gap-4 border-b border-dashed border-dusty/45 pb-2">
+                        <span className="text-ink/70 font-semibold">Senin – Jumat</span>
+                        <span className="font-bold text-ink tabular-nums">{toko.jam.senin_jumat}</span>
+                      </div>
+                    )}
+                    {toko?.jam?.sabtu_minggu && (
+                      <div className="flex items-center justify-between gap-4 pb-1">
+                        <span className="text-ink/70 font-semibold">Sabtu – Minggu</span>
+                        <span className="font-bold text-ink tabular-nums">{toko.jam.sabtu_minggu}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -932,9 +986,14 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
 
           {!resSubmitted ? (
             <div className="rounded-3xl bg-[#FFFDF9] border-2 border-[#C59B62]/70 shadow-[0_24px_55px_rgba(20,8,6,0.45)] p-6 sm:p-10 text-[#3D2B28]">
+              {resError && (
+                <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                  <X className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{resError}</span>
+                </div>
+              )}
               <form onSubmit={handleReservationSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Nama Lengkap */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-[#9E3B42]" />
@@ -950,7 +1009,6 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                       />
                     </div>
 
-                    {/* Nomor WhatsApp */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
                         <Phone className="w-3.5 h-3.5 text-[#9E3B42]" />
@@ -966,7 +1024,6 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                       />
                     </div>
 
-                    {/* Keperluan */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
                         <Heart className="w-3.5 h-3.5 text-[#9E3B42]" />
@@ -981,7 +1038,6 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                       />
                     </div>
 
-                    {/* Tanggal */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-[#6B473C] uppercase tracking-wider flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-[#9E3B42]" />
@@ -989,6 +1045,7 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                       </label>
                       <input
                         type="date"
+                        min={hariIni}
                         value={resTanggal}
                         onChange={(e) => setResTanggal(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#D9B37C]/60 text-sm text-[#3D2B28] focus:outline-none focus:border-[#9E3B42] focus:ring-2 focus:ring-[#E8A5AC]/40 shadow-xs transition"
@@ -999,12 +1056,15 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                   <div className="pt-3">
                     <button
                       type="submit"
-                      className="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-[#9E3B42] via-[#B23A48] to-[#9E3B42] hover:brightness-105 active:scale-[0.99] text-white font-serif font-bold text-sm tracking-wider shadow-[0_8px_22px_rgba(158,59,66,0.38)] border border-[#E8A5AC]/40 flex items-center justify-center transition cursor-pointer"
+                      disabled={!toko?.no_wa || !toko?.wa_link}
+                      className="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-[#9E3B42] via-[#B23A48] to-[#9E3B42] hover:brightness-105 active:scale-[0.99] text-white font-serif font-bold text-sm tracking-wider shadow-[0_8px_22px_rgba(158,59,66,0.38)] border border-[#E8A5AC]/40 flex items-center justify-center transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span>Kirim Reservasi Sekarang</span>
                     </button>
                     <p className="text-center text-[11px] text-[#8C6D62] mt-2.5">
-                      * Tim kami akan segera mengonfirmasi ketersediaan meja &amp; jadwal melalui WhatsApp resmi Cravely.
+                      {toko?.no_wa && toko?.wa_link
+                        ? '* Konfirmasi reservasi akan diteruskan langsung ke WhatsApp resmi toko kami.'
+                        : '* Layanan WhatsApp toko sedang tidak aktif atau belum diatur.'}
                     </p>
                   </div>
                 </form>
@@ -1015,12 +1075,23 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                 <Check className="w-7 h-7 stroke-[2.5]" />
               </div>
               <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#3D2B28]">
-                Reservasi Berhasil Dicatat!
+                Lanjutkan di WhatsApp
               </h3>
               <p className="text-xs sm:text-sm text-[#6B473C] max-w-md mx-auto leading-relaxed">
-                Terima kasih, <b>{resNama}</b>. Rincian pesanan telah kami simpan. Barista &amp; patissier Cravely akan segera menghubungi WhatsApp <b>{resWa}</b> untuk konfirmasi akhir.
+                Rincian reservasi atas nama <b>{resNama}</b> telah disiapkan. Silakan kirimkan pesan di aplikasi WhatsApp untuk konfirmasi langsung dengan tim kasir kami.
               </p>
-              <div className="pt-2">
+              <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+                {waTargetUrl && (
+                  <a
+                    href={waTargetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-2.5 rounded-full bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition inline-flex items-center gap-2 cursor-pointer"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Buka WhatsApp Sekarang</span>
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -1029,10 +1100,12 @@ export const CravelyEditorialSections: React.FC<CravelyEditorialSectionsProps> =
                     setResJumlah('');
                     setResTanggal('');
                     setResSubmitted(false);
+                    setResError('');
+                    setWaTargetUrl('');
                   }}
-                  className="px-6 py-2.5 rounded-full bg-[#F5ECE2] hover:bg-[#EBDDD0] text-[#5A3B33] text-xs font-bold border border-[#D9B37C]/60 transition"
+                  className="px-6 py-2.5 rounded-full bg-[#F5ECE2] hover:bg-[#EBDDD0] text-[#5A3B33] text-xs font-bold border border-[#D9B37C]/60 transition cursor-pointer"
                 >
-                  Buat Reservasi Lain
+                  Buat Reservasi Baru
                 </button>
               </div>
             </div>

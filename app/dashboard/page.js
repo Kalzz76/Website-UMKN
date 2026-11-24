@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import DashboardAdminView from "@/components/DashboardAdminView";
@@ -10,7 +11,7 @@ export const metadata = {
 async function hitungKueHariIni(supabase, tglHariIni) {
   const { data: pesananHariIni } = await supabase
     .from("pesanan")
-    .select("id")
+    .select("id, tulisan_kue, desain_json")
     .in("status_pesanan", ["Diterima", "Sedang Dibuat"])
     .eq("tanggal_ambil", tglHariIni);
 
@@ -19,21 +20,22 @@ async function hitungKueHariIni(supabase, tglHariIni) {
 
   const { data: itemsHariIni } = await supabase
     .from("pesanan_item")
-    .select("id_pesanan, jenis, jumlah")
-    .in("id_pesanan", ids);
+    .select("id_pesanan, jenis")
+    .in("id_pesanan", ids)
+    .eq("jenis", "Custom");
 
   let total = 0;
   const countedOrders = new Set();
   if (itemsHariIni && itemsHariIni.length > 0) {
     for (let i = 0; i < itemsHariIni.length; i++) {
-      const it = itemsHariIni[i];
-      countedOrders.add(it.id_pesanan);
-      total += it.jenis === "Custom" ? 1 : Number(it.jumlah) || 1;
+      countedOrders.add(itemsHariIni[i].id_pesanan);
+      total += 1;
     }
   }
 
-  for (let i = 0; i < ids.length; i++) {
-    if (!countedOrders.has(ids[i])) {
+  for (let i = 0; i < pesananHariIni.length; i++) {
+    const p = pesananHariIni[i];
+    if (!countedOrders.has(p.id) && (p.tulisan_kue || p.desain_json)) {
       total += 1;
     }
   }
@@ -45,6 +47,10 @@ export default async function DashboardPage() {
   const { profil } = await cekRole(["admin", "staf"]);
   const role = profil?.role || "staf";
 
+  if (role === "staf") {
+    redirect("/dashboard/hari-ini");
+  }
+
   const supabase = await getSupabaseServer();
 
   const sekarang = new Date();
@@ -54,8 +60,10 @@ export default async function DashboardPage() {
   if (role === "staf") {
     const [
       { data: pengaturan },
-      { count: buktiMenungguCount },
+      { count: perluDiprosesCount },
       kueHariIniTotal,
+      { count: siapHariIniCount },
+      { count: menungguPelunasanCount },
       { data: antreanRaw },
       { data: bahanData },
     ] = await Promise.all([
@@ -65,10 +73,20 @@ export default async function DashboardPage() {
         .eq("id", 1)
         .maybeSingle(),
       supabase
-        .from("pembayaran")
+        .from("pesanan")
         .select("*", { count: "exact", head: true })
-        .eq("status", "Menunggu Konfirmasi"),
+        .eq("status_pesanan", "Diterima"),
       hitungKueHariIni(supabase, tglHariIni),
+      supabase
+        .from("pesanan")
+        .select("*", { count: "exact", head: true })
+        .eq("status_pesanan", "Siap")
+        .eq("tanggal_ambil", tglHariIni),
+      supabase
+        .from("pesanan")
+        .select("*", { count: "exact", head: true })
+        .neq("status_pesanan", "Dibatalkan")
+        .neq("status_bayar", "Lunas"),
       supabase
         .from("pesanan")
         .select("id, kode_pesanan, nama_penerima, tanggal_ambil, jam_ambil, status_pesanan, metode_pengiriman")
@@ -83,11 +101,6 @@ export default async function DashboardPage() {
 
     const namaToko = pengaturan?.nama_toko || "Cravely Bakery";
     const slogan = pengaturan?.slogan || "Buat hari lebih manis dengan kue terbaik kami ♡";
-
-    const ringkasanHero = {
-      buktiMenunggu: buktiMenungguCount || 0,
-      kueHariIni: kueHariIniTotal || 0,
-    };
 
     const daftarAntrean = antreanRaw || [];
     const idList = daftarAntrean.map((p) => p.id);
@@ -163,11 +176,19 @@ export default async function DashboardPage() {
         Number(b.jumlah) < (kebutuhanMap[b.id] || 0)
     );
 
+    const ringkasanStaf = {
+      perluDiproses: perluDiprosesCount || 0,
+      kueHariIni: kueHariIniTotal || 0,
+      siapHariIni: siapHariIniCount || 0,
+      menungguPelunasan: menungguPelunasanCount || 0,
+      stokMenipis: stokMenipis.length,
+    };
+
     return (
       <DashboardStafView
         namaToko={namaToko}
         slogan={slogan}
-        ringkasanHero={ringkasanHero}
+        ringkasanStaf={ringkasanStaf}
         antreanKue={antreanKue}
         stokMenipis={stokMenipis}
       />
@@ -176,7 +197,7 @@ export default async function DashboardPage() {
 
   const [
     { data: pengaturan },
-    { count: buktiMenungguCount },
+    { count: perluDiprosesCount },
     kueHariIniTotal,
   ] = await Promise.all([
     supabase
@@ -185,9 +206,9 @@ export default async function DashboardPage() {
       .eq("id", 1)
       .maybeSingle(),
     supabase
-      .from("pembayaran")
+      .from("pesanan")
       .select("*", { count: "exact", head: true })
-      .eq("status", "Menunggu Konfirmasi"),
+      .eq("status_pesanan", "Diterima"),
     hitungKueHariIni(supabase, tglHariIni),
   ]);
 
@@ -195,7 +216,7 @@ export default async function DashboardPage() {
   const slogan = pengaturan?.slogan || "Buat hari lebih manis dengan kue terbaik kami ♡";
 
   const ringkasanHero = {
-    buktiMenunggu: buktiMenungguCount || 0,
+    perluDiproses: perluDiprosesCount || 0,
     kueHariIni: kueHariIniTotal || 0,
   };
 
@@ -274,7 +295,7 @@ export default async function DashboardPage() {
     return {
       totalPesanan: pesananNow,
       persenPesanan: hitungPersen(pesananNow, pesananPrev),
-      perluDikonfirmasi: ringkasanHero.buktiMenunggu,
+      perluDiproses: ringkasanHero.perluDiproses,
       totalPendapatan: pendapatanNow,
       persenPendapatan: hitungPersen(pendapatanNow, pendapatanPrev),
       pelangganAktif: pelangganNowSet.size,
@@ -376,7 +397,7 @@ export default async function DashboardPage() {
       .select("id_pesanan, id_grup, nama_grup, nama_item, warna"),
     supabase
       .from("pesanan_item")
-      .select("id_pesanan, jenis, jumlah")
+      .select("id_pesanan, jenis, nama_item, jumlah, produk(id_kategori, kategori_produk(nama))")
   ]);
 
   const semuaPilihan = (semuaPilihanRes.data || []).filter(
@@ -402,103 +423,102 @@ export default async function DashboardPage() {
     const key = daftarKunciPeriode[k];
     const startTs = periodeStartMap[key];
 
-    let totalKatalog = 0;
+    let totalKue = 0;
+    const kategoriMap = {};
+    let totalCustomCake = 0;
+    const pesananWithItems = new Set();
+
     for (let m = 0; m < semuaItems.length; m++) {
       const it = semuaItems[m];
       const wt = orderTimeMap[it.id_pesanan];
-      if (wt && wt >= startTs && (it.jenis === "Katalog" || it.jenis === "Siap")) {
-        totalKatalog += Number(it.jumlah) || 1;
+      if (!wt || wt < startTs) continue;
+      pesananWithItems.add(it.id_pesanan);
+
+      const qty = Number(it.jumlah) || 1;
+      if (it.jenis === "Custom") {
+        totalCustomCake += qty;
+        totalKue += qty;
+      } else {
+        const namaKategori = it.produk?.kategori_produk?.nama || "Kue Katalog";
+        kategoriMap[namaKategori] = (kategoriMap[namaKategori] || 0) + qty;
+        totalKue += qty;
       }
     }
 
-    if (!grupJenis && totalKatalog === 0) {
+    for (let i = 0; i < semuaPesanan.length; i++) {
+      const p = semuaPesanan[i];
+      const wt = orderTimeMap[p.id];
+      if (wt && wt >= startTs && !pesananWithItems.has(p.id)) {
+        totalCustomCake += 1;
+        totalKue += 1;
+      }
+    }
+
+    if (totalKue === 0) {
       donutPerPeriode[key] = {
-        adaGrup: false,
-        namaGrup: "",
+        adaGrup: true,
+        namaGrup: "Jenis Kue",
         kosong: true,
-        pesan: "Belum ada grup yang diset sebagai jenis kue di menu Katalog & Opsi",
+        pesan: "Belum ada pesanan pada periode ini",
         items: [],
         total: 0,
       };
     } else {
-      const hitungMap = {};
-      let totalPilihan = 0;
-
-      if (grupJenis) {
-        for (let p = 0; p < semuaPilihan.length; p++) {
-          const item = semuaPilihan[p];
-          const waktuPesanan = orderTimeMap[item.id_pesanan];
-          if (waktuPesanan < startTs) continue;
-
-          const cocokGrup =
-            (item.id_grup && String(item.id_grup) === String(grupJenis.id)) ||
-            (!item.id_grup && item.nama_grup === grupJenis.nama);
-
-          if (cocokGrup) {
-            hitungMap[item.nama_item] = (hitungMap[item.nama_item] || 0) + 1;
-            totalPilihan++;
-          }
-        }
+      const irisanList = [];
+      if (totalCustomCake > 0) {
+        irisanList.push({ nama: "Custom Cake", jumlah: totalCustomCake });
       }
 
-      if (totalKatalog > 0) {
-        hitungMap["Kue Katalog"] = totalKatalog;
-        totalPilihan += totalKatalog;
+      const kategoriSorted = Object.keys(kategoriMap)
+        .map((kName) => ({ nama: kName, jumlah: kategoriMap[kName] }))
+        .sort((a, b) => b.jumlah - a.jumlah);
+
+      for (let s = 0; s < kategoriSorted.length; s++) {
+        irisanList.push(kategoriSorted[s]);
       }
 
-      if (totalPilihan === 0) {
-        donutPerPeriode[key] = {
-          adaGrup: true,
-          namaGrup: grupJenis?.nama || "Jenis Kue",
-          kosong: true,
-          pesan: "Belum ada pesanan pada periode ini",
-          items: [],
-          total: 0,
-        };
+      irisanList.sort((a, b) => b.jumlah - a.jumlah);
+
+      let finalIrisan = [];
+      if (irisanList.length <= 4) {
+        finalIrisan = irisanList;
       } else {
-        const urutList = Object.keys(hitungMap)
-          .map((nama) => ({ nama, jumlah: hitungMap[nama] }))
-          .sort((a, b) => b.jumlah - a.jumlah);
-
-        let finalItems = [];
-        if (urutList.length <= 4) {
-          finalItems = urutList;
-        } else {
-          finalItems = urutList.slice(0, 4);
-          let sisa = 0;
-          for (let s = 4; s < urutList.length; s++) {
-            sisa += urutList[s].jumlah;
-          }
-          finalItems.push({ nama: "Lainnya", jumlah: sisa });
+        finalIrisan = irisanList.slice(0, 4);
+        let sisaJumlah = 0;
+        for (let s = 4; s < irisanList.length; s++) {
+          sisaJumlah += irisanList[s].jumlah;
         }
-
-        const itemsWithPercent = finalItems.map((item, idx) => ({
-          nama: item.nama,
-          jumlah: item.jumlah,
-          warna: paletDonut[idx % paletDonut.length],
-          persen: Math.round((item.jumlah / totalPilihan) * 100),
-        }));
-
-        donutPerPeriode[key] = {
-          adaGrup: true,
-          namaGrup: grupJenis?.nama || "Jenis Kue",
-          kosong: false,
-          pesan: "",
-          items: itemsWithPercent,
-          total: totalPilihan,
-        };
+        if (sisaJumlah > 0) {
+          finalIrisan.push({ nama: "Lainnya", jumlah: sisaJumlah });
+        }
       }
+
+      const itemsWithPercent = finalIrisan.map((item, idx) => ({
+        nama: item.nama,
+        jumlah: item.jumlah,
+        warna: paletDonut[idx % paletDonut.length],
+        persen: Math.round((item.jumlah / totalKue) * 100),
+      }));
+
+      donutPerPeriode[key] = {
+        adaGrup: true,
+        namaGrup: "Jenis Kue",
+        kosong: false,
+        pesan: "",
+        items: itemsWithPercent,
+        total: totalKue,
+      };
     }
 
-    if (!grupTerlaris) {
-      terlarisPerPeriode[key] = {
-        adaGrup: false,
-        namaGrup: "",
-        kosong: true,
-        pesan: "Belum ada grup yang diset sebagai terlaris di menu Katalog & Opsi",
-        items: [],
-      };
-    } else {
+    let terlarisRasa = {
+      adaGrup: false,
+      namaGrup: "Rasa",
+      kosong: true,
+      pesan: "Belum ada grup yang diset sebagai terlaris di menu Katalog & Opsi",
+      items: [],
+    };
+
+    if (grupTerlaris) {
       const hitungMap = {};
       const warnaMap = {};
       let totalPilihan = 0;
@@ -520,11 +540,11 @@ export default async function DashboardPage() {
       }
 
       if (totalPilihan === 0) {
-        terlarisPerPeriode[key] = {
+        terlarisRasa = {
           adaGrup: true,
           namaGrup: grupTerlaris.nama,
           kosong: true,
-          pesan: "Belum ada pesanan pada periode ini",
+          pesan: "Belum ada pesanan kue custom pada periode ini",
           items: [],
         };
       } else {
@@ -538,7 +558,7 @@ export default async function DashboardPage() {
           .sort((a, b) => b.jumlah - a.jumlah)
           .slice(0, 3);
 
-        terlarisPerPeriode[key] = {
+        terlarisRasa = {
           adaGrup: true,
           namaGrup: grupTerlaris.nama,
           kosong: false,
@@ -547,6 +567,52 @@ export default async function DashboardPage() {
         };
       }
     }
+
+    const hitungProdukMap = {};
+    let totalProdukTerjual = 0;
+    for (let m = 0; m < semuaItems.length; m++) {
+      const it = semuaItems[m];
+      const wt = orderTimeMap[it.id_pesanan];
+      if (wt && wt >= startTs && (it.jenis === "Katalog" || it.jenis === "Siap")) {
+        const qty = Number(it.jumlah) || 1;
+        hitungProdukMap[it.nama_item] = (hitungProdukMap[it.nama_item] || 0) + qty;
+        totalProdukTerjual += qty;
+      }
+    }
+
+    let terlarisProduk = {
+      adaGrup: true,
+      namaGrup: "Produk Katalog",
+      kosong: true,
+      pesan: "Belum ada produk katalog terjual pada periode ini",
+      items: [],
+    };
+
+    if (totalProdukTerjual > 0) {
+      const paletProduk = ["#d97706", "#2563eb", "#059669", "#7c3aed"];
+      const top3Produk = Object.keys(hitungProdukMap)
+        .map((nama, idx) => ({
+          nama,
+          jumlah: hitungProdukMap[nama],
+          warna: paletProduk[idx % paletProduk.length],
+          persen: Math.round((hitungProdukMap[nama] / totalProdukTerjual) * 100),
+        }))
+        .sort((a, b) => b.jumlah - a.jumlah)
+        .slice(0, 3);
+
+      terlarisProduk = {
+        adaGrup: true,
+        namaGrup: "Produk Katalog",
+        kosong: false,
+        pesan: "",
+        items: top3Produk,
+      };
+    }
+
+    terlarisPerPeriode[key] = {
+      rasa: terlarisRasa,
+      produk: terlarisProduk,
+    };
   }
 
   const { data: pesananTerbaruRaw } = await supabase

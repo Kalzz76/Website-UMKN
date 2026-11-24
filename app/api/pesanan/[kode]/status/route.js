@@ -16,7 +16,8 @@ export async function POST(request, { params }) {
 
   const supabase = getSupabaseAdmin();
   const body = await request.json();
-  const { status_baru, alasan_batal } = body;
+  const status_baru = body.status_baru || body.status_pesanan;
+  const alasan_batal = body.alasan_batal;
 
   const { data: pesanan } = await supabase
     .from("pesanan")
@@ -31,10 +32,22 @@ export async function POST(request, { params }) {
     );
   }
 
+  const { data: items } = await supabase
+    .from("pesanan_item")
+    .select("id, jenis")
+    .eq("id_pesanan", pesanan.id);
+
+  const adaCustom = (items || []).some((it) => it.jenis === "Custom") || (items?.length === 0 && Boolean(pesanan.tulisan_kue || pesanan.desain_json));
   const statusLama = pesanan.status_pesanan;
   const isAdmin = profil.role === "admin";
 
   if (status_baru === "Sedang Dibuat") {
+    if (!adaCustom) {
+      return NextResponse.json(
+        { pesan: "Pesanan yang hanya berisi katalog tidak melalui tahap 'Sedang Dibuat'. Ubah langsung ke 'Siap'." },
+        { status: 400 }
+      );
+    }
     if (statusLama !== "Diterima") {
       return NextResponse.json(
         { pesan: `Status tidak dapat diubah dari "${statusLama}" ke "Sedang Dibuat".` },
@@ -42,19 +55,22 @@ export async function POST(request, { params }) {
       );
     }
   } else if (status_baru === "Siap") {
-    if (statusLama !== "Sedang Dibuat") {
-      return NextResponse.json(
-        { pesan: `Status tidak dapat diubah dari "${statusLama}" ke "Siap".` },
-        { status: 400 }
-      );
+    if (adaCustom) {
+      if (statusLama !== "Sedang Dibuat") {
+        return NextResponse.json(
+          { pesan: 'Pesanan kue custom harus berstatus "Sedang Dibuat" sebelum dapat ditandai "Siap".' },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (statusLama !== "Diterima") {
+        return NextResponse.json(
+          { pesan: 'Pesanan katalog harus berstatus "Diterima" sebelum dapat ditandai "Siap".' },
+          { status: 400 }
+        );
+      }
     }
   } else if (status_baru === "Dikirim") {
-    if (!isAdmin) {
-      return NextResponse.json(
-        { pesan: "Hanya admin yang boleh mengubah status ke 'Dikirim'." },
-        { status: 403 }
-      );
-    }
     if (statusLama !== "Siap") {
       return NextResponse.json(
         { pesan: "Pesanan harus berstatus 'Siap' sebelum dapat dikirim." },
@@ -74,22 +90,16 @@ export async function POST(request, { params }) {
       );
     }
   } else if (status_baru === "Selesai") {
-    if (!isAdmin) {
+    if (pesanan.status_bayar !== "Lunas") {
       return NextResponse.json(
-        { pesan: "Hanya admin yang boleh menyelesaikan pesanan." },
-        { status: 403 }
+        { pesan: "Pesanan belum lunas. Tagihan harus dilunasi sebelum pesanan diselesaikan." },
+        { status: 400 }
       );
     }
     if (pesanan.metode_pengiriman === "Ambil") {
       if (statusLama !== "Siap") {
         return NextResponse.json(
-          { pesan: "Pesanan ambil di tempat harus berstatus 'Siap' sebelum diselesaikan." },
-          { status: 400 }
-        );
-      }
-      if (pesanan.status_bayar !== "Lunas") {
-        return NextResponse.json(
-          { pesan: "Pesanan belum lunas. Tagihan harus dilunasi saat kue diambil." },
+          { pesan: "Pesanan ambil di toko harus berstatus 'Siap' sebelum diselesaikan." },
           { status: 400 }
         );
       }
@@ -104,7 +114,7 @@ export async function POST(request, { params }) {
   } else if (status_baru === "Dibatalkan") {
     if (!isAdmin) {
       return NextResponse.json(
-        { pesan: "Hanya admin yang boleh membatalkan pesanan." },
+        { pesan: "Staf tidak memiliki hak akses untuk membatalkan pesanan." },
         { status: 403 }
       );
     }

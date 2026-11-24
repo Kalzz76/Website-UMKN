@@ -59,7 +59,16 @@ export async function POST(request) {
     .single();
 
   const isAdmin = profil?.role === "admin";
-  if (!isAdmin && pesanan.id_pelanggan !== user.id) {
+  const isStaf = profil?.role === "staf";
+
+  if (isStaf) {
+    if (metode !== "Tunai di Tempat" || pesanan.metode_pengiriman !== "Ambil") {
+      return NextResponse.json(
+        { pesan: "Staf hanya boleh mencatat pelunasan tunai di tempat untuk pesanan yang diambil di toko." },
+        { status: 403 }
+      );
+    }
+  } else if (!isAdmin && pesanan.id_pelanggan !== user.id) {
     return NextResponse.json(
       { pesan: "Akses ditolak. Pesanan bukan milik Anda." },
       { status: 403 }
@@ -152,13 +161,17 @@ export async function POST(request) {
     bukti_path = namaFile;
   }
 
+  const statusAwal = (isAdmin || isStaf) && metode === "Tunai di Tempat" ? "Dikonfirmasi" : "Menunggu Konfirmasi";
+
   const { error: errInsert } = await supabase.from("pembayaran").insert({
     id_pesanan: pesanan.id,
     jenis,
     jumlah: Math.round(jumlah),
     metode,
     bukti: bukti_path,
-    status: "Menunggu Konfirmasi",
+    status: statusAwal,
+    id_pengonfirmasi: statusAwal === "Dikonfirmasi" ? user.id : null,
+    dikonfirmasi_pada: statusAwal === "Dikonfirmasi" ? new Date().toISOString() : null,
   });
 
   if (errInsert) {
@@ -166,6 +179,53 @@ export async function POST(request) {
       { pesan: "Gagal menyimpan data pembayaran: " + errInsert.message },
       { status: 500 }
     );
+  }
+
+  if (statusAwal === "Dikonfirmasi") {
+    const { data: allConfirmed } = await supabase
+      .from("pembayaran")
+      .select("jumlah")
+      .eq("id_pesanan", pesanan.id)
+      .eq("status", "Dikonfirmasi");
+
+    let totalTerbayar = 0;
+    if (allConfirmed) {
+      for (let i = 0; i < allConfirmed.length; i++) {
+        totalTerbayar += allConfirmed[i].jumlah || 0;
+      }
+    }
+
+    let statusBayarBaru = "Belum Bayar";
+    if (totalTerbayar >= pesanan.total_bayar) {
+      statusBayarBaru = "Lunas";
+    } else if (totalTerbayar > 0) {
+      statusBayarBaru = "DP Dibayar";
+    }
+
+    let statusPesananBaru = pesanan.status_pesanan;
+    if (pesanan.status_pesanan === "Menunggu Pembayaran" && totalTerbayar > 0) {
+      statusPesananBaru = "Diterima";
+    }
+
+    await supabase
+      .from("pesanan")
+      .update({
+        jumlah_terbayar: totalTerbayar,
+        status_bayar: statusBayarBaru,
+        status_pesanan: statusPesananBaru,
+      })
+      .eq("id", pesanan.id);
+
+    const peranLabel = isStaf ? "petugas/staf" : "admin";
+    await supabase.from("riwayat_pesanan").insert({
+      id_pesanan: pesanan.id,
+      keterangan: `Pelunasan tunai di tempat sebesar Rp ${Math.round(jumlah).toLocaleString("id-ID")} dicatat dan dikonfirmasi ${peranLabel} (${statusBayarBaru})`,
+      id_user: user.id,
+    });
+
+    return NextResponse.json({
+      pesan: "Pelunasan tunai berhasil dicatat dan dikonfirmasi.",
+    });
   }
 
   return NextResponse.json({

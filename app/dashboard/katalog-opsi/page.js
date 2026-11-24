@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah } from "@/lib/format";
 import ModalPesan from "@/components/ModalPesan";
 
 export default function KatalogOpsiPage() {
+  const router = useRouter();
   const [profil, setProfil] = useState(null);
   const [tabAktif, setTabAktif] = useState("custom");
 
@@ -76,7 +78,13 @@ export default function KatalogOpsiPage() {
         .select("role, nama")
         .eq("id", user.id)
         .single();
-      if (prof) setProfil(prof);
+      if (prof) {
+        if (prof.role === "staf") {
+          router.replace("/dashboard");
+          return;
+        }
+        setProfil(prof);
+      }
     }
 
     const { data: grupList, error: errGrup } = await supabase

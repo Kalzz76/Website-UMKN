@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { createPortal } from "react-dom";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah, formatTanggalIndonesia } from "@/lib/format";
 import { cariTarifJarak } from "@/lib/ongkir";
@@ -19,10 +19,14 @@ const PetaLokasi = dynamic(() => import("@/components/PetaLokasi"), {
 });
 
 export default function PengaturanPage() {
+  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [tabAktif, setTabAktif] = useState("toko");
   const [sedangMemuat, setSedangMemuat] = useState(true);
+
   const [sedangSimpanToko, setSedangSimpanToko] = useState(false);
+  const [sedangSimpanPemesanan, setSedangSimpanPemesanan] = useState(false);
+  const [sedangSimpanPembayaran, setSedangSimpanPembayaran] = useState(false);
   const [sedangSimpanOngkir, setSedangSimpanOngkir] = useState(false);
   const [sedangProsesTarifJarak, setSedangProsesTarifJarak] = useState(false);
   const [sedangProsesZona, setSedangProsesZona] = useState(false);
@@ -30,23 +34,37 @@ export default function PengaturanPage() {
 
   const [formToko, setFormToko] = useState({
     nama_toko: "",
-    alamat: "",
     no_wa: "",
-    jam_operasional: "",
-    jam_buka: "08:00",
-    jam_tutup: "20:00",
+    email: "",
+    instagram: "",
+    alamat: "",
+    tautan_peta: "",
+    deskripsi_footer: "",
+    jam_buka_senin_jumat: "08:00",
+    jam_tutup_senin_jumat: "20:00",
+    jam_buka_sabtu_minggu: "08:00",
+    jam_tutup_sabtu_minggu: "20:00",
+  });
+  const [dataAwalToko, setDataAwalToko] = useState(null);
+
+  const [formPemesanan, setFormPemesanan] = useState({
     kuota_harian: 5,
     minimal_hari_pesan: 2,
-    minimal_hari_siap: 1,
+    minimal_hari_katalog: 1,
+  });
+  const [dataAwalPemesanan, setDataAwalPemesanan] = useState(null);
+
+  const [formPembayaran, setFormPembayaran] = useState({
     mode_pembayaran: "DP",
     persen_dp: 50,
     batas_bayar_jam: 24,
+    transfer_manual_aktif: false,
     nama_bank: "",
     no_rekening: "",
     atas_nama: "",
     gambar_qris: null,
-    transfer_manual_aktif: false,
   });
+  const [dataAwalPembayaran, setDataAwalPembayaran] = useState(null);
 
   const [formOngkir, setFormOngkir] = useState({
     lat_toko: -6.9175,
@@ -54,7 +72,9 @@ export default function PengaturanPage() {
     faktor_jalan: 1.3,
     maks_jarak_kirim_km: 20,
   });
+  const [dataAwalOngkir, setDataAwalOngkir] = useState(null);
 
+  const [statusMidtrans, setStatusMidtrans] = useState("Belum Terhubung");
   const [fileQris, setFileQris] = useState(null);
   const [previewQris, setPreviewQris] = useState(null);
   const [hapusQrisFlag, setHapusQrisFlag] = useState(false);
@@ -62,6 +82,8 @@ export default function PengaturanPage() {
   const [daftarTarifJarak, setDaftarTarifJarak] = useState([]);
   const [daftarZona, setDaftarZona] = useState([]);
   const [daftarTanggalTutup, setDaftarTanggalTutup] = useState([]);
+
+  const [zonaLamaBuka, setZonaLamaBuka] = useState(false);
 
   const [modalTarifJarakBuka, setModalTarifJarakBuka] = useState(false);
   const [editTarifJarakId, setEditTarifJarakId] = useState(null);
@@ -82,17 +104,19 @@ export default function PengaturanPage() {
     tarif: 0,
     aktif: true,
   });
+  const [errorZona, setErrorZona] = useState([]);
 
   const [modalTanggalBuka, setModalTanggalBuka] = useState(false);
   const [formTanggal, setFormTanggal] = useState({
     tanggal: "",
     alasan: "",
   });
+  const [errorTanggal, setErrorTanggal] = useState([]);
 
   const [errorToko, setErrorToko] = useState([]);
+  const [errorPemesanan, setErrorPemesanan] = useState([]);
+  const [errorPembayaran, setErrorPembayaran] = useState([]);
   const [errorOngkir, setErrorOngkir] = useState([]);
-  const [errorZona, setErrorZona] = useState([]);
-  const [errorTanggal, setErrorTanggal] = useState([]);
 
   const [notifikasi, setNotifikasi] = useState({
     terbuka: false,
@@ -100,10 +124,6 @@ export default function PengaturanPage() {
     pesan: "",
     tipe: "info",
   });
-
-  const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
-  const isMidtransSandbox = midtransClientKey.startsWith("SB-");
-  const isMidtransTerkoneksi = Boolean(midtransClientKey);
 
   useEffect(() => {
     setIsMounted(true);
@@ -124,63 +144,88 @@ export default function PengaturanPage() {
     setSedangMemuat(true);
     const supabase = getSupabaseBrowser();
 
-    const { data: toko } = await supabase
-      .from("pengaturan_toko")
-      .select("*")
-      .eq("id", 1)
-      .single();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (toko) {
-      setFormToko({
-        nama_toko: toko.nama_toko || "",
-        alamat: toko.alamat || "",
-        no_wa: toko.no_wa || "",
-        jam_operasional: toko.jam_operasional || "",
-        jam_buka: toko.jam_buka?.slice(0, 5) || "08:00",
-        jam_tutup: toko.jam_tutup?.slice(0, 5) || "20:00",
-        kuota_harian: toko.kuota_harian ?? 5,
-        minimal_hari_pesan: toko.minimal_hari_pesan ?? 2,
-        minimal_hari_siap: toko.minimal_hari_siap ?? toko.minimal_hari_katalog ?? 1,
-        mode_pembayaran: toko.mode_pembayaran || "DP",
-        persen_dp: toko.persen_dp ?? 50,
-        batas_bayar_jam: toko.batas_bayar_jam ?? 24,
-        nama_bank: toko.nama_bank || "",
-        no_rekening: toko.no_rekening || "",
-        atas_nama: toko.atas_nama || "",
-        gambar_qris: toko.gambar_qris || null,
-        transfer_manual_aktif: Boolean(toko.transfer_manual_aktif),
-      });
-      setPreviewQris(toko.gambar_qris || null);
-
-      setFormOngkir({
-        lat_toko: toko.lat_toko ?? -6.9175,
-        lng_toko: toko.lng_toko ?? 107.6191,
-        faktor_jalan: toko.faktor_jalan ?? 1.3,
-        maks_jarak_kirim_km: toko.maks_jarak_kirim_km ?? 20,
-      });
+    if (user) {
+      const { data: prof } = await supabase
+        .from("profil")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (prof?.role === "staf") {
+        router.replace("/dashboard");
+        return;
+      }
     }
 
-    const { data: tarifList } = await supabase
-      .from("tarif_jarak")
-      .select("*")
-      .order("jarak_maks_km", { ascending: true });
+    try {
+      const res = await fetch("/api/pengaturan");
+      const json = await res.json();
+      if (json.sukses && json.data) {
+        const d = json.data;
 
-    if (tarifList) setDaftarTarifJarak(tarifList);
+        const awalToko = {
+          nama_toko: d.nama_toko || "",
+          no_wa: d.no_wa || "",
+          email: d.email || "",
+          instagram: d.instagram || "",
+          alamat: d.alamat || "",
+          tautan_peta: d.tautan_peta || "",
+          deskripsi_footer: d.deskripsi_footer || "",
+          jam_buka_senin_jumat: d.jam_buka_senin_jumat?.slice(0, 5) || d.jam_buka?.slice(0, 5) || "08:00",
+          jam_tutup_senin_jumat: d.jam_tutup_senin_jumat?.slice(0, 5) || d.jam_tutup?.slice(0, 5) || "20:00",
+          jam_buka_sabtu_minggu: d.jam_buka_sabtu_minggu?.slice(0, 5) || d.jam_buka?.slice(0, 5) || "08:00",
+          jam_tutup_sabtu_minggu: d.jam_tutup_sabtu_minggu?.slice(0, 5) || d.jam_tutup?.slice(0, 5) || "20:00",
+        };
+        setFormToko(awalToko);
+        setDataAwalToko(awalToko);
 
-    const { data: zonaList } = await supabase
-      .from("zona_ongkir")
-      .select("*")
-      .order("id", { ascending: true });
+        const awalPemesanan = {
+          kuota_harian: d.kuota_harian ?? 5,
+          minimal_hari_pesan: d.minimal_hari_pesan ?? 2,
+          minimal_hari_katalog: d.minimal_hari_katalog ?? d.minimal_hari_siap ?? 1,
+        };
+        setFormPemesanan(awalPemesanan);
+        setDataAwalPemesanan(awalPemesanan);
 
-    if (zonaList) setDaftarZona(zonaList);
+        const awalPembayaran = {
+          mode_pembayaran: d.mode_pembayaran || "DP",
+          persen_dp: d.persen_dp ?? 50,
+          batas_bayar_jam: d.batas_bayar_jam ?? 24,
+          transfer_manual_aktif: Boolean(d.transfer_manual_aktif),
+          nama_bank: d.nama_bank || "",
+          no_rekening: d.no_rekening || "",
+          atas_nama: d.atas_nama || "",
+          gambar_qris: d.gambar_qris || null,
+        };
+        setFormPembayaran(awalPembayaran);
+        setDataAwalPembayaran(awalPembayaran);
+        setPreviewQris(d.gambar_qris || null);
 
-    const { data: tglList } = await supabase
-      .from("tanggal_tutup")
-      .select("*")
-      .gte("tanggal", new Date().toISOString().split("T")[0])
-      .order("tanggal", { ascending: true });
+        const awalOngkir = {
+          lat_toko: d.lat_toko ?? -6.9175,
+          lng_toko: d.lng_toko ?? 107.6191,
+          faktor_jalan: d.faktor_jalan ?? 1.3,
+          maks_jarak_kirim_km: d.maks_jarak_kirim_km ?? 20,
+        };
+        setFormOngkir(awalOngkir);
+        setDataAwalOngkir(awalOngkir);
 
-    if (tglList) setDaftarTanggalTutup(tglList);
+        setStatusMidtrans(d.status_midtrans || "Belum Terhubung");
+        setDaftarTarifJarak(d.tarif_jarak || []);
+        setDaftarZona(d.zona || []);
+        setDaftarTanggalTutup(d.tanggal_tutup || []);
+      }
+    } catch (err) {
+      setNotifikasi({
+        terbuka: true,
+        judul: "Gagal Memuat Data",
+        pesan: "Gagal memuat pengaturan toko dari server.",
+        tipe: "error",
+      });
+    }
 
     setSedangMemuat(false);
   }
@@ -189,23 +234,74 @@ export default function PengaturanPage() {
     muatData();
   }, []);
 
+  const adaPerubahanToko = useMemo(() => {
+    if (!dataAwalToko) return false;
+    return (
+      formToko.nama_toko !== dataAwalToko.nama_toko ||
+      formToko.no_wa !== dataAwalToko.no_wa ||
+      formToko.email !== dataAwalToko.email ||
+      formToko.instagram !== dataAwalToko.instagram ||
+      formToko.alamat !== dataAwalToko.alamat ||
+      formToko.tautan_peta !== dataAwalToko.tautan_peta ||
+      formToko.deskripsi_footer !== dataAwalToko.deskripsi_footer ||
+      formToko.jam_buka_senin_jumat !== dataAwalToko.jam_buka_senin_jumat ||
+      formToko.jam_tutup_senin_jumat !== dataAwalToko.jam_tutup_senin_jumat ||
+      formToko.jam_buka_sabtu_minggu !== dataAwalToko.jam_buka_sabtu_minggu ||
+      formToko.jam_tutup_sabtu_minggu !== dataAwalToko.jam_tutup_sabtu_minggu
+    );
+  }, [formToko, dataAwalToko]);
+
+  const adaPerubahanPemesanan = useMemo(() => {
+    if (!dataAwalPemesanan) return false;
+    return (
+      Number(formPemesanan.kuota_harian) !== Number(dataAwalPemesanan.kuota_harian) ||
+      Number(formPemesanan.minimal_hari_pesan) !== Number(dataAwalPemesanan.minimal_hari_pesan) ||
+      Number(formPemesanan.minimal_hari_katalog) !== Number(dataAwalPemesanan.minimal_hari_katalog)
+    );
+  }, [formPemesanan, dataAwalPemesanan]);
+
+  const adaPerubahanPembayaran = useMemo(() => {
+    if (!dataAwalPembayaran) return false;
+    return (
+      formPembayaran.mode_pembayaran !== dataAwalPembayaran.mode_pembayaran ||
+      Number(formPembayaran.persen_dp) !== Number(dataAwalPembayaran.persen_dp) ||
+      Number(formPembayaran.batas_bayar_jam) !== Number(dataAwalPembayaran.batas_bayar_jam) ||
+      formPembayaran.transfer_manual_aktif !== dataAwalPembayaran.transfer_manual_aktif ||
+      formPembayaran.nama_bank !== dataAwalPembayaran.nama_bank ||
+      formPembayaran.no_rekening !== dataAwalPembayaran.no_rekening ||
+      formPembayaran.atas_nama !== dataAwalPembayaran.atas_nama ||
+      fileQris !== null ||
+      hapusQrisFlag === true
+    );
+  }, [formPembayaran, dataAwalPembayaran, fileQris, hapusQrisFlag]);
+
+  const adaPerubahanOngkir = useMemo(() => {
+    if (!dataAwalOngkir) return false;
+    return (
+      Number(formOngkir.lat_toko) !== Number(dataAwalOngkir.lat_toko) ||
+      Number(formOngkir.lng_toko) !== Number(dataAwalOngkir.lng_toko) ||
+      Number(formOngkir.faktor_jalan) !== Number(dataAwalOngkir.faktor_jalan) ||
+      Number(formOngkir.maks_jarak_kirim_km) !== Number(dataAwalOngkir.maks_jarak_kirim_km)
+    );
+  }, [formOngkir, dataAwalOngkir]);
+
   function handlePilihFileQris(e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setErrorToko(["Format file harus berupa gambar (JPG, PNG, WebP)."]);
+      setErrorPembayaran(["Format file harus berupa gambar (JPG, PNG, WebP)."]);
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      setErrorToko(["Ukuran gambar maksimal 2 MB."]);
+      setErrorPembayaran(["Ukuran gambar maksimal 2 MB."]);
       return;
     }
 
     setFileQris(file);
     setHapusQrisFlag(false);
-    setErrorToko([]);
+    setErrorPembayaran([]);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -220,7 +316,7 @@ export default function PengaturanPage() {
     setHapusQrisFlag(true);
   }
 
-  async function simpanPengaturanToko(e) {
+  async function simpanToko(e) {
     e.preventDefault();
     setErrorToko([]);
 
@@ -234,25 +330,144 @@ export default function PengaturanPage() {
       return;
     }
 
+    if (formToko.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formToko.email.trim())) {
+      setErrorToko(["Format email tidak valid."]);
+      return;
+    }
+
+    if (formToko.tautan_peta.trim() && !formToko.tautan_peta.trim().startsWith("https://")) {
+      setErrorToko(["Tautan peta harus diawali dengan https://"]);
+      return;
+    }
+
+    if (formToko.deskripsi_footer.length > 300) {
+      setErrorToko(["Deskripsi footer maksimal 300 karakter."]);
+      return;
+    }
+
+    if (formToko.jam_tutup_senin_jumat <= formToko.jam_buka_senin_jumat) {
+      setErrorToko(["Jam tutup Senin-Jumat harus lebih besar dari jam buka."]);
+      return;
+    }
+
+    if (formToko.jam_tutup_sabtu_minggu <= formToko.jam_buka_sabtu_minggu) {
+      setErrorToko(["Jam tutup Sabtu-Minggu harus lebih besar dari jam buka."]);
+      return;
+    }
+
     setSedangSimpanToko(true);
 
+    const res = await fetch("/api/pengaturan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        aksi: "simpan_toko",
+        ...formToko,
+      }),
+    });
+
+    const hasil = await res.json();
+    setSedangSimpanToko(false);
+
+    if (!res.ok) {
+      setErrorToko([hasil.pesan || "Gagal menyimpan profil toko."]);
+      return;
+    }
+
+    setDataAwalToko({ ...formToko });
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan || "Pengaturan profil toko berhasil diperbarui.",
+      tipe: "sukses",
+    });
+  }
+
+  async function simpanPemesanan(e) {
+    e.preventDefault();
+    setErrorPemesanan([]);
+
+    const kuota = Number(formPemesanan.kuota_harian);
+    const minCustom = Number(formPemesanan.minimal_hari_pesan);
+    const minKatalog = Number(formPemesanan.minimal_hari_katalog);
+
+    if (isNaN(kuota) || kuota < 1 || kuota > 100) {
+      setErrorPemesanan(["Kuota harian harus antara 1 sampai 100 pesanan."]);
+      return;
+    }
+
+    if (isNaN(minCustom) || minCustom < 0 || minCustom > 30) {
+      setErrorPemesanan(["Minimal hari pesan custom cake harus antara 0 sampai 30 hari."]);
+      return;
+    }
+
+    if (isNaN(minKatalog) || minKatalog < 0 || minKatalog > 30) {
+      setErrorPemesanan(["Minimal hari pesan kue katalog harus antara 0 sampai 30 hari."]);
+      return;
+    }
+
+    setSedangSimpanPemesanan(true);
+
+    const res = await fetch("/api/pengaturan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        aksi: "simpan_pemesanan",
+        kuota_harian: kuota,
+        minimal_hari_pesan: minCustom,
+        minimal_hari_katalog: minKatalog,
+      }),
+    });
+
+    const hasil = await res.json();
+    setSedangSimpanPemesanan(false);
+
+    if (!res.ok) {
+      setErrorPemesanan([hasil.pesan || "Gagal menyimpan parameter pemesanan."]);
+      return;
+    }
+
+    setDataAwalPemesanan({
+      kuota_harian: kuota,
+      minimal_hari_pesan: minCustom,
+      minimal_hari_katalog: minKatalog,
+    });
+    setNotifikasi({
+      terbuka: true,
+      judul: "Berhasil",
+      pesan: hasil.pesan || "Parameter pemesanan berhasil diperbarui.",
+      tipe: "sukses",
+    });
+  }
+
+  async function simpanPembayaran(e) {
+    e.preventDefault();
+    setErrorPembayaran([]);
+
+    const dp = Number(formPembayaran.persen_dp);
+    const batas = Number(formPembayaran.batas_bayar_jam);
+
+    if (formPembayaran.mode_pembayaran === "DP" && (isNaN(dp) || dp < 1 || dp > 100)) {
+      setErrorPembayaran(["Persentase DP harus antara 1 sampai 100 persen."]);
+      return;
+    }
+
+    if (isNaN(batas) || batas < 1 || batas > 168) {
+      setErrorPembayaran(["Batas waktu pembayaran harus antara 1 sampai 168 jam."]);
+      return;
+    }
+
+    setSedangSimpanPembayaran(true);
+
     const formData = new FormData();
-    formData.append("nama_toko", formToko.nama_toko);
-    formData.append("alamat", formToko.alamat);
-    formData.append("no_wa", formToko.no_wa);
-    formData.append("jam_operasional", formToko.jam_operasional);
-    formData.append("jam_buka", formToko.jam_buka);
-    formData.append("jam_tutup", formToko.jam_tutup);
-    formData.append("kuota_harian", formToko.kuota_harian);
-    formData.append("minimal_hari_pesan", formToko.minimal_hari_pesan);
-    formData.append("minimal_hari_siap", formToko.minimal_hari_siap);
-    formData.append("mode_pembayaran", formToko.mode_pembayaran);
-    formData.append("persen_dp", formToko.persen_dp);
-    formData.append("batas_bayar_jam", formToko.batas_bayar_jam);
-    formData.append("nama_bank", formToko.nama_bank);
-    formData.append("no_rekening", formToko.no_rekening);
-    formData.append("atas_nama", formToko.atas_nama);
-    formData.append("transfer_manual_aktif", formToko.transfer_manual_aktif ? "true" : "false");
+    formData.append("aksi", "simpan_pembayaran");
+    formData.append("mode_pembayaran", formPembayaran.mode_pembayaran);
+    formData.append("persen_dp", formPembayaran.mode_pembayaran === "DP" ? dp : 100);
+    formData.append("batas_bayar_jam", batas);
+    formData.append("transfer_manual_aktif", formPembayaran.transfer_manual_aktif ? "true" : "false");
+    formData.append("nama_bank", formPembayaran.nama_bank);
+    formData.append("no_rekening", formPembayaran.no_rekening);
+    formData.append("atas_nama", formPembayaran.atas_nama);
     formData.append("hapus_qris", hapusQrisFlag ? "true" : "false");
 
     if (fileQris) {
@@ -265,31 +480,59 @@ export default function PengaturanPage() {
     });
 
     const hasil = await res.json();
-    setSedangSimpanToko(false);
+    setSedangSimpanPembayaran(false);
 
     if (!res.ok) {
-      setErrorToko([hasil.pesan || "Gagal menyimpan pengaturan toko."]);
+      setErrorPembayaran([hasil.pesan || "Gagal menyimpan pengaturan pembayaran."]);
       return;
     }
 
     setFileQris(null);
     setHapusQrisFlag(false);
-    if (hasil.gambar_qris) {
-      setPreviewQris(hasil.gambar_qris);
-      setFormToko((prev) => ({ ...prev, gambar_qris: hasil.gambar_qris }));
-    }
+    const qrisFinal = hasil.gambar_qris !== undefined ? hasil.gambar_qris : (hapusQrisFlag ? null : formPembayaran.gambar_qris);
+    setPreviewQris(qrisFinal);
+
+    const updated = {
+      ...formPembayaran,
+      persen_dp: formPembayaran.mode_pembayaran === "DP" ? dp : 100,
+      batas_bayar_jam: batas,
+      gambar_qris: qrisFinal,
+    };
+    setFormPembayaran(updated);
+    setDataAwalPembayaran(updated);
 
     setNotifikasi({
       terbuka: true,
       judul: "Berhasil",
-      pesan: hasil.pesan,
+      pesan: hasil.pesan || "Pengaturan pembayaran berhasil diperbarui.",
       tipe: "sukses",
     });
   }
 
-  async function simpanParameterOngkir(e) {
+  async function simpanOngkir(e) {
     e.preventDefault();
     setErrorOngkir([]);
+
+    const lat = Number(formOngkir.lat_toko);
+    const lng = Number(formOngkir.lng_toko);
+    const faktor = Number(formOngkir.faktor_jalan);
+    const maks = Number(formOngkir.maks_jarak_kirim_km);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      setErrorOngkir(["Koordinat latitude dan longitude toko harus valid."]);
+      return;
+    }
+
+    if (isNaN(faktor) || faktor < 1.0) {
+      setErrorOngkir(["Faktor jalan minimal 1.0."]);
+      return;
+    }
+
+    if (isNaN(maks) || maks <= 0) {
+      setErrorOngkir(["Jarak maksimal pengiriman harus lebih dari 0 km."]);
+      return;
+    }
+
     setSedangSimpanOngkir(true);
 
     const res = await fetch("/api/pengaturan", {
@@ -297,10 +540,10 @@ export default function PengaturanPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         aksi: "simpan_ongkir",
-        lat_toko: formOngkir.lat_toko,
-        lng_toko: formOngkir.lng_toko,
-        faktor_jalan: Number(formOngkir.faktor_jalan),
-        maks_jarak_kirim_km: Number(formOngkir.maks_jarak_kirim_km),
+        lat_toko: lat,
+        lng_toko: lng,
+        faktor_jalan: faktor,
+        maks_jarak_kirim_km: maks,
       }),
     });
 
@@ -308,41 +551,22 @@ export default function PengaturanPage() {
     setSedangSimpanOngkir(false);
 
     if (!res.ok) {
-      setErrorOngkir([hasil.pesan || "Gagal menyimpan parameter ongkir."]);
+      setErrorOngkir([hasil.pesan || "Gagal menyimpan lokasi dan parameter ongkir."]);
       return;
     }
 
+    setDataAwalOngkir({
+      lat_toko: lat,
+      lng_toko: lng,
+      faktor_jalan: faktor,
+      maks_jarak_kirim_km: maks,
+    });
     setNotifikasi({
       terbuka: true,
       judul: "Berhasil",
-      pesan: hasil.pesan,
+      pesan: hasil.pesan || "Lokasi dan parameter ongkir berhasil disimpan.",
       tipe: "sukses",
     });
-    muatData();
-  }
-
-  function jalankanSimulasiOngkir(e) {
-    e.preventDefault();
-    const jarak = Number(simulasiJarak);
-    if (isNaN(jarak) || jarak <= 0) {
-      setHasilSimulasi({ error: "Masukkan jarak yang valid (lebih dari 0 km)." });
-      return;
-    }
-
-    const aktifList = daftarTarifJarak.filter((t) => t.aktif);
-    const tarif = cariTarifJarak(jarak, aktifList, formOngkir.maks_jarak_kirim_km);
-
-    if (tarif === null) {
-      setHasilSimulasi({
-        error: `Jarak ${jarak} km di luar jangkauan pengiriman (maksimal ${formOngkir.maks_jarak_kirim_km} km) atau belum ada tarif yang cocok.`,
-      });
-    } else {
-      setHasilSimulasi({
-        jarak,
-        ongkir: tarif.tarif,
-        tierMaks: tarif.jarak_maks_km,
-      });
-    }
   }
 
   function bukaModalTambahTarifJarak() {
@@ -356,12 +580,12 @@ export default function PengaturanPage() {
     setModalTarifJarakBuka(true);
   }
 
-  function bukaModalEditTarifJarak(item) {
-    setEditTarifJarakId(item.id);
+  function bukaModalEditTarifJarak(tier) {
+    setEditTarifJarakId(tier.id);
     setFormTarifJarak({
-      jarak_maks_km: item.jarak_maks_km,
-      tarif: item.tarif,
-      aktif: item.aktif,
+      jarak_maks_km: tier.jarak_maks_km,
+      tarif: tier.tarif,
+      aktif: tier.aktif,
     });
     setErrorTarifJarak([]);
     setModalTarifJarakBuka(true);
@@ -375,7 +599,7 @@ export default function PengaturanPage() {
     const tarif = Number(formTarifJarak.tarif);
 
     if (isNaN(jarak) || jarak <= 0) {
-      setErrorTarifJarak(["Jarak maksimal tier harus berupa angka lebih dari 0."]);
+      setErrorTarifJarak(["Batas jarak maksimal harus lebih dari 0 km."]);
       return;
     }
 
@@ -452,6 +676,37 @@ export default function PengaturanPage() {
       tipe: "sukses",
     });
     muatData();
+  }
+
+  function jalankanSimulasiOngkir(e) {
+    e.preventDefault();
+    const d = parseFloat(simulasiJarak);
+    if (isNaN(d) || d <= 0) {
+      setHasilSimulasi({ error: "Masukkan jarak yang valid (angka positif)." });
+      return;
+    }
+
+    const maks = Number(formOngkir.maks_jarak_kirim_km) || 20;
+    if (d > maks) {
+      setHasilSimulasi({
+        error: `Jarak ${d} km melebihi batas maksimal pengiriman toko (${maks} km). Pengiriman tidak dapat dilayani.`,
+      });
+      return;
+    }
+
+    const tier = cariTarifJarak(d, daftarTarifJarak);
+    if (!tier) {
+      setHasilSimulasi({
+        error: `Tidak ada tier tarif aktif yang mencakup jarak ${d} km. Periksa daftar tier Anda.`,
+      });
+      return;
+    }
+
+    setHasilSimulasi({
+      jarak: d,
+      ongkir: tier.tarif,
+      tierMaks: tier.jarak_maks_km,
+    });
   }
 
   function bukaModalTambahZona() {
@@ -547,7 +802,7 @@ export default function PengaturanPage() {
 
   async function hapusZona(zona) {
     const yakin = window.confirm(
-      `Apakah Anda yakin ingin menghapus "${zona.nama}"? Jika zona sudah dipakai pesanan sebelumnya, Anda hanya dapat menonaktifkannya.`
+      `Apakah Anda yakin ingin menghapus zona ${zona.nama}?`
     );
     if (!yakin) return;
 
@@ -685,43 +940,8 @@ export default function PengaturanPage() {
             Pengaturan Toko & Operasional
           </h2>
           <p className="text-xs text-stone-500 mt-0.5">
-            Kelola profil toko, jadwal pemesanan, kebijakan pembayaran, tarif pengiriman berbasis jarak, dan hari libur
+            Kelola profil toko, parameter pemesanan, kebijakan pembayaran, serta tarif pengiriman berbasis jarak.
           </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {tabAktif === "ongkir" && (
-            <button
-              type="button"
-              onClick={bukaModalTambahTarifJarak}
-              className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 flex-shrink-0"
-            >
-              <i className="fa-solid fa-plus text-xs"></i>
-              <span>Tambah Tier Tarif Jarak</span>
-            </button>
-          )}
-
-          {tabAktif === "zona_lama" && (
-            <button
-              type="button"
-              onClick={bukaModalTambahZona}
-              className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 flex-shrink-0"
-            >
-              <i className="fa-solid fa-plus text-xs"></i>
-              <span>Tambah Zona Lama</span>
-            </button>
-          )}
-
-          {tabAktif === "libur" && (
-            <button
-              type="button"
-              onClick={bukaModalTambahTanggal}
-              className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 flex-shrink-0"
-            >
-              <i className="fa-solid fa-plus text-xs"></i>
-              <span>Tambah Hari Libur</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -736,20 +956,26 @@ export default function PengaturanPage() {
           }`}
         >
           <i className="fa-solid fa-store text-xs"></i>
-          <span>Profil Toko</span>
+          <span>Toko</span>
+          {adaPerubahanToko && (
+            <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white"></span>
+          )}
         </button>
 
         <button
           type="button"
-          onClick={() => setTabAktif("jadwal")}
+          onClick={() => setTabAktif("pemesanan")}
           className={`h-[42px] px-4 rounded-xl font-bold text-xs transition cursor-pointer inline-flex items-center space-x-2 ${
-            tabAktif === "jadwal"
+            tabAktif === "pemesanan"
               ? "bg-[#ba2b2b] text-white"
               : "bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] hover:bg-[#e2d4bc]"
           }`}
         >
-          <i className="fa-solid fa-clock text-xs"></i>
-          <span>Jadwal & Kuota</span>
+          <i className="fa-solid fa-calendar-check text-xs"></i>
+          <span>Pemesanan</span>
+          {adaPerubahanPemesanan && (
+            <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white"></span>
+          )}
         </button>
 
         <button
@@ -762,7 +988,10 @@ export default function PengaturanPage() {
           }`}
         >
           <i className="fa-solid fa-credit-card text-xs"></i>
-          <span>Pembayaran & Midtrans</span>
+          <span>Pembayaran</span>
+          {adaPerubahanPembayaran && (
+            <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white"></span>
+          )}
         </button>
 
         <button
@@ -775,33 +1004,10 @@ export default function PengaturanPage() {
           }`}
         >
           <i className="fa-solid fa-route text-xs"></i>
-          <span>Ongkir Jarak ({daftarTarifJarak.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTabAktif("zona_lama")}
-          className={`h-[42px] px-4 rounded-xl font-bold text-xs transition cursor-pointer inline-flex items-center space-x-2 ${
-            tabAktif === "zona_lama"
-              ? "bg-[#ba2b2b] text-white"
-              : "bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] hover:bg-[#e2d4bc]"
-          }`}
-        >
-          <i className="fa-solid fa-truck-fast text-xs"></i>
-          <span>Zona Ongkir (Versi Lama)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setTabAktif("libur")}
-          className={`h-[42px] px-4 rounded-xl font-bold text-xs transition cursor-pointer inline-flex items-center space-x-2 ${
-            tabAktif === "libur"
-              ? "bg-[#ba2b2b] text-white"
-              : "bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] hover:bg-[#e2d4bc]"
-          }`}
-        >
-          <i className="fa-solid fa-calendar-xmark text-xs"></i>
-          <span>Hari Libur ({daftarTanggalTutup.length})</span>
+          <span>Ongkir</span>
+          {adaPerubahanOngkir && (
+            <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white"></span>
+          )}
         </button>
       </div>
 
@@ -816,7 +1022,7 @@ export default function PengaturanPage() {
                 Informasi Profil Toko
               </h3>
               <p className="text-xs text-stone-500">
-                Nama, nomor WhatsApp, dan alamat toko ditampilkan pada halaman utama dan bukti pemesanan pelanggan.
+                Nama toko, kontak WhatsApp, email, media sosial, tautan peta, dan jam operasional kelompok hari.
               </p>
             </div>
           </div>
@@ -829,7 +1035,7 @@ export default function PengaturanPage() {
             </div>
           )}
 
-          <form onSubmit={simpanPengaturanToko} className="space-y-5">
+          <form onSubmit={simpanToko} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
@@ -861,6 +1067,39 @@ export default function PengaturanPage() {
                   placeholder="Contoh: 081234567890"
                   className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                 />
+                <span className="text-[11px] text-stone-500 mt-1 block">
+                  Nomor akan dinormalisasi ke format internasional (62...) untuk tautan wa.me.
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Email Toko
+                </label>
+                <input
+                  type="email"
+                  value={formToko.email}
+                  onChange={(e) =>
+                    setFormToko({ ...formToko, email: e.target.value })
+                  }
+                  placeholder="Contoh: halo@cravely.id"
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Akun Instagram
+                </label>
+                <input
+                  type="text"
+                  value={formToko.instagram}
+                  onChange={(e) =>
+                    setFormToko({ ...formToko, instagram: e.target.value })
+                  }
+                  placeholder="Contoh: @cravely.bdg atau https://instagram.com/cravely.bdg"
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                />
               </div>
 
               <div className="md:col-span-2">
@@ -873,35 +1112,142 @@ export default function PengaturanPage() {
                   onChange={(e) =>
                     setFormToko({ ...formToko, alamat: e.target.value })
                   }
-                  placeholder="Jl. Melati No. 12, Jakarta"
+                  placeholder="Jl. Melati No. 12, Bandung"
                   className="w-full p-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs text-[#1d3b2e] resize-none"
                 ></textarea>
               </div>
 
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                  Teks Jam Operasional Toko
+                  Tautan Google Maps Toko (Petunjuk Arah)
                 </label>
                 <input
-                  type="text"
-                  value={formToko.jam_operasional}
+                  type="url"
+                  value={formToko.tautan_peta}
                   onChange={(e) =>
-                    setFormToko({
-                      ...formToko,
-                      jam_operasional: e.target.value,
-                    })
+                    setFormToko({ ...formToko, tautan_peta: e.target.value })
                   }
-                  placeholder="Contoh: Setiap Hari: 08.00 - 20.00 WIB"
+                  placeholder="https://maps.app.goo.gl/..."
                   className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                 />
+                <span className="text-[11px] text-stone-500 mt-1 block">
+                  Harus diawali dengan https:// (digunakan untuk tombol Petunjuk Arah di landing page).
+                </span>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-[#1d3b2e]">
+                    Deskripsi Singkat Footer
+                  </label>
+                  <span
+                    className={`text-[11px] font-bold ${
+                      formToko.deskripsi_footer.length > 300
+                        ? "text-rose-600"
+                        : "text-stone-400"
+                    }`}
+                  >
+                    {formToko.deskripsi_footer.length}/300
+                  </span>
+                </div>
+                <textarea
+                  rows="3"
+                  maxLength={300}
+                  value={formToko.deskripsi_footer}
+                  onChange={(e) =>
+                    setFormToko({ ...formToko, deskripsi_footer: e.target.value })
+                  }
+                  placeholder="Deskripsi singkat yang tampil di bagian bawah footer..."
+                  className="w-full p-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs text-[#1d3b2e] resize-none"
+                ></textarea>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#e8dfc8] flex justify-end">
+            <div className="pt-4 border-t border-[#e8dfc8]">
+              <h4 className="text-xs font-bold text-[#1d3b2e] mb-3">
+                Jam Operasional Toko
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                    Buka Senin – Jumat
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formToko.jam_buka_senin_jumat}
+                    onChange={(e) =>
+                      setFormToko({ ...formToko, jam_buka_senin_jumat: e.target.value })
+                    }
+                    className="w-full h-[42px] px-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                    Tutup Senin – Jumat
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formToko.jam_tutup_senin_jumat}
+                    onChange={(e) =>
+                      setFormToko({ ...formToko, jam_tutup_senin_jumat: e.target.value })
+                    }
+                    className="w-full h-[42px] px-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                    Buka Sabtu – Minggu
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formToko.jam_buka_sabtu_minggu}
+                    onChange={(e) =>
+                      setFormToko({ ...formToko, jam_buka_sabtu_minggu: e.target.value })
+                    }
+                    className="w-full h-[42px] px-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 mb-1">
+                    Tutup Sabtu – Minggu
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formToko.jam_tutup_sabtu_minggu}
+                    onChange={(e) =>
+                      setFormToko({ ...formToko, jam_tutup_sabtu_minggu: e.target.value })
+                    }
+                    className="w-full h-[42px] px-3 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#e8dfc8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-xs">
+                {adaPerubahanToko ? (
+                  <span className="inline-flex items-center gap-1.5 font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                    <i className="fa-solid fa-circle-exclamation text-xs"></i>
+                    <span>Ada perubahan yang belum disimpan</span>
+                  </span>
+                ) : (
+                  <span className="text-stone-400 font-medium">
+                    Semua perubahan telah tersimpan
+                  </span>
+                )}
+              </div>
+
               <button
                 type="submit"
-                disabled={sedangSimpanToko}
-                className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-2 disabled:opacity-50"
+                disabled={sedangSimpanToko || !adaPerubahanToko}
+                className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 <i className="fa-solid fa-floppy-disk text-xs"></i>
                 <span>{sedangSimpanToko ? "Menyimpan..." : "Simpan Profil Toko"}</span>
@@ -911,140 +1257,197 @@ export default function PengaturanPage() {
         </div>
       )}
 
-      {tabAktif === "jadwal" && (
-        <div className="content-card p-6 sm:p-8 space-y-6">
-          <div className="flex items-center space-x-3 pb-4 border-b border-[#e8dfc8]">
-            <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
-              <i className="fa-solid fa-clock"></i>
+      {tabAktif === "pemesanan" && (
+        <div className="space-y-6">
+          <div className="content-card p-6 sm:p-8 space-y-6">
+            <div className="flex items-center space-x-3 pb-4 border-b border-[#e8dfc8]">
+              <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
+                <i className="fa-solid fa-sliders"></i>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#1d3b2e]">
+                  Parameter Kuota & Batas Pemesanan
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Kapasitas harian kue custom dan waktu persiapan minimum sebelum tanggal pesanan.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-[#1d3b2e]">
-                Jadwal & Kuota Pemesanan
-              </h3>
-              <p className="text-xs text-stone-500">
-                Atur jam pengambilan pesanan, kuota pesanan per hari, dan batas minimal persiapan hari sebelum jadwal ambil.
-              </p>
-            </div>
+
+            {errorPemesanan.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
+                {errorPemesanan.map((err, idx) => (
+                  <p key={idx}>{err}</p>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={simpanPemesanan} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Kuota Kue Custom / Hari
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    required
+                    value={formPemesanan.kuota_harian}
+                    onChange={(e) =>
+                      setFormPemesanan({
+                        ...formPemesanan,
+                        kuota_harian: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Maksimal pesanan custom aktif per tanggal target
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Minimal Hari Pesan Kue Custom (H-)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    required
+                    value={formPemesanan.minimal_hari_pesan}
+                    onChange={(e) =>
+                      setFormPemesanan({
+                        ...formPemesanan,
+                        minimal_hari_pesan: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Contoh: 2 (pesan minimal 2 hari sebelumnya)
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                    Minimal Hari Pesan Kue Katalog
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    required
+                    value={formPemesanan.minimal_hari_katalog}
+                    onChange={(e) =>
+                      setFormPemesanan({
+                        ...formPemesanan,
+                        minimal_hari_katalog: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                  />
+                  <span className="text-[11px] text-stone-500 mt-1 block">
+                    Contoh: 1 (pesan minimal 1 hari sebelumnya)
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#e8dfc8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs">
+                  {adaPerubahanPemesanan ? (
+                    <span className="inline-flex items-center gap-1.5 font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                      <i className="fa-solid fa-circle-exclamation text-xs"></i>
+                      <span>Ada perubahan yang belum disimpan</span>
+                    </span>
+                  ) : (
+                    <span className="text-stone-400 font-medium">
+                      Semua perubahan telah tersimpan
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={sedangSimpanPemesanan || !adaPerubahanPemesanan}
+                  className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  <i className="fa-solid fa-floppy-disk text-xs"></i>
+                  <span>{sedangSimpanPemesanan ? "Menyimpan..." : "Simpan Parameter Pemesanan"}</span>
+                </button>
+              </div>
+            </form>
           </div>
 
-          {errorToko.length > 0 && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-              {errorToko.map((err, idx) => (
-                <p key={idx}>{err}</p>
-              ))}
-            </div>
-          )}
-
-          <form onSubmit={simpanPengaturanToko} className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                  Jam Buka Operasional
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={formToko.jam_buka}
-                  onChange={(e) =>
-                    setFormToko({ ...formToko, jam_buka: e.target.value })
-                  }
-                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                />
+          <div className="content-card p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#e8dfc8]">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
+                  <i className="fa-solid fa-calendar-xmark"></i>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1d3b2e]">
+                    Daftar Hari Libur & Tutup Toko
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Tanggal yang tercantum dinonaktifkan di kalender pemilihan tanggal pelanggan.
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                  Jam Tutup Operasional
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={formToko.jam_tutup}
-                  onChange={(e) =>
-                    setFormToko({ ...formToko, jam_tutup: e.target.value })
-                  }
-                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                  Kuota Pesanan / Hari
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={formToko.kuota_harian}
-                  onChange={(e) =>
-                    setFormToko({
-                      ...formToko,
-                      kuota_harian: Number(e.target.value),
-                    })
-                  }
-                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                />
-                <span className="text-[11px] text-stone-500 mt-1 block">
-                  Maksimal pesanan aktif per tanggal
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                  Minimal Hari Pesan (H-)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  value={formToko.minimal_hari_pesan}
-                  onChange={(e) =>
-                    setFormToko({
-                      ...formToko,
-                      minimal_hari_pesan: Number(e.target.value),
-                    })
-                  }
-                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                />
-                <span className="text-[11px] text-stone-500 mt-1 block">
-                  Contoh: 2 (pesan minimal 2 hari sebelumnya untuk kue custom)
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                  Minimal hari pesan kue katalog
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  required
-                  value={formToko.minimal_hari_siap}
-                  onChange={(e) =>
-                    setFormToko({
-                      ...formToko,
-                      minimal_hari_siap: Number(e.target.value),
-                    })
-                  }
-                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                />
-                <span className="text-[11px] text-stone-500 mt-1 block">
-                  Contoh: 1 (pesan minimal 1 hari sebelumnya untuk kue katalog)
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-[#e8dfc8] flex justify-end">
               <button
-                type="submit"
-                disabled={sedangSimpanToko}
-                className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-2 disabled:opacity-50"
+                type="button"
+                onClick={bukaModalTambahTanggal}
+                className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 self-start sm:self-center"
               >
-                <i className="fa-solid fa-floppy-disk text-xs"></i>
-                <span>{sedangSimpanToko ? "Menyimpan..." : "Simpan Jadwal & Kuota"}</span>
+                <i className="fa-solid fa-plus text-xs"></i>
+                <span>Tambah Hari Libur</span>
               </button>
             </div>
-          </form>
+
+            {daftarTanggalTutup.length === 0 ? (
+              <div className="py-10 text-center text-stone-400">
+                <i className="fa-solid fa-calendar-check text-3xl mb-2 block text-stone-300"></i>
+                <p className="text-sm font-bold text-[#1d3b2e]">Tidak ada tanggal libur khusus.</p>
+                <p className="text-xs text-stone-500 mt-1">Toko siap menerima pesanan setiap hari sesuai jadwal operasional normal.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[500px]">
+                  <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
+                    <tr>
+                      <th className="py-3 px-4 rounded-l-xl">Tanggal</th>
+                      <th className="py-3 px-4">Alasan Libur / Keterangan</th>
+                      <th className="py-3 px-4 text-right rounded-r-xl w-24">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#ede2cd]">
+                    {daftarTanggalTutup.map((item) => (
+                      <tr key={item.id} className="hover:bg-black/[0.02] transition">
+                        <td className="py-3.5 px-4 font-black text-[#1d3b2e]">
+                          {formatTanggalIndonesia(item.tanggal)}
+                        </td>
+                        <td className="py-3.5 px-4 text-stone-600 font-medium">
+                          {item.alasan || item.keterangan || "Libur Operasional Toko"}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => hapusTanggalTutup(item)}
+                            className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
+                            title="Buka Kembali"
+                          >
+                            <i className="fa-solid fa-trash text-xs"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1056,10 +1459,10 @@ export default function PengaturanPage() {
             </div>
             <div>
               <h3 className="text-base font-bold text-[#1d3b2e]">
-                Metode Pembayaran & Midtrans
+                Metode Pembayaran & Gateway
               </h3>
               <p className="text-xs text-stone-500">
-                Status integrasi payment gateway Midtrans dan pengaturan skema pembayaran (DP atau Lunas).
+                Status payment gateway Midtrans, skema uang muka DP custom cake, dan konfigurasi transfer manual.
               </p>
             </div>
           </div>
@@ -1068,7 +1471,7 @@ export default function PengaturanPage() {
             <div className="flex items-center space-x-3.5">
               <div
                 className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 ${
-                  isMidtransTerkoneksi
+                  statusMidtrans.includes("Terhubung")
                     ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
                     : "bg-rose-100 text-rose-700 border border-rose-300"
                 }`}
@@ -1078,52 +1481,48 @@ export default function PengaturanPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="text-xs font-bold text-[#1d3b2e]">
-                    Status Gateway Midtrans:
+                    Midtrans:
                   </h4>
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
-                      isMidtransTerkoneksi
-                        ? isMidtransSandbox
-                          ? "bg-amber-100 text-amber-800 border border-amber-300"
-                          : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                      statusMidtrans.includes("Production")
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                        : statusMidtrans.includes("Sandbox")
+                        ? "bg-amber-100 text-amber-800 border border-amber-300"
                         : "bg-rose-100 text-rose-800 border border-rose-300"
                     }`}
                   >
-                    {isMidtransTerkoneksi
-                      ? isMidtransSandbox
-                        ? "Sandbox (Terhubung)"
-                        : "Production (Terhubung)"
-                      : "Belum Terhubung"}
+                    {statusMidtrans}
                   </span>
                 </div>
                 <p className="text-[11px] text-stone-500 mt-0.5">
-                  {isMidtransTerkoneksi
-                    ? "Kunci Midtrans terdeteksi. Snap popup checkout aktif menggunakan integrasi ini."
-                    : "Variabel MIDTRANS_SERVER_KEY / NEXT_PUBLIC_MIDTRANS_CLIENT_KEY belum diatur di server."}
+                  {statusMidtrans.includes("Terhubung")
+                    ? "Gateway Midtrans aktif terhubung melalui environment variable server (tanpa menampilkan kunci privat)."
+                    : "Variabel MIDTRANS_SERVER_KEY / NEXT_PUBLIC_MIDTRANS_CLIENT_KEY belum terpasang di server."}
                 </p>
               </div>
             </div>
           </div>
 
-          {errorToko.length > 0 && (
+          {errorPembayaran.length > 0 && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-              {errorToko.map((err, idx) => (
+              {errorPembayaran.map((err, idx) => (
                 <p key={idx}>{err}</p>
               ))}
             </div>
           )}
 
-          <form onSubmit={simpanPengaturanToko} className="space-y-6">
+          <form onSubmit={simpanPembayaran} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div>
                 <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                  Mode Pembayaran Awal
+                  Mode Pembayaran Kue Custom
                 </label>
                 <select
-                  value={formToko.mode_pembayaran}
+                  value={formPembayaran.mode_pembayaran}
                   onChange={(e) =>
-                    setFormToko({
-                      ...formToko,
+                    setFormPembayaran({
+                      ...formPembayaran,
                       mode_pembayaran: e.target.value,
                     })
                   }
@@ -1142,20 +1541,18 @@ export default function PengaturanPage() {
                   type="number"
                   min="1"
                   max="100"
-                  disabled={formToko.mode_pembayaran === "Lunas"}
-                  value={formToko.persen_dp}
+                  disabled={formPembayaran.mode_pembayaran === "Lunas"}
+                  value={formPembayaran.persen_dp}
                   onChange={(e) =>
-                    setFormToko({
-                      ...formToko,
+                    setFormPembayaran({
+                      ...formPembayaran,
                       persen_dp: Number(e.target.value),
                     })
                   }
                   className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e] disabled:bg-stone-100 disabled:text-stone-400"
                 />
                 <span className="text-[11px] text-stone-500 mt-1 block">
-                  {formToko.mode_pembayaran === "Lunas"
-                    ? "Terkunci untuk mode Lunas (100%)"
-                    : "Contoh: 50% untuk pesanan kue custom"}
+                  hanya untuk kue custom; kue katalog dan ongkir dibayar penuh
                 </span>
               </div>
 
@@ -1166,17 +1563,18 @@ export default function PengaturanPage() {
                 <input
                   type="number"
                   min="1"
-                  value={formToko.batas_bayar_jam}
+                  max="168"
+                  value={formPembayaran.batas_bayar_jam}
                   onChange={(e) =>
-                    setFormToko({
-                      ...formToko,
+                    setFormPembayaran({
+                      ...formPembayaran,
                       batas_bayar_jam: Number(e.target.value),
                     })
                   }
                   className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                 />
                 <span className="text-[11px] text-stone-500 mt-1 block">
-                  Batas pembayaran Midtrans sebelum otomatis kedaluwarsa
+                  Batas waktu pembayaran sebelum pesanan kedaluwarsa
                 </span>
               </div>
             </div>
@@ -1188,16 +1586,16 @@ export default function PengaturanPage() {
                     Aktifkan transfer manual dengan bukti
                   </h4>
                   <p className="text-[11px] text-stone-500 mt-0.5">
-                    Pembayaran utama memakai Midtrans. Jika diaktifkan, formulir transfer manual dan unggah bukti transfer akan tampil di tiket pesanan pelanggan.
+                    Jika diaktifkan, nomor rekening toko dan unggah bukti transfer akan tampil pada tiket pembayaran pelanggan.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                   <input
                     type="checkbox"
-                    checked={formToko.transfer_manual_aktif}
+                    checked={formPembayaran.transfer_manual_aktif}
                     onChange={(e) =>
-                      setFormToko({
-                        ...formToko,
+                      setFormPembayaran({
+                        ...formPembayaran,
                         transfer_manual_aktif: e.target.checked,
                       })
                     }
@@ -1207,129 +1605,152 @@ export default function PengaturanPage() {
                 </label>
               </div>
 
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h4 className="text-sm font-bold text-[#1d3b2e]">
-                  Rekening Bank & QRIS Manual
-                </h4>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-stone-200 text-stone-600">
-                  Cadangan Operasional
-                </span>
-              </div>
-              <p className="text-xs text-stone-500 mb-4">
-                Pembayaran utama toko diproses otomatis oleh Midtrans. Informasi rekening bank dan barcode QRIS di bawah ini hanya digunakan ketika transfer manual diaktifkan.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Nama Bank
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: BCA / Mandiri / BRI"
-                    value={formToko.nama_bank}
-                    onChange={(e) =>
-                      setFormToko({ ...formToko, nama_bank: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Nomor Rekening
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: 1234567890"
-                    value={formToko.no_rekening}
-                    onChange={(e) =>
-                      setFormToko({
-                        ...formToko,
-                        no_rekening: e.target.value,
-                      })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Atas Nama Rekening
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Cravely Bakery"
-                    value={formToko.atas_nama}
-                    onChange={(e) =>
-                      setFormToko({ ...formToko, atas_nama: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-5 p-4 rounded-2xl bg-[#ede2cd]/50 border border-[#dfd4bd] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  {previewQris ? (
-                    <div className="w-20 h-20 rounded-xl overflow-hidden border border-[#dcd3c1] bg-white flex-shrink-0 flex items-center justify-center p-1 relative shadow-xs">
-                      <Image
-                        src={previewQris}
-                        alt="Gambar QRIS"
-                        fill
-                        className="object-contain"
-                        unoptimized
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 rounded-xl border border-dashed border-[#cec1aa] bg-white flex flex-col items-center justify-center text-stone-400 text-xs">
-                      <i className="fa-solid fa-qrcode text-2xl mb-1 text-stone-300"></i>
-                      <span className="text-[11px] font-bold">Tanpa QRIS</span>
-                    </div>
+              <div
+                className={`transition-all duration-200 ${
+                  formPembayaran.transfer_manual_aktif
+                    ? "opacity-100"
+                    : "opacity-40 pointer-events-none select-none"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <h4 className="text-sm font-bold text-[#1d3b2e]">
+                    Rekening Bank & QRIS Manual
+                  </h4>
+                  {!formPembayaran.transfer_manual_aktif && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-stone-200 text-stone-600">
+                      Dinonaktifkan
+                    </span>
                   )}
+                </div>
+                <p className="text-xs text-stone-500 mb-4">
+                  Informasi di bawah ini digunakan ketika pelanggan memilih metode transfer manual dengan bukti.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                      Nama Bank
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: BCA / Mandiri / BRI"
+                      value={formPembayaran.nama_bank}
+                      onChange={(e) =>
+                        setFormPembayaran({ ...formPembayaran, nama_bank: e.target.value })
+                      }
+                      className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                    />
+                  </div>
 
                   <div>
-                    <h5 className="text-xs font-bold text-[#1d3b2e]">
-                      Gambar Barcode QRIS Manual
-                    </h5>
-                    <p className="text-[11px] text-stone-500 mt-0.5">
-                      Format file JPG, PNG, atau WebP (maks. 2 MB).
-                    </p>
-                    {previewQris && (
-                      <button
-                        type="button"
-                        onClick={handleHapusGambarQris}
-                        className="mt-2 text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
-                      >
-                        Hapus Gambar QRIS
-                      </button>
-                    )}
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                      Nomor Rekening
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: 1234567890"
+                      value={formPembayaran.no_rekening}
+                      onChange={(e) =>
+                        setFormPembayaran({
+                          ...formPembayaran,
+                          no_rekening: e.target.value,
+                        })
+                      }
+                      className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                      Atas Nama Rekening
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Cravely Bakery"
+                      value={formPembayaran.atas_nama}
+                      onChange={(e) =>
+                        setFormPembayaran({ ...formPembayaran, atas_nama: e.target.value })
+                      }
+                      className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <label className="h-[40px] px-4 rounded-xl border border-[#dcd3c1] bg-white hover:bg-[#ede2cd] text-[#1d3b2e] font-bold text-xs inline-flex items-center space-x-2 cursor-pointer transition shadow-xs">
-                    <i className="fa-solid fa-upload text-stone-500"></i>
-                    <span>Pilih File QRIS</span>
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/jpg, image/webp"
-                      onChange={handlePilihFileQris}
-                      className="hidden"
-                    />
-                  </label>
+                <div className="mt-5 p-4 rounded-2xl bg-[#ede2cd]/50 border border-[#dfd4bd] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    {previewQris ? (
+                      <div className="w-20 h-20 rounded-xl overflow-hidden border border-[#dcd3c1] bg-white flex-shrink-0 flex items-center justify-center p-1 relative shadow-xs">
+                        <Image
+                          src={previewQris}
+                          alt="Gambar QRIS"
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-xl border border-dashed border-[#cec1aa] bg-white flex flex-col items-center justify-center text-stone-400 text-xs">
+                        <i className="fa-solid fa-qrcode text-2xl mb-1 text-stone-300"></i>
+                        <span className="text-[11px] font-bold">Tanpa QRIS</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <h5 className="text-xs font-bold text-[#1d3b2e]">
+                        Gambar Barcode QRIS Manual
+                      </h5>
+                      <p className="text-[11px] text-stone-500 mt-0.5">
+                        Format file JPG, PNG, atau WebP (maks. 2 MB).
+                      </p>
+                      {previewQris && (
+                        <button
+                          type="button"
+                          onClick={handleHapusGambarQris}
+                          className="mt-2 text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
+                        >
+                          Hapus Gambar QRIS
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="h-[40px] px-4 rounded-xl border border-[#dcd3c1] bg-white hover:bg-[#ede2cd] text-[#1d3b2e] font-bold text-xs inline-flex items-center space-x-2 cursor-pointer transition shadow-xs">
+                      <i className="fa-solid fa-upload text-stone-500"></i>
+                      <span>Pilih File QRIS</span>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        onChange={handlePilihFileQris}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#e8dfc8] flex justify-end">
+            <div className="pt-4 border-t border-[#e8dfc8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-xs">
+                {adaPerubahanPembayaran ? (
+                  <span className="inline-flex items-center gap-1.5 font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                    <i className="fa-solid fa-circle-exclamation text-xs"></i>
+                    <span>Ada perubahan yang belum disimpan</span>
+                  </span>
+                ) : (
+                  <span className="text-stone-400 font-medium">
+                    Semua perubahan telah tersimpan
+                  </span>
+                )}
+              </div>
+
               <button
                 type="submit"
-                disabled={sedangSimpanToko}
-                className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-2 disabled:opacity-50"
+                disabled={sedangSimpanPembayaran || !adaPerubahanPembayaran}
+                className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 <i className="fa-solid fa-floppy-disk text-xs"></i>
-                <span>{sedangSimpanToko ? "Menyimpan..." : "Simpan Pengaturan Pembayaran"}</span>
+                <span>{sedangSimpanPembayaran ? "Menyimpan..." : "Simpan Pengaturan Pembayaran"}</span>
               </button>
             </div>
           </form>
@@ -1345,10 +1766,10 @@ export default function PengaturanPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-[#1d3b2e]">
-                  Lokasi Toko & Parameter Pengiriman
+                  Lokasi Toko & Parameter Jarak Pengiriman
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Tentukan titik koordinat toko sebagai titik awal pengiriman, faktor kelokan jalan, serta radius batas maksimal kirim.
+                  Titik koordinat toko sebagai titik awal rute, faktor kelokan jalan, serta radius batas maksimal kirim.
                 </p>
               </div>
             </div>
@@ -1361,7 +1782,7 @@ export default function PengaturanPage() {
               </div>
             )}
 
-            <form onSubmit={simpanParameterOngkir} className="space-y-5">
+            <form onSubmit={simpanOngkir} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
                   Pin Lokasi Toko pada Peta
@@ -1439,7 +1860,7 @@ export default function PengaturanPage() {
                     className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                   />
                   <span className="text-[11px] text-stone-500 mt-1 block">
-                    Standar: 1.3 (jarak jalan ≈ garis lurus × 1.3)
+                    Standar: 1.3 (jarak rute perkiraan jalan ≈ jarak lurus × 1.3)
                   </span>
                 </div>
 
@@ -1462,16 +1883,29 @@ export default function PengaturanPage() {
                     className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
                   />
                   <span className="text-[11px] text-stone-500 mt-1 block">
-                    Jarak lebih dari ini ditolak sistem
+                    Jarak lebih jauh dari ini ditolak oleh sistem pengiriman
                   </span>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#e8dfc8] flex justify-end">
+              <div className="pt-4 border-t border-[#e8dfc8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs">
+                  {adaPerubahanOngkir ? (
+                    <span className="inline-flex items-center gap-1.5 font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                      <i className="fa-solid fa-circle-exclamation text-xs"></i>
+                      <span>Ada perubahan yang belum disimpan</span>
+                    </span>
+                  ) : (
+                    <span className="text-stone-400 font-medium">
+                      Semua perubahan telah tersimpan
+                    </span>
+                  )}
+                </div>
+
                 <button
                   type="submit"
-                  disabled={sedangSimpanOngkir}
-                  className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-2 disabled:opacity-50"
+                  disabled={sedangSimpanOngkir || !adaPerubahanOngkir}
+                  className="h-[42px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center justify-center space-x-2 disabled:opacity-50"
                 >
                   <i className="fa-solid fa-floppy-disk text-xs"></i>
                   <span>{sedangSimpanOngkir ? "Menyimpan..." : "Simpan Lokasi & Parameter"}</span>
@@ -1491,7 +1925,7 @@ export default function PengaturanPage() {
                     Tabel Tarif Ongkir Berundak (Tiered Rate)
                   </h3>
                   <p className="text-xs text-stone-500">
-                    Sistem akan mencocokkan jarak pengiriman ke tier terkecil yang memuat jarak tersebut.
+                    Sistem mencocokkan jarak pengiriman ke tier terkecil yang memuat jarak tersebut.
                   </p>
                 </div>
               </div>
@@ -1580,6 +2014,7 @@ export default function PengaturanPage() {
                 <i className="fa-solid fa-calculator text-[#ba2b2b]"></i>
                 <span>Simulasi Perhitungan Ongkir</span>
               </h4>
+
               <form onSubmit={jalankanSimulasiOngkir} className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-stone-600 font-semibold">Coba jarak:</span>
@@ -1627,484 +2062,403 @@ export default function PengaturanPage() {
               )}
             </div>
           </div>
-        </div>
-      )}
 
-      {tabAktif === "zona_lama" && (
-        <div className="content-card p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#e8dfc8]">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
-                <i className="fa-solid fa-truck-fast"></i>
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#1d3b2e]">
-                  Zona Ongkir (Hanya untuk /pesan versi lama)
-                </h3>
-                <p className="text-xs text-stone-500">
-                  Daftar zona manual ini dipertahankan untuk kompatibilitas form pemesanan 3D lama pada rute /pesan.
-                </p>
-              </div>
-            </div>
-
+          <div className="content-card overflow-hidden">
             <button
               type="button"
-              onClick={bukaModalTambahZona}
-              className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 self-start sm:self-center"
+              onClick={() => setZonaLamaBuka(!zonaLamaBuka)}
+              className="w-full p-6 sm:p-8 flex items-center justify-between text-left cursor-pointer hover:bg-black/[0.01] transition"
             >
-              <i className="fa-solid fa-plus text-xs"></i>
-              <span>Tambah Zona Lama</span>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
+                  <i className="fa-solid fa-truck-fast"></i>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1d3b2e]">
+                    Zona lama (hanya untuk /pesan versi lama)
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Daftar zona manual untuk kompatibilitas form pemesanan 3D lama pada rute /pesan.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-stone-500">
+                  {zonaLamaBuka ? "Tutup" : "Buka"}
+                </span>
+                <i
+                  className={`fa-solid fa-chevron-down text-xs text-stone-400 transition-transform duration-200 ${
+                    zonaLamaBuka ? "rotate-180" : ""
+                  }`}
+                ></i>
+              </div>
             </button>
-          </div>
 
-          {daftarZona.length === 0 ? (
-            <div className="py-12 text-center text-stone-400">
-              <i className="fa-solid fa-truck-ramp-box text-3xl mb-2 block text-stone-300"></i>
-              <p className="text-sm font-bold text-[#1d3b2e]">Belum ada zona ongkir pengiriman lama.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm min-w-[500px]">
-                <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
-                  <tr>
-                    <th className="py-3 px-4 rounded-l-xl">Nama Zona</th>
-                    <th className="py-3 px-4">Tarif Ongkir</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right rounded-r-xl w-28">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#ede2cd]">
-                  {daftarZona.map((zona) => (
-                    <tr key={zona.id} className="hover:bg-black/[0.02] transition">
-                      <td className="py-3.5 px-4 font-bold text-[#1d3b2e]">
-                        {zona.nama}
-                      </td>
-                      <td className="py-3.5 px-4 font-black text-[#1d3b2e]">
-                        {formatRupiah(zona.tarif)}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <button
-                          type="button"
-                          onClick={() => toggleStatusZona(zona)}
-                          className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${
-                            zona.aktif
-                              ? "bg-[#d8e3cf] text-[#215934] border border-[#bad1ab]"
-                              : "bg-stone-200 text-stone-600 border border-stone-300"
-                          }`}
-                        >
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              zona.aktif ? "bg-[#215934]" : "bg-stone-500"
-                            }`}
-                          ></span>
-                          <span>{zona.aktif ? "Aktif" : "Nonaktif"}</span>
-                        </button>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end space-x-1.5">
-                          <button
-                            type="button"
-                            onClick={() => bukaModalEditZona(zona)}
-                            className="w-8 h-8 rounded-lg border border-[#dcd3c1] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
-                            title="Edit Zona"
-                          >
-                            <i className="fa-solid fa-pen-to-square text-xs"></i>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => hapusZona(zona)}
-                            className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
-                            title="Hapus Zona"
-                          >
-                            <i className="fa-solid fa-trash text-xs"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+            {zonaLamaBuka && (
+              <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-[#e8dfc8] space-y-4">
+                <div className="flex items-center justify-between gap-4 pt-2">
+                  <p className="text-xs text-stone-500">
+                    Kelola nama dan tarif zona manual lama.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={bukaModalTambahZona}
+                    className="h-[38px] px-3.5 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5"
+                  >
+                    <i className="fa-solid fa-plus text-xs"></i>
+                    <span>Tambah Zona Lama</span>
+                  </button>
+                </div>
+
+                {daftarZona.length === 0 ? (
+                  <div className="py-8 text-center text-stone-400">
+                    <i className="fa-solid fa-truck-ramp-box text-2xl mb-1.5 block text-stone-300"></i>
+                    <p className="text-xs font-bold text-[#1d3b2e]">Belum ada zona ongkir pengiriman lama.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm min-w-[500px]">
+                      <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
+                        <tr>
+                          <th className="py-3 px-4 rounded-l-xl">Nama Zona</th>
+                          <th className="py-3 px-4">Tarif Ongkir</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right rounded-r-xl w-28">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#ede2cd]">
+                        {daftarZona.map((zona) => (
+                          <tr key={zona.id} className="hover:bg-black/[0.02] transition">
+                            <td className="py-3.5 px-4 font-bold text-[#1d3b2e]">
+                              {zona.nama}
+                            </td>
+                            <td className="py-3.5 px-4 font-black text-[#1d3b2e]">
+                              {formatRupiah(zona.tarif)}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <button
+                                type="button"
+                                onClick={() => toggleStatusZona(zona)}
+                                className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${
+                                  zona.aktif
+                                    ? "bg-[#d8e3cf] text-[#215934] border border-[#bad1ab]"
+                                    : "bg-stone-200 text-stone-600 border border-stone-300"
+                                }`}
+                              >
+                                <span
+                                  className={`w-2 h-2 rounded-full ${
+                                    zona.aktif ? "bg-[#215934]" : "bg-stone-500"
+                                  }`}
+                                ></span>
+                                <span>{zona.aktif ? "Aktif" : "Nonaktif"}</span>
+                              </button>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end space-x-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => bukaModalEditZona(zona)}
+                                  className="w-8 h-8 rounded-lg border border-[#dcd3c1] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] inline-flex items-center justify-center transition cursor-pointer"
+                                  title="Edit Zona"
+                                >
+                                  <i className="fa-solid fa-pen-to-square text-xs"></i>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => hapusZona(zona)}
+                                  className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
+                                  title="Hapus Zona"
+                                >
+                                  <i className="fa-solid fa-trash text-xs"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {tabAktif === "libur" && (
-        <div className="content-card p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#e8dfc8]">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-lg">
-                <i className="fa-solid fa-calendar-xmark"></i>
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#1d3b2e]">
-                  Jadwal Tutup & Libur Toko
-                </h3>
-                <p className="text-xs text-stone-500">
-                  Tanggal yang tercantum di bawah ini akan dinonaktifkan di kalender pemesanan pelanggan.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={bukaModalTambahTanggal}
-              className="h-[42px] px-4 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs inline-flex items-center space-x-1.5 self-start sm:self-center"
-            >
-              <i className="fa-solid fa-plus text-xs"></i>
-              <span>Tambah Hari Libur</span>
-            </button>
-          </div>
-
-          {daftarTanggalTutup.length === 0 ? (
-            <div className="py-12 text-center text-stone-400">
-              <i className="fa-solid fa-calendar-check text-3xl mb-2 block text-stone-300"></i>
-              <p className="text-sm font-bold text-[#1d3b2e]">Tidak ada tanggal libur khusus.</p>
-              <p className="text-xs text-stone-500 mt-1">Toko siap menerima pesanan sesuai jadwal normal setiap hari.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm min-w-[500px]">
-                <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-xs font-bold border-y border-[#dfd4bd]">
-                  <tr>
-                    <th className="py-3 px-4 rounded-l-xl">Tanggal</th>
-                    <th className="py-3 px-4">Alasan Libur / Keterangan</th>
-                    <th className="py-3 px-4 text-right rounded-r-xl w-24">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#ede2cd]">
-                  {daftarTanggalTutup.map((item) => (
-                    <tr key={item.id} className="hover:bg-black/[0.02] transition">
-                      <td className="py-3.5 px-4 font-black text-[#1d3b2e]">
-                        {formatTanggalIndonesia(item.tanggal)}
-                      </td>
-                      <td className="py-3.5 px-4 text-stone-600 font-medium">
-                        {item.alasan || "Libur Operasional Toko"}
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => hapusTanggalTutup(item)}
-                          className="w-8 h-8 rounded-lg border border-[#f0c2c2] bg-[#fde8e8] hover:bg-[#fbd0d0] text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
-                          title="Buka Kembali Tanggal Ini"
-                        >
-                          <i className="fa-solid fa-trash text-xs"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isMounted && modalTarifJarakBuka && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setModalTarifJarakBuka(false);
-          }}
-          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
-        >
-          <div className="relative bg-[#fbf6e9] border border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
-              <h3 className="text-base font-bold text-[#1d3b2e]">
+      {modalTarifJarakBuka && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-[#fcfbf7] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#ede2cd] space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#ede2cd]">
+              <h3 className="font-extrabold text-[#1d3b2e] text-base">
                 {editTarifJarakId ? "Edit Tier Tarif Jarak" : "Tambah Tier Tarif Jarak"}
               </h3>
               <button
                 type="button"
                 onClick={() => setModalTarifJarakBuka(false)}
-                className="w-8 h-8 rounded-xl border border-[#dcd3c1] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center cursor-pointer transition"
+                className="w-8 h-8 rounded-full bg-stone-200/60 hover:bg-stone-200 text-stone-600 flex items-center justify-center transition cursor-pointer"
               >
                 <i className="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
             {errorTarifJarak.length > 0 && (
-              <div className="px-6 pt-4">
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-                  {errorTarifJarak.map((err, idx) => (
-                    <p key={idx}>{err}</p>
-                  ))}
-                </div>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {errorTarifJarak[0]}
               </div>
             )}
 
-            <form onSubmit={simpanTarifJarak} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Batas Jarak Maksimal (km) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0.5"
-                    required
-                    placeholder="Contoh: 5 (untuk radius hingga 5 km)"
-                    value={formTarifJarak.jarak_maks_km}
-                    onChange={(e) =>
-                      setFormTarifJarak({ ...formTarifJarak, jarak_maks_km: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Tarif Ongkir (Rp) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    required
-                    value={formTarifJarak.tarif}
-                    onChange={(e) =>
-                      setFormTarifJarak({ ...formTarifJarak, tarif: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-
-                <div className="pt-1">
-                  <label className="flex items-center space-x-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={formTarifJarak.aktif}
-                      onChange={(e) =>
-                        setFormTarifJarak({ ...formTarifJarak, aktif: e.target.checked })
-                      }
-                      className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#dcd3c1]"
-                    />
-                    <span className="text-xs font-bold text-[#1d3b2e]">
-                      Tier Aktif (Digunakan dalam kalkulator ongkir checkout)
-                    </span>
-                  </label>
-                </div>
+            <form onSubmit={simpanTarifJarak} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Batas Jarak Maksimal (km)
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0.1"
+                  required
+                  placeholder="Contoh: 5"
+                  value={formTarifJarak.jarak_maks_km}
+                  onChange={(e) =>
+                    setFormTarifJarak({ ...formTarifJarak, jarak_maks_km: e.target.value })
+                  }
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e]"
+                />
               </div>
 
-              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Tarif Ongkir (Rp)
+                </label>
+                <input
+                  type="number"
+                  step="500"
+                  min="0"
+                  required
+                  placeholder="Contoh: 15000"
+                  value={formTarifJarak.tarif}
+                  onChange={(e) =>
+                    setFormTarifJarak({ ...formTarifJarak, tarif: e.target.value })
+                  }
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e]"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#ede2cd]/60 border border-[#dfd4bd]">
+                <span className="text-xs font-bold text-[#1d3b2e]">Status Tier Aktif</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formTarifJarak.aktif}
+                    onChange={(e) =>
+                      setFormTarifJarak({ ...formTarifJarak, aktif: e.target.checked })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ba2b2b]"></div>
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-[#ede2cd] flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setModalTarifJarakBuka(false)}
-                  className="h-[40px] px-5 rounded-xl border border-[#dcd3c1] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer"
+                  className="h-[40px] px-4 rounded-xl font-bold bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] text-xs transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={sedangProsesTarifJarak}
-                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   {sedangProsesTarifJarak ? "Menyimpan..." : "Simpan Tier"}
                 </button>
               </div>
             </form>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
 
-      {isMounted && modalZonaBuka && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setModalZonaBuka(false);
-          }}
-          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
-        >
-          <div className="relative bg-[#fbf6e9] border border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
-              <h3 className="text-base font-bold text-[#1d3b2e]">
-                {editZonaId ? "Edit Zona Ongkir" : "Tambah Zona Ongkir"}
+      {modalZonaBuka && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-[#fcfbf7] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#ede2cd] space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#ede2cd]">
+              <h3 className="font-extrabold text-[#1d3b2e] text-base">
+                {editZonaId ? "Edit Zona Ongkir Lama" : "Tambah Zona Ongkir Lama"}
               </h3>
               <button
                 type="button"
                 onClick={() => setModalZonaBuka(false)}
-                className="w-8 h-8 rounded-xl border border-[#dcd3c1] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center cursor-pointer transition"
+                className="w-8 h-8 rounded-full bg-stone-200/60 hover:bg-stone-200 text-stone-600 flex items-center justify-center transition cursor-pointer"
               >
                 <i className="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
             {errorZona.length > 0 && (
-              <div className="px-6 pt-4">
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-                  {errorZona.map((err, idx) => (
-                    <p key={idx}>{err}</p>
-                  ))}
-                </div>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {errorZona[0]}
               </div>
             )}
 
-            <form onSubmit={simpanZona} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Nama Zona <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Contoh: Zona 1 (Radius 0 - 5 km)"
-                    value={formZona.nama}
-                    onChange={(e) =>
-                      setFormZona({ ...formZona, nama: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Tarif Ongkir (Rp) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    required
-                    value={formZona.tarif}
-                    onChange={(e) =>
-                      setFormZona({ ...formZona, tarif: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-
-                <div className="pt-1">
-                  <label className="flex items-center space-x-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={formZona.aktif}
-                      onChange={(e) =>
-                        setFormZona({ ...formZona, aktif: e.target.checked })
-                      }
-                      className="w-4 h-4 rounded text-[#ba2b2b] focus:ring-[#ba2b2b] border-[#dcd3c1]"
-                    />
-                    <span className="text-xs font-bold text-[#1d3b2e]">
-                      Zona Aktif
-                    </span>
-                  </label>
-                </div>
+            <form onSubmit={simpanZona} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Nama Zona
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Bandung Kota / Coblong"
+                  value={formZona.nama}
+                  onChange={(e) =>
+                    setFormZona({ ...formZona, nama: e.target.value })
+                  }
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e]"
+                />
               </div>
 
-              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Tarif Ongkir (Rp)
+                </label>
+                <input
+                  type="number"
+                  step="1000"
+                  min="0"
+                  required
+                  placeholder="Contoh: 15000"
+                  value={formZona.tarif}
+                  onChange={(e) =>
+                    setFormZona({ ...formZona, tarif: e.target.value })
+                  }
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e]"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#ede2cd]/60 border border-[#dfd4bd]">
+                <span className="text-xs font-bold text-[#1d3b2e]">Status Aktif</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formZona.aktif}
+                    onChange={(e) =>
+                      setFormZona({ ...formZona, aktif: e.target.checked })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ba2b2b]"></div>
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-[#ede2cd] flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setModalZonaBuka(false)}
-                  className="h-[40px] px-5 rounded-xl border border-[#dcd3c1] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer"
+                  className="h-[40px] px-4 rounded-xl font-bold bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] text-xs transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={sedangProsesZona}
-                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   {sedangProsesZona ? "Menyimpan..." : "Simpan Zona"}
                 </button>
               </div>
             </form>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
 
-      {isMounted && modalTanggalBuka && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setModalTanggalBuka(false);
-          }}
-          className="portal-modal-backdrop flex items-center justify-center p-3 sm:p-5 overflow-hidden"
-        >
-          <div className="relative bg-[#fbf6e9] border border-[#e8dfc8] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
-              <h3 className="text-base font-bold text-[#1d3b2e]">
-                Tambah Tanggal Tutup / Libur Toko
+      {modalTanggalBuka && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-[#fcfbf7] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#ede2cd] space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#ede2cd]">
+              <h3 className="font-extrabold text-[#1d3b2e] text-base">
+                Tambah Hari Libur Toko
               </h3>
               <button
                 type="button"
                 onClick={() => setModalTanggalBuka(false)}
-                className="w-8 h-8 rounded-xl border border-[#dcd3c1] bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] flex items-center justify-center cursor-pointer transition"
+                className="w-8 h-8 rounded-full bg-stone-200/60 hover:bg-stone-200 text-stone-600 flex items-center justify-center transition cursor-pointer"
               >
                 <i className="fa-solid fa-xmark text-sm"></i>
               </button>
             </div>
 
             {errorTanggal.length > 0 && (
-              <div className="px-6 pt-4">
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-1">
-                  {errorTanggal.map((err, idx) => (
-                    <p key={idx}>{err}</p>
-                  ))}
-                </div>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {errorTanggal[0]}
               </div>
             )}
 
-            <form onSubmit={simpanTanggalTutup} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Pilih Tanggal Tutup <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formTanggal.tanggal}
-                    onChange={(e) =>
-                      setFormTanggal({ ...formTanggal, tanggal: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
-                    Alasan Libur / Keterangan
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Libur Hari Raya, Renovasi Dapur"
-                    value={formTanggal.alasan}
-                    onChange={(e) =>
-                      setFormTanggal({ ...formTanggal, alasan: e.target.value })
-                    }
-                    className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
-                  />
-                </div>
+            <form onSubmit={simpanTanggalTutup} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Tanggal Libur
+                </label>
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().split("T")[0]}
+                  value={formTanggal.tanggal}
+                  onChange={(e) =>
+                    setFormTanggal({ ...formTanggal, tanggal: e.target.value })
+                  }
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-bold text-[#1d3b2e]"
+                />
               </div>
 
-              <div className="flex-shrink-0 flex items-center justify-end space-x-3 px-6 py-3.5 border-t border-[#e8dfc8] bg-[#f8f3e5]">
+              <div>
+                <label className="block text-xs font-bold text-[#1d3b2e] mb-1.5">
+                  Alasan Libur / Keterangan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Libur Hari Raya Idulfitri / Renovasi"
+                  value={formTanggal.alasan}
+                  onChange={(e) =>
+                    setFormTanggal({ ...formTanggal, alasan: e.target.value })
+                  }
+                  className="w-full h-[42px] px-4 rounded-xl border border-[#dcd3c1] bg-white outline-none focus:border-[#ba2b2b] text-xs font-semibold text-[#1d3b2e]"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#ede2cd] flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setModalTanggalBuka(false)}
-                  className="h-[40px] px-5 rounded-xl border border-[#dcd3c1] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer"
+                  className="h-[40px] px-4 rounded-xl font-bold bg-[#ede2cd] hover:bg-[#e2d4bc] text-[#1d3b2e] text-xs transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={sedangProsesTanggal}
-                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="h-[40px] px-6 rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   {sedangProsesTanggal ? "Menyimpan..." : "Simpan Hari Libur"}
                 </button>
               </div>
             </form>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
 
-      <ModalPesan
-        terbuka={notifikasi.terbuka}
-        judul={notifikasi.judul}
-        pesan={notifikasi.pesan}
-        tipe={notifikasi.tipe}
-        onTutup={() => setNotifikasi({ ...notifikasi, terbuka: false })}
-      />
+      {isMounted && (
+        <ModalPesan
+          terbuka={notifikasi.terbuka}
+          judul={notifikasi.judul}
+          pesan={notifikasi.pesan}
+          tipe={notifikasi.tipe}
+          onTutup={() =>
+            setNotifikasi((prev) => ({ ...prev, terbuka: false }))
+          }
+        />
+      )}
     </div>
   );
 }

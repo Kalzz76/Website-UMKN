@@ -73,7 +73,16 @@ export async function PUT(request) {
 
   try {
     const body = await request.json();
-    const { nama, no_wa, kataSandiLama, kataSandiBaru } = body;
+    const {
+      nama,
+      no_wa,
+      kataSandiLama,
+      kataSandiBaru,
+      alamat,
+      patokan,
+      lat_alamat,
+      lng_alamat,
+    } = body;
 
     const supabaseAdmin = getSupabaseAdmin();
     const updateData = {};
@@ -100,11 +109,71 @@ export async function PUT(request) {
       updateData.no_wa = waBersih;
     }
 
+    if (alamat !== undefined) {
+      const alamatBersih = String(alamat || "").trim();
+      if (alamatBersih.length > 500) {
+        return NextResponse.json(
+          { pesan: "Alamat maksimal 500 karakter." },
+          { status: 400 }
+        );
+      }
+      updateData.alamat = alamatBersih;
+    }
+
+    if (patokan !== undefined) {
+      const patokanBersih = String(patokan || "").trim();
+      if (patokanBersih.length > 200) {
+        return NextResponse.json(
+          { pesan: "Patokan alamat maksimal 200 karakter." },
+          { status: 400 }
+        );
+      }
+      updateData.patokan = patokanBersih;
+    }
+
+    if (lat_alamat !== undefined || lng_alamat !== undefined) {
+      if (lat_alamat === null || lat_alamat === "" || lng_alamat === null || lng_alamat === "") {
+        updateData.lat_alamat = null;
+        updateData.lng_alamat = null;
+      } else {
+        const latNum = Number(lat_alamat);
+        const lngNum = Number(lng_alamat);
+        if (isNaN(latNum) || isNaN(lngNum) || latNum < -11 || latNum > 6 || lngNum < 95 || lngNum > 141) {
+          return NextResponse.json(
+            { pesan: "Titik koordinat harus berada di wilayah Indonesia." },
+            { status: 400 }
+          );
+        }
+        updateData.lat_alamat = latNum;
+        updateData.lng_alamat = lngNum;
+      }
+    }
+
+    let lokasiTersimpan = true;
+
     if (Object.keys(updateData).length > 0) {
-      const { error: errUpdate } = await supabaseAdmin
+      let { error: errUpdate } = await supabaseAdmin
         .from("profil")
         .update(updateData)
         .eq("id", user.id);
+
+      if (errUpdate && (errUpdate.message?.includes("lat_alamat") || errUpdate.message?.includes("alamat") || errUpdate.code === "PGRST204" || errUpdate.code === "42703")) {
+        if (alamat !== undefined || patokan !== undefined || lat_alamat !== undefined || lng_alamat !== undefined) {
+          lokasiTersimpan = false;
+        }
+        const fallbackData = {};
+        if (updateData.nama !== undefined) fallbackData.nama = updateData.nama;
+        if (updateData.no_wa !== undefined) fallbackData.no_wa = updateData.no_wa;
+        if (Object.keys(fallbackData).length > 0) {
+          const resFallback = await supabaseAdmin
+            .from("profil")
+            .update(fallbackData)
+            .eq("id", user.id);
+          errUpdate = resFallback.error;
+        } else {
+          errUpdate = null;
+        }
+      }
 
       if (errUpdate) {
         return NextResponse.json(
@@ -116,9 +185,9 @@ export async function PUT(request) {
 
     if (kataSandiBaru) {
       const sandiBaru = String(kataSandiBaru).trim();
-      if (sandiBaru.length < 6) {
+      if (sandiBaru.length < 8) {
         return NextResponse.json(
-          { pesan: "Kata sandi baru minimal 6 karakter." },
+          { pesan: "Kata sandi baru minimal 8 karakter." },
           { status: 400 }
         );
       }
@@ -164,9 +233,12 @@ export async function PUT(request) {
 
     return NextResponse.json({
       sukses: true,
+      lokasiTersimpan,
       pesan: kataSandiBaru
         ? "Profil dan kata sandi berhasil diperbarui."
-        : "Profil berhasil diperbarui.",
+        : lokasiTersimpan
+          ? "Profil berhasil diperbarui."
+          : "Profil diperbarui, namun lokasi pengiriman belum dapat disimpan di server.",
       profil: {
         ...(profilBaru || profil),
         email: user.email || "",

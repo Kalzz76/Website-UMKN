@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
 import { validasiKoordinat } from "@/lib/ongkir";
+
+function invalidateCacheToko() {
+  try {
+    revalidateTag("pengaturan_toko");
+  } catch {}
+  try {
+    revalidatePath("/");
+  } catch {}
+}
 
 function formatJamValid(str) {
   if (!str || typeof str !== "string") return false;
@@ -15,9 +25,27 @@ function jamLebihBesar(buka, tutup) {
   return t > b;
 }
 
+function emailValid(str) {
+  if (!str) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+}
+
+function tautanPetaValid(str) {
+  if (!str) return true;
+  return str.startsWith("https://");
+}
+
 export async function GET() {
   const supabase = getSupabaseAdmin();
   const { profil, diizinkan } = await cekRole(["admin", "staf"]);
+
+  const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+  const isMidtransSandbox = midtransClientKey.startsWith("SB-");
+  const statusMidtrans = !midtransClientKey
+    ? "Belum Terhubung"
+    : isMidtransSandbox
+    ? "Terhubung (Sandbox)"
+    : "Terhubung (Production)";
 
   if (diizinkan && profil) {
     const { data: toko, error } = await supabase
@@ -52,6 +80,7 @@ export async function GET() {
       sukses: true,
       data: {
         ...toko,
+        status_midtrans: statusMidtrans,
         zona: zonaList || [],
         tanggal_tutup: tanggalTutupList || [],
         tarif_jarak: tarifJarakList || [],
@@ -81,7 +110,7 @@ export async function GET() {
     "nama_bank",
     "no_rekening",
     "atas_nama",
-    "qris_url",
+    "gambar_qris",
     "lat_toko",
     "lng_toko",
     "faktor_jalan",
@@ -111,6 +140,7 @@ export async function GET() {
     sukses: true,
     data: {
       ...toko,
+      status_midtrans: statusMidtrans,
       tanggal_tutup: tanggalTutupList || [],
     },
   });
@@ -130,10 +160,227 @@ export async function POST(request) {
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
+    const aksi = formData.get("aksi") || "simpan_semua";
+
+    if (aksi === "simpan_toko") {
+      const nama_toko = (formData.get("nama_toko") || "").trim();
+      const alamat = (formData.get("alamat") || "").trim();
+      const no_wa = (formData.get("no_wa") || "").trim();
+      const email = (formData.get("email") || "").trim();
+      const instagram = (formData.get("instagram") || "").trim();
+      const tautan_peta = (formData.get("tautan_peta") || "").trim();
+      const deskripsi_footer = (formData.get("deskripsi_footer") || "").trim();
+
+      let jam_buka_senin_jumat = (formData.get("jam_buka_senin_jumat") || formData.get("jam_buka") || "08:00").slice(0, 5);
+      let jam_tutup_senin_jumat = (formData.get("jam_tutup_senin_jumat") || formData.get("jam_tutup") || "20:00").slice(0, 5);
+      let jam_buka_sabtu_minggu = (formData.get("jam_buka_sabtu_minggu") || formData.get("jam_buka") || "08:00").slice(0, 5);
+      let jam_tutup_sabtu_minggu = (formData.get("jam_tutup_sabtu_minggu") || formData.get("jam_tutup") || "20:00").slice(0, 5);
+
+      if (!nama_toko) {
+        return NextResponse.json({ pesan: "Nama toko tidak boleh kosong." }, { status: 400 });
+      }
+
+      if (email && !emailValid(email)) {
+        return NextResponse.json({ pesan: "Format email toko tidak valid." }, { status: 400 });
+      }
+
+      if (tautan_peta && !tautanPetaValid(tautan_peta)) {
+        return NextResponse.json({ pesan: "Tautan peta harus diawali dengan https://" }, { status: 400 });
+      }
+
+      if (deskripsi_footer.length > 300) {
+        return NextResponse.json({ pesan: "Deskripsi singkat footer maksimal 300 karakter." }, { status: 400 });
+      }
+
+      if (!formatJamValid(jam_buka_senin_jumat) || !formatJamValid(jam_tutup_senin_jumat)) {
+        return NextResponse.json({ pesan: "Format jam buka dan tutup Senin-Jumat harus berupa HH:MM." }, { status: 400 });
+      }
+
+      if (!jamLebihBesar(jam_buka_senin_jumat, jam_tutup_senin_jumat)) {
+        return NextResponse.json({ pesan: "Jam tutup Senin-Jumat harus lebih besar dari jam buka." }, { status: 400 });
+      }
+
+      if (!formatJamValid(jam_buka_sabtu_minggu) || !formatJamValid(jam_tutup_sabtu_minggu)) {
+        return NextResponse.json({ pesan: "Format jam buka dan tutup Sabtu-Minggu harus berupa HH:MM." }, { status: 400 });
+      }
+
+      if (!jamLebihBesar(jam_buka_sabtu_minggu, jam_tutup_sabtu_minggu)) {
+        return NextResponse.json({ pesan: "Jam tutup Sabtu-Minggu harus lebih besar dari jam buka." }, { status: 400 });
+      }
+
+      const { error: errUpdate } = await supabase
+        .from("pengaturan_toko")
+        .update({
+          nama_toko,
+          alamat,
+          no_wa,
+          email,
+          instagram,
+          tautan_peta,
+          deskripsi_footer,
+          jam_buka_senin_jumat,
+          jam_tutup_senin_jumat,
+          jam_buka_sabtu_minggu,
+          jam_tutup_sabtu_minggu,
+          jam_buka: jam_buka_senin_jumat,
+          jam_tutup: jam_tutup_senin_jumat,
+        })
+        .eq("id", 1);
+
+      if (errUpdate) {
+        return NextResponse.json({ pesan: "Gagal menyimpan pengaturan toko: " + errUpdate.message }, { status: 500 });
+      }
+
+      invalidateCacheToko();
+      return NextResponse.json({ pesan: "Pengaturan profil toko berhasil diperbarui." });
+    }
+
+    if (aksi === "simpan_pemesanan") {
+      const kuota_harian = Number(formData.get("kuota_harian"));
+      const minimal_hari_pesan = Number(formData.get("minimal_hari_pesan"));
+      const minimal_hari_katalog = Number(
+        formData.get("minimal_hari_katalog") !== null
+          ? formData.get("minimal_hari_katalog")
+          : formData.get("minimal_hari_siap") || 1
+      );
+
+      if (isNaN(kuota_harian) || kuota_harian < 1 || kuota_harian > 100) {
+        return NextResponse.json({ pesan: "Kuota harian harus antara 1 sampai 100 pesanan." }, { status: 400 });
+      }
+
+      if (isNaN(minimal_hari_pesan) || minimal_hari_pesan < 0 || minimal_hari_pesan > 30) {
+        return NextResponse.json({ pesan: "Minimal hari pemesanan custom cake harus antara 0 sampai 30 hari." }, { status: 400 });
+      }
+
+      if (isNaN(minimal_hari_katalog) || minimal_hari_katalog < 0 || minimal_hari_katalog > 30) {
+        return NextResponse.json({ pesan: "Minimal hari pemesanan kue katalog harus antara 0 sampai 30 hari." }, { status: 400 });
+      }
+
+      const { error: errUpdate } = await supabase
+        .from("pengaturan_toko")
+        .update({
+          kuota_harian,
+          minimal_hari_pesan,
+          minimal_hari_katalog,
+          minimal_hari_siap: minimal_hari_katalog,
+        })
+        .eq("id", 1);
+
+      if (errUpdate) {
+        return NextResponse.json({ pesan: "Gagal menyimpan pengaturan pemesanan: " + errUpdate.message }, { status: 500 });
+      }
+
+      invalidateCacheToko();
+      return NextResponse.json({ pesan: "Pengaturan pemesanan berhasil diperbarui." });
+    }
+
+    if (aksi === "simpan_pembayaran") {
+      const mode_pembayaran = formData.get("mode_pembayaran") || "DP";
+      const persen_dp = Number(formData.get("persen_dp"));
+      const batas_bayar_jam = Number(formData.get("batas_bayar_jam"));
+      const transfer_manual_aktif = formData.get("transfer_manual_aktif") === "true";
+      const nama_bank = (formData.get("nama_bank") || "").trim();
+      const no_rekening = (formData.get("no_rekening") || "").trim();
+      const atas_nama = (formData.get("atas_nama") || "").trim();
+      const hapus_qris = formData.get("hapus_qris") === "true";
+      const file_qris = formData.get("file_qris");
+
+      if (mode_pembayaran !== "DP" && mode_pembayaran !== "Lunas") {
+        return NextResponse.json({ pesan: "Mode pembayaran harus DP atau Lunas." }, { status: 400 });
+      }
+
+      if (mode_pembayaran === "DP" && (isNaN(persen_dp) || persen_dp < 1 || persen_dp > 100)) {
+        return NextResponse.json({ pesan: "Persentase DP harus antara 1 sampai 100 persen." }, { status: 400 });
+      }
+
+      if (isNaN(batas_bayar_jam) || batas_bayar_jam < 1 || batas_bayar_jam > 168) {
+        return NextResponse.json({ pesan: "Batas waktu pembayaran harus antara 1 sampai 168 jam." }, { status: 400 });
+      }
+
+      const { data: pengaturanLama } = await supabase
+        .from("pengaturan_toko")
+        .select("gambar_qris")
+        .eq("id", 1)
+        .single();
+
+      let gambar_qris_path = pengaturanLama ? pengaturanLama.gambar_qris : null;
+
+      if (hapus_qris && gambar_qris_path) {
+        const namaFileLama = gambar_qris_path.split("/").pop();
+        if (namaFileLama) {
+          await supabase.storage.from("publik").remove([namaFileLama]);
+        }
+        gambar_qris_path = null;
+      }
+
+      if (file_qris && typeof file_qris === "object" && file_qris.size > 0) {
+        const tipeValid = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+        if (!tipeValid.includes(file_qris.type)) {
+          return NextResponse.json({ pesan: "Format gambar QRIS harus berupa JPG, PNG, atau WebP." }, { status: 400 });
+        }
+
+        if (file_qris.size > 2 * 1024 * 1024) {
+          return NextResponse.json({ pesan: "Ukuran gambar QRIS tidak boleh melebihi 2 MB." }, { status: 400 });
+        }
+
+        if (gambar_qris_path) {
+          const fileLama = gambar_qris_path.split("/").pop();
+          if (fileLama) {
+            await supabase.storage.from("publik").remove([fileLama]);
+          }
+        }
+
+        const ekstensi = file_qris.name.split(".").pop() || "jpg";
+        const namaFileBaru = `qris-${Date.now()}.${ekstensi}`;
+        const bytes = await file_qris.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        const { error: errUpload } = await supabase.storage
+          .from("publik")
+          .upload(namaFileBaru, buffer, {
+            contentType: file_qris.type,
+            upsert: true,
+          });
+
+        if (errUpload) {
+          return NextResponse.json({ pesan: "Gagal mengunggah gambar QRIS: " + errUpload.message }, { status: 500 });
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("publik")
+          .getPublicUrl(namaFileBaru);
+
+        gambar_qris_path = publicUrlData.publicUrl;
+      }
+
+      const { error: errUpdate } = await supabase
+        .from("pengaturan_toko")
+        .update({
+          mode_pembayaran,
+          persen_dp: mode_pembayaran === "DP" ? persen_dp : 100,
+          batas_bayar_jam,
+          transfer_manual_aktif,
+          nama_bank,
+          no_rekening,
+          atas_nama,
+          gambar_qris: gambar_qris_path,
+        })
+        .eq("id", 1);
+
+      if (errUpdate) {
+        return NextResponse.json({ pesan: "Gagal menyimpan pengaturan pembayaran: " + errUpdate.message }, { status: 500 });
+      }
+
+      invalidateCacheToko();
+      return NextResponse.json({
+        pesan: "Pengaturan pembayaran berhasil diperbarui.",
+        gambar_qris: gambar_qris_path,
+      });
+    }
+
     const nama_toko = formData.get("nama_toko");
     const alamat = formData.get("alamat") || "";
     const no_wa = formData.get("no_wa") || "";
-    const jam_operasional = formData.get("jam_operasional") || "";
 
     let jam_buka_senin_jumat = formData.get("jam_buka_senin_jumat") || formData.get("jam_buka") || "08:00";
     let jam_tutup_senin_jumat = formData.get("jam_tutup_senin_jumat") || formData.get("jam_tutup") || "20:00";
@@ -162,116 +409,56 @@ export async function POST(request) {
     const no_rekening = formData.get("no_rekening") || "";
     const atas_nama = formData.get("atas_nama") || "";
 
-    const latRaw = formData.get("lat_toko");
-    const lngRaw = formData.get("lng_toko");
-    const lat_toko = latRaw !== null && latRaw !== "" && !isNaN(Number(latRaw)) ? Number(latRaw) : null;
-    const lng_toko = lngRaw !== null && lngRaw !== "" && !isNaN(Number(lngRaw)) ? Number(lngRaw) : null;
-
-    const faktor_jalan = Number(formData.get("faktor_jalan") || 1.3);
-    const maks_jarak_kirim_km = Number(formData.get("maks_jarak_kirim_km") || 20);
-
     const hapus_qris = formData.get("hapus_qris") === "true";
     const file_qris = formData.get("file_qris");
     const transfer_manual_aktif = formData.get("transfer_manual_aktif") === "true";
 
     if (!nama_toko || nama_toko.trim() === "") {
-      return NextResponse.json(
-        { pesan: "Nama toko tidak boleh kosong." },
-        { status: 400 }
-      );
+      return NextResponse.json({ pesan: "Nama toko tidak boleh kosong." }, { status: 400 });
+    }
+
+    if (email && !emailValid(email)) {
+      return NextResponse.json({ pesan: "Format email toko tidak valid." }, { status: 400 });
+    }
+
+    if (tautan_peta && !tautanPetaValid(tautan_peta)) {
+      return NextResponse.json({ pesan: "Tautan peta harus diawali dengan https://" }, { status: 400 });
+    }
+
+    if (deskripsi_footer.length > 300) {
+      return NextResponse.json({ pesan: "Deskripsi singkat footer maksimal 300 karakter." }, { status: 400 });
     }
 
     if (!formatJamValid(jam_buka_senin_jumat) || !formatJamValid(jam_tutup_senin_jumat)) {
-      return NextResponse.json(
-        { pesan: "Format jam Senin-Jumat harus berupa HH:MM." },
-        { status: 400 }
-      );
+      return NextResponse.json({ pesan: "Format jam Senin-Jumat harus berupa HH:MM." }, { status: 400 });
     }
 
     if (!jamLebihBesar(jam_buka_senin_jumat, jam_tutup_senin_jumat)) {
-      return NextResponse.json(
-        { pesan: "Jam tutup Senin-Jumat harus lebih besar dari jam buka." },
-        { status: 400 }
-      );
+      return NextResponse.json({ pesan: "Jam tutup Senin-Jumat harus lebih besar dari jam buka." }, { status: 400 });
     }
 
     if (!formatJamValid(jam_buka_sabtu_minggu) || !formatJamValid(jam_tutup_sabtu_minggu)) {
-      return NextResponse.json(
-        { pesan: "Format jam Sabtu-Minggu harus berupa HH:MM." },
-        { status: 400 }
-      );
+      return NextResponse.json({ pesan: "Format jam Sabtu-Minggu harus berupa HH:MM." }, { status: 400 });
     }
 
     if (!jamLebihBesar(jam_buka_sabtu_minggu, jam_tutup_sabtu_minggu)) {
-      return NextResponse.json(
-        { pesan: "Jam tutup Sabtu-Minggu harus lebih besar dari jam buka." },
-        { status: 400 }
-      );
+      return NextResponse.json({ pesan: "Jam tutup Sabtu-Minggu harus lebih besar dari jam buka." }, { status: 400 });
     }
 
-    if (isNaN(kuota_harian) || kuota_harian < 1) {
-      return NextResponse.json(
-        { pesan: "Kuota harian minimal 1 pesanan." },
-        { status: 400 }
-      );
+    if (isNaN(kuota_harian) || kuota_harian < 1 || kuota_harian > 100) {
+      return NextResponse.json({ pesan: "Kuota harian harus antara 1 sampai 100 pesanan." }, { status: 400 });
     }
 
-    if (isNaN(minimal_hari_pesan) || minimal_hari_pesan < 0) {
-      return NextResponse.json(
-        { pesan: "Minimal hari pesan custom tidak boleh negatif." },
-        { status: 400 }
-      );
+    if (isNaN(minimal_hari_pesan) || minimal_hari_pesan < 0 || minimal_hari_pesan > 30) {
+      return NextResponse.json({ pesan: "Minimal hari pemesanan custom cake harus antara 0 sampai 30 hari." }, { status: 400 });
     }
 
-    if (isNaN(minimal_hari_katalog) || minimal_hari_katalog < 0) {
-      return NextResponse.json(
-        { pesan: "Minimal hari pesan katalog tidak boleh negatif." },
-        { status: 400 }
-      );
+    if (isNaN(minimal_hari_katalog) || minimal_hari_katalog < 0 || minimal_hari_katalog > 30) {
+      return NextResponse.json({ pesan: "Minimal hari pemesanan kue katalog harus antara 0 sampai 30 hari." }, { status: 400 });
     }
 
-    if (!["DP", "Lunas"].includes(mode_pembayaran)) {
-      return NextResponse.json(
-        { pesan: "Mode pembayaran harus DP atau Lunas." },
-        { status: 400 }
-      );
-    }
-
-    if (isNaN(persen_dp) || persen_dp < 1 || persen_dp > 100) {
-      return NextResponse.json(
-        { pesan: "Persentase DP harus di antara 1 sampai 100." },
-        { status: 400 }
-      );
-    }
-
-    if (isNaN(batas_bayar_jam) || batas_bayar_jam < 1) {
-      return NextResponse.json(
-        { pesan: "Batas waktu pembayaran minimal 1 jam." },
-        { status: 400 }
-      );
-    }
-
-    if (isNaN(faktor_jalan) || faktor_jalan < 1) {
-      return NextResponse.json(
-        { pesan: "Faktor jalan minimal 1.0." },
-        { status: 400 }
-      );
-    }
-
-    if (isNaN(maks_jarak_kirim_km) || maks_jarak_kirim_km <= 0) {
-      return NextResponse.json(
-        { pesan: "Maksimal jarak kirim harus berupa angka lebih dari 0." },
-        { status: 400 }
-      );
-    }
-
-    if (lat_toko !== null || lng_toko !== null) {
-      if (lat_toko === null || lng_toko === null || !validasiKoordinat(lat_toko, lng_toko)) {
-        return NextResponse.json(
-          { pesan: "Koordinat pin toko tidak valid untuk wilayah Indonesia." },
-          { status: 400 }
-        );
-      }
+    if (isNaN(batas_bayar_jam) || batas_bayar_jam < 1 || batas_bayar_jam > 168) {
+      return NextResponse.json({ pesan: "Batas waktu pembayaran harus antara 1 sampai 168 jam." }, { status: 400 });
     }
 
     const { data: pengaturanLama } = await supabase
@@ -291,24 +478,13 @@ export async function POST(request) {
     }
 
     if (file_qris && typeof file_qris === "object" && file_qris.size > 0) {
-      const tipeValid = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/webp",
-      ];
+      const tipeValid = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       if (!tipeValid.includes(file_qris.type)) {
-        return NextResponse.json(
-          { pesan: "Format gambar QRIS harus berupa JPG, PNG, atau WebP." },
-          { status: 400 }
-        );
+        return NextResponse.json({ pesan: "Format gambar QRIS harus berupa JPG, PNG, atau WebP." }, { status: 400 });
       }
 
       if (file_qris.size > 2 * 1024 * 1024) {
-        return NextResponse.json(
-          { pesan: "Ukuran gambar QRIS tidak boleh melebihi 2 MB." },
-          { status: 400 }
-        );
+        return NextResponse.json({ pesan: "Ukuran gambar QRIS tidak boleh melebihi 2 MB." }, { status: 400 });
       }
 
       if (gambar_qris_path) {
@@ -331,10 +507,7 @@ export async function POST(request) {
         });
 
       if (errUpload) {
-        return NextResponse.json(
-          { pesan: "Gagal mengunggah gambar QRIS: " + errUpload.message },
-          { status: 500 }
-        );
+        return NextResponse.json({ pesan: "Gagal mengunggah gambar QRIS: " + errUpload.message }, { status: 500 });
       }
 
       const { data: publicUrlData } = supabase.storage
@@ -345,56 +518,43 @@ export async function POST(request) {
     }
 
     const payloadSimpan = {
-      id: 1,
       nama_toko: nama_toko.trim(),
       alamat: alamat.trim(),
       no_wa: no_wa.trim(),
-      jam_operasional: jam_operasional.trim(),
-      jam_buka: jam_buka_senin_jumat,
-      jam_tutup: jam_tutup_senin_jumat,
-      jam_buka_senin_jumat,
-      jam_tutup_senin_jumat,
-      jam_buka_sabtu_minggu,
-      jam_tutup_sabtu_minggu,
       email,
       instagram,
       tautan_peta,
       deskripsi_footer,
+      jam_buka_senin_jumat,
+      jam_tutup_senin_jumat,
+      jam_buka_sabtu_minggu,
+      jam_tutup_sabtu_minggu,
+      jam_buka: jam_buka_senin_jumat,
+      jam_tutup: jam_tutup_senin_jumat,
       kuota_harian,
       minimal_hari_pesan,
       minimal_hari_katalog,
+      minimal_hari_siap: minimal_hari_katalog,
       mode_pembayaran,
-      persen_dp,
+      persen_dp: mode_pembayaran === "DP" ? persen_dp : 100,
       batas_bayar_jam,
       nama_bank: nama_bank.trim(),
       no_rekening: no_rekening.trim(),
       atas_nama: atas_nama.trim(),
       gambar_qris: gambar_qris_path,
-      lat_toko,
-      lng_toko,
-      faktor_jalan,
-      maks_jarak_kirim_km,
       transfer_manual_aktif,
     };
 
-    let { error: errUpdate } = await supabase
+    const { error: errUpdate } = await supabase
       .from("pengaturan_toko")
-      .upsert(payloadSimpan);
-
-    if (errUpdate && errUpdate.message && errUpdate.message.includes("minimal_hari_katalog")) {
-      delete payloadSimpan.minimal_hari_katalog;
-      payloadSimpan.minimal_hari_siap = minimal_hari_katalog;
-      const resFallback = await supabase.from("pengaturan_toko").upsert(payloadSimpan);
-      errUpdate = resFallback.error;
-    }
+      .update(payloadSimpan)
+      .eq("id", 1);
 
     if (errUpdate) {
-      return NextResponse.json(
-        { pesan: "Gagal menyimpan pengaturan toko: " + errUpdate.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ pesan: "Gagal menyimpan pengaturan toko: " + errUpdate.message }, { status: 500 });
     }
 
+    invalidateCacheToko();
     return NextResponse.json({
       pesan: "Pengaturan toko berhasil diperbarui.",
       gambar_qris: gambar_qris_path,
@@ -403,6 +563,219 @@ export async function POST(request) {
 
   const body = await request.json();
   const { aksi } = body;
+
+  if (aksi === "simpan_toko") {
+    const {
+      nama_toko,
+      no_wa,
+      email,
+      instagram,
+      alamat,
+      tautan_peta,
+      deskripsi_footer,
+      jam_buka_senin_jumat,
+      jam_tutup_senin_jumat,
+      jam_buka_sabtu_minggu,
+      jam_tutup_sabtu_minggu,
+    } = body;
+
+    const nama = (nama_toko || "").trim();
+    if (!nama) {
+      return NextResponse.json({ pesan: "Nama toko tidak boleh kosong." }, { status: 400 });
+    }
+
+    const em = (email || "").trim();
+    if (em && !emailValid(em)) {
+      return NextResponse.json({ pesan: "Format email toko tidak valid." }, { status: 400 });
+    }
+
+    const peta = (tautan_peta || "").trim();
+    if (peta && !tautanPetaValid(peta)) {
+      return NextResponse.json({ pesan: "Tautan peta harus diawali dengan https://" }, { status: 400 });
+    }
+
+    const desc = (deskripsi_footer || "").trim();
+    if (desc.length > 300) {
+      return NextResponse.json({ pesan: "Deskripsi singkat footer maksimal 300 karakter." }, { status: 400 });
+    }
+
+    const jbsj = (jam_buka_senin_jumat || "08:00").slice(0, 5);
+    const jtsj = (jam_tutup_senin_jumat || "20:00").slice(0, 5);
+    const jbsm = (jam_buka_sabtu_minggu || "08:00").slice(0, 5);
+    const jtsm = (jam_tutup_sabtu_minggu || "20:00").slice(0, 5);
+
+    if (!formatJamValid(jbsj) || !formatJamValid(jtsj)) {
+      return NextResponse.json({ pesan: "Format jam buka dan tutup Senin-Jumat harus berupa HH:MM." }, { status: 400 });
+    }
+
+    if (!jamLebihBesar(jbsj, jtsj)) {
+      return NextResponse.json({ pesan: "Jam tutup Senin-Jumat harus lebih besar dari jam buka." }, { status: 400 });
+    }
+
+    if (!formatJamValid(jbsm) || !formatJamValid(jtsm)) {
+      return NextResponse.json({ pesan: "Format jam buka dan tutup Sabtu-Minggu harus berupa HH:MM." }, { status: 400 });
+    }
+
+    if (!jamLebihBesar(jbsm, jtsm)) {
+      return NextResponse.json({ pesan: "Jam tutup Sabtu-Minggu harus lebih besar dari jam buka." }, { status: 400 });
+    }
+
+    const { error: errUpdate } = await supabase
+      .from("pengaturan_toko")
+      .update({
+        nama_toko: nama,
+        no_wa: (no_wa || "").trim(),
+        email: em,
+        instagram: (instagram || "").trim(),
+        alamat: (alamat || "").trim(),
+        tautan_peta: peta,
+        deskripsi_footer: desc,
+        jam_buka_senin_jumat: jbsj,
+        jam_tutup_senin_jumat: jtsj,
+        jam_buka_sabtu_minggu: jbsm,
+        jam_tutup_sabtu_minggu: jtsm,
+        jam_buka: jbsj,
+        jam_tutup: jtsj,
+      })
+      .eq("id", 1);
+
+    if (errUpdate) {
+      return NextResponse.json({ pesan: "Gagal menyimpan pengaturan toko: " + errUpdate.message }, { status: 500 });
+    }
+
+    invalidateCacheToko();
+    return NextResponse.json({ pesan: "Pengaturan profil toko berhasil diperbarui." });
+  }
+
+  if (aksi === "simpan_pemesanan") {
+    const { kuota_harian, minimal_hari_pesan, minimal_hari_katalog } = body;
+    const kuota = Number(kuota_harian);
+    const minCustom = Number(minimal_hari_pesan);
+    const minKatalog = Number(minimal_hari_katalog);
+
+    if (isNaN(kuota) || kuota < 1 || kuota > 100) {
+      return NextResponse.json({ pesan: "Kuota harian harus antara 1 sampai 100 pesanan." }, { status: 400 });
+    }
+
+    if (isNaN(minCustom) || minCustom < 0 || minCustom > 30) {
+      return NextResponse.json({ pesan: "Minimal hari pemesanan custom cake harus antara 0 sampai 30 hari." }, { status: 400 });
+    }
+
+    if (isNaN(minKatalog) || minKatalog < 0 || minKatalog > 30) {
+      return NextResponse.json({ pesan: "Minimal hari pemesanan kue katalog harus antara 0 sampai 30 hari." }, { status: 400 });
+    }
+
+    const { error: errUpdate } = await supabase
+      .from("pengaturan_toko")
+      .update({
+        kuota_harian: kuota,
+        minimal_hari_pesan: minCustom,
+        minimal_hari_katalog: minKatalog,
+        minimal_hari_siap: minKatalog,
+      })
+      .eq("id", 1);
+
+    if (errUpdate) {
+      return NextResponse.json({ pesan: "Gagal menyimpan pengaturan pemesanan: " + errUpdate.message }, { status: 500 });
+    }
+
+    invalidateCacheToko();
+    return NextResponse.json({ pesan: "Pengaturan pemesanan berhasil diperbarui." });
+  }
+
+  if (aksi === "simpan_pembayaran") {
+    const {
+      mode_pembayaran,
+      persen_dp,
+      batas_bayar_jam,
+      transfer_manual_aktif,
+      nama_bank,
+      no_rekening,
+      atas_nama,
+    } = body;
+
+    const mode = mode_pembayaran === "Lunas" ? "Lunas" : "DP";
+    const dp = Number(persen_dp);
+    const batas = Number(batas_bayar_jam);
+
+    if (mode === "DP" && (isNaN(dp) || dp < 1 || dp > 100)) {
+      return NextResponse.json({ pesan: "Persentase DP harus antara 1 sampai 100 persen." }, { status: 400 });
+    }
+
+    if (isNaN(batas) || batas < 1 || batas > 168) {
+      return NextResponse.json({ pesan: "Batas waktu pembayaran harus antara 1 sampai 168 jam." }, { status: 400 });
+    }
+
+    const { error: errUpdate } = await supabase
+      .from("pengaturan_toko")
+      .update({
+        mode_pembayaran: mode,
+        persen_dp: mode === "DP" ? dp : 100,
+        batas_bayar_jam: batas,
+        transfer_manual_aktif: Boolean(transfer_manual_aktif),
+        nama_bank: (nama_bank || "").trim(),
+        no_rekening: (no_rekening || "").trim(),
+        atas_nama: (atas_nama || "").trim(),
+      })
+      .eq("id", 1);
+
+    if (errUpdate) {
+      return NextResponse.json({ pesan: "Gagal menyimpan pengaturan pembayaran: " + errUpdate.message }, { status: 500 });
+    }
+
+    invalidateCacheToko();
+    return NextResponse.json({ pesan: "Pengaturan pembayaran berhasil diperbarui." });
+  }
+
+  if (aksi === "simpan_ongkir") {
+    const { lat_toko, lng_toko, faktor_jalan, maks_jarak_kirim_km } = body;
+
+    const latNum = lat_toko !== null && lat_toko !== undefined ? Number(lat_toko) : null;
+    const lngNum = lng_toko !== null && lng_toko !== undefined ? Number(lng_toko) : null;
+    const faktorNum = Number(faktor_jalan) || 1.3;
+    const maksNum = Number(maks_jarak_kirim_km) || 20;
+
+    if (latNum !== null && lngNum !== null && !validasiKoordinat(latNum, lngNum)) {
+      return NextResponse.json(
+        { pesan: "Koordinat pin toko tidak valid untuk wilayah Indonesia." },
+        { status: 400 }
+      );
+    }
+
+    if (faktorNum < 1) {
+      return NextResponse.json(
+        { pesan: "Faktor jalan minimal 1.0." },
+        { status: 400 }
+      );
+    }
+
+    if (maksNum <= 0) {
+      return NextResponse.json(
+        { pesan: "Maksimal jarak kirim harus lebih dari 0 km." },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase
+      .from("pengaturan_toko")
+      .update({
+        lat_toko: latNum,
+        lng_toko: lngNum,
+        faktor_jalan: faktorNum,
+        maks_jarak_kirim_km: maksNum,
+      })
+      .eq("id", 1);
+
+    if (error) {
+      return NextResponse.json(
+        { pesan: "Gagal menyimpan parameter ongkir: " + error.message },
+        { status: 500 }
+      );
+    }
+
+    invalidateCacheToko();
+    return NextResponse.json({ pesan: "Parameter ongkir jarak berhasil disimpan." });
+  }
 
   if (aksi === "tambah_zona") {
     const { nama, tarif, aktif } = body;
@@ -603,55 +976,6 @@ export async function POST(request) {
     }
 
     return NextResponse.json({ pesan: "Tanggal tutup berhasil dihapus." });
-  }
-
-  if (aksi === "simpan_ongkir") {
-    const { lat_toko, lng_toko, faktor_jalan, maks_jarak_kirim_km } = body;
-
-    const latNum = lat_toko !== null && lat_toko !== undefined ? Number(lat_toko) : null;
-    const lngNum = lng_toko !== null && lng_toko !== undefined ? Number(lng_toko) : null;
-    const faktorNum = Number(faktor_jalan) || 1.3;
-    const maksNum = Number(maks_jarak_kirim_km) || 20;
-
-    if (latNum !== null && lngNum !== null && !validasiKoordinat(latNum, lngNum)) {
-      return NextResponse.json(
-        { pesan: "Koordinat pin toko tidak valid untuk wilayah Indonesia." },
-        { status: 400 }
-      );
-    }
-
-    if (faktorNum < 1) {
-      return NextResponse.json(
-        { pesan: "Faktor jalan minimal 1.0." },
-        { status: 400 }
-      );
-    }
-
-    if (maksNum <= 0) {
-      return NextResponse.json(
-        { pesan: "Maksimal jarak kirim harus lebih dari 0 km." },
-        { status: 400 }
-      );
-    }
-
-    const { error } = await supabase
-      .from("pengaturan_toko")
-      .update({
-        lat_toko: latNum,
-        lng_toko: lngNum,
-        faktor_jalan: faktorNum,
-        maks_jarak_kirim_km: maksNum,
-      })
-      .eq("id", 1);
-
-    if (error) {
-      return NextResponse.json(
-        { pesan: "Gagal menyimpan parameter ongkir: " + error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ pesan: "Parameter ongkir jarak berhasil disimpan." });
   }
 
   if (aksi === "tambah_tarif_jarak") {

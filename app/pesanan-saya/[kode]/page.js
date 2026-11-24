@@ -8,12 +8,12 @@ import TombolBayarMidtrans from "@/components/TombolBayarMidtrans";
 import { formatRupiah, formatTanggal, formatTanggalIndonesia, formatTanggalWaktu } from "@/lib/format";
 
 export const metadata = {
-  title: "Tiket Pesanan - Toko Kue Custom",
+  title: "Tiket Digital Pesanan - Cravely Bakery",
 };
 
 function formatRentangTanggal(awal, akhir) {
   if (!awal) return "";
-  if (!akhir || awal === akhir) return formatTanggal(awal);
+  if (!akhir || awal === akhir) return formatTanggalIndonesia(awal);
   const [y1, m1, d1] = awal.split("-").map(Number);
   const [y2, m2, d2] = akhir.split("-").map(Number);
   const dt1 = new Date(Date.UTC(y1, m1 - 1, d1));
@@ -26,7 +26,7 @@ function formatRentangTanggal(awal, akhir) {
   if (y1 === y2 && m1 === m2) {
     return `${d1} sampai ${d2} ${bulanTahun}`;
   }
-  return `${formatTanggal(awal)} sampai ${formatTanggal(akhir)}`;
+  return `${formatTanggalIndonesia(awal)} sampai ${formatTanggalIndonesia(akhir)}`;
 }
 
 export default async function DetailTiketPage(props) {
@@ -70,7 +70,7 @@ export default async function DetailTiketPage(props) {
   const isStafAtauAdmin = profil?.role === "admin" || profil?.role === "staf";
 
   if (!isPemilik && !isStafAtauAdmin) {
-    redirect("/pesanan-saya");
+    redirect("/user");
   }
 
   const { data: pengaturan } = await supabaseAdmin
@@ -80,11 +80,11 @@ export default async function DetailTiketPage(props) {
     .single();
 
   const qrDataUrl = await QRCode.toDataURL(pesanan.kode_pesanan, {
-    width: 220,
+    width: 260,
     margin: 2,
     color: {
-      dark: "#1c1917",
-      light: "#ffffff",
+      dark: "#2D1E1B",
+      light: "#FFFFFF",
     },
   });
 
@@ -185,26 +185,47 @@ export default async function DetailTiketPage(props) {
     teksJadwalKirim = `Estimasi tiba ${formatRentangTanggal(pesanan.tanggal_ambil, tglAkhir)}`;
   }
 
+  const waTokoRaw = (pengaturan?.no_wa || "").replace(/\D/g, "");
+  const waTokoClean = waTokoRaw.startsWith("0") ? "62" + waTokoRaw.slice(1) : waTokoRaw;
+  const linkWaBantuan = waTokoClean
+    ? `https://wa.me/${waTokoClean}?text=${encodeURIComponent(
+        `Halo ${pengaturan?.nama_toko || "Cravely"},\nSaya ingin menanyakan pesanan #${pesanan.kode_pesanan} atas nama ${pesanan.nama_penerima}.`
+      )}`
+    : null;
+
   return (
-    <div className="min-h-screen bg-[#faf6ef] py-8 px-4 font-sans">
+    <div className="min-h-screen bg-[#FAF7F2] py-8 sm:py-12 px-3 sm:px-6 font-sans text-[#2D1E1B]">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
-            href="/pesanan-saya"
-            className="inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-full border border-stone-200 text-stone-700 bg-white hover:bg-stone-50 transition"
+            href="/user?tab=pesanan"
+            className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full border border-[#D9C5B2] text-[#3D2B28] bg-white hover:bg-[#F5ECE2] shadow-xs transition"
           >
-            <i className="fa-solid fa-arrow-left"></i>
-            <span>Kembali ke Daftar Pesanan</span>
+            <i className="fa-solid fa-arrow-left text-[#C59B62]" />
+            <span>Kembali ke Dashboard</span>
           </Link>
 
-          <span className="text-xs text-stone-500 font-medium">
-            Tiket Digital Pelanggan
-          </span>
+          <div className="flex items-center gap-2">
+            {linkWaBantuan && (
+              <a
+                href={linkWaBantuan}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-full bg-[#EBF5EE] text-[#1D603B] border border-[#B9E1C8] hover:bg-[#DDF0E3] transition shadow-xs"
+              >
+                <i className="fa-brands fa-whatsapp text-sm" />
+                <span>Bantuan Toko</span>
+              </a>
+            )}
+            <span className="text-xs font-extrabold text-[#8C6D62] tracking-wider uppercase bg-[#F0E4D7] px-3 py-1.5 rounded-full border border-[#E2D2BE]">
+              Tiket Digital Pelanggan
+            </span>
+          </div>
         </div>
 
         {pesanan.perlu_refund && (
           <div className="p-4 sm:p-5 rounded-3xl bg-amber-50 border-2 border-amber-300 text-amber-900 shadow-sm flex items-start gap-3">
-            <i className="fa-solid fa-circle-exclamation text-amber-600 text-lg mt-0.5" />
+            <i className="fa-solid fa-circle-exclamation text-amber-600 text-lg mt-0.5 shrink-0" />
             <div>
               <h4 className="font-bold text-sm">Pemberitahuan Pengembalian Dana</h4>
               <p className="text-xs text-amber-800 mt-0.5 font-medium">
@@ -214,332 +235,412 @@ export default async function DetailTiketPage(props) {
           </div>
         )}
 
-        <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row items-center justify-between pb-6 border-b border-stone-100 gap-6">
-            <div className="text-center md:text-left">
-              <span className="text-xs uppercase tracking-wider font-bold text-stone-400">
-                Kode Pesanan
-              </span>
-              <h1 className="text-3xl font-black text-stone-900 mt-1">
-                {pesanan.kode_pesanan}
-              </h1>
-              <p className="text-xs text-stone-500 mt-1">
-                Dipesan pada {formatTanggalWaktu(pesanan.dibuat_pada)}
-              </p>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-3">
-                <BadgeStatusPesanan status={pesanan.status_pesanan} />
-                <BadgeStatusBayar status={pesanan.status_bayar} />
+        <div className="bg-[#FFFDF9] rounded-3xl border-2 border-[#EADCC8] shadow-[0_20px_50px_rgba(45,20,15,0.08)] overflow-hidden">
+          <div className="bg-gradient-to-r from-[#2D1E1B] via-[#3E2A27] to-[#2D1E1B] text-[#FFFDF9] p-6 sm:p-8 relative overflow-hidden">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-2 text-[11px] font-bold text-[#E5BF88] tracking-widest uppercase">
+                  <span className="w-2 h-2 rounded-full bg-[#E5BF88] animate-pulse" />
+                  <span>{pengaturan?.nama_toko || "CRAVELY BAKERY"} · TIKET PESANAN</span>
+                </div>
+                <h1 className="font-serif text-3xl sm:text-4xl font-black text-[#FFFDF9] tracking-tight mt-1.5">
+                  {pesanan.kode_pesanan}
+                </h1>
+                <p className="text-xs text-[#D9C5B2] mt-1">
+                  Dipesan pada {formatTanggalWaktu(pesanan.dibuat_pada)}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-4">
+                  <BadgeStatusPesanan status={pesanan.status_pesanan} />
+                  <BadgeStatusBayar status={pesanan.status_bayar} />
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col items-center bg-stone-50 p-4 rounded-2xl border border-stone-100">
-              <img
-                src={qrDataUrl}
-                alt={`QR ${pesanan.kode_pesanan}`}
-                className="w-36 h-36 rounded-xl"
-              />
-              <span className="text-[11px] font-bold text-stone-600 mt-1">
-                Tunjukkan QR saat Pengambilan
-              </span>
+              <div className="bg-[#FFFDF9]/10 backdrop-blur-md border border-[#FFFDF9]/20 p-4 rounded-2xl flex items-center gap-4 text-xs">
+                <div className="text-right">
+                  <span className="text-[10px] text-[#D9C5B2] uppercase font-bold block">Pemesan</span>
+                  <span className="font-bold text-[#FFFDF9] text-sm block">{pesanan.nama_penerima}</span>
+                  <span className="text-[#E5BF88] block text-[11px]">{pesanan.no_wa_penerima}</span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-[#C59B62]/20 border border-[#C59B62]/40 flex items-center justify-center text-[#F6E3BA] text-lg">
+                  <i className="fa-solid fa-receipt" />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6 border-b border-stone-100 items-start">
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
-                Isi Pesanan ({itemsWithUrls.length})
-              </h3>
+          {pesanan.status_pesanan === "Menunggu Pembayaran" && (
+            <div className="bg-[#FFF8E7] border-b border-[#F4E1B3] px-6 py-3.5 flex items-center gap-3 text-xs text-[#7A4B06]">
+              <i className="fa-solid fa-clock text-amber-600 text-sm shrink-0" />
+              <p className="font-semibold">
+                Pesanan sedang menunggu pembayaran. Selesaikan sebelum batas waktu agar dapur kami segera memproses pesanan Anda.
+              </p>
+            </div>
+          )}
 
-              <div className="space-y-4">
-                {itemsWithUrls.map((it, idx) => {
-                  const isCustom = it.jenis === "Custom";
+          {pesanan.status_pesanan === "Siap" && (
+            <div className="bg-[#ECFDF5] border-b border-[#A7F3D0] px-6 py-3.5 flex items-center gap-3 text-xs text-[#065F46]">
+              <i className="fa-solid fa-circle-check text-emerald-600 text-sm shrink-0" />
+              <p className="font-semibold">
+                Kue Anda sudah selesai dibuat dan siap diambil di toko! Tunjukkan kode QR di samping kepada staf kasir.
+              </p>
+            </div>
+          )}
 
-                  return (
-                    <div
-                      key={it.id || idx}
-                      className="bg-amber-50/40 rounded-2xl p-4 border border-amber-100/80 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isCustom ? "bg-amber-100 text-amber-900" : "bg-sky-100 text-sky-900"
-                        }`}>
-                          {isCustom ? "Kue Custom" : "Kue Katalog"}
-                        </span>
-                        <span className="text-xs font-bold text-stone-900 lining-nums tabular-nums">
-                          {formatRupiah(it.subtotal)}
-                        </span>
-                      </div>
+          <div className="p-6 sm:p-8 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-7 space-y-6">
+                <div>
+                  <h3 className="font-serif font-bold text-base text-[#2D1E1B] flex items-center gap-2 mb-4">
+                    <i className="fa-solid fa-cake-candles text-[#C59B62]" />
+                    <span>Rincian Kue & Isi Pesanan ({itemsWithUrls.length})</span>
+                  </h3>
 
-                      <div className="font-bold text-sm text-stone-900">
-                        {it.nama_item} {it.jumlah > 1 ? `(${it.jumlah}x)` : ""}
-                      </div>
+                  <div className="space-y-4">
+                    {itemsWithUrls.map((it, idx) => {
+                      const isCustom = it.jenis === "Custom";
 
-                      {isCustom ? (
-                        <div className="space-y-3">
-                          <div className="flex justify-center bg-white rounded-xl p-3 border border-stone-100">
-                            {it.prevUrl ? (
-                              <img
-                                src={it.prevUrl}
-                                alt="Snapshot Desain 3D"
-                                className="w-full max-w-[220px] h-auto object-contain rounded-lg drop-shadow-sm"
-                              />
-                            ) : (
-                              <PreviewKue
-                                pilihan={it.pilihan || []}
-                                tulisan={it.tulisan_kue || ""}
-                                className="w-full max-w-[180px]"
-                              />
-                            )}
+                      return (
+                        <div
+                          key={it.id || idx}
+                          className="bg-[#FAF7F2] rounded-2xl p-4 sm:p-5 border border-[#EADCC8] space-y-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
+                                isCustom
+                                  ? "bg-[#F3E7D3] text-[#6B4B1C] border border-[#DFCBB0]"
+                                  : "bg-[#E6F0FA] text-[#1D4E89] border border-[#C5DCF2]"
+                              }`}
+                            >
+                              {isCustom ? "Kue Custom" : "Kue Katalog"}
+                            </span>
+                            <span className="text-sm font-black text-[#2D1E1B] lining-nums tabular-nums">
+                              {formatRupiah(it.subtotal)}
+                            </span>
                           </div>
 
-                          {(it.bentukUrl || it.gambarUrl) && (
-                            <div className="flex gap-2">
-                              {it.bentukUrl && (
-                                <div className="flex-1 bg-white border border-stone-100 rounded-xl p-2 text-center">
-                                  <span className="text-[10px] font-bold text-stone-400 block mb-1">
-                                    Bentuk Kustom
-                                  </span>
+                          <div className="font-serif font-bold text-base text-[#2D1E1B]">
+                            {it.nama_item} {it.jumlah > 1 ? `(${it.jumlah}x)` : ""}
+                          </div>
+
+                          {isCustom ? (
+                            <div className="space-y-3">
+                              <div className="flex justify-center bg-white rounded-2xl p-4 border border-[#EADCC8] shadow-inner">
+                                {it.prevUrl ? (
                                   <img
-                                    src={it.bentukUrl}
-                                    alt="Bentuk Kustom"
-                                    className="w-full h-16 object-contain rounded"
+                                    src={it.prevUrl}
+                                    alt="Snapshot Desain 3D"
+                                    className="w-full max-w-[240px] h-auto object-contain rounded-xl drop-shadow-md"
                                   />
+                                ) : (
+                                  <PreviewKue
+                                    pilihan={it.pilihan || []}
+                                    tulisan={it.tulisan_kue || ""}
+                                    className="w-full max-w-[200px]"
+                                  />
+                                )}
+                              </div>
+
+                              {(it.bentukUrl || it.gambarUrl) && (
+                                <div className="grid grid-cols-2 gap-2">
+                                  {it.bentukUrl && (
+                                    <div className="bg-white border border-[#EADCC8] rounded-xl p-2.5 text-center">
+                                      <span className="text-[10px] font-bold text-[#8C6D62] block mb-1">
+                                        Bentuk Kustom
+                                      </span>
+                                      <img
+                                        src={it.bentukUrl}
+                                        alt="Bentuk Kustom"
+                                        className="w-full h-20 object-contain rounded-lg"
+                                      />
+                                    </div>
+                                  )}
+                                  {it.gambarUrl && (
+                                    <div className="bg-white border border-[#EADCC8] rounded-xl p-2.5 text-center">
+                                      <span className="text-[10px] font-bold text-[#8C6D62] block mb-1">
+                                        Gambar Kustom
+                                      </span>
+                                      <img
+                                        src={it.gambarUrl}
+                                        alt="Gambar Kustom"
+                                        className="w-full h-20 object-contain rounded-lg"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               )}
-                              {it.gambarUrl && (
-                                <div className="flex-1 bg-white border border-stone-100 rounded-xl p-2 text-center">
-                                  <span className="text-[10px] font-bold text-stone-400 block mb-1">
-                                    Gambar Kustom
+
+                              {it.tulisan_kue && (
+                                <div className="p-3 rounded-xl bg-[#FFFDF9] border border-[#EADCC8] text-xs">
+                                  <span className="font-bold block text-[#8C6D62] text-[10px] uppercase tracking-wider">
+                                    Pesan / Tulisan di Kue:
                                   </span>
-                                  <img
-                                    src={it.gambarUrl}
-                                    alt="Gambar Kustom"
-                                    className="w-full h-16 object-contain rounded"
-                                  />
+                                  <span className="font-serif font-bold text-[#2D1E1B] text-sm italic mt-1 block">
+                                    &ldquo;{it.tulisan_kue}&rdquo;
+                                  </span>
+                                </div>
+                              )}
+
+                              {it.catatan && (
+                                <div className="p-3 rounded-xl bg-[#FFFDF9] border border-[#EADCC8] text-xs">
+                                  <span className="font-bold block text-[#8C6D62] text-[10px] uppercase tracking-wider">
+                                    Catatan Tambahan:
+                                  </span>
+                                  <p className="font-medium text-[#4A2E2B] italic mt-0.5">
+                                    &ldquo;{it.catatan}&rdquo;
+                                  </p>
+                                </div>
+                              )}
+
+                              {it.pilihan?.length > 0 && (
+                                <div className="p-3 rounded-xl bg-white border border-[#EADCC8] space-y-2">
+                                  <span className="font-bold text-[#8C6D62] block text-[10px] uppercase tracking-wider">
+                                    Komposisi & Pilihan Desain:
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {it.pilihan.map((p, i) => (
+                                      <span
+                                        key={i}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF7F2] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28]"
+                                      >
+                                        <span className="text-[#8C6D62] text-[10px]">{p.nama_grup}:</span>
+                                        <strong>{p.nama_item}</strong>
+                                        {p.jumlah > 1 && (
+                                          <span className="text-[10px] text-[#C59B62]">({p.jumlah}x)</span>
+                                        )}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>
-                          )}
-
-                          {it.tulisan_kue && (
-                            <div className="p-2.5 rounded-xl bg-white border border-stone-100 text-xs">
-                              <span className="font-semibold block text-stone-400 text-[10px]">Tulisan di Kue:</span>
-                              <span className="font-bold text-[#17382d] text-xs italic mt-0.5 block">
-                                &ldquo;{it.tulisan_kue}&rdquo;
-                              </span>
-                            </div>
-                          )}
-
-                          {it.catatan && (
-                            <div className="p-2.5 rounded-xl bg-white border border-stone-100 text-xs">
-                              <span className="font-semibold block text-stone-400 text-[10px]">Catatan:</span>
-                              <p className="font-medium text-stone-700 italic mt-0.5">&ldquo;{it.catatan}&rdquo;</p>
-                            </div>
-                          )}
-
-                          {it.pilihan?.length > 0 && (
-                            <div className="p-2.5 rounded-xl bg-white border border-stone-100 text-[11px] space-y-1">
-                              <span className="font-bold text-stone-400 block text-[10px] uppercase">Pilihan Opsi:</span>
-                              {it.pilihan.map((p, i) => (
-                                <div key={i} className="flex justify-between text-stone-700">
-                                  <span>{p.nama_grup}: <strong>{p.nama_item}</strong></span>
-                                  {p.jumlah > 1 && <span>x{p.jumlah}</span>}
-                                </div>
-                              ))}
+                          ) : (
+                            <div className="flex items-center gap-3.5 bg-white p-3.5 rounded-xl border border-[#EADCC8]">
+                              <div className="w-16 h-16 rounded-xl bg-[#FAF7F2] overflow-hidden flex items-center justify-center shrink-0 border border-[#EADCC8]">
+                                {it.prodUrl ? (
+                                  <img
+                                    src={it.prodUrl}
+                                    alt={it.nama_item}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <i className="fa-solid fa-cake-candles text-[#D9C5B2] text-xl" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-[#2D1E1B]">{it.nama_item}</p>
+                                <p className="text-xs text-[#8C6D62] mt-0.5 lining-nums tabular-nums">
+                                  {formatRupiah(it.harga_satuan)} x {it.jumlah}
+                                </p>
+                              </div>
                             </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-stone-100">
-                          <div className="w-16 h-16 rounded-lg bg-stone-50 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            {it.prodUrl ? (
-                              <img src={it.prodUrl} alt={it.nama_item} className="w-full h-full object-cover" />
-                            ) : (
-                              <i className="fa-solid fa-cake-candles text-stone-300 text-xl" />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 space-y-6">
+                <div className="bg-[#FAF7F2] border-2 border-dashed border-[#D9C5B2] rounded-3xl p-6 text-center flex flex-col items-center justify-center space-y-3.5">
+                  <div className="p-2.5 bg-white rounded-2xl shadow-sm border border-[#EADCC8]">
+                    <img
+                      src={qrDataUrl}
+                      alt={`QR ${pesanan.kode_pesanan}`}
+                      className="w-44 h-44 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <span className="font-serif font-extrabold text-sm text-[#2D1E1B] block">
+                      QR Pas Pengambilan
+                    </span>
+                    <span className="text-xs text-[#6B5249] block mt-0.5">
+                      Tunjukkan QR ini ke staf kasir toko saat mengambil kue Anda.
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-[#EADCC8] w-full text-center">
+                    <span className="text-[11px] font-mono font-bold text-[#8C6D62] tracking-wider">
+                      ID: {pesanan.kode_pesanan}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-[#FAF7F2] border border-[#EADCC8] rounded-3xl p-5 sm:p-6 space-y-4">
+                  <h3 className="font-serif font-bold text-base text-[#2D1E1B] flex items-center gap-2">
+                    <i className="fa-solid fa-receipt text-[#C59B62]" />
+                    <span>Rincian Tagihan</span>
+                  </h3>
+
+                  <div className="space-y-2 text-xs divide-y divide-[#EADCC8]/60">
+                    <div className="flex justify-between items-center pb-2 text-[#4A2E2B]">
+                      <span>Total Kue:</span>
+                      <span className="font-bold text-[#2D1E1B] lining-nums tabular-nums">
+                        {formatRupiah(pesanan.total_kue)}
+                      </span>
+                    </div>
+
+                    {pesanan.ongkir > 0 && (
+                      <div className="flex justify-between items-center py-2 text-[#4A2E2B]">
+                        <span>Ongkos Kirim:</span>
+                        <span className="font-bold text-[#2D1E1B] lining-nums tabular-nums">
+                          {formatRupiah(pesanan.ongkir)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center pt-2 font-bold text-sm text-[#2D1E1B]">
+                      <span>Total Bayar:</span>
+                      <span className="text-[#9E3B42] text-base font-black lining-nums tabular-nums">
+                        {formatRupiah(pesanan.total_bayar)}
+                      </span>
+                    </div>
+
+                    {pesanan.persen_dp_saat_pesan && (
+                      <div className="flex justify-between items-center py-2 text-[#6B5249]">
+                        <span>Uang Muka (DP {pesanan.persen_dp_saat_pesan}%):</span>
+                        <span className="font-bold lining-nums tabular-nums">
+                          {formatRupiah(pesanan.jumlah_dp)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center py-2 text-[#6B5249]">
+                      <span>Sudah Dibayar:</span>
+                      <span className="font-bold text-emerald-700 lining-nums tabular-nums">
+                        {formatRupiah(pesanan.jumlah_terbayar || 0)}
+                      </span>
+                    </div>
+
+                    {sisaBayar > 0 ? (
+                      <div className="flex justify-between items-center pt-2 text-[#B45309] font-bold text-sm bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                        <span>Sisa Pelunasan:</span>
+                        <span className="lining-nums tabular-nums">{formatRupiah(sisaBayar)}</span>
+                      </div>
+                    ) : (
+                      <div className="pt-2 text-center text-xs font-bold text-emerald-700 bg-emerald-50 py-2 rounded-xl border border-emerald-200">
+                        <i className="fa-solid fa-circle-check mr-1.5" />
+                        Pembayaran Sudah Lunas
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-[#EADCC8]">
+              <div className="bg-[#FAF7F2] border border-[#EADCC8] rounded-3xl p-5 sm:p-6 space-y-3.5">
+                <h3 className="font-serif font-bold text-base text-[#2D1E1B] flex items-center gap-2">
+                  <i className="fa-solid fa-location-dot text-[#C59B62]" />
+                  <span>Jadwal & Pengambilan</span>
+                </h3>
+
+                <div className="space-y-3 text-xs text-[#4A2E2B]">
+                  {pesanan.metode_pengiriman === "Kirim" ? (
+                    <>
+                      <div className="flex items-start gap-2.5">
+                        <i className="fa-solid fa-truck text-[#9E3B42] mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-bold text-[#2D1E1B] block">Pengiriman Kurir Toko</span>
+                          {pesanan.jarak_km && (
+                            <span className="text-[#8C6D62] block mt-0.5">Jarak Pengiriman: {pesanan.jarak_km} km</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2.5">
+                        <i className="fa-solid fa-calendar-check text-[#9E3B42] mt-0.5 shrink-0" />
+                        <span className="font-bold text-[#2D1E1B]">{teksJadwalKirim}</span>
+                      </div>
+                      {pesanan.alamat && (
+                        <div className="flex items-start gap-2.5 pt-2 border-t border-[#EADCC8]">
+                          <i className="fa-solid fa-house text-[#9E3B42] mt-0.5 shrink-0" />
+                          <div>
+                            <span className="font-bold text-[#2D1E1B] block">Alamat Tujuan:</span>
+                            <p className="text-[#4A2E2B] mt-0.5 leading-relaxed">{pesanan.alamat}</p>
+                            {pesanan.patokan && (
+                              <p className="text-[#8C6D62] text-[11px] mt-0.5">Patokan: {pesanan.patokan}</p>
                             )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-stone-900">{it.nama_item}</p>
-                            <p className="text-[11px] text-stone-500 mt-0.5 lining-nums tabular-nums">
-                              {formatRupiah(it.harga_satuan)} x {it.jumlah}
-                            </p>
                           </div>
                         </div>
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
-                Rincian Tagihan
-              </h3>
-              <div className="divide-y divide-stone-100 text-xs">
-                {itemsWithUrls.map((it, idx) => (
-                  <div key={idx} className="py-2 flex justify-between items-center">
-                    <div>
-                      <span className="text-stone-400 block text-[10px] uppercase">
-                        {it.jenis === "Custom" ? "Kue Custom" : "Kue Katalog"}
-                      </span>
-                      <span className="font-semibold text-stone-800">
-                        {it.nama_item} {it.jumlah > 1 ? `x ${it.jumlah}` : ""}
-                      </span>
-                    </div>
-                    <span className="font-medium text-stone-700 lining-nums tabular-nums">
-                      {formatRupiah(it.subtotal)}
-                    </span>
-                  </div>
-                ))}
-
-                {pesanan.metode_pengiriman === "Kirim" && (
-                  <div className="py-2.5 flex justify-between items-center">
-                    <div>
-                      <span className="text-stone-400 block text-[10px] uppercase">
-                        Pengiriman
-                      </span>
-                      <span className="font-semibold text-stone-800">
-                        Ongkos Kirim {pesanan.jarak_km ? `(${pesanan.jarak_km} km)` : ""}
-                      </span>
-                    </div>
-                    <span className="font-medium text-stone-700 lining-nums tabular-nums">
-                      {formatRupiah(pesanan.ongkir)}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-4 border-t border-stone-200 space-y-1.5 text-xs">
-                <div className="flex justify-between text-stone-600">
-                  <span>Total Kue:</span>
-                  <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(pesanan.total_kue)}</span>
-                </div>
-                {pesanan.ongkir > 0 && (
-                  <div className="flex justify-between text-stone-600">
-                    <span>Ongkos Kirim:</span>
-                    <span className="font-bold text-stone-900 lining-nums tabular-nums">{formatRupiah(pesanan.ongkir)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-sm text-stone-900 pt-1 border-t border-stone-100">
-                  <span>Total Bayar:</span>
-                  <span className="text-rose-600 lining-nums tabular-nums">{formatRupiah(pesanan.total_bayar)}</span>
-                </div>
-                {pesanan.persen_dp_saat_pesan && (
-                  <div className="flex justify-between text-stone-600 pt-1">
-                    <span>Jumlah DP ({pesanan.persen_dp_saat_pesan}%):</span>
-                    <span className="font-bold text-stone-800 lining-nums tabular-nums">{formatRupiah(pesanan.jumlah_dp)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-stone-600">
-                  <span>Sudah Dibayar:</span>
-                  <span className="font-semibold text-emerald-700 lining-nums tabular-nums">
-                    {formatRupiah(pesanan.jumlah_terbayar || 0)}
-                  </span>
-                </div>
-                {sisaBayar > 0 && (
-                  <div className="flex justify-between text-amber-800 font-bold pt-1">
-                    <span>Sisa Tagihan:</span>
-                    <span className="lining-nums tabular-nums">{formatRupiah(sisaBayar)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6 border-b border-stone-100">
-            <div>
-              <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">
-                Jadwal & Lokasi
-              </h3>
-              <div className="space-y-2.5 text-xs text-stone-700">
-                {pesanan.metode_pengiriman === "Kirim" ? (
-                  <>
-                    <div className="flex items-start space-x-2">
-                      <i className="fa-solid fa-truck text-rose-500 mt-0.5" />
-                      <div>
-                        <span>Metode: <strong>Kirim ke Alamat</strong></span>
-                        {pesanan.jarak_km && (
-                          <span className="text-stone-500 block">Jarak: {pesanan.jarak_km} km</span>
-                        )}
-                        <span className="text-stone-500 block">Ongkir: {formatRupiah(pesanan.ongkir)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <i className="fa-solid fa-calendar-check text-rose-500 mt-0.5" />
-                      <span>
-                        <strong>{teksJadwalKirim}</strong>
-                      </span>
-                    </div>
-                    {pesanan.alamat && (
-                      <div className="flex items-start space-x-2">
-                        <i className="fa-solid fa-location-dot text-rose-500 mt-0.5" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-start gap-2.5">
+                        <i className="fa-solid fa-calendar text-[#9E3B42] mt-0.5 shrink-0" />
                         <div>
-                          <span className="font-semibold block text-stone-900">Alamat Tujuan:</span>
-                          <p className="text-stone-600 mt-0.5">{pesanan.alamat}</p>
-                          {pesanan.patokan && (
-                            <p className="text-stone-400 text-[11px] mt-0.5">Patokan: {pesanan.patokan}</p>
+                          <span className="text-[#8C6D62] block">Jadwal Pengambilan:</span>
+                          <span className="font-bold text-[#2D1E1B] text-sm block mt-0.5">
+                            {formatTanggalIndonesia(pesanan.tanggal_ambil)}
+                          </span>
+                          <span className="text-[#8C6D62] block mt-0.5">
+                            Pukul {pesanan.jam_ambil?.slice(0, 5)} WIB
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2.5 pt-2 border-t border-[#EADCC8]">
+                        <i className="fa-solid fa-store text-[#9E3B42] mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-bold text-[#2D1E1B] block">
+                            Lokasi Toko ({pengaturan?.nama_toko || "Cravely"})
+                          </span>
+                          {pengaturan?.alamat && (
+                            <p className="text-[#4A2E2B] mt-0.5 leading-relaxed">{pengaturan.alamat}</p>
                           )}
                         </div>
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-start space-x-2">
-                      <i className="fa-solid fa-calendar text-rose-500 mt-0.5" />
-                      <span>
-                        Diambil pada <strong>{formatTanggalIndonesia(pesanan.tanggal_ambil)}</strong> pukul <strong>{pesanan.jam_ambil?.slice(0, 5)} WIB</strong>
-                      </span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <i className="fa-solid fa-store text-rose-500 mt-0.5" />
-                      <div>
-                        <span>Metode: <strong>Ambil di Toko ({pengaturan?.nama_toko || "Cravely"})</strong></span>
-                        {pengaturan?.alamat && (
-                          <p className="text-stone-500 mt-1">{pengaturan.alamat}</p>
-                        )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#FAF7F2] border border-[#EADCC8] rounded-3xl p-5 sm:p-6 space-y-3.5 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-serif font-bold text-base text-[#2D1E1B] flex items-center gap-2 mb-3">
+                    <i className="fa-solid fa-credit-card text-[#C59B62]" />
+                    <span>Status & Pembayaran</span>
+                  </h3>
+                  <p className="text-xs text-[#6B5249] leading-relaxed mb-4">
+                    Pembayaran diproses aman melalui payment gateway Midtrans (QRIS, GoPay, ShopeePay, Virtual Account).
+                  </p>
+                </div>
+
+                <TombolBayarMidtrans
+                  pesanan={pesanan}
+                  batasBayarIso={batasBayarIso}
+                  transferManualAktif={Boolean(pengaturan?.transfer_manual_aktif)}
+                  pengaturan={pengaturan}
+                />
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-[#EADCC8] space-y-4">
+              <h3 className="font-serif font-bold text-base text-[#2D1E1B] flex items-center gap-2">
+                <i className="fa-solid fa-clock-rotate-left text-[#C59B62]" />
+                <span>Riwayat Perjalanan Pesanan</span>
+              </h3>
+
+              {riwayatUrut.length === 0 ? (
+                <p className="text-xs text-[#8C6D62]">Belum ada catatan riwayat status.</p>
+              ) : (
+                <div className="space-y-3">
+                  {riwayatUrut.map((r, idx) => (
+                    <div
+                      key={r.id || idx}
+                      className="flex items-start gap-3 text-xs bg-[#FAF7F2] p-3 rounded-2xl border border-[#EADCC8]"
+                    >
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#C59B62] mt-1 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-[#2D1E1B] block">{r.keterangan}</span>
+                        <span className="text-[11px] text-[#8C6D62] mt-0.5 block">
+                          {formatTanggalWaktu(r.dibuat_pada)}
+                        </span>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
-
-            <div>
-              <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">
-                Pembayaran
-              </h3>
-              <TombolBayarMidtrans
-                pesanan={pesanan}
-                batasBayarIso={batasBayarIso}
-                transferManualAktif={Boolean(pengaturan?.transfer_manual_aktif)}
-                pengaturan={pengaturan}
-              />
-            </div>
-          </div>
-
-          <div className="pt-6">
-            <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-4">
-              Riwayat Status Pesanan
-            </h3>
-            {riwayatUrut.length === 0 ? (
-              <p className="text-xs text-stone-400">Belum ada catatan riwayat status.</p>
-            ) : (
-              <div className="space-y-3">
-                {riwayatUrut.map((r, idx) => (
-                  <div key={r.id || idx} className="flex items-start space-x-3 text-xs">
-                    <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0"></div>
-                    <div>
-                      <span className="font-semibold text-stone-800">{r.keterangan}</span>
-                      <span className="text-stone-400 ml-2">
-                        {formatTanggalWaktu(r.dibuat_pada)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>

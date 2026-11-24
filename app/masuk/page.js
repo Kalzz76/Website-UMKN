@@ -143,9 +143,17 @@ function FormMasuk() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">
-            Kata Sandi
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-semibold text-stone-700">
+              Kata Sandi
+            </label>
+            <Link
+              href="/lupa-sandi"
+              className="text-xs text-rose-600 hover:text-rose-700 font-semibold"
+            >
+              Lupa kata sandi?
+            </Link>
+          </div>
           <input
             type="password"
             value={password}

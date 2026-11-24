@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ModalPesan from "@/components/ModalPesan";
 
 export default function AkunDashboardPage() {
+  const router = useRouter();
   const [sedangMemuat, setSedangMemuat] = useState(true);
   const [daftarAkun, setDaftarAkun] = useState([]);
   const [sedangProses, setSedangProses] = useState(false);
@@ -44,6 +46,10 @@ export default function AkunDashboardPage() {
   async function muatAkun() {
     setSedangMemuat(true);
     const res = await fetch("/api/akun");
+    if (res.status === 403) {
+      router.replace("/dashboard");
+      return;
+    }
     const hasil = await res.json();
 
     if (res.ok && hasil.akun) {

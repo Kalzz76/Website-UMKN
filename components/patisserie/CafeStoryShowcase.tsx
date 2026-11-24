@@ -9,6 +9,7 @@ interface CafeStoryShowcaseProps {
   onGoToMenuWithCake?: (menuId: number) => void;
   onNotify?: (msg: string) => void;
   popularCakes?: PopularCakeItem[];
+  toko?: any;
 }
 
 function clamp01(val: number): number {
@@ -61,6 +62,7 @@ export const CafeStoryShowcase: React.FC<CafeStoryShowcaseProps> = ({
   onGoToMenuWithCake,
   onNotify,
   popularCakes,
+  toko = null,
 }) => {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef(0);
@@ -999,6 +1001,7 @@ export const CafeStoryShowcase: React.FC<CafeStoryShowcaseProps> = ({
         onGoToMenuWithCake={onGoToMenuWithCake}
         onNotify={onNotify}
         popularCakes={popularCakes}
+        toko={toko}
       />
     </div>
   );

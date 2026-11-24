@@ -2,10 +2,20 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { usePatisserieCart } from "@/lib/patisserieCart";
 import PreviewKue from "@/components/PreviewKue";
+
+const PetaLokasi = dynamic(() => import("@/components/PetaLokasi"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[280px] rounded-2xl bg-[#f3f7f3] border border-[#dce6de] flex items-center justify-center text-xs text-[#6b8274]">
+      Memuat peta lokasi...
+    </div>
+  ),
+});
 import {
   formatRupiah,
   formatTanggal,
@@ -14,10 +24,50 @@ import {
   formatTanggalWaktu,
 } from "@/lib/format";
 
+function formatRentangTanggal(awal, akhir) {
+  if (!awal) return "";
+  if (!akhir || awal === akhir) return formatTanggalIndonesia(awal);
+  const [y1, m1, d1] = awal.split("-").map(Number);
+  const [y2, m2, d2] = akhir.split("-").map(Number);
+  const dt2 = new Date(Date.UTC(y2, m2 - 1, d2));
+  const bulanTahun = new Intl.DateTimeFormat("id-ID", {
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  }).format(dt2);
+  if (y1 === y2 && m1 === m2) {
+    return `${d1} sampai ${d2} ${bulanTahun}`;
+  }
+  return `${formatTanggalIndonesia(awal)} sampai ${formatTanggalIndonesia(akhir)}`;
+}
+
+function formatTeksJadwal(p) {
+  if (p.metode_pengiriman === "Kirim") {
+    const tglPasti = p.tanggal_pasti_kirim;
+    const estAwal = p.estimasi_kirim_awal || p.tanggal_ambil;
+    const estAkhir = p.estimasi_kirim_akhir;
+    if (tglPasti) {
+      return { teks: `Estimasi tiba ${formatTanggalIndonesia(tglPasti)}`, sub: "Pengiriman Kurir" };
+    }
+    if (estAwal && estAkhir && estAwal !== estAkhir) {
+      return { teks: `Estimasi tiba ${formatRentangTanggal(estAwal, estAkhir)}`, sub: "Pengiriman Kurir" };
+    }
+    if (estAwal) {
+      return { teks: `Estimasi tiba ${formatTanggalIndonesia(estAwal)}`, sub: "Pengiriman Kurir" };
+    }
+    return { teks: "Pengiriman Kurir", sub: "" };
+  }
+  return {
+    teks: formatTanggalIndonesia(p.tanggal_ambil),
+    sub: p.jam_ambil ? `Pukul ${p.jam_ambil.slice(0, 5)} WIB` : "Jam operasional",
+  };
+}
+
 export default function DashboardPelangganView({
   profilAwal,
   pesananList = [],
   pengaturanToko,
+  tokoPublik = null,
   zonaOngkirList = [],
 }) {
   const router = useRouter();
@@ -42,6 +92,11 @@ export default function DashboardPelangganView({
   const [alasanBatalInput, setAlasanBatalInput] = useState("");
   const [sedangBatal, setSedangBatal] = useState(false);
   const [pesanBatalError, setPesanBatalError] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   async function handleKonfirmasiBatal() {
     if (!pesananBatalTarget) return;
@@ -73,11 +128,23 @@ export default function DashboardPelangganView({
     no_wa: profilAwal?.no_wa || "",
   });
   const [alamatTersimpan, setAlamatTersimpan] = useState({
-    id_zona: "",
-    alamat_lengkap: "",
-    patokan: "",
-    catatan_default: "",
+    alamat_lengkap: profilAwal?.alamat || "",
+    patokan: profilAwal?.patokan || "",
+    lat_alamat: profilAwal?.lat_alamat || null,
+    lng_alamat: profilAwal?.lng_alamat || null,
   });
+  const [jumlahKeranjangApi, setJumlahKeranjangApi] = useState(totalKeranjangQty || 0);
+
+  useEffect(() => {
+    fetch("/api/keranjang/jumlah")
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data?.jumlah === "number") {
+          setJumlahKeranjangApi(data.jumlah);
+        }
+      })
+      .catch(() => {});
+  }, [totalKeranjangQty]);
   const [sedangSimpanProfil, setSedangSimpanProfil] = useState(false);
   const [pesanSuksesProfil, setPesanSuksesProfil] = useState("");
   const [pesanErrorProfil, setPesanErrorProfil] = useState("");
@@ -93,8 +160,8 @@ export default function DashboardPelangganView({
 
   const [formTiket, setFormTiket] = useState({
     kode_pesanan: pesananList[0]?.kode_pesanan || "",
-    tujuan_role: "Petugas Produksi & Operasional",
-    kategori: "Status Produksi Kue",
+    tujuan_role: "Status pembuatan kue",
+    kategori: "Status pembuatan kue",
     subjek: "",
     pesan: "",
   });
@@ -112,26 +179,35 @@ export default function DashboardPelangganView({
   useEffect(() => {
     const userId = profilAwal?.id || "guest";
     try {
-      const rawAlamat = localStorage.getItem(`cravely_alamat_user_${userId}`);
-      if (rawAlamat) {
-        const parsed = JSON.parse(rawAlamat);
+      if (profilAwal?.alamat || profilAwal?.lat_alamat) {
         setAlamatTersimpan({
-          id_zona: parsed.id_zona || "",
-          alamat_lengkap: parsed.alamat_lengkap || "",
-          patokan: parsed.patokan || "",
-          catatan_default: parsed.catatan_default || "",
+          alamat_lengkap: profilAwal.alamat || "",
+          patokan: profilAwal.patokan || "",
+          lat_alamat: profilAwal.lat_alamat || null,
+          lng_alamat: profilAwal.lng_alamat || null,
         });
       } else {
-        const pesananKirimTerakhir = pesananList.find(
-          (p) => p.metode_pengiriman === "Kirim" && p.alamat
-        );
-        if (pesananKirimTerakhir) {
+        const rawAlamat = localStorage.getItem(`cravely_alamat_user_${userId}`);
+        if (rawAlamat) {
+          const parsed = JSON.parse(rawAlamat);
           setAlamatTersimpan({
-            id_zona: pesananKirimTerakhir.id_zona ? String(pesananKirimTerakhir.id_zona) : "",
-            alamat_lengkap: pesananKirimTerakhir.alamat || "",
-            patokan: "",
-            catatan_default: pesananKirimTerakhir.catatan || "",
+            alamat_lengkap: parsed.alamat_lengkap || "",
+            patokan: parsed.patokan || "",
+            lat_alamat: parsed.lat_alamat || null,
+            lng_alamat: parsed.lng_alamat || null,
           });
+        } else {
+          const pesananKirimTerakhir = pesananList.find(
+            (p) => p.metode_pengiriman === "Kirim" && p.alamat
+          );
+          if (pesananKirimTerakhir) {
+            setAlamatTersimpan({
+              alamat_lengkap: pesananKirimTerakhir.alamat || "",
+              patokan: pesananKirimTerakhir.patokan || "",
+              lat_alamat: pesananKirimTerakhir.lat_tujuan ? Number(pesananKirimTerakhir.lat_tujuan) : null,
+              lng_alamat: pesananKirimTerakhir.lng_tujuan ? Number(pesananKirimTerakhir.lng_tujuan) : null,
+            });
+          }
         }
       }
 
@@ -214,78 +290,92 @@ export default function DashboardPelangganView({
     const adaMenunggu = (pesanan.pembayaran || []).some(
       (b) => b.status === "Menunggu Konfirmasi"
     );
+    const batasJam = Number(pengaturanToko?.batas_bayar_jam || 24);
+    const batasBayarDate = new Date(new Date(pesanan.dibuat_pada).getTime() + batasJam * 3600000);
+    const batasBayarTeks = formatTanggalWaktu(batasBayarDate);
+
+    const sisa = Math.max(0, (Number(pesanan.total_bayar) || 0) - (Number(pesanan.jumlah_terbayar) || 0));
+    let bayarSekarang = sisa;
+    if ((Number(pesanan.jumlah_terbayar) || 0) === 0) {
+      if (pesanan.persen_dp_saat_pesan && pesanan.jumlah_dp) {
+        bayarSekarang = Number(pesanan.jumlah_dp) || 0;
+      } else {
+        bayarSekarang = Number(pesanan.total_bayar) || 0;
+      }
+    }
+
     if (pesanan.status_pesanan === "Dibatalkan") {
       return {
-        label: "Dibatalkan oleh Admin",
-        peran: "Admin Toko",
+        label: "Batal: pesanan telah dibatalkan",
+        menunggu: "Selesai",
         ikon: "fa-solid fa-ban",
         warna: "bg-rose-50 text-rose-700 border-rose-200",
-        deskripsi: pesanan.alasan_batal || "Pesanan telah dibatalkan.",
+        deskripsi: pesanan.alasan_batal || "Pesanan telah dibatalkan oleh toko.",
       };
     }
     if (pesanan.status_pesanan === "Menunggu Pembayaran") {
       if (adaMenunggu) {
         return {
-          label: "Menunggu Verifikasi Admin",
-          peran: "Admin Keuangan",
+          label: "Toko: memeriksa bukti pembayaran Anda",
+          menunggu: "Menunggu: Toko",
           ikon: "fa-solid fa-user-check",
           warna: "bg-amber-50 text-amber-800 border-amber-200",
-          deskripsi: "Bukti bayar sudah diterima dan sedang diperiksa oleh Admin.",
+          deskripsi: "Bukti bayar sedang diperiksa oleh toko.",
         };
       }
       return {
-        label: "Menunggu Pembayaran Anda",
-        peran: "Pelanggan",
+        label: "Pelanggan: selesaikan pembayaran",
+        menunggu: "Menunggu: Anda",
         ikon: "fa-solid fa-wallet",
         warna: "bg-amber-50 text-amber-800 border-amber-200",
-        deskripsi: "Silakan lakukan pembayaran DP/Lunas agar pesanan diteruskan ke Petugas.",
+        deskripsi: `Bayar ${formatRupiah(bayarSekarang)} sebelum ${batasBayarTeks} agar pesanan diteruskan ke toko.`,
       };
     }
     if (pesanan.status_pesanan === "Diterima") {
       return {
-        label: "Diverifikasi Admin • Antrean Dapur",
-        peran: "Admin -> Petugas Dapur",
+        label: "Toko: pesanan dalam antrean produksi dapur",
+        menunggu: "Menunggu: Toko",
         ikon: "fa-solid fa-clipboard-check",
         warna: "bg-sky-50 text-sky-800 border-sky-200",
-        deskripsi: "Pembayaran telah disetujui Admin, pesanan masuk jadwal Petugas Produksi.",
+        deskripsi: "Pembayaran telah terkonfirmasi dan pesanan masuk jadwal produksi dapur.",
       };
     }
     if (pesanan.status_pesanan === "Sedang Dibuat") {
       return {
-        label: "Diproses Petugas Produksi",
-        peran: "Petugas Dapur",
+        label: "Petugas: sedang memproses dan mendekorasi kue",
+        menunggu: "Menunggu: Toko",
         ikon: "fa-solid fa-fire-burner",
         warna: "bg-blue-50 text-blue-800 border-blue-200",
-        deskripsi: "Petugas sedang memanggang dan mendekorasi kue custom Anda di dapur.",
+        deskripsi: "Kue pesanan Anda sedang diproses dan didekorasi di dapur.",
       };
     }
     if (pesanan.status_pesanan === "Siap") {
       return {
-        label: "Selesai di Dapur • Siap Diserahkan",
-        peran: "Petugas & Admin",
+        label: "Toko: kue siap diambil atau diantar",
+        menunggu: pesanan.metode_pengiriman === "Ambil" ? "Menunggu: Anda" : "Menunggu: Toko",
         ikon: "fa-solid fa-box-open",
         warna: "bg-emerald-50 text-emerald-800 border-emerald-200",
         deskripsi:
           pesanan.metode_pengiriman === "Ambil"
-            ? "Kue sudah siap diambil di toko dengan menunjukkan Tiket QR ke Admin/Kasir."
-            : "Kue sudah siap dan menunggu pengiriman kurir oleh Admin.",
+            ? "Kue sudah siap diambil di toko dengan menunjukkan Tiket QR ke kasir."
+            : "Kue sudah siap dan menunggu jadwal pengantaran kurir.",
       };
     }
     if (pesanan.status_pesanan === "Dikirim") {
       return {
-        label: "Sedang Dikirim Kurir Toko",
-        peran: "Admin Pengiriman",
+        label: "Kurir: dalam perjalanan pengantaran",
+        menunggu: "Menunggu: Toko",
         ikon: "fa-solid fa-truck-fast",
         warna: "bg-indigo-50 text-indigo-800 border-indigo-200",
-        deskripsi: "Admin telah mengirim kue menuju alamat pengiriman Anda.",
+        deskripsi: "Kurir sedang dalam perjalanan menuju alamat pengiriman Anda.",
       };
     }
     return {
-      label: "Transaksi Selesai",
-      peran: "Direkap Admin",
+      label: "Selesai: pesanan telah diterima",
+      menunggu: "Selesai",
       ikon: "fa-solid fa-circle-check",
       warna: "bg-emerald-50 text-emerald-800 border-emerald-200",
-      deskripsi: "Pesanan telah selesai diterima dan tercatat di laporan Admin.",
+      deskripsi: "Pesanan telah selesai diterima dengan baik.",
     };
   }
 
@@ -327,36 +417,44 @@ export default function DashboardPelangganView({
     return -1;
   }
 
-  const daftarTahapStepper = [
-    {
-      judul: "Menunggu Bayar",
-      aktor: "Pelanggan",
-      ikon: "fa-solid fa-credit-card",
-    },
-    {
-      judul: "Diverifikasi Admin",
-      aktor: "Admin Toko",
-      ikon: "fa-solid fa-user-shield",
-    },
-    {
-      judul: "Diproses Petugas",
-      aktor: "Petugas Dapur",
-      ikon: "fa-solid fa-fire-burner",
-    },
-    {
-      judul: "Kue Siap / Dikirim",
-      aktor: "Petugas & Admin",
-      ikon: "fa-solid fa-box-open",
-    },
-    {
-      judul: "Pesanan Selesai",
-      aktor: "Selesai",
-      ikon: "fa-solid fa-circle-check",
-    },
-  ];
+  function dapatkanTahapStepper(pesanan) {
+    const isKatalog =
+      pesanan?.pesanan_item?.length > 0 &&
+      !pesanan?.tulisan_kue &&
+      (!pesanan?.pesanan_pilihan || pesanan?.pesanan_pilihan.length === 0);
+    return [
+      {
+        judul: "Menunggu Bayar",
+        aktor: "Pelanggan",
+        ikon: "fa-solid fa-credit-card",
+      },
+      {
+        judul: "Pembayaran Diterima",
+        aktor: "Sistem Toko",
+        ikon: "fa-solid fa-clipboard-check",
+      },
+      {
+        judul: isKatalog ? "Disiapkan Petugas" : "Diproses Petugas",
+        aktor: "Petugas Dapur",
+        ikon: "fa-solid fa-fire-burner",
+      },
+      {
+        judul: "Kue Siap / Dikirim",
+        aktor: "Petugas & Toko",
+        ikon: "fa-solid fa-box-open",
+      },
+      {
+        judul: "Pesanan Selesai",
+        aktor: "Selesai",
+        ikon: "fa-solid fa-circle-check",
+      },
+    ];
+  }
 
   const pesananTersaring = pesananList.filter((p) => {
-    if (filterStatusPesanan === "Pending") {
+    if (filterStatusPesanan === "Aktif") {
+      if (!["Diterima", "Sedang Dibuat", "Siap", "Dikirim"].includes(p.status_pesanan)) return false;
+    } else if (filterStatusPesanan === "Pending") {
       if (p.status_pesanan !== "Menunggu Pembayaran") return false;
     } else if (filterStatusPesanan === "Diproses Petugas") {
       if (!["Diterima", "Sedang Dibuat"].includes(p.status_pesanan)) return false;
@@ -373,7 +471,12 @@ export default function DashboardPelangganView({
       const cocokKode = (p.kode_pesanan || "").toLowerCase().includes(q);
       const cocokNama = (p.nama_penerima || "").toLowerCase().includes(q);
       const cocokTulisan = (p.tulisan_kue || "").toLowerCase().includes(q);
-      if (!cocokKode && !cocokNama && !cocokTulisan) return false;
+      const cocokItem =
+        (p.isi_singkat || "").toLowerCase().includes(q) ||
+        (p.pesanan_item || []).some((it) =>
+          (it.produk?.nama || it.nama_item || "").toLowerCase().includes(q)
+        );
+      if (!cocokKode && !cocokNama && !cocokTulisan && !cocokItem) return false;
     }
     return true;
   });
@@ -382,6 +485,7 @@ export default function DashboardPelangganView({
     if (filterRiwayat === "Selesai") return p.status_pesanan === "Selesai";
     if (filterRiwayat === "Lunas") return p.status_bayar === "Lunas";
     if (filterRiwayat === "DP") return p.status_bayar === "DP Dibayar";
+    if (filterRiwayat === "Belum Bayar") return p.status_bayar === "Belum Bayar";
     return true;
   });
 
@@ -390,8 +494,18 @@ export default function DashboardPelangganView({
     setPesanSuksesProfil("");
     setPesanErrorProfil("");
 
-    if (!formProfil.nama.trim()) {
+    const namaBersih = formProfil.nama.trim();
+    if (!namaBersih) {
       setPesanErrorProfil("Nama lengkap wajib diisi.");
+      return;
+    }
+
+    const waBersih = formProfil.no_wa.trim().replace(/[^0-9]/g, "");
+    const isWaIndo = /^(0|62|\+62)8[1-9][0-9]{6,11}$/.test(formProfil.no_wa.trim());
+    if (!isWaIndo || waBersih.length < 10) {
+      setPesanErrorProfil(
+        "Nomor WhatsApp harus berupa nomor Indonesia yang valid (contoh: 081234567890)."
+      );
       return;
     }
 
@@ -401,8 +515,12 @@ export default function DashboardPelangganView({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nama: formProfil.nama.trim(),
+          nama: namaBersih,
           no_wa: formProfil.no_wa.trim(),
+          alamat: (alamatTersimpan.alamat_lengkap || "").trim(),
+          patokan: (alamatTersimpan.patokan || "").trim(),
+          lat_alamat: alamatTersimpan.lat_alamat,
+          lng_alamat: alamatTersimpan.lng_alamat,
         }),
       });
       const data = await res.json();
@@ -420,7 +538,9 @@ export default function DashboardPelangganView({
           );
         } catch (err) {}
         setPesanSuksesProfil(
-          "Profil dan alamat pengiriman berhasil disimpan untuk memudahkan Petugas & Admin."
+          data.lokasiTersimpan === false
+            ? data.pesan || "Profil diperbarui, namun lokasi pengiriman belum dapat disimpan di server."
+            : "Profil dan lokasi pengiriman utama berhasil disimpan."
         );
       }
     } catch (err) {
@@ -439,8 +559,8 @@ export default function DashboardPelangganView({
       setPesanErrorSandi("Kata sandi saat ini wajib diisi.");
       return;
     }
-    if (!formSandi.kataSandiBaru || formSandi.kataSandiBaru.length < 6) {
-      setPesanErrorSandi("Kata sandi baru minimal 6 karakter.");
+    if (!formSandi.kataSandiBaru || formSandi.kataSandiBaru.length < 8) {
+      setPesanErrorSandi("Kata sandi baru minimal 8 karakter.");
       return;
     }
     if (formSandi.kataSandiBaru !== formSandi.konfirmasiSandi) {
@@ -487,11 +607,11 @@ export default function DashboardPelangganView({
     const tiketBaru = {
       id: nomorTiket,
       kode_pesanan: formTiket.kode_pesanan || "-",
-      tujuan_role: formTiket.tujuan_role,
-      kategori: formTiket.kategori,
+      tujuan_role: formTiket.tujuan_role || "Toko",
+      kategori: formTiket.kategori || "Status pembuatan kue",
       subjek: formTiket.subjek.trim(),
       pesan: formTiket.pesan.trim(),
-      status: "Menunggu Respons Petugas",
+      status: "Menunggu Respons Toko",
       dibuat_pada: new Date().toISOString(),
     };
 
@@ -503,23 +623,29 @@ export default function DashboardPelangganView({
       localStorage.setItem(`cravely_tiket_bantuan_${userId}`, JSON.stringify(daftarBaru));
     } catch (err) {}
 
+    const linkWa = buatLinkWaTiket(tiketBaru);
+    if (linkWa) {
+      window.open(linkWa, "_blank");
+    }
+
     setFormTiket({
       ...formTiket,
       subjek: "",
       pesan: "",
     });
     setPesanSuksesTiket(
-      `Tiket bantuan ${nomorTiket} berhasil dibuat. Anda juga dapat langsung meneruskannya ke WhatsApp Petugas/Admin.`
+      `Pesan bantuan telah disiapkan. WhatsApp terbuka otomatis untuk melanjutkan percakapan dengan toko.`
     );
   }
 
   function buatLinkWaTiket(tiket) {
-    const nomormentah = pengaturanToko?.no_wa || "6281234567890";
+    const nomormentah = pengaturanToko?.no_wa || "";
     let nomor = nomormentah.replace(/[^0-9]/g, "");
     if (nomor.startsWith("0")) {
       nomor = "62" + nomor.slice(1);
     }
-    const teks = `Halo ${tiket.tujuan_role} ${pengaturanToko?.nama_toko || "Cravely Bakery"},\n\nSaya *${profil?.nama || "Pelanggan"}* ingin mengajukan tiket bantuan:\n- ID Tiket: *${tiket.id}*\n- Kode Pesanan: *${tiket.kode_pesanan}*\n- Kategori: *${tiket.kategori}*\n- Subjek: *${tiket.subjek}*\n\nDetail Pesan:\n${tiket.pesan}`;
+    if (!nomor) return null;
+    const teks = `Halo ${pengaturanToko?.nama_toko || "Cravely Bakery"},\n\nSaya *${profil?.nama || "Pelanggan"}* ingin menanyakan bantuan:\n- Kode Pesanan: *${tiket.kode_pesanan}*\n- Kategori: *${tiket.kategori}*\n- Subjek: *${tiket.subjek}*\n\nPesan:\n${tiket.pesan}`;
     return `https://wa.me/${nomor}?text=${encodeURIComponent(teks)}`;
   }
 
@@ -666,64 +792,9 @@ export default function DashboardPelangganView({
             </nav>
           </div>
 
-          <div className="rounded-3xl bg-gradient-to-br from-[#17382d] to-[#245544] p-4 text-white shadow-[0_10px_24px_rgba(23,56,45,0.16)] space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sm">
-                <i className="fa-solid fa-wand-magic-sparkles"></i>
-              </div>
-              <div>
-                <p className="text-xs font-extrabold leading-tight">
-                  Studio Kue 3D
-                </p>
-                <p className="text-[10px] text-[#c2d6ca]">
-                  Rancang kue custom baru
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/pesan"
-              className="w-full py-2.5 px-3 rounded-xl bg-white text-[#17382d] hover:bg-[#eaf2ec] text-xs font-extrabold flex items-center justify-center gap-2 transition shadow-xs"
-            >
-              <i className="fa-solid fa-plus text-[11px]"></i>
-              <span>Pesan Kue Sekarang</span>
-            </Link>
-          </div>
         </div>
 
         <div className="pt-4 border-t border-[#dce6de] space-y-1">
-          <p className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#788d80]">
-            Jelajahi Cravely
-          </p>
-          <div className="grid grid-cols-2 gap-1.5 pb-1">
-            <Link
-              href="/toko"
-              className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-white border border-[#dce6de] text-[11px] font-bold text-[#3a5246] hover:bg-[#eaf2ec] transition"
-            >
-              <i className="fa-solid fa-store text-[#17382d]"></i>
-              <span>Toko 3D</span>
-            </Link>
-            <Link
-              href="/menu"
-              className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-white border border-[#dce6de] text-[11px] font-bold text-[#3a5246] hover:bg-[#eaf2ec] transition"
-            >
-              <i className="fa-solid fa-utensils text-[#17382d]"></i>
-              <span>Menu</span>
-            </Link>
-          </div>
-          <Link
-            href="/keranjang"
-            className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold text-[#3a5246] hover:bg-white transition"
-          >
-            <span className="flex items-center gap-3">
-              <i className="fa-solid fa-bag-shopping w-4 text-center text-[#5f7a6c]"></i>
-              <span>Keranjang</span>
-            </span>
-            {totalKeranjangQty > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#9E3B42] text-white">
-                {totalKeranjangQty}
-              </span>
-            )}
-          </Link>
           <Link
             href="/"
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-[#3a5246] hover:bg-white transition"
@@ -764,15 +835,15 @@ export default function DashboardPelangganView({
                 </h1>
                 <p className="text-xs text-[#6b8274] hidden sm:block">
                   {tabAktif === "beranda" &&
-                    "Pantau pesanan aktif yang sedang diverifikasi Admin dan diproduksi Petugas Dapur."}
+                    "Pantau status pembayaran, pembuatan, dan pengiriman pesanan Anda."}
                   {tabAktif === "pesanan" &&
                     "Lacak tahapan status pesanan kue dari pembayaran hingga siap diambil/dikirim."}
                   {tabAktif === "riwayat" &&
-                    "Daftar pembayaran yang telah direkap Admin beserta unduhan struk/invoice."}
+                    "Daftar pembayaran yang telah terkonfirmasi beserta unduhan struk/invoice."}
                   {tabAktif === "profil" &&
                     "Kelola data kontak, alamat pengiriman, serta keamanan akun Anda."}
                   {tabAktif === "bantuan" &&
-                    "Ajukan pertanyaan atau kendala pesanan kepada Petugas Operasional & Admin."}
+                    "Ajukan pertanyaan atau kendala pesanan kepada tim toko."}
                 </p>
               </div>
             </div>
@@ -785,9 +856,9 @@ export default function DashboardPelangganView({
               >
                 <i className="fa-solid fa-bag-shopping"></i>
                 <span className="hidden md:inline">Keranjang</span>
-                {totalKeranjangQty > 0 && (
+                {jumlahKeranjangApi > 0 && (
                   <span className="px-1.5 py-0.5 rounded-full bg-[#9E3B42] text-white text-[10px] font-extrabold leading-none">
-                    {totalKeranjangQty}
+                    {jumlahKeranjangApi}
                   </span>
                 )}
               </Link>
@@ -825,7 +896,7 @@ export default function DashboardPelangganView({
                         {pesananAktifList.length}
                       </div>
                       <span className="text-[11px] font-semibold text-sky-700 mt-1 block">
-                        Ditangani Petugas & Admin
+                        Sedang diproses toko
                       </span>
                     </div>
                     <div className="w-11 h-11 rounded-2xl bg-sky-50 text-sky-700 border border-sky-100 flex items-center justify-center text-lg shadow-inner">
@@ -843,7 +914,7 @@ export default function DashboardPelangganView({
                       </div>
                       <span className="text-[11px] font-semibold text-[#6b8274] mt-1 block">
                         {jumlahBuktiMenungguAdmin > 0
-                          ? `${jumlahBuktiMenungguAdmin} bukti dicek Admin`
+                          ? `${jumlahBuktiMenungguAdmin} bukti diproses toko`
                           : `Sisa tagihan: ${formatRupiah(totalSisaTagihan)}`}
                       </span>
                     </div>
@@ -861,7 +932,7 @@ export default function DashboardPelangganView({
                         {formatRupiah(totalBelanjaTerkonfirmasi)}
                       </div>
                       <span className="text-[11px] font-semibold text-[#26804a] mt-1 block">
-                        Dikonfirmasi Admin ({pesananSelesaiList.length} selesai)
+                        Total pembayaran terkonfirmasi
                       </span>
                     </div>
                     <div className="w-11 h-11 rounded-2xl bg-[#dcf5e4] text-[#26804a] border border-emerald-200 flex items-center justify-center text-lg shadow-inner">
@@ -884,7 +955,7 @@ export default function DashboardPelangganView({
                       <span className="text-[11px] font-semibold text-[#6b8274] mt-1 block truncate">
                         {pembayaranTerakhir
                           ? `${pembayaranTerakhir.kode_pesanan} (${formatRupiah(pembayaranTerakhir.jumlah)})`
-                          : "Belum ada pengajuan bayar"}
+                          : "Belum ada pembayaran masuk"}
                       </span>
                     </div>
                     <div className="w-11 h-11 rounded-2xl bg-[#eef4ef] text-[#17382d] border border-[#dce6de] flex items-center justify-center text-lg shadow-inner shrink-0">
@@ -926,6 +997,18 @@ export default function DashboardPelangganView({
                   </div>
                 )}
 
+                {pesananList.some((p) => p.perlu_refund && p.id !== pesananUtamaDilacak?.id) && (
+                  <div className="p-4 rounded-3xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-3">
+                    <i className="fa-solid fa-triangle-exclamation text-lg text-amber-600 shrink-0"></i>
+                    <div>
+                      <p className="font-extrabold">Pemberitahuan Pengembalian Dana</p>
+                      <p className="mt-0.5">
+                        Pembayaran diterima setelah pesanan dibatalkan; toko akan menghubungi Anda.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {pesananUtamaDilacak && (
                   <div className="bg-white rounded-3xl p-6 border border-[#dce6de] shadow-[0_10px_28px_rgba(23,56,45,0.05)] space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#eef3ee]">
@@ -935,8 +1018,9 @@ export default function DashboardPelangganView({
                             Pelacakan Langsung
                           </span>
                           <span className="text-xs font-bold text-[#6b8274]">
-                            Jadwal Ambil/Kirim: {formatTanggalSingkat(pesananUtamaDilacak.tanggal_ambil)} •{" "}
-                            {pesananUtamaDilacak.jam_ambil?.slice(0, 5)} WIB
+                            {pesananUtamaDilacak.metode_pengiriman === "Kirim"
+                              ? formatTeksJadwal(pesananUtamaDilacak).teks
+                              : `Jadwal Ambil: ${formatTanggalSingkat(pesananUtamaDilacak.tanggal_ambil)}${pesananUtamaDilacak.jam_ambil ? ` • ${pesananUtamaDilacak.jam_ambil.slice(0, 5)} WIB` : ""}`}
                           </span>
                         </div>
                         <h2 className="text-lg font-extrabold text-[#182b23] mt-1">
@@ -948,14 +1032,26 @@ export default function DashboardPelangganView({
                           {pesananUtamaDilacak.status_pesanan}
                         </span>
                         <Link
-                          href={`/user/${pesananUtamaDilacak.kode_pesanan}`}
+                          href={`/pesanan-saya/${pesananUtamaDilacak.kode_pesanan}`}
                           className="px-4 py-2 rounded-xl bg-[#17382d] hover:bg-[#235343] text-white text-xs font-bold transition inline-flex items-center gap-1.5"
                         >
                           <i className="fa-solid fa-qrcode"></i>
-                          <span>Buka Tiket & Bayar</span>
+                          <span>Lihat Tiket</span>
                         </Link>
                       </div>
                     </div>
+
+                    {pesananUtamaDilacak.perlu_refund && (
+                      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-3">
+                        <i className="fa-solid fa-triangle-exclamation text-lg text-amber-600 shrink-0"></i>
+                        <div>
+                          <p className="font-extrabold">Pemberitahuan Pengembalian Dana</p>
+                          <p className="mt-0.5">
+                            Pembayaran diterima setelah pesanan dibatalkan; toko akan menghubungi Anda.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {pesananUtamaDilacak.status_pesanan === "Dibatalkan" ? (
                       <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-3">
@@ -969,7 +1065,7 @@ export default function DashboardPelangganView({
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                        {daftarTahapStepper.map((thp, idx) => {
+                        {dapatkanTahapStepper(pesananUtamaDilacak).map((thp, idx) => {
                           const idxSekarang = indeksTahapStepper(
                             pesananUtamaDilacak.status_pesanan
                           );
@@ -999,7 +1095,7 @@ export default function DashboardPelangganView({
                                   <i className={selesai ? "fa-solid fa-check" : thp.ikon}></i>
                                 </span>
                                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#6b8274]">
-                                  {thp.aktor}
+                                  {thp.menunggu || thp.aktor}
                                 </span>
                               </div>
                               <p className="text-xs font-extrabold text-[#182b23]">
@@ -1025,9 +1121,7 @@ export default function DashboardPelangganView({
                               <i className={info.ikon}></i>
                             </div>
                             <div className="text-xs">
-                              <p className="font-extrabold">
-                                Penanggung Jawab Saat Ini: {info.peran} ({info.label})
-                              </p>
+                              <p className="font-extrabold">{info.label}</p>
                               <p className="mt-0.5 opacity-90">{info.deskripsi}</p>
                             </div>
                           </div>
@@ -1050,7 +1144,7 @@ export default function DashboardPelangganView({
                         5 Transaksi Terakhir
                       </h2>
                       <p className="text-xs text-[#6b8274]">
-                        Ringkasan pesanan terbaru Anda yang terhubung dengan Admin & Petugas
+                        Ringkasan pesanan terbaru Anda
                       </p>
                     </div>
                     <button
@@ -1090,86 +1184,95 @@ export default function DashboardPelangganView({
                             <th className="py-3 px-4">Jadwal Ambil/Kirim</th>
                             <th className="py-3 px-4">Metode</th>
                             <th className="py-3 px-4">Total Tagihan</th>
-                            <th className="py-3 px-4">Status Bayar (Admin)</th>
-                            <th className="py-3 px-4">Status Dapur (Petugas)</th>
+                            <th className="py-3 px-4">Status Bayar</th>
+                            <th className="py-3 px-4">Status Pesanan</th>
                             <th className="py-3 px-4 rounded-r-xl text-right">Aksi</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#eef3ee]">
-                          {pesananList.slice(0, 5).map((p) => (
-                            <tr key={p.id} className="hover:bg-[#f8faf7] transition">
-                              <td className="py-3.5 px-4 font-extrabold text-[#182b23]">
-                                {p.kode_pesanan}
-                                <span className="block text-[10px] font-medium text-[#6b8274]">
-                                  {p.nama_penerima}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4 text-[#3a5246]">
-                                <span className="font-bold block">
-                                  {formatTanggalSingkat(p.tanggal_ambil)}
-                                </span>
-                                <span className="text-[11px] text-[#6b8274]">
-                                  Pukul {p.jam_ambil?.slice(0, 5)} WIB
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4 font-semibold text-[#3a5246]">
-                                {p.metode_pengiriman === "Ambil" ? "Ambil di Toko" : "Kirim Kurir"}
-                              </td>
-                              <td className="py-3.5 px-4 font-extrabold text-[#182b23]">
-                                {formatRupiah(p.total_bayar)}
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeBayarWarna(p.status_bayar)}`}>
-                                  {p.status_bayar}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeStatusWarna(p.status_pesanan)}`}>
-                                  {p.status_pesanan}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap" suppressHydrationWarning>
-                                {p.status_pesanan === "Menunggu Pembayaran" ? (
-                                  <>
-                                    <Link
-                                      href={`/pesanan-saya/${p.kode_pesanan}`}
-                                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-[11px] shadow-xs"
-                                    >
-                                      <i className="fa-solid fa-credit-card text-[10px]"></i>
-                                      <span>Bayar</span>
-                                    </Link>
+                          {pesananList.slice(0, 5).map((p) => {
+                            const jadwal = formatTeksJadwal(p);
+                            const sisaTagihanItem = Math.max(
+                              0,
+                              (Number(p.total_bayar) || 0) - (Number(p.jumlah_terbayar) || 0)
+                            );
+                            return (
+                              <tr key={p.id} className="hover:bg-[#f8faf7] transition">
+                                <td className="py-3.5 px-4 font-extrabold text-[#182b23]">
+                                  {p.kode_pesanan}
+                                  <span className="block text-[10px] font-medium text-[#6b8274]">
+                                    {p.nama_penerima}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-[#3a5246]">
+                                  <span className="font-bold block">
+                                    {jadwal.teks}
+                                  </span>
+                                  <span className="text-[11px] text-[#6b8274]">
+                                    {jadwal.sub}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 font-semibold text-[#3a5246]">
+                                  {p.metode_pengiriman === "Ambil" ? "Ambil di Toko" : "Kirim Kurir"}
+                                </td>
+                                <td className="py-3.5 px-4 font-extrabold text-[#182b23]">
+                                  {formatRupiah(p.total_bayar)}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeBayarWarna(p.status_bayar)}`}>
+                                    {p.status_bayar}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeStatusWarna(p.status_pesanan)}`}>
+                                    {p.status_pesanan}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                  {isMounted && p.status_pesanan === "Menunggu Pembayaran" ? (
+                                    <>
+                                      <Link
+                                        href={`/pesanan-saya/${p.kode_pesanan}`}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-[11px] shadow-xs"
+                                      >
+                                        <i className="fa-solid fa-credit-card text-[10px]"></i>
+                                        <span>Bayar</span>
+                                      </Link>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPesananBatalTarget(p);
+                                          setPesanBatalError("");
+                                          setAlasanBatalInput("");
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] cursor-pointer"
+                                        title="Batalkan Pesanan"
+                                      >
+                                        <i className="fa-solid fa-ban"></i>
+                                      </button>
+                                    </>
+                                  ) : null}
+                                  {((p.pembayaran || []).some((b) => b.status === "Dikonfirmasi") || (Number(p.jumlah_terbayar) || 0) > 0) && (
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        setPesananBatalTarget(p);
-                                        setPesanBatalError("");
-                                        setAlasanBatalInput("");
-                                      }}
-                                      className="px-2.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] cursor-pointer"
-                                      title="Batalkan Pesanan"
+                                      onClick={() => setPesananInvoice(p)}
+                                      className="px-2.5 py-1.5 rounded-xl border border-[#dce6de] bg-white hover:bg-[#eff4ee] text-[#17382d] font-bold text-[11px] cursor-pointer"
+                                      title="Lihat Struk"
                                     >
-                                      <i className="fa-solid fa-ban"></i>
+                                      <i className="fa-solid fa-file-invoice"></i>
                                     </button>
-                                  </>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() => setPesananInvoice(p)}
-                                  className="px-2.5 py-1.5 rounded-xl border border-[#dce6de] bg-white hover:bg-[#eff4ee] text-[#17382d] font-bold text-[11px] cursor-pointer"
-                                  title="Lihat Struk"
-                                >
-                                  <i className="fa-solid fa-file-invoice"></i>
-                                </button>
-                                <Link
-                                  href={`/user/${p.kode_pesanan}`}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#17382d] hover:bg-[#235343] text-white font-bold text-[11px]"
-                                >
-                                  <span>Detail</span>
-                                  <i className="fa-solid fa-arrow-right text-[9px]"></i>
-                                </Link>
-                              </td>
-                            </tr>
-                          ))}
+                                  )}
+                                  <Link
+                                    href={`/pesanan-saya/${p.kode_pesanan}`}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#17382d] hover:bg-[#235343] text-white font-bold text-[11px]"
+                                  >
+                                    <span>Tiket</span>
+                                    <i className="fa-solid fa-arrow-right text-[9px]"></i>
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -1183,7 +1286,8 @@ export default function DashboardPelangganView({
                 <div className="bg-white rounded-3xl p-5 border border-[#dce6de] shadow-[0_8px_24px_rgba(23,56,45,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex flex-wrap items-center gap-1.5">
                     {[
-                      { id: "Semua", label: "Semua Pesanan" },
+                      { id: "Semua", label: "Semua" },
+                      { id: "Aktif", label: "Aktif" },
                       { id: "Pending", label: "Pending Bayar" },
                       { id: "Diproses Petugas", label: "Diproses Petugas" },
                       { id: "Siap & Dikirim", label: "Siap / Dikirim" },
@@ -1211,7 +1315,7 @@ export default function DashboardPelangganView({
                       type="text"
                       value={kataCariPesanan}
                       onChange={(e) => setKataCariPesanan(e.target.value)}
-                      placeholder="Cari kode / penerima / ucapan..."
+                      placeholder="Cari kode, nama kue, atau penerima"
                       className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
                     />
                   </div>
@@ -1244,6 +1348,15 @@ export default function DashboardPelangganView({
                           key={p.id}
                           className="bg-white rounded-3xl p-5 sm:p-6 border border-[#dce6de] shadow-[0_8px_24px_rgba(23,56,45,0.04)] space-y-4"
                         >
+                          {p.perlu_refund && (
+                            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-2.5">
+                              <i className="fa-solid fa-triangle-exclamation text-amber-600 text-base shrink-0"></i>
+                              <p className="font-semibold">
+                                Pembayaran diterima setelah pesanan dibatalkan; toko akan menghubungi Anda.
+                              </p>
+                            </div>
+                          )}
+
                           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                             <div className="flex items-start gap-4">
                               <div className="w-20 h-20 rounded-2xl bg-[#f6f9f6] border border-[#dce6de] p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
@@ -1270,9 +1383,6 @@ export default function DashboardPelangganView({
                                   <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeStatusWarna(p.status_pesanan)}`}>
                                     {p.status_pesanan}
                                   </span>
-                                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${badgeBayarWarna(p.status_bayar)}`}>
-                                    {p.status_bayar}
-                                  </span>
                                 </div>
 
                                 <p className="text-xs font-bold text-[#3a5246]">
@@ -1284,9 +1394,22 @@ export default function DashboardPelangganView({
 
                                 <p className="text-xs text-[#6b8274]">
                                   <i className="fa-regular fa-calendar mr-1.5"></i>
-                                  Jadwal: <strong>{formatTanggalIndonesia(p.tanggal_ambil)}</strong> pukul{" "}
-                                  <strong>{p.jam_ambil?.slice(0, 5)} WIB</strong>
+                                  {p.metode_pengiriman === "Kirim" ? (
+                                    <span>{formatTeksJadwal(p).teks}</span>
+                                  ) : (
+                                    <span>
+                                      Jadwal: <strong>{formatTanggalIndonesia(p.tanggal_ambil)}</strong>
+                                      {p.jam_ambil ? <> pukul <strong>{p.jam_ambil.slice(0, 5)} WIB</strong></> : null}
+                                    </span>
+                                  )}
                                 </p>
+
+                                {p.isi_singkat && (
+                                  <p className="text-xs text-[#3a5246] font-medium">
+                                    <i className="fa-solid fa-cake-candles mr-1.5 text-[#788d80]"></i>
+                                    Pesanan: <strong>{p.isi_singkat}</strong>
+                                  </p>
+                                )}
 
                                 {p.tulisan_kue && (
                                   <p className="text-xs text-[#17382d] font-semibold">
@@ -1310,37 +1433,44 @@ export default function DashboardPelangganView({
                                     Belum Lunas: {formatRupiah(sisa)}
                                   </span>
                                 )}
-                                {p.status_pesanan === "Menunggu Pembayaran" ? (
-                                  <span className="block text-[10px] font-bold text-rose-600 mt-0.5" suppressHydrationWarning>
+                                {isMounted && p.status_pesanan === "Menunggu Pembayaran" ? (
+                                  <span className="block text-[10px] font-bold text-rose-600 mt-0.5">
                                     Batas: {formatTanggalWaktu(new Date(new Date(p.dibuat_pada).getTime() + (pengaturanToko?.batas_bayar_jam || 24) * 3600000))}
                                   </span>
                                 ) : null}
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
-                                {p.status_pesanan === "Menunggu Pembayaran" ? (
-                                  <>
-                                    <Link
-                                      href={`/pesanan-saya/${p.kode_pesanan}`}
-                                      className="px-4 py-2 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-xs"
-                                    >
-                                      <i className="fa-solid fa-credit-card"></i>
-                                      <span>Bayar</span>
-                                    </Link>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setPesananBatalTarget(p);
-                                        setPesanBatalError("");
-                                        setAlasanBatalInput("");
-                                      }}
-                                      className="px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5"
-                                    >
-                                      <i className="fa-solid fa-ban"></i>
-                                      <span>Batal</span>
-                                    </button>
-                                  </>
-                                ) : null}
+                                {sisa > 0 && p.status_pesanan !== "Dibatalkan" && (
+                                  <Link
+                                    href={`/pesanan-saya/${p.kode_pesanan}`}
+                                    className="px-4 py-2 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-xs"
+                                  >
+                                    <i className="fa-solid fa-credit-card"></i>
+                                    <span>Bayar Sekarang</span>
+                                  </Link>
+                                )}
+                                {isMounted && p.status_pesanan === "Menunggu Pembayaran" && (Number(p.jumlah_terbayar) || 0) === 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPesananBatalTarget(p);
+                                      setPesanBatalError("");
+                                      setAlasanBatalInput("");
+                                    }}
+                                    className="px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5"
+                                  >
+                                    <i className="fa-solid fa-ban"></i>
+                                    <span>Batal</span>
+                                  </button>
+                                )}
+                                <Link
+                                  href={`/pesanan-saya/${p.kode_pesanan}`}
+                                  className="px-3.5 py-2 rounded-xl bg-[#17382d] hover:bg-[#235343] text-white text-xs font-bold transition inline-flex items-center gap-1.5"
+                                >
+                                  <i className="fa-solid fa-qrcode"></i>
+                                  <span>Tiket</span>
+                                </Link>
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -1350,31 +1480,21 @@ export default function DashboardPelangganView({
                                 >
                                   <i
                                     className={`fa-solid ${
-                                      terbuka ? "fa-chevron-up" : "fa-list-check"
+                                      terbuka ? "fa-chevron-up" : "fa-clock-rotate-left"
                                     } mr-1.5`}
                                   ></i>
-                                  {terbuka ? "Tutup Log" : "Log Petugas"}
+                                  {terbuka ? "Tutup Riwayat" : "Riwayat"}
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setPesananInvoice(p)}
-                                  className="px-3.5 py-2 rounded-xl border border-[#dce6de] bg-white hover:bg-[#eff4ee] text-xs font-bold text-[#17382d] transition cursor-pointer"
-                                >
-                                  <i className="fa-solid fa-receipt mr-1.5"></i>
-                                  Struk
-                                </button>
-                                <Link
-                                  href={`/user/${p.kode_pesanan}`}
-                                  className="px-4 py-2 rounded-xl bg-[#17382d] hover:bg-[#235343] text-white text-xs font-bold transition inline-flex items-center gap-1.5"
-                                >
-                                  <i className="fa-solid fa-qrcode"></i>
-                                  <span>
-                                    {p.status_bayar !== "Lunas" &&
-                                    p.status_pesanan !== "Dibatalkan"
-                                      ? "Bayar / Tiket"
-                                      : "Lihat Tiket"}
-                                  </span>
-                                </Link>
+                                {((p.pembayaran || []).some((b) => b.status === "Dikonfirmasi") || (Number(p.jumlah_terbayar) || 0) > 0) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPesananInvoice(p)}
+                                    className="px-3.5 py-2 rounded-xl border border-[#dce6de] bg-white hover:bg-[#eff4ee] text-xs font-bold text-[#17382d] transition cursor-pointer"
+                                  >
+                                    <i className="fa-solid fa-receipt mr-1.5"></i>
+                                    Struk
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1387,7 +1507,7 @@ export default function DashboardPelangganView({
                               </span>
                             </div>
                             <span className="text-[11px] font-extrabold uppercase tracking-wider shrink-0">
-                              Role: {info.peran}
+                              {info.menunggu || "Menunggu: Toko"}
                             </span>
                           </div>
 
@@ -1460,14 +1580,14 @@ export default function DashboardPelangganView({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <h2 className="text-base font-extrabold text-[#182b23]">
-                        Daftar Invoice & Struk Pesanan (Rekapan Admin)
+                        Daftar Invoice & Struk Pesanan
                       </h2>
                       <p className="text-xs text-[#6b8274]">
                         Klik tombol Unduh / Cetak Struk untuk menyimpan bukti transaksi resmi toko
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {["Semua", "Lunas", "DP", "Selesai"].map((flt) => (
+                      {["Semua", "Lunas", "DP", "Belum Bayar", "Selesai"].map((flt) => (
                         <button
                           key={flt}
                           type="button"
@@ -1548,28 +1668,27 @@ export default function DashboardPelangganView({
                 <div className="bg-white rounded-3xl p-6 border border-[#dce6de] shadow-[0_8px_24px_rgba(23,56,45,0.04)] space-y-4">
                   <div>
                     <h2 className="text-base font-extrabold text-[#182b23]">
-                      Log Verifikasi Pembayaran oleh Admin
+                      Riwayat Pembayaran
                     </h2>
                     <p className="text-xs text-[#6b8274]">
-                      Setiap bukti transfer, QRIS, maupun pembayaran Midtrans yang diverifikasi Admin tercatat di sini
+                      Catatan transaksi pembayaran pesanan Anda
                     </p>
                   </div>
 
                   {semuaPembayaranList.length === 0 ? (
                     <p className="text-xs text-[#6b8274] py-6 text-center">
-                      Belum ada riwayat unggah bukti pembayaran.
+                      Belum ada pembayaran.
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="bg-[#eff4ee] text-[#17382d] uppercase text-[11px] font-extrabold">
-                            <th className="py-3 px-4 rounded-l-xl">Waktu Pengajuan</th>
-                            <th className="py-3 px-4">Kode Pesanan</th>
-                            <th className="py-3 px-4">Jenis & Metode</th>
-                            <th className="py-3 px-4">Nominal</th>
-                            <th className="py-3 px-4">Verifikasi Admin</th>
-                            <th className="py-3 px-4 rounded-r-xl">Waktu Dikonfirmasi</th>
+                            <th className="py-3 px-4 rounded-l-xl">Tanggal</th>
+                            <th className="py-3 px-4">Pesanan</th>
+                            <th className="py-3 px-4">Jumlah</th>
+                            <th className="py-3 px-4">Metode</th>
+                            <th className="py-3 px-4 rounded-r-xl">Status</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#eef3ee]">
@@ -1580,40 +1699,42 @@ export default function DashboardPelangganView({
                               </td>
                               <td className="py-3 px-4 font-extrabold text-[#182b23]">
                                 <Link
-                                  href={`/user/${b.kode_pesanan}`}
+                                  href={`/pesanan-saya/${b.kode_pesanan}`}
                                   className="hover:underline text-[#17382d]"
                                 >
                                   {b.kode_pesanan}
                                 </Link>
                               </td>
-                              <td className="py-3 px-4">
-                                <span className="font-bold text-[#182b23]">{b.jenis}</span>
-                                <span className="text-[#6b8274] block text-[11px]">
-                                  {b.metode}
-                                </span>
-                              </td>
                               <td className="py-3 px-4 font-extrabold text-[#182b23]">
                                 {formatRupiah(b.jumlah)}
                               </td>
                               <td className="py-3 px-4">
-                                <span
-                                  className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                                    b.status === "Dikonfirmasi"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : b.status === "Ditolak"
-                                        ? "bg-rose-100 text-rose-800"
-                                        : "bg-amber-100 text-amber-800"
-                                  }`}
-                                >
-                                  {b.status}
+                                <span className="font-semibold text-[#182b23]">
+                                  {b.metode || "Midtrans"}
                                 </span>
                               </td>
-                              <td className="py-3 px-4 text-[#6b8274]">
-                                {b.dikonfirmasi_pada
-                                  ? formatTanggalWaktu(b.dikonfirmasi_pada)
-                                  : b.status === "Dikonfirmasi"
-                                    ? "Terkonfirmasi"
-                                    : "Menunggu Admin"}
+                              <td className="py-3 px-4">
+                                <span
+                                  className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                                    b.status === "Dikonfirmasi" || b.status === "settlement" || b.status === "capture"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : b.status === "Ditolak" || b.status === "deny" || b.status === "cancel"
+                                        ? "bg-rose-100 text-rose-800"
+                                        : b.status === "expire"
+                                          ? "bg-stone-100 text-stone-700"
+                                          : "bg-amber-100 text-amber-800"
+                                  }`}
+                                >
+                                  {b.status === "settlement" || b.status === "capture"
+                                    ? "Dikonfirmasi"
+                                    : b.status === "pending"
+                                      ? "Menunggu"
+                                      : b.status === "expire"
+                                        ? "Kedaluwarsa"
+                                        : b.status === "deny" || b.status === "cancel"
+                                          ? "Gagal"
+                                          : b.status}
+                                </span>
                               </td>
                             </tr>
                           ))}
@@ -1699,7 +1820,7 @@ export default function DashboardPelangganView({
                           Profil & Alamat Pengiriman Utama
                         </h3>
                         <p className="text-xs text-[#6b8274] mt-0.5">
-                          Data ini digunakan oleh Petugas Dapur dan Admin Kurir saat memproses pesanan Anda
+                          Data ini mengisi checkout otomatis dan dipakai toko saat memproses pesanan Anda.
                         </p>
                       </div>
 
@@ -1748,6 +1869,12 @@ export default function DashboardPelangganView({
                               placeholder="081234567890"
                               className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
                             />
+                            {!/^(0|62|\+62)8[1-9][0-9]{6,11}$/.test(formProfil.no_wa?.trim() || "") && formProfil.no_wa && (
+                              <p className="mt-1 text-[11px] font-semibold text-amber-700 flex items-center gap-1">
+                                <i className="fa-solid fa-triangle-exclamation" />
+                                <span>Format nomor belum standar Indonesia (contoh: 081234567890).</span>
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -1763,63 +1890,70 @@ export default function DashboardPelangganView({
                           />
                         </div>
 
-                        <div className="pt-3 border-t border-[#eef3ee]">
-                          <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
-                            Zona Pengiriman Default (Dikelola Admin Toko)
-                          </label>
-                          <select
-                            value={alamatTersimpan.id_zona}
-                            onChange={(e) =>
-                              setAlamatTersimpan({
-                                ...alamatTersimpan,
-                                id_zona: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
-                          >
-                            <option value="">-- Pilih Zona Ongkir Lokasi Anda --</option>
-                            {zonaOngkirList.map((z) => (
-                              <option key={z.id} value={String(z.id)}>
-                                {z.nama} — {formatRupiah(z.tarif)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <div className="pt-3 border-t border-[#eef3ee] space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-[#3a5246] mb-1">
+                              Lokasi Pengiriman Utama (Pin Peta)
+                            </label>
+                            <p className="text-[11px] text-[#6b8274] mb-2">
+                              Data ini mengisi checkout otomatis dan dipakai toko saat memproses pesanan Anda.
+                            </p>
+                            <PetaLokasi
+                              posisiToko={
+                                pengaturanToko?.lat_toko && pengaturanToko?.lng_toko
+                                  ? { lat: Number(pengaturanToko.lat_toko), lng: Number(pengaturanToko.lng_toko) }
+                                  : null
+                              }
+                              posisiTujuan={
+                                alamatTersimpan.lat_alamat && alamatTersimpan.lng_alamat
+                                  ? { lat: Number(alamatTersimpan.lat_alamat), lng: Number(alamatTersimpan.lng_alamat) }
+                                  : null
+                              }
+                              onUbahTujuan={(lat, lng) => {
+                                setAlamatTersimpan((prev) => ({
+                                  ...prev,
+                                  lat_alamat: lat,
+                                  lng_alamat: lng,
+                                }));
+                              }}
+                            />
+                          </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
-                            Alamat Pengiriman Lengkap
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={alamatTersimpan.alamat_lengkap}
-                            onChange={(e) =>
-                              setAlamatTersimpan({
-                                ...alamatTersimpan,
-                                alamat_lengkap: e.target.value,
-                              })
-                            }
-                            placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan..."
-                            className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
-                          />
-                        </div>
+                          <div>
+                            <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
+                              Alamat Pengiriman Lengkap
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={alamatTersimpan.alamat_lengkap}
+                              onChange={(e) =>
+                                setAlamatTersimpan({
+                                  ...alamatTersimpan,
+                                  alamat_lengkap: e.target.value,
+                                })
+                              }
+                              placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan..."
+                              className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
+                            />
+                          </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
-                            Patokan Kurir / Catatan Alamat untuk Petugas
-                          </label>
-                          <input
-                            type="text"
-                            value={alamatTersimpan.patokan}
-                            onChange={(e) =>
-                              setAlamatTersimpan({
-                                ...alamatTersimpan,
-                                patokan: e.target.value,
-                              })
-                            }
-                            placeholder="Contoh: Pagar hitam sebelah minimarket, titip satpam jika tidak di rumah"
-                            className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
-                          />
+                          <div>
+                            <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
+                              Patokan Kurir / Catatan Lokasi
+                            </label>
+                            <input
+                              type="text"
+                              value={alamatTersimpan.patokan}
+                              onChange={(e) =>
+                                setAlamatTersimpan({
+                                  ...alamatTersimpan,
+                                  patokan: e.target.value,
+                                })
+                              }
+                              placeholder="Contoh: Pagar hitam sebelah minimarket, titip satpam jika tidak di rumah"
+                              className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
+                            />
+                          </div>
                         </div>
 
                         <div className="pt-2">
@@ -1845,7 +1979,7 @@ export default function DashboardPelangganView({
                           Keamanan & Ganti Kata Sandi
                         </h3>
                         <p className="text-xs text-[#6b8274] mt-0.5">
-                          Pastikan kata sandi baru minimal 6 karakter
+                          Pastikan kata sandi baru minimal 8 karakter
                         </p>
                       </div>
 
@@ -1885,7 +2019,7 @@ export default function DashboardPelangganView({
 
                         <div>
                           <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
-                            Kata Sandi Baru
+                            Kata Sandi Baru (Min. 8 Karakter)
                           </label>
                           <input
                             type="password"
@@ -1897,7 +2031,7 @@ export default function DashboardPelangganView({
                                 kataSandiBaru: e.target.value,
                               })
                             }
-                            placeholder="Minimal 6 karakter..."
+                            placeholder="Minimal 8 karakter..."
                             className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
                           />
                         </div>
@@ -1948,10 +2082,10 @@ export default function DashboardPelangganView({
                   <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#dce6de] shadow-[0_8px_24px_rgba(23,56,45,0.04)]">
                     <div className="pb-4 mb-5 border-b border-[#eef3ee]">
                       <h2 className="text-base font-extrabold text-[#182b23]">
-                        Buat Tiket Bantuan ke Petugas & Admin
+                        Hubungi Toko via WhatsApp
                       </h2>
                       <p className="text-xs text-[#6b8274] mt-0.5">
-                        Ajukan pertanyaan desain kue ke Petugas Dapur atau konfirmasi pembayaran ke Admin
+                        Pesan akan terisi otomatis dengan detail pesanan Anda
                       </p>
                     </div>
 
@@ -1991,58 +2125,32 @@ export default function DashboardPelangganView({
 
                         <div>
                           <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
-                            Tujuan Bagian
+                            Kategori Bantuan
                           </label>
                           <select
-                            value={formTiket.tujuan_role}
+                            value={formTiket.kategori}
                             onChange={(e) =>
                               setFormTiket({
                                 ...formTiket,
-                                tujuan_role: e.target.value,
+                                kategori: e.target.value,
                               })
                             }
                             className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
                           >
-                            <option value="Petugas Produksi & Operasional">
-                              Petugas Produksi (Dapur & Kue)
+                            <option value="Status pembuatan kue">
+                              Status pembuatan kue
                             </option>
-                            <option value="Admin Keuangan & Kasir">
-                              Admin Toko (Pembayaran & Jadwal)
+                            <option value="Pembayaran">
+                              Pembayaran
+                            </option>
+                            <option value="Pengiriman atau pengambilan">
+                              Pengiriman atau pengambilan
+                            </option>
+                            <option value="Lainnya">
+                              Lainnya
                             </option>
                           </select>
                         </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
-                          Kategori Kendala / Bantuan
-                        </label>
-                        <select
-                          value={formTiket.kategori}
-                          onChange={(e) =>
-                            setFormTiket({
-                              ...formTiket,
-                              kategori: e.target.value,
-                            })
-                          }
-                          className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
-                        >
-                          <option value="Status Produksi Kue">
-                            Status Produksi Kue di Dapur (Petugas)
-                          </option>
-                          <option value="Verifikasi Bukti Pembayaran">
-                            Verifikasi Bukti Pembayaran (Admin)
-                          </option>
-                          <option value="Revisi Tulisan / Catatan Kue">
-                            Revisi Tulisan / Catatan Kue Sebelum Dibuat
-                          </option>
-                          <option value="Jadwal Pengambilan / Pengiriman">
-                            Perubahan Jam Ambil / Alamat Kirim
-                          </option>
-                          <option value="Komplain Pesanan">
-                            Komplain Kualitas / Kendala Pesanan
-                          </option>
-                        </select>
                       </div>
 
                       <div>
@@ -2056,14 +2164,14 @@ export default function DashboardPelangganView({
                           onChange={(e) =>
                             setFormTiket({ ...formTiket, subjek: e.target.value })
                           }
-                          placeholder="Contoh: Mohon konfirmasi bukti DP untuk pesanan besok"
+                          placeholder="Contoh: Pertanyaan jadwal ambil kue"
                           className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
                         />
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-[#3a5246] mb-1.5">
-                          Detail Pertanyaan / Keluhan
+                          Detail Pesan
                         </label>
                         <textarea
                           rows={4}
@@ -2072,25 +2180,31 @@ export default function DashboardPelangganView({
                           onChange={(e) =>
                             setFormTiket({ ...formTiket, pesan: e.target.value })
                           }
-                          placeholder="Jelaskan detail pertanyaan atau bantuan yang Anda butuhkan agar mudah ditindaklanjuti Petugas/Admin..."
+                          placeholder="Tuliskan pertanyaan atau kendala yang ingin Anda tanyakan ke tim toko..."
                           className="w-full px-4 py-3 rounded-2xl bg-[#f3f7f3] border border-[#dce6de] shadow-inner text-xs font-semibold text-[#182b23] outline-none focus:bg-white focus:border-[#17382d]"
                         />
                       </div>
 
                       <button
                         type="submit"
-                        className="px-6 py-3 rounded-2xl bg-[#17382d] hover:bg-[#235343] text-white text-xs font-extrabold shadow-[0_8px_18px_rgba(23,56,45,0.18)] transition cursor-pointer inline-flex items-center gap-2"
+                        disabled={!tokoPublik?.no_wa && !pengaturanToko?.no_wa}
+                        className="px-6 py-3 rounded-2xl bg-[#17382d] hover:bg-[#235343] text-white text-xs font-extrabold shadow-[0_8px_18px_rgba(23,56,45,0.18)] transition cursor-pointer inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <i className="fa-solid fa-paper-plane"></i>
-                        <span>Buat Tiket Bantuan</span>
+                        <i className="fa-brands fa-whatsapp text-sm"></i>
+                        <span>Kirim lewat WhatsApp</span>
                       </button>
+                      {!tokoPublik?.no_wa && !pengaturanToko?.no_wa && (
+                        <p className="text-[11px] font-semibold text-amber-700 mt-1">
+                          Nomor WhatsApp toko belum tersedia saat ini.
+                        </p>
+                      )}
                     </form>
                   </div>
 
                   {daftarTiketBantuan.length > 0 && (
                     <div className="bg-white rounded-3xl p-6 border border-[#dce6de] shadow-[0_8px_24px_rgba(23,56,45,0.04)] space-y-4">
                       <h3 className="text-sm font-extrabold text-[#182b23]">
-                        Riwayat Tiket Bantuan Saya
+                        Riwayat Pertanyaan Saya
                       </h3>
                       <div className="space-y-3">
                         {daftarTiketBantuan.map((t) => (
@@ -2104,7 +2218,7 @@ export default function DashboardPelangganView({
                                   {t.id}
                                 </span>
                                 <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
-                                  {t.tujuan_role}
+                                  {t.kategori}
                                 </span>
                                 <span className="text-[#6b8274] font-semibold">
                                   • Pesanan: {t.kode_pesanan}
@@ -2115,22 +2229,24 @@ export default function DashboardPelangganView({
                               </span>
                             </div>
                             <p className="font-extrabold text-[#182b23]">
-                              {t.subjek} ({t.kategori})
+                              {t.subjek}
                             </p>
                             <p className="text-[#3a5246]">{t.pesan}</p>
                             <div className="pt-2 flex items-center justify-between">
                               <span className="text-[11px] font-bold text-amber-700">
                                 Status: {t.status}
                               </span>
-                              <a
-                                href={buatLinkWaTiket(t)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-3.5 py-1.5 rounded-xl bg-[#26804a] hover:bg-[#1f693c] text-white font-bold text-[11px] inline-flex items-center gap-1.5"
-                              >
-                                <i className="fa-brands fa-whatsapp text-sm"></i>
-                                <span>Kirim Langsung ke WA Toko</span>
-                              </a>
+                              {buatLinkWaTiket(t) && (
+                                <a
+                                  href={buatLinkWaTiket(t)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-3.5 py-1.5 rounded-xl bg-[#26804a] hover:bg-[#1f693c] text-white font-bold text-[11px] inline-flex items-center gap-1.5"
+                                >
+                                  <i className="fa-brands fa-whatsapp text-sm"></i>
+                                  <span>Buka WhatsApp Toko</span>
+                                </a>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -2142,74 +2258,159 @@ export default function DashboardPelangganView({
                 <div className="lg:col-span-5 space-y-4">
                   <div className="bg-white rounded-3xl p-6 border border-[#dce6de] shadow-[0_8px_24px_rgba(23,56,45,0.04)] space-y-4">
                     <h3 className="text-sm font-extrabold text-[#182b23]">
-                      Kontak Operasional Toko (Diatur Admin)
+                      Kontak Operasional Toko
                     </h3>
                     <div className="space-y-3 text-xs text-[#3a5246]">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
-                          <i className="fa-solid fa-clock"></i>
+                      {(tokoPublik?.jam?.senin_jumat || tokoPublik?.jam?.sabtu_minggu || (pengaturanToko?.jam_buka_senin_jumat && pengaturanToko?.jam_tutup_senin_jumat) || (pengaturanToko?.jam_buka_sabtu_minggu && pengaturanToko?.jam_tutup_sabtu_minggu)) && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
+                            <i className="fa-solid fa-clock"></i>
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#182b23]">Jam Operasional</p>
+                            {(tokoPublik?.jam?.senin_jumat || (pengaturanToko?.jam_buka_senin_jumat && pengaturanToko?.jam_tutup_senin_jumat)) && (
+                              <p className="text-[11px] text-[#6b8274]">
+                                Senin – Jumat: {tokoPublik?.jam?.senin_jumat || `${pengaturanToko.jam_buka_senin_jumat.slice(0, 5).replace(":", ".")} – ${pengaturanToko.jam_tutup_senin_jumat.slice(0, 5).replace(":", ".")} WIB`}
+                              </p>
+                            )}
+                            {(tokoPublik?.jam?.sabtu_minggu || (pengaturanToko?.jam_buka_sabtu_minggu && pengaturanToko?.jam_tutup_sabtu_minggu)) && (
+                              <p className="text-[11px] text-[#6b8274]">
+                                Sabtu – Minggu: {tokoPublik?.jam?.sabtu_minggu || `${pengaturanToko.jam_buka_sabtu_minggu.slice(0, 5).replace(":", ".")} – ${pengaturanToko.jam_tutup_sabtu_minggu.slice(0, 5).replace(":", ".")} WIB`}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-[#182b23]">Jam Operasional</p>
-                          <p>{pengaturanToko?.jam_operasional || "08:00 - 20:00 WIB"}</p>
-                        </div>
-                      </div>
+                      )}
 
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
-                          <i className="fa-solid fa-location-dot"></i>
+                      {(tokoPublik?.wa_link || pengaturanToko?.no_wa) && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
+                            <i className="fa-brands fa-whatsapp"></i>
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#182b23]">WhatsApp Toko</p>
+                            <a
+                              href={tokoPublik?.wa_link || `https://wa.me/${pengaturanToko.no_wa.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#26804a] font-bold hover:underline"
+                            >
+                              {pengaturanToko?.no_wa || tokoPublik?.no_wa}
+                            </a>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-[#182b23]">Alamat Toko (Ambil di Tempat)</p>
-                          <p>{pengaturanToko?.alamat || "Bandung"}</p>
-                        </div>
-                      </div>
+                      )}
 
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
-                          <i className="fa-solid fa-building-columns"></i>
+                      {(tokoPublik?.email || pengaturanToko?.email) && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
+                            <i className="fa-solid fa-envelope"></i>
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#182b23]">Email Toko</p>
+                            <a
+                              href={`mailto:${tokoPublik?.email || pengaturanToko.email}`}
+                              className="text-[#17382d] font-semibold hover:underline"
+                            >
+                              {tokoPublik?.email || pengaturanToko.email}
+                            </a>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-[#182b23]">Rekening Resmi Pembayaran</p>
-                          <p>
-                            {pengaturanToko?.nama_bank || "BCA"} •{" "}
-                            <strong>{pengaturanToko?.no_rekening || "-"}</strong>
-                          </p>
-                          <p className="text-[11px] text-[#6b8274]">
-                            a.n. {pengaturanToko?.atas_nama || namaToko}
-                          </p>
+                      )}
+
+                      {(tokoPublik?.alamat || pengaturanToko?.alamat) && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
+                            <i className="fa-solid fa-location-dot"></i>
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#182b23]">Alamat Toko (Ambil di Tempat)</p>
+                            <p>{tokoPublik?.alamat || pengaturanToko.alamat}</p>
+                            {(tokoPublik?.tautan_peta || pengaturanToko?.tautan_peta) && (
+                              <a
+                                href={tokoPublik?.tautan_peta || pengaturanToko.tautan_peta}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] text-[#26804a] font-bold hover:underline block mt-0.5"
+                              >
+                                Buka di Google Maps &rarr;
+                              </a>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {Boolean(pengaturanToko?.transfer_manual_aktif) && (
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#eaf2ec] text-[#17382d] flex items-center justify-center shrink-0">
+                            <i className="fa-solid fa-building-columns"></i>
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#182b23]">Rekening Resmi Pembayaran</p>
+                            <p>
+                              {pengaturanToko?.nama_bank || "BCA"} •{" "}
+                              <strong>{pengaturanToko?.no_rekening || "-"}</strong>
+                            </p>
+                            <p className="text-[11px] text-[#6b8274]">
+                              a.n. {pengaturanToko?.atas_nama || namaToko}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="bg-white rounded-3xl p-6 border border-[#dce6de] shadow-[0_8px_24px_rgba(23,56,45,0.04)] space-y-3">
                     <h3 className="text-sm font-extrabold text-[#182b23]">
-                      Panduan Alur Admin & Petugas
+                      Pertanyaan Umum
                     </h3>
                     <div className="space-y-2.5 text-xs text-[#3a5246]">
                       <div className="p-3 rounded-2xl bg-[#f8faf7] border border-[#e5ede6]">
                         <p className="font-extrabold text-[#17382d]">
-                          1. Siapa yang memverifikasi pembayaran saya?
+                          1. Bagaimana pembayaran saya dikonfirmasi?
                         </p>
                         <p className="mt-1 text-[#6b8274]">
-                          Bukti transfer/QRIS yang Anda unggah diperiksa oleh <strong>Admin</strong>. Setelah dikonfirmasi, status otomatis berubah menjadi <em>Diterima</em>.
+                          Pembayaran lewat Midtrans dikonfirmasi otomatis dan status berubah menjadi Diterima dalam beberapa saat. Kalau sudah membayar tetapi status belum berubah, buka tiket lalu tekan Cek Status Pembayaran.
                         </p>
                       </div>
                       <div className="p-3 rounded-2xl bg-[#f8faf7] border border-[#e5ede6]">
                         <p className="font-extrabold text-[#17382d]">
-                          2. Kapan kue saya mulai dibuat oleh Petugas?
+                          2. Kapan kue saya mulai dibuat?
                         </p>
                         <p className="mt-1 text-[#6b8274]">
-                          <strong>Petugas Produksi (Staf Dapur)</strong> memproses pesanan berstatus <em>Diterima</em> sesuai urutan jadwal tanggal ambil, lalu memperbarui status menjadi <em>Sedang Dibuat</em> hingga <em>Siap</em>.
+                          Petugas memproses pesanan berstatus Diterima sesuai jadwal. Kue custom melewati status Sedang Dibuat, sedangkan kue katalog langsung disiapkan.
                         </p>
                       </div>
                       <div className="p-3 rounded-2xl bg-[#f8faf7] border border-[#e5ede6]">
                         <p className="font-extrabold text-[#17382d]">
-                          3. Bagaimana syarat pengambilan atau pengiriman kue?
+                          3. Bagaimana syarat pengambilan atau pengiriman?
                         </p>
                         <p className="mt-1 text-[#6b8274]">
-                          Pesanan harus sudah berstatus bayar <strong>Lunas</strong> sebelum Admin menyerahkan kue atau mengirimkannya lewat kurir toko.
+                          Pesanan harus lunas sebelum petugas menyerahkan atau mengirimkan kue.
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-[#f8faf7] border border-[#e5ede6]">
+                        <p className="font-extrabold text-[#17382d]">
+                          4. Kapan pesanan saya tiba?
+                        </p>
+                        <p className="mt-1 text-[#6b8274]">
+                          Untuk pengiriman, tampil estimasi tiba sesuai rentang tanggal di tiket. Untuk ambil di toko, sesuai tanggal dan jam yang dipilih.
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-[#f8faf7] border border-[#e5ede6]">
+                        <p className="font-extrabold text-[#17382d]">
+                          5. Bagaimana ongkir dihitung?
+                        </p>
+                        <p className="mt-1 text-[#6b8274]">
+                          Berdasarkan perkiraan jarak dari toko ke titik pengantaran dengan tarif mengikuti pengaturan toko.
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-[#f8faf7] border border-[#e5ede6]">
+                        <p className="font-extrabold text-[#17382d]">
+                          6. Bisakah saya membatalkan pesanan?
+                        </p>
+                        <p className="mt-1 text-[#6b8274]">
+                          Bisa selama belum dibayar. Pesanan yang sudah dibayar atau kue custom yang sudah diproses tidak bisa dibatalkan sendiri; silakan hubungi toko.
                         </p>
                       </div>
                     </div>
@@ -2317,7 +2518,7 @@ export default function DashboardPelangganView({
                 <span>{formatRupiah(pesananInvoice.total_bayar)}</span>
               </div>
               <div className="flex justify-between text-[#26804a] font-bold">
-                <span>Total Dikonfirmasi Admin</span>
+                <span>Total Terbayar</span>
                 <span>{formatRupiah(pesananInvoice.jumlah_terbayar || 0)}</span>
               </div>
               <div className="flex justify-between font-bold text-amber-800">
@@ -2344,7 +2545,7 @@ export default function DashboardPelangganView({
                 <span>Cetak / Simpan PDF</span>
               </button>
               <Link
-                href={`/user/${pesananInvoice.kode_pesanan}`}
+                href={`/pesanan-saya/${pesananInvoice.kode_pesanan}`}
                 className="px-4 py-2.5 rounded-xl border border-[#dce6de] text-[#17382d] hover:bg-[#eff4ee] text-xs font-bold"
               >
                 Buka Tiket QR

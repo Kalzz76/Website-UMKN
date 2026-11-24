@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { buatSnapToken } from "@/lib/midtrans";
+import { cekRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
   try {
@@ -13,6 +14,14 @@ export async function POST(request) {
       return NextResponse.json(
         { pesan: "Silakan masuk terlebih dahulu." },
         { status: 401 }
+      );
+    }
+
+    const { diizinkan, tungguDetik } = cekRateLimit(`snap:${user.id}`, 8, 30000);
+    if (!diizinkan) {
+      return NextResponse.json(
+        { pesan: `Terlalu banyak permintaan token pembayaran. Silakan tunggu ${tungguDetik} detik.` },
+        { status: 429 }
       );
     }
 

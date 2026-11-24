@@ -9,7 +9,7 @@ import { PipingBagCursor } from "@/components/patisserie/PipingBagCursor";
 import { PatisserieFooter } from "@/components/patisserie/PatisserieFooter";
 import { DynamicIslandNavbar } from "@/components/patisserie/DynamicIslandNavbar";
 
-export default function HomePageClient({ popularCakes = [] }) {
+export default function HomePageClient({ popularCakes = [], toko = null }) {
   const router = useRouter();
   const [entered, setEntered] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
@@ -42,13 +42,14 @@ export default function HomePageClient({ popularCakes = [] }) {
 
   return (
     <div className="min-h-screen bg-ivory text-ink selection:bg-blush selection:text-cherry">
-      <DynamicIslandNavbar showEntered={entered} />
+      <DynamicIslandNavbar showEntered={entered} toko={toko} />
 
       <CafeScene
         startInside={false}
         onEnteredChange={setEntered}
         onNavigate={handleNavigate}
         onOpenInfo={() => {}}
+        toko={toko}
       />
 
       <CafeStoryShowcase
@@ -56,12 +57,14 @@ export default function HomePageClient({ popularCakes = [] }) {
         onGoToMenuWithCake={handleGoToMenuWithCake}
         onNotify={showToast}
         popularCakes={popularCakes}
+        toko={toko}
       />
 
       <PatisserieFooter
         onNavigate={handleNavigate}
         onOpenHampers={() => {}}
         onExitShop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        toko={toko}
       />
 
       <AnimatePresence>

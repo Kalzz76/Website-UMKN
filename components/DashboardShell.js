@@ -10,6 +10,7 @@ import PortalLedge from "@/components/PortalLedge";
 export default function DashboardShell({
   profil,
   namaToko = "Cravely",
+  notifData = {},
   notifPesananCount = 0,
   notifStokCount = 0,
   children,
@@ -33,11 +34,16 @@ export default function DashboardShell({
   const role = profil?.role || "staf";
   const userName = profil?.nama || "Admin";
 
-  const totalNotif = notifPesananCount + notifStokCount;
+  const bayarManualCount = role === "admin" ? (Number(notifData?.bayarManual) || notifPesananCount || 0) : 0;
+  const perluRefundCount = role === "admin" ? (Number(notifData?.perluRefund) || 0) : 0;
+  const pesananDiterimaCount = Number(notifData?.pesananDiterima) || 0;
+  const stokBahanCount = Number(notifData?.stokBahan) || notifStokCount || 0;
+
+  const totalNotif = bayarManualCount + perluRefundCount + pesananDiterimaCount + stokBahanCount;
 
   useEffect(() => {
     try {
-      const storageKey = `cravely_notif_read_${notifPesananCount}_${notifStokCount}`;
+      const storageKey = `cravely_notif_read_${totalNotif}`;
       const dibaca = sessionStorage.getItem(storageKey);
       if (dibaca === "1") {
         setNotifDibaca(true);
@@ -45,7 +51,7 @@ export default function DashboardShell({
         setNotifDibaca(false);
       }
     } catch (e) {}
-  }, [notifPesananCount, notifStokCount]);
+  }, [totalNotif]);
 
   useEffect(() => {
     function handleClickLuar(e) {
@@ -90,7 +96,7 @@ export default function DashboardShell({
     if (targetStatus) {
       setNotifDibaca(true);
       try {
-        sessionStorage.setItem(`cravely_notif_read_${notifPesananCount}_${notifStokCount}`, "1");
+        sessionStorage.setItem(`cravely_notif_read_${totalNotif}`, "1");
       } catch (e) {}
     }
   }
@@ -98,7 +104,7 @@ export default function DashboardShell({
   function handleTandaiSemuaDibaca() {
     setNotifDibaca(true);
     try {
-      sessionStorage.setItem(`cravely_notif_read_${notifPesananCount}_${notifStokCount}`, "1");
+      sessionStorage.setItem(`cravely_notif_read_${totalNotif}`, "1");
     } catch (e) {}
   }
 
@@ -130,6 +136,16 @@ export default function DashboardShell({
             opacity=".55"
           />
           <rect className="f" x="13.5" y="13.5" width="7" height="7" rx="2" />
+        </svg>
+      ),
+    },
+    {
+      nama: "Hari Ini",
+      href: "/dashboard/hari-ini",
+      ikon: (
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
       ),
     },
@@ -215,30 +231,12 @@ export default function DashboardShell({
 
   const menuStaf = [
     {
-      nama: "Dashboard",
-      href: "/dashboard",
+      nama: "Hari Ini",
+      href: "/dashboard/hari-ini",
       ikon: (
         <svg viewBox="0 0 24 24">
-          <rect className="f" x="3.5" y="3.5" width="7" height="7" rx="2" />
-          <rect
-            className="f"
-            x="13.5"
-            y="3.5"
-            width="7"
-            height="7"
-            rx="3.5"
-            opacity=".55"
-          />
-          <rect
-            className="f"
-            x="3.5"
-            y="13.5"
-            width="7"
-            height="7"
-            rx="3.5"
-            opacity=".55"
-          />
-          <rect className="f" x="13.5" y="13.5" width="7" height="7" rx="2" />
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
       ),
     },
@@ -284,7 +282,12 @@ export default function DashboardShell({
     judul: "Dashboard",
     subjudul: `Selamat datang, ${userName} • Ringkasan performa penjualan Cravely Bakery.`,
   };
-  if (pathname.startsWith("/dashboard/katalog-opsi")) {
+  if (pathname.startsWith("/dashboard/hari-ini")) {
+    infoHalaman = {
+      judul: "Tugas Hari Ini",
+      subjudul: "Pantau antrean produksi, serah terima pesanan, dan konfirmasi pelunasan.",
+    };
+  } else if (pathname.startsWith("/dashboard/katalog-opsi")) {
     infoHalaman = {
       judul: "Katalog & Opsi",
       subjudul: "Kelola produk kue katalog dan pilihan kustomisasi studio kue.",
@@ -477,7 +480,7 @@ export default function DashboardShell({
                       </div>
                     ) : (
                       <>
-                        {role === "admin" && notifPesananCount > 0 && (
+                        {role === "admin" && bayarManualCount > 0 && (
                           <Link
                             href="/dashboard/pesanan"
                             className="notif-dropdown-item"
@@ -489,7 +492,7 @@ export default function DashboardShell({
                             <div className="notif-item-content">
                               <div className="notif-item-title">Konfirmasi Pembayaran</div>
                               <div className="notif-item-desc">
-                                {notifPesananCount} pesanan menunggu konfirmasi pembayaran Anda.
+                                {bayarManualCount} pembayaran manual menunggu konfirmasi.
                               </div>
                               <span className="notif-item-action">
                                 Lihat Pesanan <i className="fa-solid fa-chevron-right text-[9px]"></i>
@@ -497,7 +500,47 @@ export default function DashboardShell({
                             </div>
                           </Link>
                         )}
-                        {notifStokCount > 0 && (
+                        {role === "admin" && perluRefundCount > 0 && (
+                          <Link
+                            href="/dashboard/pesanan"
+                            className="notif-dropdown-item"
+                            onClick={() => setNotifDropdownBuka(false)}
+                          >
+                            <div className="notif-icon-box pesanan" style={{ background: "#fee2e2", color: "#991b1b" }}>
+                              <i className="fa-solid fa-rotate-left"></i>
+                            </div>
+                            <div className="notif-item-content">
+                              <div className="notif-item-title">Perlu Refund</div>
+                              <div className="notif-item-desc">
+                                {perluRefundCount} pesanan memerlukan tindak lanjut refund.
+                              </div>
+                              <span className="notif-item-action">
+                                Periksa Pesanan <i className="fa-solid fa-chevron-right text-[9px]"></i>
+                              </span>
+                            </div>
+                          </Link>
+                        )}
+                        {pesananDiterimaCount > 0 && (
+                          <Link
+                            href="/dashboard/pesanan"
+                            className="notif-dropdown-item"
+                            onClick={() => setNotifDropdownBuka(false)}
+                          >
+                            <div className="notif-icon-box pesanan" style={{ background: "#dcfce7", color: "#166534" }}>
+                              <i className="fa-solid fa-box-open"></i>
+                            </div>
+                            <div className="notif-item-content">
+                              <div className="notif-item-title">Pesanan Perlu Diproses</div>
+                              <div className="notif-item-desc">
+                                {pesananDiterimaCount} pesanan baru (Diterima) belum diproses.
+                              </div>
+                              <span className="notif-item-action">
+                                Proses Pesanan <i className="fa-solid fa-chevron-right text-[9px]"></i>
+                              </span>
+                            </div>
+                          </Link>
+                        )}
+                        {stokBahanCount > 0 && (
                           <Link
                             href="/dashboard/stok"
                             className="notif-dropdown-item"
@@ -509,7 +552,7 @@ export default function DashboardShell({
                             <div className="notif-item-content">
                               <div className="notif-item-title">Peringatan Stok Bahan</div>
                               <div className="notif-item-desc">
-                                {notifStokCount} jenis bahan baku menipis atau kurang untuk pesanan aktif.
+                                {stokBahanCount} jenis bahan baku menipis atau kurang untuk pesanan aktif.
                               </div>
                               <span className="notif-item-action">
                                 Periksa Inventaris <i className="fa-solid fa-chevron-right text-[9px]"></i>

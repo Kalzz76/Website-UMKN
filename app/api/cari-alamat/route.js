@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
+import { cekRateLimit } from "@/lib/rateLimit";
 
 const cachePencarian = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export async function GET(request) {
+  const ip = request.headers.get("x-forwarded-for") || "anonim";
+  const { diizinkan } = cekRateLimit(`cari-alamat:${ip}`, 12, 10000);
+  if (!diizinkan) {
+    return NextResponse.json(
+      { pesan: "Terlalu banyak permintaan pencarian. Tunggu beberapa detik.", hasil: [] },
+      { status: 429 }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") || "").trim();
 

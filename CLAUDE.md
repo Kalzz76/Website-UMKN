@@ -38,6 +38,22 @@ Kode di project ini harus sederhana dan bersih, terlihat ditulis manual oleh pel
     - **Ongkir Berbasis Jarak**: Untuk metode Kirim, wajib pin koordinat via `PetaLokasi` (Leaflet) dan ongkir dihitung ulang di server via `lib/ongkir.js` berdasarkan tabel `tarif_jarak` dan faktor jalan toko.
     - **Estimasi Pengiriman**: Dihitung via `lib/estimasi.js` dalam zona Asia/Jakarta melewati hari libur (`tanggal_tutup`) dan kuota custom.
     - **Operasional Hari Ini**: Dikelola di `/dashboard/hari-ini` untuk memantau jadwal hari ini, serah terima, dan pelunasan tunai di toko.
+17. **Keputusan Hak Akses Staf, Laci Pesanan, Kedaluwarsa Kuota & Laporan Terpadu**:
+    - **Hak Akses Staf**: Staf hanya dapat mengubah status Diterima ke Sedang Dibuat (hanya jika ada Custom) / Siap (jika hanya Katalog), Siap ke Dikirim (Kirim & Lunas), dan ke Selesai (Lunas). Staf DILARANG membatalkan pesanan (HTTP 403). Staf hanya boleh mencatat/konfirmasi pelunasan Tunai di Tempat (metode Ambil). Menu Laporan, Pengaturan, Akun, dan kelola harga disembunyikan/dilarang untuk staf.
+    - **Laci Detail Pesanan**: Menggunakan laci drawer overlay kanan (maks 560px, tinggi penuh) agar tabel pesanan tetap lebar penuh dan judul filter "Semua Status" tidak terpotong. Rincian tagihan menampilkan subtotal item, ongkir, total, bayar sekarang, terbayar, sisa, serta kartu rincian per item custom/katalog.
+    - **Kedaluwarsa Kuota**: Pesanan Menunggu Pembayaran yang melewati batas bayar tidak dihitung dalam kuota harian. Modul `lib/kedaluwarsa.js` membersihkan pesanan kedaluwarsa secara lazy/cron dengan sinkronisasi Midtrans.
+    - **Dashboard & Laporan**: Pendapatan dihitung dari pembayaran Dikonfirmasi (`dikonfirmasi_pada` Asia/Jakarta). Nilai Penjualan dipisah Custom, Katalog, dan Ongkir. Produk Katalog Terlaris ditampilkan berdampingan dengan Opsi Custom. Stok kebutuhan dapur hanya dihitung dari item Custom.
+18. **Keputusan Sumber Data Publik & 4 Tab Pengaturan (Fase 4)**:
+    - **Sumber Data Publik (`lib/tokoPublik.js`)**: Server function `ambilTokoPublik()` dengan `unstable_cache` revalidate 60 detik dan tag cache `pengaturan_toko`. Kolom aman publik (`nama_toko`, `alamat`, `no_wa`, `wa_link`, `email`, `instagram_handle`, `instagram_url`, `tautan_peta`, `deskripsi_footer`, `jam`, `minimal_hari_pesan`, `minimal_hari_katalog`, `maks_jarak_kirim_km`, `pengiriman_aktif`). Jika database tidak terjangkau atau sebuah kolom kosong, dikembalikan kosong/null tanpa teks pengganti di kode, dan komponen menyembunyikan barisnya secara rapi.
+    - **Integrasi Landing Page**: Server Component `app/page.js` membaca `ambilTokoPublik()` dan membagikan props ke navbar, CafeScene, showcase/editorial, dan footer tanpa Context besar. Metadata halaman dibentuk via `generateMetadata()`. Form Reservasi & Pesan Cepat membuka WhatsApp (`wa_link`) dengan pesan terisi tanpa mengirim ke database, tombol dinonaktifkan jika `no_wa` kosong dengan keterangan, dan menampilkan 'Lanjutkan di WhatsApp'. Kontras teks navbar dan footer diperjelas di atas latar gelap, dan teks Menu Populer disusun tanpa saling bertumpuk dengan angka Rupiah `lining-nums tabular-nums`.
+19. **Keputusan Area Pelanggan, Tiket Kanonik & Redirection Guard**:
+    - **Dashboard Pelanggan Resmi (`/user`)**: Dashboard pelanggan resmi berada di `/user` (didukung `components/DashboardPelangganView.js` dengan tab Beranda, Pesanan Saya, Riwayat Transaksi, Pengaturan Profil & Alamat, serta Pusat Bantuan). Rute `/akun` telah dihapus dan digabungkan seutuhnya ke `/user`. Server role guard memastikan hanya role `pelanggan` yang dapat mengakses `/user` (admin dan staf dialihkan ke `/dashboard`).
+    - **Perbaikan Fase 5B (`/user`)**: Penyelarasan teks dan alur Midtrans (Pesanan Aktif = `Diterima`, `Sedang Dibuat`, `Siap`, `Dikirim`; satu tombol bayar; `Struk` hanya setelah ada pembayaran Dikonfirmasi; tabel Riwayat Pembayaran dari server; notifikasi `perlu_refund`), **Lokasi Pengiriman Utama** di profil (`PetaLokasi`, `alamat`, `patokan`, migrasi `00015_profil_lokasi.sql`, auto-fill ke `CheckoutView`, peringatan WA tidak valid), serta Pusat Bantuan berbasis `ambilTokoPublik()` dan FAQ terbaru.
+    - **Tiket Kanonik (`/pesanan-saya/[kode]`)**: Satu-satunya halaman tiket digital resmi adalah `/pesanan-saya/[kode]` (mendukung pesanan kue custom dan item katalog, Snap Midtrans, QR code, rincian biaya lengkap, serta cetak struk). Halaman `/user/[kode]` dialihkan secara kanonik ke `/pesanan-saya/[kode]` dengan meneruskan seluruh parameter query (misal `?bayar=1`).
+    - **Pengalihan Rute Bersama**:
+      - `/profil` dialihkan di server ke `/dashboard/profil` untuk admin/staf, atau ke `/user?tab=profil` untuk pelanggan.
+      - `/pesanan-saya` dialihkan di server ke `/user?tab=pesanan`.
+    - **Aturan Baku Investigasi Rute & Komponen**: Sebelum membuat halaman, rute, atau komponen baru, wajib mencari terlebih dahulu komponen dan halaman yang sudah ada di `app/` atau `components/`. Jika ada yang serupa, gunakan dan perbaiki yang sudah ada daripada membuat rute baru.
 
 Aturan ini berlaku untuk semua perubahan berikutnya, tanpa perlu diingatkan lagi.
 
@@ -669,6 +685,8 @@ Kerjakan bertahap. Setelah tiap tahap, pastikan project bisa dijalankan (`npm ru
 9. **Laporan**: periode, ringkasan, cetak, export CSV.
 10. **Landing page**: scroll-storytelling dengan GSAP dan ilustrasi SVG (dikerjakan setelah fitur inti jalan).
 11. **Penutup**: Vercel Cron pembatalan otomatis, `vercel.json`, uji alur lengkap dari pesan sampai selesai, deploy ke Vercel.
+12. **Fase 5 (Akun Pelanggan, Pemulihan Sandi & Dashboard Hari Ini)**: Akun pelanggan terpadu `/akun`, pemulihan sandi `/lupa-sandi` dan `/atur-ulang-sandi`, navigasi avatar navbar, serta antrean dapur petugas `/dashboard/hari-ini`.
+13. **Fase 6 (Pengamanan, Pembersihan & Kesiapan Deploy)**: Layout server role-guard per sub-rute, rate limiting in-memory API, audit RLS idempotent, pemindahan pembacaan laporan ke server, halaman kebijakan (/syarat-ketentuan, /kebijakan-privasi, /kebijakan-pembatalan), error pages 404/error/loading, font-variant-numeric lining-nums global, .env.example, dan panduan DEPLOY.md.
 
 ## Catatan Penting
 
