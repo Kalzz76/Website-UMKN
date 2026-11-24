@@ -6686,7 +6686,7 @@ export default function PesanPage() {
             </div>
           </Link>
           <nav>
-            <Link href="/">Beranda</Link>
+            <Link href="/toko">Ke Toko</Link>
             <Link href="/pesan" className="on">
               Custom Cake
             </Link>
