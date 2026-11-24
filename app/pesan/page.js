@@ -83,7 +83,6 @@ const STEPS_PER_TYPE = {
   cupcake: [0, 1, 3, 4, 6, 7, 8],
   tart:    [0, 1, 3, 4, 6, 7, 8],
   donut:   [0, 1, 3, 4, 6, 7, 8],
-  roti:    [0, 1, 3, 4, 6, 7, 8],
   cookies: [0, 1, 3, 4, 6, 7, 8],
 };
 
@@ -92,10 +91,9 @@ function getActiveSteps(itemType) {
 }
 
 const STEP_LABEL_OVERRIDE = {
-  cupcake: { 1: "Porsi", 3: "Rasa Muffin", 4: "Topping & Krim" },
+  cupcake: { 1: "Porsi Cupcake", 3: "Rasa Muffin", 4: "Topping & Krim" },
   tart:    { 1: "Ukuran Tart", 3: "Rasa Custard", 4: "Topping Buah" },
   donut:   { 1: "Jumlah Donat", 3: "Rasa Adonan", 4: "Glaze & Topping" },
-  roti:    { 1: "Porsi Roti", 3: "Rasa Isian", 4: "Taburan & Topping" },
   cookies: { 1: "Jumlah Cookies", 3: "Varian Rasa", 4: "Topping & Extra" },
 };
 
@@ -103,7 +101,7 @@ const STEP_DESC_OVERRIDE = {
   cupcake: {
     1: "Pilih jumlah atau paket cupcake yang ingin kamu pesan.",
     3: "Pilih rasa adonan muffin cupcake favoritmu.",
-    4: "Pilih frosting krim swirl dan hiasan di atas cupcake.",
+    4: "Pilih frosting swirl krim dan hiasan di atas cupcake.",
   },
   tart: {
     1: "Pilih ukuran kue pie atau fruit tart sesuai kebutuhanmu.",
@@ -114,11 +112,6 @@ const STEP_DESC_OVERRIDE = {
     1: "Pilih jumlah donat satuan atau paket boks pesta.",
     3: "Pilih rasa adonan donat kentang lembut.",
     4: "Pilih lelehan glaze berkilau dan taburan topping donat.",
-  },
-  roti: {
-    1: "Pilih ukuran loyang roti kasur atau roti sobek menul.",
-    3: "Pilih rasa isian manis atau gurih khas bakery.",
-    4: "Pilih taburan meses cokelat atau keju panggang di atasnya.",
   },
   cookies: {
     1: "Pilih jumlah keping soft-baked cookies atau toples.",
@@ -151,12 +144,6 @@ const SIZE_CONFIG = {
     small: { label: "Paket 3 Pcs", sub: "3 buah donat kombinasi" },
     medium: { label: "Half Dozen (6 Pcs)", sub: "Box isi 6 donat lezat" },
     large: { label: "One Dozen (12 Pcs)", sub: "Box isi 12 donat pesta" },
-  },
-  roti: {
-    mini: { label: "Personal (4 Bun)", sub: "Roti kasur 4 deret" },
-    small: { label: "Reguler (6 Bun)", sub: "Roti kasur 6 deret standar" },
-    medium: { label: "Family (8 Bun)", sub: "Roti kasur 8 deret keluarga" },
-    large: { label: "Party (12 Bun)", sub: "Roti kasur 12 deret besar" },
   },
   cookies: {
     mini: { label: "1 Giant Cookie", sub: "1 keping cookie jumbo" },
@@ -192,12 +179,6 @@ const BASE_TYPES = [
     icon: "🍩",
   },
   {
-    key: "roti",
-    label: "Roti",
-    desc: "Roti kasur menul lembut berkilau khas bakery",
-    icon: "🍞",
-  },
-  {
     key: "cookies",
     label: "Cookies",
     desc: "Soft-baked butter cookies renyah dengan choco chips",
@@ -210,8 +191,8 @@ const MENU_CATEGORIES = [
   { key: "ultah", label: "Kue Ulang Tahun", icon: "🎂" },
   { key: "tart", label: "Kue Tart", icon: "🥧" },
   { key: "cupcake", label: "Cupcake", icon: "🧁" },
+  { key: "donut", label: "Donat", icon: "🍩" },
   { key: "cookies", label: "Cookies", icon: "🍪" },
-  { key: "roti", label: "Roti Manis", icon: "🥐" },
 ];
 
 const TPL = [
@@ -434,28 +415,28 @@ const TPL = [
   },
   {
     id: 11,
-    n: "Artisan Brioche & Roti Manis",
-    cat: "roti",
-    catLabel: "Roti Manis",
-    d: "Brioche Prancis mentega lembut, dipanggang hangat segar",
-    badge: "Pagi Hangat",
-    price: 38000,
-    itemType: "brioche",
+    n: "Golden Glazed Ring Donuts",
+    cat: "donut",
+    catLabel: "Donat",
+    d: "Donat kentang empuk bertabur gula salju dan lelehan cokelat",
+    badge: "Favorit Pagi",
+    price: 36000,
+    itemType: "donut",
     s: {
       shape: "round",
       size: "small",
       flavor: "vanilla",
       fill: "cream",
-      icing: "#E6BA80",
-      deco: {},
+      icing: "#3E2211",
+      deco: { drip: true },
       items: [],
     },
   },
   {
     id: 12,
     n: "Sundae Berry & Glazed Donuts",
-    cat: "roti",
-    catLabel: "Roti Manis",
+    cat: "donut",
+    catLabel: "Donat",
     d: "Donat kentang glaze mawar merah muda & es krim strawberry",
     badge: "Menu Akhir Pekan",
     price: 55000,
@@ -705,9 +686,9 @@ function getCupcakeMuffinTextures() {
   const ctxB = cvB.getContext("2d");
 
   const grad = ctxD.createRadialGradient(n / 2, n / 2, 10, n / 2, n / 2, n / 2);
-  grad.addColorStop(0, "#E6A85B");
-  grad.addColorStop(0.65, "#D89649");
-  grad.addColorStop(1, "#B46B24");
+  grad.addColorStop(0, "#FFFFFF");
+  grad.addColorStop(0.65, "#E8E8E8");
+  grad.addColorStop(1, "#CECECE");
   ctxD.fillStyle = grad;
   ctxD.fillRect(0, 0, n, n);
 
@@ -727,8 +708,8 @@ function getCupcakeMuffinTextures() {
     ctxD.beginPath();
     ctxD.arc(cx, cy, rad, 0, Math.PI * 2);
     ctxD.fillStyle = isDeepPore
-      ? `rgba(95, 45, 12, ${alpha * 0.95})`
-      : `rgba(245, 205, 140, ${alpha})`;
+      ? `rgba(0, 0, 0, ${alpha * 0.35})`
+      : `rgba(255, 255, 255, ${alpha * 0.6})`;
     ctxD.fill();
 
     ctxB.beginPath();
@@ -854,9 +835,9 @@ function getPieCustardTextures() {
   const ctxB = cvB.getContext("2d");
 
   const grad = ctxD.createRadialGradient(n / 2, n / 2, 10, n / 2, n / 2, n / 2);
-  grad.addColorStop(0, "#FFCA36");
-  grad.addColorStop(0.7, "#FFBA20");
-  grad.addColorStop(1, "#F3A615");
+  grad.addColorStop(0, "#FFFFFF");
+  grad.addColorStop(0.7, "#EEEEEE");
+  grad.addColorStop(1, "#DDDDDD");
   ctxD.fillStyle = grad;
   ctxD.fillRect(0, 0, n, n);
 
@@ -872,12 +853,12 @@ function getPieCustardTextures() {
     const rad = 0.5 + r() * 1.6;
     ctxD.beginPath();
     ctxD.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctxD.fillStyle = r() < 0.4 ? "rgba(180, 95, 15, 0.4)" : "rgba(255, 235, 140, 0.35)";
+    ctxD.fillStyle = r() < 0.4 ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.35)";
     ctxD.fill();
 
     ctxB.beginPath();
     ctxB.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctxB.fillStyle = r() < 0.4 ? "#444444" : "#cccccc";
+    ctxB.fillStyle = r() < 0.4 ? "#555555" : "#cccccc";
     ctxB.fill();
   }
 
@@ -899,15 +880,15 @@ function getDonutTextures() {
   const ctxB = cvB.getContext("2d");
 
   const vGrad = ctxD.createLinearGradient(0, 0, 0, n);
-  vGrad.addColorStop(0, "#F7E6CC");
-  vGrad.addColorStop(0.12, "#D08235");
-  vGrad.addColorStop(0.28, "#BA6A22");
-  vGrad.addColorStop(0.42, "#CE8133");
-  vGrad.addColorStop(0.50, "#F7E6CC");
-  vGrad.addColorStop(0.58, "#CE8133");
-  vGrad.addColorStop(0.72, "#BA6A22");
-  vGrad.addColorStop(0.88, "#D08235");
-  vGrad.addColorStop(1.0, "#F7E6CC");
+  vGrad.addColorStop(0, "#EAEAEA");
+  vGrad.addColorStop(0.12, "#CCCCCC");
+  vGrad.addColorStop(0.28, "#AAAAAA");
+  vGrad.addColorStop(0.42, "#C0C0C0");
+  vGrad.addColorStop(0.50, "#FAFAFA");
+  vGrad.addColorStop(0.58, "#C0C0C0");
+  vGrad.addColorStop(0.72, "#AAAAAA");
+  vGrad.addColorStop(0.88, "#CCCCCC");
+  vGrad.addColorStop(1.0, "#EAEAEA");
 
   ctxD.fillStyle = vGrad;
   ctxD.fillRect(0, 0, n, n);
@@ -927,8 +908,8 @@ function getDonutTextures() {
     ctxD.beginPath();
     ctxD.arc(cx, cy, rad, 0, Math.PI * 2);
     ctxD.fillStyle = isBlister
-      ? "rgba(150, 75, 18, 0.35)"
-      : "rgba(255, 230, 180, 0.25)";
+      ? "rgba(0, 0, 0, 0.15)"
+      : "rgba(255, 255, 255, 0.25)";
     ctxD.fill();
 
     ctxB.beginPath();
@@ -948,91 +929,6 @@ function getDonutTextures() {
   return (DONUT_TEXS = { map, bump });
 }
 
-let ROTI_CRUST_TEXS = null;
-function getRotiCrustTextures() {
-  if (ROTI_CRUST_TEXS) return ROTI_CRUST_TEXS;
-  if (typeof document === "undefined") return { map: null, bump: null };
-  const n = 256;
-  const cvD = document.createElement("canvas");
-  const cvB = document.createElement("canvas");
-  cvD.width = cvD.height = cvB.width = cvB.height = n;
-  const ctxD = cvD.getContext("2d");
-  const ctxB = cvB.getContext("2d");
-
-  const rGrad = ctxD.createRadialGradient(n / 2, n / 2, 15, n / 2, n / 2, n / 2);
-  rGrad.addColorStop(0, "#BA6820");
-  rGrad.addColorStop(0.65, "#A45014");
-  rGrad.addColorStop(1, "#CA8236");
-  ctxD.fillStyle = rGrad;
-  ctxD.fillRect(0, 0, n, n);
-
-  ctxB.fillStyle = "#888888";
-  ctxB.fillRect(0, 0, n, n);
-
-  let q = 151;
-  const r = () => (q = (q * 16807) % 2147483647) / 2147483647;
-
-  for (let i = 0; i < 900; i++) {
-    const cx = r() * n;
-    const cy = r() * n;
-    const rad = 0.5 + r() * 1.8;
-    ctxD.beginPath();
-    ctxD.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctxD.fillStyle = "rgba(255, 220, 160, 0.22)";
-    ctxD.fill();
-
-    ctxB.beginPath();
-    ctxB.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctxB.fillStyle = "#cccccc";
-    ctxB.fill();
-  }
-
-  const map = new THREE.CanvasTexture(cvD);
-  const bump = new THREE.CanvasTexture(cvB);
-
-  return (ROTI_CRUST_TEXS = { map, bump });
-}
-
-let ROTI_CRUMB_TEXS = null;
-function getRotiCrumbTextures() {
-  if (ROTI_CRUMB_TEXS) return ROTI_CRUMB_TEXS;
-  if (typeof document === "undefined") return { map: null, bump: null };
-  const n = 256;
-  const cvD = document.createElement("canvas");
-  const cvB = document.createElement("canvas");
-  cvD.width = cvD.height = cvB.width = cvB.height = n;
-  const ctxD = cvD.getContext("2d");
-  const ctxB = cvB.getContext("2d");
-
-  ctxD.fillStyle = "#FFF5E2";
-  ctxD.fillRect(0, 0, n, n);
-  ctxB.fillStyle = "#888888";
-  ctxB.fillRect(0, 0, n, n);
-
-  let q = 167;
-  const r = () => (q = (q * 16807) % 2147483647) / 2147483647;
-
-  for (let i = 0; i < 2000; i++) {
-    const cx = r() * n;
-    const cy = r() * n;
-    const rad = 0.4 + r() * 1.8;
-    ctxD.beginPath();
-    ctxD.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctxD.fillStyle = "rgba(215, 190, 160, 0.35)";
-    ctxD.fill();
-
-    ctxB.beginPath();
-    ctxB.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctxB.fillStyle = "#333333";
-    ctxB.fill();
-  }
-
-  const map = new THREE.CanvasTexture(cvD);
-  const bump = new THREE.CanvasTexture(cvB);
-
-  return (ROTI_CRUMB_TEXS = { map, bump });
-}
-
 let COOKIE_TEXS = null;
 function getCookieTextures() {
   if (COOKIE_TEXS) return COOKIE_TEXS;
@@ -1044,7 +940,7 @@ function getCookieTextures() {
   const ctxD = cvD.getContext("2d");
   const ctxB = cvB.getContext("2d");
 
-  ctxD.fillStyle = "#CD9854";
+  ctxD.fillStyle = "#E4E4E4";
   ctxD.fillRect(0, 0, n, n);
   ctxB.fillStyle = "#999999";
   ctxB.fillRect(0, 0, n, n);
@@ -1052,7 +948,7 @@ function getCookieTextures() {
   let q = 181;
   const r = () => (q = (q * 16807) % 2147483647) / 2147483647;
 
-  ctxD.strokeStyle = "#8A4F1E";
+  ctxD.strokeStyle = "#888888";
   ctxB.strokeStyle = "#111111";
   ctxD.lineCap = "round";
   ctxB.lineCap = "round";
@@ -1091,8 +987,8 @@ function getCookieTextures() {
     ctxD.beginPath();
     ctxD.arc(cx, cy, rad, 0, Math.PI * 2);
     ctxD.fillStyle = isDark
-      ? "rgba(135, 75, 25, 0.45)"
-      : "rgba(245, 215, 160, 0.35)";
+      ? "rgba(0, 0, 0, 0.2)"
+      : "rgba(255, 255, 255, 0.35)";
     ctxD.fill();
 
     ctxB.beginPath();
@@ -1513,10 +1409,10 @@ function build3DCupcake(add, M, MB, S) {
   const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
   g.scale.setScalar(sc);
 
-  let muffinColor = "#D89B54";
-  if (S.flavor === "choco") muffinColor = "#462715";
-  else if (S.flavor === "velvet") muffinColor = "#8A1C25";
-  else if (S.flavor === "straw") muffinColor = "#C96D7A";
+  let muffinColor = "#E5A75B";
+  if (S.flavor === "choco") muffinColor = "#4A2716";
+  else if (S.flavor === "velvet") muffinColor = "#8A1E26";
+  else if (S.flavor === "straw") muffinColor = "#DC5972";
 
   const paperMat = new THREE.MeshStandardMaterial({
     color: "#FAF2E5",
@@ -1556,7 +1452,7 @@ function build3DCupcake(add, M, MB, S) {
   g.add(collar);
 
   const hasDeco = S.deco && (S.deco.straw || S.deco.drip || S.deco.flower || S.deco.spr || S.deco.berry);
-  if (hasDeco || (S.icing && S.icing !== "#FFFDF9")) {
+  if (hasDeco || (S.icing && S.icing !== "#FFFDF9" && S.icing !== "#f6b4c2")) {
     const creamColor = S.icing || "#FFFDF8";
     const swirl = new THREE.Mesh(swirlGeo(0.26, 0.42), MM(creamColor, { roughness: 0.35 }));
     swirl.position.y = 1.08;
@@ -1567,6 +1463,32 @@ function build3DCupcake(add, M, MB, S) {
       berry.position.set(0, 1.5, 0);
       berry.scale.setScalar(1.25);
       g.add(berry);
+    }
+    if (S.deco && S.deco.berry) {
+      const bk = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), MB("#1C1524", { roughness: 0.3 }));
+      bk.position.set(0, 1.48, 0);
+      g.add(bk);
+    }
+    if (S.deco && S.deco.spr) {
+      const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.06, 6);
+      const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
+      for (let i = 0; i < 20; i++) {
+        const a = (i * Math.PI * 2) / 20;
+        const spMat = new THREE.MeshStandardMaterial({
+          color: spColors[i % spColors.length],
+          roughness: 0.4,
+        });
+        const sp = new THREE.Mesh(spGeo, spMat);
+        sp.position.set(Math.cos(a) * 0.22, 1.15 + (i % 3) * 0.1, Math.sin(a) * 0.22);
+        sp.rotation.set(Math.PI / 2, 0, (i * 1.5) % Math.PI);
+        g.add(sp);
+      }
+    }
+    if (S.deco && S.deco.flower) {
+      const fl = new THREE.Mesh(flowerGeo(), MM("#FF85A2", { roughness: 0.4 }));
+      fl.position.set(0, 1.46, 0);
+      fl.scale.setScalar(0.7);
+      g.add(fl);
     }
   }
 
@@ -1582,9 +1504,9 @@ function build3DTart(add, M, MB, S) {
   g.scale.setScalar(sc);
 
   let custardColor = "#FFBD28";
-  if (S.flavor === "choco") custardColor = "#3B2113";
-  else if (S.flavor === "velvet") custardColor = "#8E1E28";
-  else if (S.flavor === "straw") custardColor = "#DE4A5B";
+  if (S.flavor === "choco") custardColor = "#3C1F10";
+  else if (S.flavor === "velvet") custardColor = "#9A1B28";
+  else if (S.flavor === "straw") custardColor = "#E8425A";
 
   const crustMat = new THREE.MeshStandardMaterial({
     color: "#DCA052",
@@ -1596,54 +1518,102 @@ function build3DTart(add, M, MB, S) {
 
   const custardMat = new THREE.MeshStandardMaterial({
     color: custardColor,
-    roughness: 0.20,
-    metalness: 0.04,
-    envMapIntensity: 0.85,
+    roughness: 0.18,
+    metalness: 0.05,
+    envMapIntensity: 0.95,
     map: custardTex.map,
     bumpMap: custardTex.bump,
-    bumpScale: 1.5,
+    bumpScale: 1.2,
   });
 
   const shell = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.65, 1.45, 0.38, 64),
+    new THREE.CylinderGeometry(1.62, 1.45, 0.16, 64),
     crustMat
   );
-  shell.position.y = 0.19;
+  shell.position.y = 0.08;
   g.add(shell);
 
-  const fluteGeo = new THREE.SphereGeometry(0.09, 12, 10);
-  fluteGeo.scale(0.85, 1.1, 1.35);
-  for (let i = 0; i < 32; i++) {
+  const fluteGeo = new THREE.SphereGeometry(0.12, 12, 10);
+  fluteGeo.scale(0.85, 1.2, 1.35);
+  for (let i = 0; i < 34; i++) {
     const fl = new THREE.Mesh(fluteGeo, crustMat);
-    const a = (i * Math.PI * 2) / 32;
-    fl.position.set(Math.cos(a) * 1.63, 0.37, Math.sin(a) * 1.63);
+    const a = (i * Math.PI * 2) / 34;
+    fl.position.set(Math.cos(a) * 1.60, 0.22, Math.sin(a) * 1.60);
     fl.rotation.y = -a;
     fl.rotation.x = 0.25;
     g.add(fl);
   }
 
   const custard = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.5, 1.5, 0.12, 64),
+    new THREE.CylinderGeometry(1.52, 1.50, 0.14, 64),
     custardMat
   );
-  custard.position.y = 0.31;
+  custard.position.y = 0.21;
   g.add(custard);
 
   if (S.deco && S.deco.straw) {
     [
       [0, 0],
-      [0.45, 0.3],
-      [-0.45, 0.3],
-      [0.45, -0.3],
-      [-0.45, -0.3],
-      [0, 0.6],
-      [0, -0.6],
+      [0.5, 0.35],
+      [-0.5, 0.35],
+      [0.5, -0.35],
+      [-0.5, -0.35],
+      [0, 0.7],
+      [0, -0.7],
+      [0.75, 0],
+      [-0.75, 0],
     ].forEach(([bx, bz]) => {
       const berry = new THREE.Mesh(getBerryG(), MB("#D62234", { roughness: 0.28 }));
-      berry.position.set(bx, 0.42, bz);
+      berry.position.set(bx, 0.36, bz);
       berry.scale.setScalar(0.95);
       g.add(berry);
     });
+  }
+
+  if (S.deco && S.deco.berry) {
+    [
+      [0.28, 0.2],
+      [-0.28, 0.2],
+      [0.28, -0.2],
+      [-0.28, -0.2],
+      [0, 0.38],
+      [0, -0.38],
+    ].forEach(([bx, bz]) => {
+      const bk = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), MB("#1C1524", { roughness: 0.3 }));
+      bk.position.set(bx, 0.34, bz);
+      g.add(bk);
+    });
+  }
+
+  if (S.deco && S.deco.spr) {
+    const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6);
+    const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
+    for (let i = 0; i < 30; i++) {
+      const a = (i * Math.PI * 2) / 30 + 0.1;
+      const rad = 0.3 + (i % 5) * 0.24;
+      const spMat = new THREE.MeshStandardMaterial({
+        color: spColors[i % spColors.length],
+        roughness: 0.4,
+      });
+      const sp = new THREE.Mesh(spGeo, spMat);
+      sp.position.set(Math.cos(a) * rad, 0.29, Math.sin(a) * rad);
+      sp.rotation.set(Math.PI / 2, 0, (i * 1.3) % Math.PI);
+      g.add(sp);
+    }
+  }
+
+  if (S.deco && S.deco.drip) {
+    const dripMat = new THREE.MeshStandardMaterial({
+      color: "#3B1E11",
+      roughness: 0.2,
+      metalness: 0.1,
+    });
+    for (let i = 0; i < 5; i++) {
+      const dr = new THREE.Mesh(new THREE.TorusGeometry(0.3 + i * 0.25, 0.02, 8, 32), dripMat);
+      dr.rotation.x = Math.PI / 2;
+      dr.position.y = 0.285;
+      g.add(dr);
+    }
   }
 
   add(g);
@@ -1656,10 +1626,10 @@ function build3DDonat(add, M, MB, S) {
   const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
   g.scale.setScalar(sc);
 
-  let donutColor = "#D28338";
-  if (S.flavor === "choco") donutColor = "#4A2814";
-  else if (S.flavor === "velvet") donutColor = "#861D24";
-  else if (S.flavor === "straw") donutColor = "#C65868";
+  let donutColor = "#DCA052";
+  if (S.flavor === "choco") donutColor = "#4A2816";
+  else if (S.flavor === "velvet") donutColor = "#8A1E27";
+  else if (S.flavor === "straw") donutColor = "#DC5770";
 
   const donutMat = new THREE.MeshStandardMaterial({
     color: donutColor,
@@ -1678,17 +1648,17 @@ function build3DDonat(add, M, MB, S) {
   torus.position.y = 0.38;
   g.add(torus);
 
-  const hasGlaze = S.deco && (S.deco.drip || S.deco.straw || S.deco.spr || S.deco.flower);
-  if (hasGlaze || (S.icing && S.icing !== "#FFFDF9")) {
-    let glazeColor = S.icing || "#4A2814";
+  const hasGlaze = S.deco && (S.deco.drip || S.deco.straw || S.deco.spr || S.deco.flower || S.deco.berry);
+  if (hasGlaze) {
+    let glazeColor = "#3E2211";
     if (S.deco && S.deco.straw) glazeColor = "#F06292";
-    else if (S.deco && S.deco.drip) glazeColor = "#3E2211";
+    else if (S.deco && (S.deco.flower || S.deco.berry)) glazeColor = "#FFF8EE";
 
     const glazeMat = new THREE.MeshStandardMaterial({
       color: glazeColor,
-      roughness: 0.22,
+      roughness: 0.18,
       metalness: 0.08,
-      envMapIntensity: 0.9,
+      envMapIntensity: 0.95,
     });
     const glaze = new THREE.Mesh(
       new THREE.TorusGeometry(0.72, 0.385, 24, 64, Math.PI),
@@ -1702,8 +1672,8 @@ function build3DDonat(add, M, MB, S) {
     if (S.deco && S.deco.spr) {
       const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6);
       const spColors = ["#FFF", "#FFD54F", "#81C784", "#FF4081", "#448AFF"];
-      for (let i = 0; i < 28; i++) {
-        const a = (i * Math.PI * 2) / 28 + (Math.random() - 0.5) * 0.2;
+      for (let i = 0; i < 32; i++) {
+        const a = (i * Math.PI * 2) / 32 + (Math.random() - 0.5) * 0.2;
         const r = 0.72 + (Math.random() - 0.5) * 0.3;
         const spMat = new THREE.MeshStandardMaterial({
           color: spColors[i % spColors.length],
@@ -1720,72 +1690,6 @@ function build3DDonat(add, M, MB, S) {
   add(g);
 }
 
-function build3DRotiManis(add, M, MB, S) {
-  const g = new THREE.Group();
-  const crustTex = getRotiCrustTextures();
-  const crumbTex = getRotiCrumbTextures();
-
-  const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
-  g.scale.setScalar(sc);
-
-  let crustColor = "#BA6820";
-  if (S.flavor === "choco") crustColor = "#4F2B14";
-  else if (S.flavor === "straw") crustColor = "#B04F5E";
-  else if (S.flavor === "velvet") crustColor = "#781C24";
-
-  const crustMat = new THREE.MeshStandardMaterial({
-    color: crustColor,
-    roughness: 0.30,
-    map: crustTex.map,
-    bumpMap: crustTex.bump,
-    bumpScale: 2.2,
-  });
-
-  const crumbMat = new THREE.MeshStandardMaterial({
-    color: "#FFF5E2",
-    roughness: 0.85,
-    map: crumbTex.map,
-    bumpMap: crumbTex.bump,
-    bumpScale: 3.5,
-  });
-
-  const base = new THREE.Mesh(
-    new THREE.BoxGeometry(1.85, 0.42, 2.5),
-    crumbMat
-  );
-  base.position.y = 0.21;
-  g.add(base);
-
-  const bunGeo = new THREE.SphereGeometry(0.55, 24, 20);
-  bunGeo.scale(1.02, 0.86, 0.94);
-
-  const xs = [-0.48, 0.48];
-  const zs = [-0.85, 0, 0.85];
-
-  for (let ix = 0; ix < xs.length; ix++) {
-    for (let iz = 0; iz < zs.length; iz++) {
-      const bun = new THREE.Mesh(bunGeo, crustMat);
-      bun.position.set(xs[ix], 0.52, zs[iz]);
-      g.add(bun);
-    }
-  }
-
-  if (S.deco && S.deco.spr) {
-    const spGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.07, 6);
-    const mesesMat = new THREE.MeshStandardMaterial({ color: "#2B160B", roughness: 0.5 });
-    for (let i = 0; i < 40; i++) {
-      const sp = new THREE.Mesh(spGeo, mesesMat);
-      const bx = (Math.random() - 0.5) * 1.5;
-      const bz = (Math.random() - 0.5) * 2.2;
-      sp.position.set(bx, 0.98, bz);
-      sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
-      g.add(sp);
-    }
-  }
-
-  add(g);
-}
-
 function build3DCookies(add, M, MB, S) {
   const g = new THREE.Group();
   const cookieTex = getCookieTextures();
@@ -1793,16 +1697,16 @@ function build3DCookies(add, M, MB, S) {
   const sc = S.size === "large" ? 1.25 : S.size === "medium" ? 1.12 : S.size === "mini" ? 0.88 : 1.0;
   g.scale.setScalar(sc);
 
-  let cookieColor = "#CD9854";
+  let cookieColor = "#D59B58";
   let chipColor = "#25140A";
   if (S.flavor === "choco") {
-    cookieColor = "#3E2211";
-    chipColor = "#FAF0E6";
+    cookieColor = "#3C1F11";
+    chipColor = "#FFF0DB";
   } else if (S.flavor === "velvet") {
-    cookieColor = "#7E1B23";
-    chipColor = "#FAF0E6";
+    cookieColor = "#821A22";
+    chipColor = "#FFF0DB";
   } else if (S.flavor === "straw") {
-    cookieColor = "#C45B6B";
+    cookieColor = "#D85B70";
     chipColor = "#25140A";
   }
 
@@ -1866,6 +1770,20 @@ function build3DCookies(add, M, MB, S) {
       sp.position.set(Math.cos(a) * r, 0.32, Math.sin(a) * r);
       sp.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI);
       g.add(sp);
+    }
+  }
+
+  if (S.deco && S.deco.drip) {
+    const dripMat = new THREE.MeshStandardMaterial({
+      color: "#3B1E11",
+      roughness: 0.25,
+      metalness: 0.1,
+    });
+    for (let i = 0; i < 4; i++) {
+      const dr = new THREE.Mesh(new THREE.TorusGeometry(0.25 + i * 0.2, 0.022, 8, 32), dripMat);
+      dr.rotation.x = Math.PI / 2;
+      dr.position.y = 0.32;
+      g.add(dr);
     }
   }
 
@@ -4231,7 +4149,6 @@ export default function PesanPage() {
     else if (S.itemType === "tart") standRadius = 2.0 * sc;
     else if (S.itemType === "cookies") standRadius = 1.45 * sc;
     else if (S.itemType === "donut") standRadius = 1.45 * sc;
-    else if (S.itemType === "roti" || S.itemType === "brioche") standRadius = 2.0 * sc;
     add(stand(standRadius));
 
     if (!ts.isStudio) {
@@ -4259,10 +4176,6 @@ export default function PesanPage() {
     }
     if (S.itemType === "donut") {
       build3DDonat(add, M, MB, S);
-      return;
-    }
-    if (S.itemType === "brioche" || S.itemType === "roti") {
-      build3DRotiManis(add, M, MB, S);
       return;
     }
 
@@ -5747,6 +5660,14 @@ export default function PesanPage() {
     }
   }
 
+  function handlePrev() {
+    const active = getActiveSteps(S.itemType);
+    let curPos = active.indexOf(step);
+    if (curPos > 0) {
+      go(active[curPos - 1]);
+    }
+  }
+
   function handleNext() {
     const active = getActiveSteps(S.itemType);
     let curPos = active.indexOf(step);
@@ -5947,21 +5868,6 @@ export default function PesanPage() {
         </svg>
       );
     }
-    if (key === "roti") {
-      return (
-        <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
-          <rect x="22" y="38" width="56" height="30" rx="8" fill="#FFF5E2" stroke="#E6D2B5" strokeWidth="1.5" />
-          <ellipse cx="36" cy="40" rx="14" ry="11" fill="#BA6820" />
-          <ellipse cx="64" cy="40" rx="14" ry="11" fill="#BA6820" />
-          <ellipse cx="36" cy="54" rx="14" ry="11" fill="#A85215" />
-          <ellipse cx="64" cy="54" rx="14" ry="11" fill="#A85215" />
-          <ellipse cx="34" cy="38" rx="8" ry="5" fill="#E59445" opacity="0.75" />
-          <ellipse cx="62" cy="38" rx="8" ry="5" fill="#E59445" opacity="0.75" />
-          <ellipse cx="34" cy="52" rx="8" ry="5" fill="#D67B28" opacity="0.6" />
-          <ellipse cx="62" cy="52" rx="8" ry="5" fill="#D67B28" opacity="0.6" />
-        </svg>
-      );
-    }
     if (key === "cookies") {
       return (
         <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
@@ -6046,19 +5952,6 @@ export default function PesanPage() {
           <circle cx="40" cy="48" r="1.8" fill="#381F13" />
           <circle cx="45" cy="53" r="1.8" fill="#381F13" />
           <circle cx="55" cy="56" r="1.8" fill="#381F13" />
-        </svg>
-      );
-    }
-    if (type === "brioche") {
-      return (
-        <svg viewBox="0 0 100 85" width="80" height="68" fill="none">
-          <ellipse cx="50" cy="62" rx="36" ry="10" fill="#E8D5C4" />
-          <circle cx="50" cy="45" r="16" fill="#BD6E22" />
-          <circle cx="34" cy="48" r="13" fill="#BD6E22" />
-          <circle cx="66" cy="48" r="13" fill="#BD6E22" />
-          <ellipse cx="50" cy="40" rx="12" ry="7" fill="#DFA058" opacity="0.6" />
-          <ellipse cx="34" cy="44" rx="9" ry="5" fill="#DFA058" opacity="0.6" />
-          <ellipse cx="66" cy="44" rx="9" ry="5" fill="#DFA058" opacity="0.6" />
         </svg>
       );
     }
@@ -6236,8 +6129,8 @@ export default function PesanPage() {
                             items: [],
                             shape: item.key === "cake" ? (S.shape || "round") : "round",
                             fill: item.key === "cake" ? (S.fill || "cream") : null,
-                            icing: item.key === "cake" ? (S.icing || "#f6b4c2") : "#f6b4c2",
-                            flavor: S.flavor || "vanilla",
+                            icing: item.key === "cake" ? (S.icing || "#f6b4c2") : null,
+                            flavor: "vanilla",
                             size: S.size || "small",
                           };
                           setS(nextS);
@@ -7573,8 +7466,6 @@ export default function PesanPage() {
                           ? "Custom Kue Pie"
                           : S.itemType === "donut"
                           ? "Custom Donat"
-                          : S.itemType === "roti"
-                          ? "Custom Roti"
                           : S.itemType === "cookies"
                           ? "Custom Cookies"
                           : "Custom Cake"}
@@ -7777,10 +7668,15 @@ export default function PesanPage() {
         <footer>
           <button
             className="btn prv"
-            style={{ visibility: step > 0 ? "visible" : "hidden" }}
-            onClick={() => go(step - 1)}
+            style={{
+              visibility:
+                getActiveSteps(S.itemType).indexOf(step) > 0
+                  ? "visible"
+                  : "hidden",
+            }}
+            onClick={handlePrev}
           >
-            ‹ {step > 2 ? "Kembali" : "Sebelumnya"}
+            ‹ {getActiveSteps(S.itemType).indexOf(step) > 1 ? "Kembali" : "Sebelumnya"}
           </button>
 
           {step < 3 && (
