@@ -194,15 +194,15 @@ export default async function DetailTiketPage(props) {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] py-8 sm:py-12 px-3 sm:px-6 font-sans text-[#2D1E1B]">
+    <div className="min-h-screen bg-[#FDF5E7] py-8 sm:py-12 px-3 sm:px-6 font-sans text-[#2D1E1B]">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
-            href="/user?tab=pesanan"
-            className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full border border-[#D9C5B2] text-[#3D2B28] bg-white hover:bg-[#F5ECE2] shadow-xs transition"
+            href={isStafAtauAdmin ? "/dashboard/pesanan" : "/user?tab=pesanan"}
+            className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-full border border-[#D9C5B2] text-[#3D2B28] bg-[#FFFDF9] hover:bg-[#F5ECE2] shadow-xs transition"
           >
-            <i className="fa-solid fa-arrow-left text-[#C59B62]" />
-            <span>Kembali ke Dashboard</span>
+            <i className="fa-solid fa-arrow-left text-[#9E3B42]" />
+            <span>{isStafAtauAdmin ? "Kembali ke Panel Pesanan" : "Kembali ke Dashboard Saya"}</span>
           </Link>
 
           <div className="flex items-center gap-2">
@@ -259,7 +259,7 @@ export default async function DetailTiketPage(props) {
                 <div className="text-right">
                   <span className="text-[10px] text-[#D9C5B2] uppercase font-bold block">Pemesan</span>
                   <span className="font-bold text-[#FFFDF9] text-sm block">{pesanan.nama_penerima}</span>
-                  <span className="text-[#E5BF88] block text-[11px]">{pesanan.no_wa_penerima}</span>
+                  <span className="text-[#E5BF88] block text-[11px]">{pesanan.no_wa || pesanan.no_wa_penerima || "-"}</span>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#C59B62]/20 border border-[#C59B62]/40 flex items-center justify-center text-[#F6E3BA] text-lg">
                   <i className="fa-solid fa-receipt" />
@@ -559,6 +559,17 @@ export default async function DetailTiketPage(props) {
                             <p className="text-[#4A2E2B] mt-0.5 leading-relaxed">{pesanan.alamat}</p>
                             {pesanan.patokan && (
                               <p className="text-[#8C6D62] text-[11px] mt-0.5">Patokan: {pesanan.patokan}</p>
+                            )}
+                            {pesanan.lat_tujuan && pesanan.lng_tujuan && (
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${pesanan.lat_tujuan},${pesanan.lng_tujuan}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-bold text-[#9E3B42] hover:underline"
+                              >
+                                <i className="fa-solid fa-map-location-dot" />
+                                <span>Lihat Lokasi di Google Maps</span>
+                              </a>
                             )}
                           </div>
                         </div>

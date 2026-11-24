@@ -182,10 +182,13 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
     if (pathname.startsWith("/toko")) return "Toko";
     if (pathname.startsWith("/menu")) return "Menu";
     if (pathname.startsWith("/pesan")) return "Cake Studio";
-    if (pathname.startsWith("/keranjang")) return "Keranjang";
+    if (pathname.startsWith("/keranjang") || pathname.startsWith("/kasir")) return "Keranjang";
+    if (pathname.startsWith("/checkout")) return "Checkout";
+    if (pathname.startsWith("/user") || pathname.startsWith("/pesanan-saya") || pathname.startsWith("/dashboard")) {
+      return "Dashboard";
+    }
     if (
       pathname.startsWith("/profil") ||
-      pathname.startsWith("/dashboard/profil") ||
       pathname.startsWith("/masuk") ||
       pathname.startsWith("/daftar")
     ) {
