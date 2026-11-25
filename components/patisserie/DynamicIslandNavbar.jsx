@@ -353,6 +353,7 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <Link
                   href="/keranjang"
+                  prefetch={false}
                   onClick={() => {
                     if (pathname.startsWith("/keranjang")) setIsExpanded(false);
                   }}
@@ -383,6 +384,7 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
                   <div className="relative shrink-0 flex items-center z-20 pointer-events-auto">
                     <Link
                       href={profileHref}
+                      prefetch={false}
                       onClick={handleProfileClick}
                       className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border border-[#D9B37C]/80 shadow-xs flex items-center justify-center transition shrink-0 hover:scale-105 bg-[#f8e4d9] cursor-pointer"
                       title={userRole === "admin" || userRole === "staf" ? "Dashboard Toko" : "Dashboard Pelanggan"}

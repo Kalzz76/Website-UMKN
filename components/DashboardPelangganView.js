@@ -1717,9 +1717,9 @@ export default function DashboardPelangganView({
               <i className={`fa-solid fa-arrows-rotate text-xs ${sedangSegarkan ? "animate-spin text-[#9E3B42]" : ""}`}></i>
             </button>
 
-            <button
-              type="button"
-              onClick={() => gantiTab("keranjang")}
+            <Link
+              href="/keranjang"
+              prefetch={false}
               title="Keranjang Belanja Saya"
               className="h-9 px-3 rounded-full bg-[#FAF2E8] hover:bg-[#F1E4D5] text-[#3D2B28] text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
             >
@@ -1728,7 +1728,7 @@ export default function DashboardPelangganView({
               <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#9E3B42] text-white text-[11px] font-extrabold inline-flex items-center justify-center leading-none">
                 {jumlahKuantitasKeranjang}
               </span>
-            </button>
+            </Link>
 
             <div className="relative" ref={notifRef}>
               <button

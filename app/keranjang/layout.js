@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { cekRole } from "@/lib/cekRole";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Keranjang Belanja",
   description: "Rincian pesanan kue di keranjang belanja Anda.",
