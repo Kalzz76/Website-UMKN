@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import PreviewKue from "@/components/PreviewKue";
+import GambarProduk from "@/components/GambarProduk";
 import { BadgeStatusPesanan, BadgeStatusBayar } from "@/components/BadgeStatus";
 import TombolBayarMidtrans from "@/components/TombolBayarMidtrans";
 import { formatRupiah, formatTanggalIndonesia, formatTanggalWaktu } from "@/lib/format";
@@ -415,15 +416,11 @@ export default async function DetailTiketPage(props) {
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white overflow-hidden flex items-center justify-center shrink-0 border border-[#EADCC8] shadow-xs">
-                            {it.prodUrl ? (
-                              <img
-                                src={it.prodUrl}
-                                alt={it.nama_item}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <i className="fa-solid fa-cake-candles text-[#D9C5B2] text-2xl" />
-                            )}
+                            <GambarProduk
+                              src={it.prodUrl}
+                              nama={it.nama_item}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
 
                           <div className="min-w-0 space-y-1.5">

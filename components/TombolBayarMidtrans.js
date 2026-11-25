@@ -379,27 +379,27 @@ export default function TombolBayarMidtrans({
 
       <div className="space-y-4">
         <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF4ED] border border-[#ECDCCE] space-y-3.5 shadow-xs">
-          <div className="flex items-center justify-between pb-2 border-b border-[#EEDBCE]">
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#EEDBCE]">
+            <div className="flex items-center gap-2">
               <i className="fa-solid fa-credit-card text-[#7D2330] text-sm" />
               <h4 className="font-bold text-xs text-[#4A2E2B] uppercase tracking-wider">
-                Pembayaran Online (Midtrans)
+                Pembayaran Online
               </h4>
             </div>
-            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              Otomatis & Terverifikasi
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">
+              Otomatis &amp; Terverifikasi
             </span>
           </div>
 
           {isMenungguBayar && (
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold">Batas Waktu Pembayaran:</span>
-                <span className="font-mono font-bold text-rose-700">
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-1">
+                <span className="font-bold text-[11px]">Batas Waktu Pembayaran</span>
+                <span className="font-mono font-bold text-rose-700 text-[11px] whitespace-nowrap">
                   {formatDetik(sisaWaktuDetik)}
                 </span>
               </div>
-              <p className="text-[11px] text-amber-700">
+              <p className="text-[11px] text-amber-800 leading-relaxed">
                 Selesaikan pembayaran sebelum batas waktu berakhir agar pesanan tidak dibatalkan otomatis.
               </p>
             </div>
@@ -407,89 +407,89 @@ export default function TombolBayarMidtrans({
 
           {isDpSudahBayar && (
             <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span>DP Terkonfirmasi:</span>
-                <strong className="font-mono lining-nums text-emerald-800">
+                <strong className="font-mono lining-nums text-emerald-800 whitespace-nowrap">
                   {formatRupiah(terbayar)}
                 </strong>
               </div>
-              <div className="flex items-center justify-between font-bold text-[#7D2330]">
+              <div className="flex items-center justify-between gap-2 font-bold text-[#7D2330]">
                 <span>Sisa Pelunasan:</span>
-                <strong className="font-mono lining-nums">{formatRupiah(sisa)}</strong>
+                <strong className="font-mono lining-nums whitespace-nowrap">{formatRupiah(sisa)}</strong>
               </div>
             </div>
           )}
 
-          <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <span className="text-[10px] text-[#7D5A50] block uppercase font-bold">
-                {isDpSudahBayar ? "Nominal Sisa:" : "Nominal Harus Dibayar:"}
+          <div className="space-y-2.5 pt-1">
+            <div className="flex items-center justify-between gap-2 bg-white px-3.5 py-2.5 rounded-xl border border-[#EADCC8]">
+              <span className="text-[11px] text-[#7D5A50] font-bold">
+                {isDpSudahBayar ? "Nominal Sisa" : "Nominal Bayar"}
               </span>
-              <span className="text-base font-extrabold text-[#7D2330] font-mono lining-nums">
+              <span className="text-base font-extrabold text-[#7D2330] font-mono lining-nums whitespace-nowrap">
                 {formatRupiah(isDpSudahBayar ? sisa : (pesananAktif.jumlah_dp || totalBayar))}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {isMenungguBayar && (
-                <button
-                  type="button"
-                  disabled={sedangBatal}
-                  onClick={() => setModalBatalTerbuka(true)}
-                  className="h-[40px] px-3.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
-                >
-                  <i className="fa-solid fa-ban text-xs" />
-                  <span>Batalkan Pesanan</span>
-                </button>
-              )}
+            {isDpSudahBayar ? (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleBayar("Pelunasan")}
+                className="w-full h-[42px] px-4 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs transition cursor-pointer shadow-sm disabled:opacity-50 inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                {loading ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch fa-spin text-xs" />
+                    <span>Menghubungkan...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-lock text-xs" />
+                    <span>Bayar Sisa Pelunasan</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleBayar(pesananAktif.jumlah_dp ? "DP" : "Lunas")}
+                className="w-full h-[42px] px-4 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs transition cursor-pointer shadow-sm disabled:opacity-50 inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                {loading ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch fa-spin text-xs" />
+                    <span>Menghubungkan...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-lock text-xs" />
+                    <span>Bayar Sekarang</span>
+                  </>
+                )}
+              </button>
+            )}
 
+            <div className={`grid gap-2 ${isMenungguBayar ? "grid-cols-2" : "grid-cols-1"}`}>
               <button
                 type="button"
                 disabled={loadingCek}
                 onClick={handleCekStatusManual}
-                className="h-[40px] px-3.5 rounded-xl border border-[#ECDCCE] bg-white hover:bg-stone-50 text-[#4A2E2B] font-bold text-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                className="h-[38px] px-3 rounded-xl border border-[#ECDCCE] bg-white hover:bg-stone-50 text-[#4A2E2B] font-bold text-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center justify-center gap-1.5 whitespace-nowrap"
               >
                 <i className={`fa-solid fa-arrows-rotate text-xs ${loadingCek ? "animate-spin" : ""}`} />
                 <span>{loadingCek ? "Mengecek..." : "Cek Status"}</span>
               </button>
 
-              {isDpSudahBayar ? (
+              {isMenungguBayar && (
                 <button
                   type="button"
-                  disabled={loading}
-                  onClick={() => handleBayar("Pelunasan")}
-                  className="h-[40px] px-5 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs transition cursor-pointer shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
+                  disabled={sedangBatal}
+                  onClick={() => setModalBatalTerbuka(true)}
+                  className="h-[38px] px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center justify-center gap-1.5 whitespace-nowrap"
                 >
-                  {loading ? (
-                    <>
-                      <i className="fa-solid fa-circle-notch fa-spin text-xs" />
-                      <span>Menghubungkan...</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-lock text-xs" />
-                      <span>Bayar Sisa Pelunasan</span>
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleBayar(pesananAktif.jumlah_dp ? "DP" : "Lunas")}
-                  className="h-[40px] px-5 rounded-xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs transition cursor-pointer shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <i className="fa-solid fa-circle-notch fa-spin text-xs" />
-                      <span>Menghubungkan...</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-lock text-xs" />
-                      <span>Bayar Sekarang</span>
-                    </>
-                  )}
+                  <i className="fa-solid fa-ban text-xs" />
+                  <span>Batalkan</span>
                 </button>
               )}
             </div>
