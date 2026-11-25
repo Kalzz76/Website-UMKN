@@ -1175,31 +1175,30 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
                     strokeWidth="1.8"
                   />
 
-                  {/* Blouse Sleeves & Torso */}
+                  {/* Left Sleeve & Torso */}
                   <ellipse cx="222" cy="500" rx="18" ry="26" fill="#FDF5E7" stroke="#D4B5AA" strokeWidth="1.8" />
-                  <ellipse cx="314" cy="500" rx="18" ry="26" fill="#FDF5E7" stroke="#D4B5AA" strokeWidth="1.8" />
                   <path d="M226 474 Q268 465 310 474 L318 532 H218 Z" fill="#FDF5E7" stroke="#D4B5AA" strokeWidth="1.8" />
 
-                  {/* Right Arm & Hand (rests naturally by counter, waves gently on hover) */}
+                  {/* Single Right Arm & Hand (no duplicate sleeve behind, waves on hover) */}
                   <g
                     style={{
-                      transformOrigin: '314px 488px',
-                      transform: tetehHappy ? 'rotate(-110deg) translateY(-2px)' : 'rotate(0deg)',
+                      transformOrigin: '308px 484px',
+                      transform: tetehHappy ? 'rotate(-95deg)' : 'rotate(0deg)',
                       transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                   >
                     <path
-                      d="M312 486 Q324 504 320 524"
+                      d="M308 482 Q324 502 320 524"
                       fill="none"
                       stroke="#D4B5AA"
-                      strokeWidth="15"
+                      strokeWidth="18"
                       strokeLinecap="round"
                     />
                     <path
-                      d="M312 486 Q324 504 320 524"
+                      d="M308 482 Q324 502 320 524"
                       fill="none"
                       stroke="#FDF5E7"
-                      strokeWidth="11.5"
+                      strokeWidth="14.5"
                       strokeLinecap="round"
                     />
                     <rect
