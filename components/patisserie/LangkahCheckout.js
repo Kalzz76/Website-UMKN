@@ -14,7 +14,7 @@ export const OPSI_METODE = [
 
 export function PilihMetodeBayar({ nilai, onUbah }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+    <div className="flex flex-col gap-2">
       {OPSI_METODE.map((m) => {
         const Ikon = m.ikon;
         const aktif = nilai === m.id;
@@ -23,29 +23,29 @@ export function PilihMetodeBayar({ nilai, onUbah }) {
             key={m.id}
             type="button"
             onClick={() => onUbah(m.id)}
-            className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-start gap-3 ${
+            className={`w-full px-3.5 py-2.5 rounded-xl border text-left transition cursor-pointer flex items-center gap-3 ${
               aktif
                 ? "border-[#7D2330] bg-[#FFF5F2] ring-1 ring-[#7D2330]"
                 : "border-[#E6D4C6] bg-white/70 hover:bg-white"
-            } ${m.id === "qris" ? "sm:col-span-2" : ""}`}
+            }`}
           >
             <span
-              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                 aktif ? "bg-[#7D2330] text-white" : "bg-[#F5ECE3] text-[#7D2330]"
               }`}
             >
               <Ikon className="w-[18px] h-[18px]" />
             </span>
-            <span className="min-w-0">
-              <span className="font-bold text-xs sm:text-sm text-[#4A2E2B] block">
-                {m.label}
+            <span className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-3">
+              <span className="font-bold text-xs sm:text-sm text-[#4A2E2B] flex items-center gap-2">
+                <span>{m.label}</span>
                 {m.id === "qris" && (
-                  <span className="ml-2 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
                     Paling cepat
                   </span>
                 )}
               </span>
-              <span className="text-[11px] text-[#7D5A50]">{m.info}</span>
+              <span className="text-[11px] text-[#7D5A50] truncate">{m.info}</span>
             </span>
           </button>
         );
