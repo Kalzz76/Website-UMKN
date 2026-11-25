@@ -6,6 +6,7 @@ import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah, formatTanggalSingkat, formatTanggalIndonesia, formatTanggalWaktu, formatAngka } from "@/lib/format";
 import PreviewKue from "@/components/PreviewKue";
 import ModalPesan from "@/components/ModalPesan";
+import GambarProduk from "@/components/GambarProduk";
 
 export default function PesananDashboardPage() {
   const [sedangMemuat, setSedangMemuat] = useState(true);
@@ -1036,15 +1037,11 @@ export default function PesananDashboardPage() {
                 ) : (
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-16 rounded-xl bg-stone-100 border border-[#dfd4bd] overflow-hidden flex items-center justify-center flex-shrink-0">
-                      {it.fotoProdukUrl ? (
-                        <img
-                          src={it.fotoProdukUrl}
-                          alt={it.nama_item}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <i className="fa-solid fa-cake-candles text-stone-300 text-xl" />
-                      )}
+                      <GambarProduk
+                        src={it.fotoProdukUrl}
+                        nama={it.nama_item}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="flex-1 min-w-0 space-y-1">
                       <p className="text-xs font-bold text-stone-900">{it.nama_item}</p>

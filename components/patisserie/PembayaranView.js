@@ -459,24 +459,44 @@ export function PembayaranView() {
                       </div>
 
                       {IS_SANDBOX && (
-                        <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-relaxed">
-                          Mode sandbox: simulasikan pembayaran lewat{" "}
-                          <a
-                            href="https://simulator.sandbox.midtrans.com/"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-bold underline"
-                          >
-                            Midtrans Simulator
-                          </a>
-                          {tagihan.metode === "qris" && tagihan.qr_url && (
-                            <>
-                              {" "}(menu QRIS, tempel URL QR:{" "}
-                              <span className="break-all font-mono">{tagihan.qr_url}</span>)
-                            </>
+                        <div className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 space-y-1.5 leading-relaxed">
+                          <p>
+                            Mode sandbox: simulasikan pembayaran lewat{" "}
+                            <a
+                              href="https://simulator.sandbox.midtrans.com/"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-bold underline"
+                            >
+                              Midtrans Simulator
+                            </a>
+                            {tagihan.metode === "qris"
+                              ? " (menu QRIS → Upload gambar dari tombol Simpan gambar QR, atau tempel QR String / URL QR)."
+                              : "."}
+                          </p>
+                          {tagihan.metode === "qris" && (tagihan.qr_string || tagihan.qr_url) && (
+                            <div className="flex flex-wrap gap-2 pt-0.5">
+                              {tagihan.qr_string && (
+                                <button
+                                  type="button"
+                                  onClick={() => navigator.clipboard?.writeText(tagihan.qr_string)}
+                                  className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 font-bold hover:bg-amber-100 cursor-pointer"
+                                >
+                                  Salin QR String
+                                </button>
+                              )}
+                              {tagihan.qr_url && (
+                                <button
+                                  type="button"
+                                  onClick={() => navigator.clipboard?.writeText(tagihan.qr_url)}
+                                  className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 font-bold hover:bg-amber-100 cursor-pointer"
+                                >
+                                  Salin URL QR
+                                </button>
+                              )}
+                            </div>
                           )}
-                          .
-                        </p>
+                        </div>
                       )}
                     </div>
                   </div>
