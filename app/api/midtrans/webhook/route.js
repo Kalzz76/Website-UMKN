@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { verifikasiSignatureKey } from "@/lib/midtrans";
 import { sinkronkanStatusMidtrans } from "@/lib/midtransSinkron";
 
+export async function GET() {
+  return NextResponse.json({ status: "ok" });
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -28,6 +32,10 @@ export async function POST(request) {
 
     if (!valid) {
       return NextResponse.json({ pesan: "Signature key tidak valid." }, { status: 403 });
+    }
+
+    if (String(order_id).startsWith("payment_notif_test_")) {
+      return NextResponse.json({ status: "ok", pesan: "Test notifikasi Midtrans berhasil." });
     }
 
     const hasil = await sinkronkanStatusMidtrans({
