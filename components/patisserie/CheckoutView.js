@@ -20,6 +20,7 @@ import {
   Store,
 } from "lucide-react";
 import { formatRupiah, formatTanggal } from "@/lib/format";
+import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
 import {
   BotanicalTopLeft,
   BotanicalTopRight,
@@ -322,8 +323,43 @@ export function CheckoutView() {
     handleUbahPin(item.lat, item.lon);
   }
 
+  function hitungRingkasanCheckout(list, prevRingkasan) {
+    let subtotal_custom = 0;
+    let subtotal_katalog = 0;
+    for (const it of list) {
+      const sub = Number(it.subtotal ?? (Number(it.harga_satuan || 0) * Number(it.jumlah || 1)));
+      if (it.jenis === "Custom") {
+        subtotal_custom += sub;
+      } else {
+        subtotal_katalog += sub;
+      }
+    }
+    return {
+      ...prevRingkasan,
+      subtotal_custom,
+      subtotal_katalog,
+      total_kue: subtotal_custom + subtotal_katalog,
+    };
+  }
+
   async function ubahJumlahItem(id, jumlahBaru) {
     if (jumlahBaru < 1 || jumlahBaru > 20) return;
+
+    const snapshotKeranjang = keranjang;
+    const snapshotRingkasan = ringkasan;
+    const keranjangBaru = keranjang.map((it) => {
+      if (it.id !== id) return it;
+      const hargaSatuan = Number(it.harga_satuan ?? (Number(it.subtotal || 0) / Math.max(1, Number(it.jumlah || 1))));
+      return {
+        ...it,
+        jumlah: jumlahBaru,
+        subtotal: hargaSatuan * jumlahBaru,
+      };
+    });
+
+    setKeranjang(keranjangBaru);
+    setRingkasan((prev) => hitungRingkasanCheckout(keranjangBaru, prev));
+
     try {
       const res = await fetch("/api/keranjang", {
         method: "PATCH",
@@ -331,26 +367,43 @@ export function CheckoutView() {
         body: JSON.stringify({ id, jumlah: jumlahBaru }),
       });
       if (res.ok) {
-        await muatDataKeranjang();
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("cravely_cart_updated"));
         }
+      } else {
+        setKeranjang(snapshotKeranjang);
+        setRingkasan(snapshotRingkasan);
       }
-    } catch {}
+    } catch {
+      setKeranjang(snapshotKeranjang);
+      setRingkasan(snapshotRingkasan);
+    }
   }
 
   async function hapusItem(id) {
+    const snapshotKeranjang = keranjang;
+    const snapshotRingkasan = ringkasan;
+    const keranjangBaru = keranjang.filter((it) => it.id !== id);
+
+    setKeranjang(keranjangBaru);
+    setRingkasan((prev) => hitungRingkasanCheckout(keranjangBaru, prev));
+
     try {
       const res = await fetch(`/api/keranjang?id=${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
-        await muatDataKeranjang();
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("cravely_cart_updated"));
         }
+      } else {
+        setKeranjang(snapshotKeranjang);
+        setRingkasan(snapshotRingkasan);
       }
-    } catch {}
+    } catch {
+      setKeranjang(snapshotKeranjang);
+      setRingkasan(snapshotRingkasan);
+    }
   }
 
   const adaItemTidakTersedia = keranjang.some((it) => it.tersedia === false);
@@ -1282,13 +1335,18 @@ export function CheckoutView() {
                           <div key={item.id} className="py-2.5 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#E6D4C6] flex items-center justify-center">
-                                {item.foto_url ? (
+                                {item.foto_url || getFotoProdukFallback(item.nama) ? (
                                   <img
-                                    src={item.foto_url}
+                                    src={item.foto_url || getFotoProdukFallback(item.nama)}
                                     alt={item.nama}
                                     onError={(e) => {
-                                      e.currentTarget.onerror = null;
-                                      e.currentTarget.src = "/assets/placeholder-cake.png";
+                                      const fb = getFotoProdukFallback(item.nama);
+                                      if (fb && !e.currentTarget.src.endsWith(fb)) {
+                                        e.currentTarget.src = fb;
+                                      } else {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.style.display = "none";
+                                      }
                                     }}
                                     className="w-full h-full object-cover"
                                   />
