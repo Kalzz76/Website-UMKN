@@ -80,11 +80,11 @@ const STEPS = [
 ];
 
 const STEPS_PER_TYPE = {
-  cake:    [0, 1, 2, 3, 4, 5, 6, 7, 8],
-  cupcake: [0, 1, 3, 4, 6, 7, 8],
-  tart:    [0, 1, 3, 4, 6, 7, 8],
-  donut:   [0, 1, 3, 4, 6, 7, 8],
-  cookies: [0, 1, 3, 4, 6, 7, 8],
+  cake:    [0, 1, 2, 3, 4, 5, 6],
+  cupcake: [0, 1, 3, 4, 6],
+  tart:    [0, 1, 3, 4, 6],
+  donut:   [0, 1, 3, 4, 6],
+  cookies: [0, 1, 3, 4, 6],
 };
 
 function getActiveSteps(itemType) {
@@ -6445,19 +6445,12 @@ export default function PesanPage() {
       showToast(err);
       return;
     }
-    if (step === 8) {
-      handleOrderSubmit();
+    if (step === 6 || step === 8) {
+      handleAddToCart();
       return;
     }
     if (curPos < active.length - 1) {
       const nextStep = active[curPos + 1];
-      if (nextStep === 8) {
-        const m = checkValidation();
-        if (m) {
-          showToast(m);
-          return;
-        }
-      }
       go(nextStep);
       return;
     }
@@ -8437,7 +8430,7 @@ export default function PesanPage() {
                 </small>
               ) : null}
             </div>
-            {step >= 4 && step < 7 && (
+            {step >= 4 && step < 6 && (
               <button
                 type="button"
                 className="btn prv"
@@ -8458,13 +8451,9 @@ export default function PesanPage() {
               onClick={handleNext}
             >
               {sedangKirim
-                ? "Memproses..."
-                : step === 8
-                ? "Pesan Sekarang 🛒"
-                : step === 7
-                ? "Review Pesanan ›"
+                ? "Menyimpan..."
                 : step === 6
-                ? "Lanjut Pengambilan ›"
+                ? "🛒 Masukkan ke Keranjang"
                 : "Selanjutnya ›"}
             </button>
           </div>
