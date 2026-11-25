@@ -283,13 +283,29 @@ export function CheckoutView() {
     }
   }
 
-  function handleUbahPin(lat, lng) {
+  async function isiAlamatDariKoordinat(lat, lng) {
+    try {
+      const res = await fetch(
+        `/api/cari-alamat?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.alamat) {
+        setAlamat(data.alamat);
+      }
+    } catch {}
+  }
+
+  function handleUbahPin(lat, lng, opsi = { isiAlamat: true }) {
     setPosisiTujuan({ lat, lng });
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     debounceTimerRef.current = setTimeout(() => {
       hitungOngkirLokasi(lat, lng);
+      if (opsi?.isiAlamat !== false) {
+        isiAlamatDariKoordinat(lat, lng);
+      }
     }, 400);
   }
 
@@ -315,7 +331,7 @@ export function CheckoutView() {
     setAlamat(item.display_name);
     setQueryCari("");
     setHasilCari([]);
-    handleUbahPin(item.lat, item.lon);
+    handleUbahPin(item.lat, item.lon, { isiAlamat: false });
   }
 
   function hitungRingkasanCheckout(list, prevRingkasan) {
