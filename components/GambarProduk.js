@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
 
 export default function GambarProduk({
@@ -11,6 +11,27 @@ export default function GambarProduk({
   const fallback = getFotoProdukFallback(nama);
   const [imgSrc, setImgSrc] = useState(src || fallback);
   const [gagal, setGagal] = useState(false);
+  const imgRef = useRef(null);
+
+  useEffect(() => {
+    setImgSrc(src || fallback);
+    setGagal(false);
+  }, [src, fallback]);
+
+  function tanganiError() {
+    if (fallback && imgSrc !== fallback) {
+      setImgSrc(fallback);
+    } else {
+      setGagal(true);
+    }
+  }
+
+  useEffect(() => {
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth === 0) {
+      tanganiError();
+    }
+  }, [imgSrc]);
 
   if (!imgSrc || gagal) {
     return <i className="fa-solid fa-cake-candles text-[#D9C5B2] text-2xl" />;
@@ -18,16 +39,11 @@ export default function GambarProduk({
 
   return (
     <img
+      ref={imgRef}
       src={imgSrc}
       alt={nama || "Produk"}
       className={className}
-      onError={() => {
-        if (fallback && imgSrc !== fallback) {
-          setImgSrc(fallback);
-        } else {
-          setGagal(true);
-        }
-      }}
+      onError={tanganiError}
     />
   );
 }
