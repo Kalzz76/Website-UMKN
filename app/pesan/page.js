@@ -4354,15 +4354,8 @@ export default function PesanPage() {
         }
       } catch {}
 
-      const saved = sessionStorage.getItem("cravely_custom_draft");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed) setS(parsed);
-        } catch {}
-      }
-
       try {
+        sessionStorage.removeItem("cravely_custom_draft");
         sessionStorage.removeItem("cravely_custom_maxstep");
       } catch {}
       setMaxStep(0);
@@ -4374,11 +4367,53 @@ export default function PesanPage() {
     snap(S);
   }, []);
 
+  const [pendingLeaveHref, setPendingLeaveHref] = useState(null);
+  const allowLeaveRef = useRef(false);
+
   useEffect(() => {
     try {
-      sessionStorage.setItem("cravely_custom_draft", JSON.stringify(S));
+      sessionStorage.removeItem("cravely_custom_draft");
+      sessionStorage.removeItem("cravely_custom_maxstep");
     } catch {}
-  }, [S]);
+  }, []);
+
+  const isDirty =
+    !sedangKirim &&
+    (step > 0 ||
+      (S.items && S.items.length > 0) ||
+      (S.candles && S.candles.length > 0) ||
+      S.shape !== "round" ||
+      S.size !== "mini" ||
+      S.flavor !== "vanilla" ||
+      S.cpts !== null);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!isDirty || allowLeaveRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    const handleDocumentClick = (e) => {
+      if (!isDirty || allowLeaveRef.current) return;
+      const anchor = e.target?.closest?.("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+      if (href === "/pesan" || href.startsWith("/pesan?")) return;
+      if (anchor.target === "_blank") return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingLeaveHref(href);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [isDirty]);
 
   useEffect(() => {
     const active = getActiveSteps(S.itemType);
@@ -6297,6 +6332,7 @@ export default function PesanPage() {
         return;
       }
 
+      allowLeaveRef.current = true;
       setCartCount((c) => c + 1);
       window.dispatchEvent(new Event("cravely_cart_updated"));
       sessionStorage.removeItem("cravely_custom_draft");
@@ -8566,6 +8602,83 @@ export default function PesanPage() {
       )}
 
       <PortalLedge />
+
+      {pendingLeaveHref && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(42, 22, 18, 0.55)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+          onClick={() => setPendingLeaveHref(null)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              background: "#FFFDF9",
+              border: "2px solid #D3A29D",
+              borderRadius: "24px",
+              padding: "24px",
+              boxShadow: "0 20px 50px rgba(42, 22, 18, 0.25)",
+              color: "#3B2326",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: "28px", marginBottom: "8px" }}>⚠️</div>
+            <h3
+              style={{
+                fontFamily: "'Baloo 2', sans-serif",
+                fontSize: "20px",
+                fontWeight: 800,
+                marginBottom: "8px",
+                color: "#3B2326",
+              }}
+            >
+              Keluar dari Cake Studio?
+            </h3>
+            <p
+              style={{
+                fontSize: "13.5px",
+                lineHeight: 1.55,
+                color: "#6E5255",
+                marginBottom: "20px",
+              }}
+            >
+              Desain kue kustom yang sedang dibuat belum dimasukkan ke keranjang.
+              Jika Anda keluar sekarang, seluruh desain akan ter-reset dan tidak
+              disimpan sebagai draft.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                className="btn sec"
+                onClick={() => setPendingLeaveHref(null)}
+              >
+                Lanjut Desain
+              </button>
+              <button
+                type="button"
+                className="btn pri"
+                onClick={() => {
+                  const target = pendingLeaveHref;
+                  setPendingLeaveHref(null);
+                  allowLeaveRef.current = true;
+                  router.push(target);
+                }}
+              >
+                Keluar &amp; Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={`toast ${toastShow ? "show" : ""}`}>{toastMsg}</div>
     </div>
