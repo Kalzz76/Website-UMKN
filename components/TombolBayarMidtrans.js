@@ -153,69 +153,9 @@ export default function TombolBayarMidtrans({
     }
   }
 
-  async function handleBayar(jenisTarget) {
-    if (typeof window === "undefined" || !window.snap) {
-      setNotifikasi({
-        terbuka: true,
-        judul: "Peringatan",
-        pesan: "Modul pembayaran Midtrans sedang disiapkan, silakan coba beberapa detik lagi.",
-        tipe: "error",
-      });
-      return;
-    }
-
+  async function handleBayar() {
     setLoading(true);
-
-    try {
-      const res = await fetch("/api/midtrans/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kode_pesanan: pesananAktif.kode_pesanan,
-          jenis: jenisTarget,
-        }),
-      });
-
-      const hasil = await res.json();
-
-      if (!res.ok || !hasil.token) {
-        setLoading(false);
-        setNotifikasi({
-          terbuka: true,
-          judul: "Informasi",
-          pesan: hasil.pesan || "Gagal mendapatkan token pembayaran Midtrans.",
-          tipe: "error",
-        });
-        return;
-      }
-
-      window.snap.pay(hasil.token, {
-        onSuccess: function () {
-          setLoading(false);
-          window.location.href = `/pesanan-saya/${pesananAktif.kode_pesanan}?bayar=1`;
-        },
-        onPending: function () {
-          setLoading(false);
-          window.location.href = `/pesanan-saya/${pesananAktif.kode_pesanan}?bayar=1`;
-        },
-        onError: function () {
-          setLoading(false);
-          window.location.href = `/pesanan-saya/${pesananAktif.kode_pesanan}?bayar=1`;
-        },
-        onClose: function () {
-          setLoading(false);
-          window.location.href = `/pesanan-saya/${pesananAktif.kode_pesanan}?bayar=1`;
-        },
-      });
-    } catch (err) {
-      setLoading(false);
-      setNotifikasi({
-        terbuka: true,
-        judul: "Kesalahan",
-        pesan: err.message || "Gagal menghubungi server pembayaran.",
-        tipe: "error",
-      });
-    }
+    window.location.href = `/pembayaran/${pesananAktif.kode_pesanan}`;
   }
 
   async function handleBatalPesanan() {

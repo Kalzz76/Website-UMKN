@@ -44,7 +44,7 @@ export async function middleware(request) {
 
   const path = request.nextUrl.pathname;
 
-  if (!user && (path.startsWith("/dashboard") || path.startsWith("/user") || path.startsWith("/pesanan-saya") || path.startsWith("/profil") || path.startsWith("/keranjang") || path.startsWith("/checkout"))) {
+  if (!user && (path.startsWith("/dashboard") || path.startsWith("/user") || path.startsWith("/pesanan-saya") || path.startsWith("/profil") || path.startsWith("/keranjang") || path.startsWith("/checkout") || path.startsWith("/pembayaran"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/masuk";
     url.searchParams.set("ke", path);

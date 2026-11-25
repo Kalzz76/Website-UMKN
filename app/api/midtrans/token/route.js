@@ -136,7 +136,7 @@ export async function POST(request) {
       .limit(1)
       .maybeSingle();
 
-    if (bayarMenunggu && bayarMenunggu.snap_token) {
+    if (bayarMenunggu && bayarMenunggu.snap_token && !bayarMenunggu.snap_token.startsWith("core:")) {
       const dibuatBayarMs = new Date(bayarMenunggu.dibuat_pada).getTime();
       const sisaBayarMenit = Math.floor((dibuatBayarMs + batasJam * 3600000 - Date.now()) / 60000);
       if (sisaBayarMenit > 0) {

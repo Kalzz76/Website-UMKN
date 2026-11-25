@@ -580,59 +580,13 @@ export default function DashboardPelangganView({
   }
 
   async function handleBayarMidtransLangsung(pesanan) {
-    const total = Number(pesanan.total_bayar || 0);
-    const sudah = Number(pesanan.jumlah_terbayar || 0);
-    const sisa = Math.max(0, total - sudah);
-    const isPelunasan = pesanan.status_bayar === "DP Dibayar" && sisa > 0;
-    const jenisTarget = isPelunasan ? "Pelunasan" : pesanan.jumlah_dp ? "DP" : "Lunas";
-
-    if (typeof window === "undefined" || !window.snap) {
-      router.push(`/pesanan-saya/${pesanan.kode_pesanan}`);
-      return;
-    }
-
     setSedangBayarKode(pesanan.kode_pesanan);
-    try {
-      const res = await fetch("/api/midtrans/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kode_pesanan: pesanan.kode_pesanan,
-          jenis: jenisTarget,
-        }),
-      });
-      const hasil = await res.json();
-      if (!res.ok || !hasil.token) {
-        setSedangBayarKode("");
-        setModalInfo({
-          terbuka: true,
-          judul: "Informasi Pembayaran",
-          pesan: hasil.pesan || "Silakan lanjutkan pembayaran melalui halaman tiket pesanan.",
-          tipe: "error",
-        });
-        return;
-      }
+    router.push(`/pembayaran/${pesanan.kode_pesanan}`);
+  }
 
-      window.snap.pay(hasil.token, {
-        onSuccess: async function () {
-          setSedangBayarKode("");
-          await handleCekStatusMidtrans(pesanan.kode_pesanan, true);
-        },
-        onPending: async function () {
-          setSedangBayarKode("");
-          await handleCekStatusMidtrans(pesanan.kode_pesanan, true);
-        },
-        onError: function () {
-          setSedangBayarKode("");
-        },
-        onClose: function () {
-          setSedangBayarKode("");
-        },
-      });
-    } catch {
-      setSedangBayarKode("");
-      router.push(`/pesanan-saya/${pesanan.kode_pesanan}`);
-    }
+  async function handleBayarSnapLama(pesanan) {
+    setSedangBayarKode(pesanan.kode_pesanan);
+    router.push(`/pembayaran/${pesanan.kode_pesanan}`);
   }
 
   async function handleCekStatusMidtrans(kodePesanan, tanpaModalJikaTetap = false) {

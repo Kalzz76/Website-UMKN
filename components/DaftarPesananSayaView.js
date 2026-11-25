@@ -221,7 +221,7 @@ export default function DaftarPesananSayaView({
 
                     {butuhBayar && (
                       <Link
-                        href={`/pesanan-saya/${p.kode_pesanan}?bayar=1`}
+                        href={`/pembayaran/${p.kode_pesanan}`}
                         className="px-4 py-2 rounded-xl bg-[#9E3B42] hover:bg-[#872f36] text-white text-xs font-bold shadow-xs transition"
                       >
                         Bayar Sekarang

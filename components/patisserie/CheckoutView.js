@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
 import dynamic from "next/dynamic";
 import {
   MapPin,
@@ -29,6 +28,7 @@ import {
 } from "./BotanicalBranchDecor";
 import { DynamicIslandNavbar } from "./DynamicIslandNavbar";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { LangkahCheckout, PilihMetodeBayar } from "./LangkahCheckout";
 
 const PetaLokasi = dynamic(() => import("@/components/PetaLokasi"), {
   ssr: false,
@@ -118,13 +118,7 @@ export function CheckoutView() {
 
   const debounceTimerRef = useRef(null);
 
-  const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
-  const isProduction =
-    process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true" ||
-    (!clientKey.startsWith("SB-") && clientKey.length > 0);
-  const snapScriptUrl = isProduction
-    ? "https://app.midtrans.com/snap/snap.js"
-    : "https://app.sandbox.midtrans.com/snap/snap.js";
+  const [metodeBayar, setMetodeBayar] = useState("qris");
 
   const namaToko = pengaturan?.nama_toko || "Cravely";
 
@@ -567,45 +561,7 @@ export function CheckoutView() {
         window.dispatchEvent(new Event("cravely_cart_updated"));
       }
 
-      const resToken = await fetch("/api/midtrans/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kode_pesanan: kodePesananHasil,
-          jenis: mode === "DP" ? "DP" : "Lunas",
-        }),
-      });
-
-      const dataToken = await resToken.json();
-
-      if (!resToken.ok || !dataToken.token) {
-        const batasStr = pengaturan?.batas_bayar_jam ? `${pengaturan.batas_bayar_jam} jam` : "24 jam";
-        router.push(
-          `/pesanan-saya/${kodePesananHasil}?pesan=${encodeURIComponent(
-            `Pesanan dibuat, selesaikan pembayaran sebelum ${batasStr}.`
-          )}`
-        );
-        return;
-      }
-
-      if (typeof window !== "undefined" && window.snap) {
-        window.snap.pay(dataToken.token, {
-          onSuccess: function () {
-            router.push(`/pesanan-saya/${kodePesananHasil}?bayar=1`);
-          },
-          onPending: function () {
-            router.push(`/pesanan-saya/${kodePesananHasil}?bayar=1`);
-          },
-          onError: function () {
-            router.push(`/pesanan-saya/${kodePesananHasil}?bayar=1`);
-          },
-          onClose: function () {
-            router.push(`/pesanan-saya/${kodePesananHasil}?bayar=1`);
-          },
-        });
-      } else {
-        router.push(`/pesanan-saya/${kodePesananHasil}?bayar=1`);
-      }
+      router.push(`/pembayaran/${kodePesananHasil}?metode=${metodeBayar}`);
     } catch {
       if (kodePesananHasil) {
         router.push(`/pesanan-saya/${kodePesananHasil}`);
@@ -655,11 +611,6 @@ export function CheckoutView() {
 
   return (
     <>
-      <Script
-        src={snapScriptUrl}
-        data-client-key={clientKey}
-        strategy="lazyOnload"
-      />
 
       <div className="min-h-screen bg-[#FAF4EE] text-[#4A2E2B] selection:bg-blush selection:text-cherry pt-14 sm:pt-16 flex flex-col relative overflow-x-clip font-sans">
         <DynamicIslandNavbar showEntered={true} />
@@ -696,43 +647,7 @@ export function CheckoutView() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition ${
-                    activeStep >= 1 ? "bg-[#4A2E2B] text-white" : "border border-[#CDBFAA] text-[#7D5A50]"
-                  }`}
-                >
-                  1
-                </div>
-                <span className="text-[11px] sm:text-xs font-bold text-[#4A2E2B] mt-1">
-                  Pengiriman
-                </span>
-              </div>
-
-              <div
-                className={`w-12 sm:w-16 h-[2px] -mt-4 transition-colors ${
-                  activeStep >= 2 ? "bg-[#4A2E2B]" : "bg-[#CDBFAA]"
-                }`}
-              />
-
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition ${
-                    activeStep >= 2 ? "bg-[#4A2E2B] text-white" : "border border-[#CDBFAA] text-[#7D5A50]"
-                  }`}
-                >
-                  2
-                </div>
-                <span
-                  className={`text-[11px] sm:text-xs mt-1 ${
-                    activeStep >= 2 ? "font-bold text-[#4A2E2B]" : "text-[#7D5A50]"
-                  }`}
-                >
-                  Ringkasan & Bayar
-                </span>
-              </div>
-            </div>
+            <LangkahCheckout aktif={activeStep} />
           </div>
 
           {pesanError && (
@@ -850,7 +765,7 @@ export function CheckoutView() {
                                 Kirim ke Alamat
                               </span>
                               <p className="text-[11px] mt-1">
-                                Pengiriman belum tersedia
+                                Belum tersedia — lokasi toko belum diatur admin
                               </p>
                             </div>
                           ) : (
@@ -1120,7 +1035,7 @@ export function CheckoutView() {
                       disabled={!formulirValid()}
                       className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <span>Lanjut ke Pembayaran →</span>
+                      <span>Lanjut ke Konfirmasi →</span>
                     </button>
                   </div>
                 </form>
@@ -1134,7 +1049,7 @@ export function CheckoutView() {
                         Konfirmasi & Pembayaran
                       </h2>
                       <p className="text-xs text-[#7D5A50] mt-0.5">
-                        Pembayaran aman dan otomatis menggunakan Midtrans
+                        Cek data pesanan, lalu pilih cara bayar
                       </p>
                     </div>
                     <button
@@ -1190,6 +1105,16 @@ export function CheckoutView() {
                     )}
                   </div>
 
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="font-bold text-sm text-[#4A2E2B]">Metode Pembayaran</h3>
+                      <p className="text-[11px] text-[#7D5A50] mb-2.5">
+                        Setelah klik bayar, kode QR / nomor Virtual Account langsung muncul di halaman berikutnya.
+                      </p>
+                      <PilihMetodeBayar nilai={metodeBayar} onUbah={setMetodeBayar} />
+                    </div>
+                  </div>
+
                   <div className="space-y-3 pt-3 border-t border-[#EEDBCE]">
                     <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
                       <button
@@ -1209,10 +1134,10 @@ export function CheckoutView() {
                         {sedangProses ? (
                           <>
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Menghubungkan Midtrans...</span>
+                            <span>Membuat pesanan...</span>
                           </>
                         ) : (
-                          <span>Bayar Sekarang {formatRupiah(bayarSekarang)}</span>
+                          <span>Buat Pesanan & Bayar {formatRupiah(bayarSekarang)}</span>
                         )}
                       </button>
                     </div>
@@ -1439,7 +1364,7 @@ export function CheckoutView() {
 
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#7D5A50]">
-                        Bayar Sekarang ({mode === "DP" ? `DP ${pengaturan?.persen_dp ?? 50}%` : "Lunas"}):
+                        Bayar Sekarang ({sisaBayar > 0 ? `DP ${pengaturan?.persen_dp ?? 50}%` : "Lunas"}):
                       </span>
                       <span className="font-serif font-bold text-[#7D2330] text-sm lining-nums">
                         {formatRupiah(bayarSekarang)}
@@ -1459,6 +1384,16 @@ export function CheckoutView() {
                           {formatRupiah(sisaBayar)}
                         </span>
                       </div>
+                    )}
+
+                    {mode === "DP" && (
+                      <p className="text-[11px] text-[#7D5A50] leading-relaxed pt-1">
+                        {subtotalCustom > 0 && subtotalKatalog > 0
+                          ? `DP ${pengaturan?.persen_dp ?? 50}% hanya berlaku untuk kue custom. Kue katalog & ongkir dibayar penuh di awal.`
+                          : subtotalCustom > 0
+                            ? `Kue custom cukup DP ${pengaturan?.persen_dp ?? 50}% dulu, sisanya dilunasi sebelum kue diambil/dikirim.`
+                            : `Kue katalog (siap jual) dibayar penuh. DP ${pengaturan?.persen_dp ?? 50}% hanya berlaku untuk kue custom.`}
+                      </p>
                     )}
                   </div>
                 </div>
