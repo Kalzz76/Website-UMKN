@@ -648,7 +648,7 @@ export default function RootLoading() {
               />
 
               <path
-                d="M 150,334 Q 300,366 450,334"
+                d="M 148,308 A 152,43 0 0,0 452,308"
                 fill="none"
                 stroke="var(--bowl-dots)"
                 strokeWidth="6.5"
