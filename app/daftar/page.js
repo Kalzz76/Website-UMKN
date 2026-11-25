@@ -5,8 +5,8 @@ import dynamic from "next/dynamic";
 const OvenAuth = dynamic(() => import("@/components/OvenAuth"), {
   ssr: false,
   loading: () => (
-    <div className="fixed inset-0 bg-[#2a1a12] flex items-center justify-center text-[#fff1dc] font-mono">
-      Memuat Dapur Cravely...
+    <div className="fixed inset-0 bg-[#fffdf9] flex items-center justify-center text-[#3a2315] text-sm font-semibold">
+      Memuat Halaman Pendaftaran...
     </div>
   ),
 });
