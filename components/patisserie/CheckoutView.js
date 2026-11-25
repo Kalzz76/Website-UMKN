@@ -1190,41 +1190,34 @@ export function CheckoutView() {
                     )}
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 space-y-2 text-xs text-amber-900">
-                    <div className="flex items-center gap-2 font-bold text-xs text-[#7D2330]">
-                      <Store className="w-4 h-4" />
-                      <span>Instruksi Pembayaran Midtrans</span>
+                  <div className="space-y-3 pt-3 border-t border-[#EEDBCE]">
+                    <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActiveStep(1)}
+                        className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-[#ECDCCE] bg-white text-[#4A2E2B] text-xs sm:text-sm font-semibold hover:bg-[#FAF4EE] transition cursor-pointer whitespace-nowrap"
+                      >
+                        Kembali
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={sedangProses || !formulirValid()}
+                        onClick={handleBayarSekarang}
+                        className="w-full sm:w-auto px-7 py-3 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+                      >
+                        {sedangProses ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Menghubungkan Midtrans...</span>
+                          </>
+                        ) : (
+                          <span>Bayar Sekarang {formatRupiah(bayarSekarang)}</span>
+                        )}
+                      </button>
                     </div>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Klik tombol di bawah untuk membuka jendela pembayaran Midtrans. Anda dapat memilih QRIS (GoPay, ShopeePay, BCA/Mandiri Virtual Account, dll).
-                    </p>
-                  </div>
 
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveStep(1)}
-                      className="w-full sm:w-auto px-6 py-3 rounded-2xl border border-[#ECDCCE] text-[#4A2E2B] text-xs sm:text-sm font-semibold hover:bg-white transition cursor-pointer"
-                    >
-                      Kembali
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={sedangProses || !formulirValid()}
-                      onClick={handleBayarSekarang}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#7D2330] hover:bg-[#681C27] text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
-                    >
-                      {sedangProses ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Menghubungkan Midtrans...</span>
-                        </>
-                      ) : (
-                        <span>Bayar Sekarang {formatRupiah(bayarSekarang)}</span>
-                      )}
-                    </button>
-                    <p className="text-[11px] text-[#7D5A50] text-center sm:text-right mt-2 leading-relaxed">
+                    <p className="text-[11px] text-[#7D5A50] text-center sm:text-right leading-relaxed">
                       Dengan membayar, Anda menyetujui{" "}
                       <Link href="/syarat-ketentuan" target="_blank" className="underline font-bold text-[#7D2330]">
                         Syarat &amp; Ketentuan
