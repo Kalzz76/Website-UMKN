@@ -1175,8 +1175,44 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
                     strokeWidth="1.8"
                   />
 
-                  {/* Left Sleeve & Torso */}
-                  <ellipse cx="222" cy="500" rx="18" ry="26" fill="#FDF5E7" stroke="#D4B5AA" strokeWidth="1.8" />
+                  {/* Left Arm & Hand (matching right arm, resting calmly) */}
+                  <g>
+                    <path
+                      d="M228 482 Q212 502 216 524"
+                      fill="none"
+                      stroke="#D4B5AA"
+                      strokeWidth="18"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M228 482 Q212 502 216 524"
+                      fill="none"
+                      stroke="#FDF5E7"
+                      strokeWidth="14.5"
+                      strokeLinecap="round"
+                    />
+                    <rect
+                      x="209"
+                      y="518"
+                      width="15"
+                      height="6"
+                      rx="3"
+                      fill="#F1DBD0"
+                      stroke="#D4B5AA"
+                      strokeWidth="1.2"
+                    />
+                    <ellipse
+                      cx="217"
+                      cy="527"
+                      rx="6.5"
+                      ry="5.5"
+                      fill="#FDE2CE"
+                      stroke="#D8B098"
+                      strokeWidth="1.4"
+                    />
+                  </g>
+
+                  {/* Torso */}
                   <path d="M226 474 Q268 465 310 474 L318 532 H218 Z" fill="#FDF5E7" stroke="#D4B5AA" strokeWidth="1.8" />
 
                   {/* Single Right Arm & Hand (no duplicate sleeve behind, waves on hover) */}
