@@ -6084,6 +6084,12 @@ export default function PesanPage() {
       }
     });
 
+    if ((S.candles || []).length > 0) {
+      const labelLilin = S.candles
+        .map((c) => (c.t === "stick" ? "Batang" : c.c))
+        .join(", ");
+      rows.push([`lilin kue (${labelLilin})`, 0, 4, true]);
+    }
     return rows;
   }
 
@@ -6273,6 +6279,7 @@ export default function PesanPage() {
       fill: S.fill,
       icing: S.icing,
       deco: S.deco || {},
+      candles: S.candles || [],
       cpts: S.shape === "custom" ? S.cpts || CAT : null,
       items: (S.items || []).map((it) => ({
         id: it.id,
@@ -6383,6 +6390,7 @@ export default function PesanPage() {
       fill: S.fill,
       icing: S.icing,
       deco: S.deco || {},
+      candles: S.candles || [],
       cpts: S.shape === "custom" ? S.cpts || CAT : null,
       items: (S.items || []).map((it) => ({
         id: it.id,
@@ -7153,6 +7161,118 @@ export default function PesanPage() {
                     ? "Di langkah berikutnya kamu bisa menambah stiker, topper, dan tulisan sendiri."
                     : "Topping terpilih akan langsung tampil menghiasi kue pada tampilan 3D di samping."}
                 </div>
+
+                {S.itemType === "cake" && (
+                  <div style={{ marginTop: "18px", paddingTop: "16px", borderTop: "1.5px dashed #EBD5C8" }}>
+                    <div className="lb" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>🕯️ Tambah Lilin Kue (Maks. 12)</span>
+                      {(S.candles || []).length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearCandles}
+                          style={{
+                            fontSize: "11.5px",
+                            fontWeight: 700,
+                            color: "#9E3B42",
+                            textDecoration: "underline",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Hapus Semua ({S.candles.length})
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="sc" style={{ marginBottom: "10px" }}>
+                      <button
+                        type="button"
+                        className={`ch ${cT === "num" ? "on" : ""}`}
+                        onClick={() => setCT("num")}
+                      >
+                        🔢 Angka (0-9)
+                      </button>
+                      <button
+                        type="button"
+                        className={`ch ${cT === "let" ? "on" : ""}`}
+                        onClick={() => setCT("let")}
+                      >
+                        🔤 Huruf (A-Z)
+                      </button>
+                      <button
+                        type="button"
+                        className={`ch ${cT === "stick" ? "on" : ""}`}
+                        onClick={() => setCT("stick")}
+                      >
+                        🕯️ Batang
+                      </button>
+                    </div>
+
+                    <div className="pal" style={{ marginBottom: "12px" }}>
+                      {["#ff8fb1", "#f4c35a", "#8fd3ff", "#b8e986", "#d8b4fe", "#ffffff", "#ff6b6b"].map((col) => (
+                        <button
+                          key={col}
+                          type="button"
+                          style={{ background: col }}
+                          className={cC === col ? "on" : ""}
+                          onClick={() => setCC(col)}
+                          aria-label={`Warna lilin ${col}`}
+                        />
+                      ))}
+                    </div>
+
+                    {cT === "stick" ? (
+                      <button
+                        type="button"
+                        className="el"
+                        style={{ justifyContent: "center", margin: 0 }}
+                        onClick={() => handleAddCandle("")}
+                      >
+                        <span>🕯️</span>
+                        <span>+ Tambah Lilin Batang</span>
+                      </button>
+                    ) : (
+                      <div className="sc" style={{ gap: "6px" }}>
+                        {(cT === "num"
+                          ? ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+                          : "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+                        ).map((ch) => (
+                          <button
+                            key={ch}
+                            type="button"
+                            className="ch"
+                            style={{ minWidth: "38px", justifyContent: "center", fontWeight: 800 }}
+                            onClick={() => handleAddCandle(ch)}
+                          >
+                            {ch}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {(S.candles || []).length > 0 && (
+                      <div style={{ marginTop: "12px" }}>
+                        <div style={{ fontSize: "12px", fontWeight: 700, color: "#7A5E60", marginBottom: "6px" }}>
+                          Lilin terpasang ({S.candles.length}/12):
+                        </div>
+                        <div className="sc">
+                          {S.candles.map((cand) => (
+                            <button
+                              key={cand.id}
+                              type="button"
+                              className="ch on"
+                              onClick={() => handleDeleteCandle(cand.id)}
+                              title="Klik untuk hapus lilin"
+                            >
+                              <i style={{ background: cand.col }} />
+                              <span>{cand.t === "stick" ? "Batang" : cand.c}</span>
+                              <span style={{ marginLeft: "4px", opacity: 0.75 }}>✕</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
