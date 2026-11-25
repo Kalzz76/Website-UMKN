@@ -6190,11 +6190,6 @@ export default function PesanPage() {
       return;
     }
 
-    if (S.shape === "custom" && !S.cpts) {
-      showToast("Silakan gambar bentuk kue kustom terlebih dahulu ya.");
-      return;
-    }
-
     const imgItem = (S.items || []).find((i) => i.t === "img");
     if (imgItem && !uploadedImageFileRef.current) {
       showToast("Silakan unggah gambar desain kustom terlebih dahulu.");
@@ -6216,7 +6211,7 @@ export default function PesanPage() {
       fill: S.fill,
       icing: S.icing,
       deco: S.deco || {},
-      cpts: S.cpts || null,
+      cpts: S.shape === "custom" ? S.cpts || CAT : null,
       items: (S.items || []).map((it) => ({
         id: it.id,
         t: it.t,
@@ -6304,11 +6299,6 @@ export default function PesanPage() {
       return;
     }
 
-    if (S.shape === "custom" && !S.cpts) {
-      showToast("Silakan gambar bentuk kue kustom terlebih dahulu ya.");
-      return;
-    }
-
     const imgItem = (S.items || []).find((i) => i.t === "img");
     if (imgItem && !uploadedImageFileRef.current) {
       showToast("Silakan unggah gambar desain kustom terlebih dahulu.");
@@ -6330,7 +6320,7 @@ export default function PesanPage() {
       fill: S.fill,
       icing: S.icing,
       deco: S.deco || {},
-      cpts: S.cpts || null,
+      cpts: S.shape === "custom" ? S.cpts || CAT : null,
       items: (S.items || []).map((it) => ({
         id: it.id,
         t: it.t,
