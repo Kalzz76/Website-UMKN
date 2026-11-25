@@ -10,6 +10,7 @@ import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { cariTarif } from "@/lib/ongkir";
 import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
 import PreviewKue from "@/components/PreviewKue";
+import GambarProduk from "@/components/GambarProduk";
 import PortalLedge from "@/components/PortalLedge";
 import ModalPesan from "@/components/ModalPesan";
 import {
@@ -2774,9 +2775,9 @@ export default function DashboardPelangganView({
                   );
 
                   return (
-                    <div key={p.id} className="ud-card p-5 sm:p-6 space-y-4">
+                    <div key={p.id} className="ud-card p-4 sm:p-5 space-y-3.5">
                       {p.perlu_refund && (
-                        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-2.5">
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center gap-2.5">
                           <i className="fa-solid fa-triangle-exclamation text-amber-600 text-base shrink-0"></i>
                           <p className="font-semibold">
                             Pembayaran diterima setelah pesanan dibatalkan; Admin toko akan menindaklanjuti pengembalian dana Anda.
@@ -2785,13 +2786,13 @@ export default function DashboardPelangganView({
                       )}
 
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <div className="w-20 h-20 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
-                            {p.fotoPreviewUrl ? (
-                              <img
+                        <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                            {p.fotoPreviewUrl || itemKatalogPertama ? (
+                              <GambarProduk
                                 src={p.fotoPreviewUrl}
-                                alt={p.kode_pesanan}
-                                className="w-full h-full object-contain rounded-xl"
+                                nama={itemKatalogPertama?.nama_item}
+                                className="w-full h-full object-cover rounded-xl"
                               />
                             ) : (
                               <PreviewKue
@@ -2802,7 +2803,7 @@ export default function DashboardPelangganView({
                             )}
                           </div>
 
-                          <div className="space-y-1">
+                          <div className="space-y-1 min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-serif text-xl font-black text-[#3D2B28]">
                                 {p.kode_pesanan}
@@ -2843,7 +2844,7 @@ export default function DashboardPelangganView({
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#F3E8DA]">
+                        <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-2.5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#F3E8DA]">
                           <div className="lg:text-right">
                             <span className="text-[11px] text-[#7A6158] font-bold block">
                               Total Bayar
@@ -2863,14 +2864,14 @@ export default function DashboardPelangganView({
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap items-center lg:justify-end gap-1.5">
                             {sisa > 0 && p.status_pesanan !== "Dibatalkan" && (
                               <>
                                 <button
                                   type="button"
                                   disabled={sedangBayarKode === p.kode_pesanan}
                                   onClick={() => handleBayarMidtransLangsung(p)}
-                                  className="px-4 py-2 rounded-full bg-[#9E3B42] hover:bg-[#7D2330] text-white text-xs font-extrabold transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                                  className="px-3.5 py-1.5 rounded-full bg-[#9E3B42] hover:bg-[#7D2330] text-white text-[11px] font-extrabold transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
                                 >
                                   <i className="fa-solid fa-credit-card"></i>
                                   <span>{p.status_bayar === "DP Dibayar" ? "Bayar Pelunasan" : "Bayar Sekarang"}</span>
@@ -2879,7 +2880,7 @@ export default function DashboardPelangganView({
                                   type="button"
                                   disabled={sedangCekBayarKode === p.kode_pesanan}
                                   onClick={() => handleCekStatusMidtrans(p.kode_pesanan)}
-                                  className="px-3 py-2 rounded-full border border-[#D9B37C] bg-[#FAF4ED] hover:bg-[#F1DBD0]/50 text-[#3D2B28] text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                                  className="px-2.5 py-1.5 rounded-full border border-[#D9B37C] bg-[#FAF4ED] hover:bg-[#F1DBD0]/50 text-[#3D2B28] text-[11px] font-bold transition cursor-pointer disabled:opacity-50 whitespace-nowrap"
                                   title="Periksa status pembayaran Midtrans"
                                 >
                                   <i className={`fa-solid fa-arrows-rotate ${sedangCekBayarKode === p.kode_pesanan ? "animate-spin text-[#9E3B42]" : ""}`}></i>
@@ -2895,7 +2896,7 @@ export default function DashboardPelangganView({
                                   setPesanBatalError("");
                                   setAlasanBatalInput("");
                                 }}
-                                className="px-3.5 py-2 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5"
+                                className="px-3 py-1.5 rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap"
                               >
                                 <i className="fa-solid fa-ban"></i>
                                 <span>Batal</span>
@@ -2911,7 +2912,7 @@ export default function DashboardPelangganView({
                                     itemKatalogPertama.nama_item
                                   )
                                 }
-                                className="px-3.5 py-2 rounded-full bg-[#FAF0E8] hover:bg-[#F1DBD0] border border-[#D9B37C] text-[#3D2B28] text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5"
+                                className="px-3 py-1.5 rounded-full bg-[#FAF0E8] hover:bg-[#F1DBD0] border border-[#D9B37C] text-[#3D2B28] text-[11px] font-extrabold transition cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap"
                               >
                                 <i className="fa-solid fa-rotate-right text-[#9E3B42]"></i>
                                 <span>Pesan Lagi</span>
@@ -2922,7 +2923,7 @@ export default function DashboardPelangganView({
                               <button
                                 type="button"
                                 onClick={() => setPesananTiketQr(p)}
-                                className="px-3.5 py-2 rounded-full bg-[#3E2721] hover:bg-[#2D1E1B] text-[#FFFDF9] text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5"
+                                className="px-3 py-1.5 rounded-full bg-[#3E2721] hover:bg-[#2D1E1B] text-[#FFFDF9] text-[11px] font-bold transition cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap"
                               >
                                 <i className="fa-solid fa-qrcode text-[#E5BF88]"></i>
                                 <span>QR</span>
@@ -2931,7 +2932,7 @@ export default function DashboardPelangganView({
 
                             <Link
                               href={`/pesanan-saya/${p.kode_pesanan}`}
-                              className="px-3.5 py-2 rounded-full border border-[#EADCC8] bg-white hover:bg-[#FAF4ED] text-[#3D2B28] text-xs font-bold transition inline-flex items-center gap-1.5"
+                              className="px-3 py-1.5 rounded-full border border-[#EADCC8] bg-white hover:bg-[#FAF4ED] text-[#3D2B28] text-[11px] font-bold transition inline-flex items-center gap-1.5 whitespace-nowrap"
                             >
                               <span>Tiket Penuh</span>
                             </Link>
@@ -2941,7 +2942,7 @@ export default function DashboardPelangganView({
                               onClick={() =>
                                 setPesananDetailTerbuka(terbuka ? null : p.id)
                               }
-                              className="px-3.5 py-2 rounded-full border border-[#EADCC8] bg-[#FAF4ED] hover:bg-[#F1DBD0]/45 text-xs font-bold text-[#3D2B28] transition cursor-pointer"
+                              className="px-3 py-1.5 rounded-full border border-[#EADCC8] bg-[#FAF4ED] hover:bg-[#F1DBD0]/45 text-[11px] font-bold text-[#3D2B28] transition cursor-pointer whitespace-nowrap"
                             >
                               <i
                                 className={`fa-solid ${
