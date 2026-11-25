@@ -20,6 +20,7 @@ export default function PesananDashboardPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterJenis, setFilterJenis] = useState("");
   const [filterTanggal, setFilterTanggal] = useState("");
+  const [urutan, setUrutan] = useState("terbaru");
   const [kataKunci, setKataKunci] = useState("");
 
   const [halaman, setHalaman] = useState(1);
@@ -96,9 +97,7 @@ export default function PesananDashboardPage() {
       query = query.or(`kode_pesanan.ilike.${q},nama_penerima.ilike.${q},no_wa.ilike.${q}`);
     }
 
-    query = query
-      .order("tanggal_ambil", { ascending: true })
-      .order("jam_ambil", { ascending: true });
+    query = query.order("dibuat_pada", { ascending: urutan === "terlama" });
 
     const { data: semuaData, count, error } = await query;
 
@@ -241,7 +240,7 @@ export default function PesananDashboardPage() {
 
   useEffect(() => {
     muatPesanan();
-  }, [filterStatus, filterJenis, filterTanggal, halaman]);
+  }, [filterStatus, filterJenis, filterTanggal, urutan, halaman]);
 
   async function muatDetailPesanan(kode) {
     if (!kode) return;
@@ -580,6 +579,7 @@ export default function PesananDashboardPage() {
     setFilterStatus("");
     setFilterJenis("");
     setFilterTanggal("");
+    setUrutan("terbaru");
     setKataKunci("");
     setHalaman(1);
   }
@@ -1500,7 +1500,7 @@ export default function PesananDashboardPage() {
       <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6 space-y-4">
         <form
           onSubmit={handleCari}
-          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 items-end"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 items-end"
         >
           <div>
             <label className="block text-xs font-semibold text-stone-700 mb-1">
@@ -1575,6 +1575,23 @@ export default function PesananDashboardPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-stone-700 mb-1">
+              Urutan
+            </label>
+            <select
+              value={urutan}
+              onChange={(e) => {
+                setUrutan(e.target.value);
+                setHalaman(1);
+              }}
+              className="w-full h-[38px] px-3 text-xs rounded-xl border border-stone-200 outline-none focus:border-[#ba2b2b] bg-white cursor-pointer"
+            >
+              <option value="terbaru">Terbaru</option>
+              <option value="terlama">Terlama</option>
+            </select>
+          </div>
+
           <div className="flex items-center space-x-2">
             <button
               type="submit"
@@ -1582,7 +1599,7 @@ export default function PesananDashboardPage() {
             >
               Filter
             </button>
-            {(filterStatus || filterJenis || filterTanggal || kataKunci) && (
+            {(filterStatus || filterJenis || filterTanggal || kataKunci || urutan !== "terbaru") && (
               <button
                 type="button"
                 onClick={handleReset}
