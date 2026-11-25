@@ -34,8 +34,7 @@ export default function TombolBayarMidtrans({
 
   const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
   const isProduction =
-    process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true" ||
-    (!clientKey.startsWith("SB-") && clientKey.length > 0);
+    process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
   const snapScriptUrl = isProduction
     ? "https://app.midtrans.com/snap/snap.js"
     : "https://app.sandbox.midtrans.com/snap/snap.js";
