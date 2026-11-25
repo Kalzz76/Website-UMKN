@@ -258,13 +258,11 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
               className="flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-2 hover:bg-[#F8EFE4]/80 transition cursor-pointer select-none whitespace-nowrap"
               title="Buka menu navigasi"
             >
-              <span className="w-6 h-6 rounded-full bg-[#2F453E] flex items-center justify-center p-1 shadow-xs shrink-0">
-                <img
-                  src="/assets/images/Icon.png"
-                  alt="Cravely"
-                  className="w-full h-full object-contain"
-                />
-              </span>
+              <img
+                src="/assets/images/Icon.png"
+                alt="Cravely"
+                className="w-6 h-6 object-contain shrink-0"
+              />
 
               {labelBrand && (
                 <>
@@ -308,13 +306,11 @@ export function DynamicIslandNavbar({ showEntered = true, toko = null }) {
                 }}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:bg-[#F5ECE2] transition font-coquette font-bold text-xs sm:text-sm tracking-widest text-[#3D2B28] shrink-0 whitespace-nowrap"
               >
-                <span className="w-6 h-6 rounded-full bg-[#2F453E] flex items-center justify-center p-1 shadow-xs shrink-0">
                 <img
-                  src="/assets/images/Icon.png"
-                  alt="Cravely"
-                  className="w-full h-full object-contain"
-                />
-              </span>
+                src="/assets/images/Icon.png"
+                alt="Cravely"
+                className="w-6 h-6 object-contain shrink-0"
+              />
                 {labelBrand && <span>{labelBrand}</span>}
               </Link>
 

@@ -100,13 +100,11 @@ export const PromoWelcomeModal: React.FC<PromoWelcomeModalProps> = ({
               <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between text-center md:text-left relative z-20 bg-gradient-to-b from-[#FFFDF9] to-ivory/75">
                 <div>
                   <div className="flex items-center justify-center md:justify-start gap-2.5 mb-2">
-                    <span className="w-8 h-8 rounded-full bg-[#2F453E] inline-flex items-center justify-center p-1.5 shrink-0 shadow-xs">
-                      <img
-                        src="/assets/images/Icon.png"
-                        alt="Cravely"
-                        className="w-full h-full object-contain"
-                      />
-                    </span>
+                    <img
+                      src="/assets/images/Icon.png"
+                      alt="Cravely"
+                      className="w-8 h-8 object-contain shrink-0"
+                    />
                     <span className="font-script text-2xl sm:text-3xl text-cherry leading-none">
                       Cravely
                     </span>

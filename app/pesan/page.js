@@ -6679,32 +6679,18 @@ export default function PesanPage() {
       <div className="hd">
         <div className="in">
           <Link href="/" className="logo">
-            <span
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: "#2F453E",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 5,
-                flexShrink: 0,
-              }}
-            >
-              <img
-                src="/assets/images/Icon.png"
-                alt="Cravely"
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
-              />
-            </span>
+            <img
+              src="/assets/images/Icon.png"
+              alt="Cravely"
+              style={{ width: 38, height: 38, objectFit: "contain", flexShrink: 0 }}
+            />
             <div>
               <b>{pengaturan?.nama_toko || "CRAVELY"}</b>
               <small>PATISSERIE & CAKE ATELIER</small>
             </div>
           </Link>
           <nav>
-            <Link href="/toko">Ke Toko</Link>
+            <Link href="/">Home</Link>
             <Link href="/pesan" className="on">
               Custom Cake
             </Link>

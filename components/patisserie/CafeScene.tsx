@@ -327,7 +327,7 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
 
             {/* Oval Wall Plaque & Cravely Logo Medallions */}
             <g filter="url(#fBayangan)">
-              <circle cx="515" cy="222" r="46" fill="#2F453E" stroke="#A36361" strokeWidth="4" />
+              <circle cx="515" cy="222" r="46" fill="#FDF5E7" stroke="#A36361" strokeWidth="4" />
               <circle cx="515" cy="222" r="39" fill="none" stroke="#B8925A" strokeWidth="1.5" />
               <image href="/assets/images/Icon.png" x="488" y="195" width="54" height="54" preserveAspectRatio="xMidYMid meet" />
 
@@ -357,7 +357,7 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
                 PATISSERIE &amp; CAKE ATELIER
               </text>
 
-              <circle cx="1085" cy="222" r="46" fill="#2F453E" stroke="#A36361" strokeWidth="4" />
+              <circle cx="1085" cy="222" r="46" fill="#FDF5E7" stroke="#A36361" strokeWidth="4" />
               <circle cx="1085" cy="222" r="39" fill="none" stroke="#B8925A" strokeWidth="1.5" />
               <image href="/assets/images/Icon.png" x="1058" y="195" width="54" height="54" preserveAspectRatio="xMidYMid meet" />
             </g>
