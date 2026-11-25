@@ -6176,9 +6176,35 @@ export default function PesanPage() {
 
   async function getShapeCanvasBlob() {
     const dc = drawCanvasRef.current;
-    if (!dc) return null;
+    if (dc) {
+      return new Promise((resolve) => {
+        dc.toBlob((b) => resolve(b), "image/png");
+      });
+    }
+    const pts = S.cpts || CAT;
+    if (!pts || !pts.length) return null;
+    const off = document.createElement("canvas");
+    off.width = 320;
+    off.height = 240;
+    const ctx = off.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, off.width, off.height);
+    ctx.beginPath();
+    pts.forEach((p, idx) => {
+      const px = off.width / 2 + p[0] * 90;
+      const py = off.height / 2 + p[1] * 90;
+      if (idx === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+    ctx.fillStyle = "#F1DBD0";
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#A36361";
+    ctx.stroke();
     return new Promise((resolve) => {
-      dc.toBlob((b) => resolve(b), "image/png");
+      off.toBlob((b) => resolve(b), "image/png");
     });
   }
 
