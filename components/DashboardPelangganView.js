@@ -1686,46 +1686,46 @@ export default function DashboardPelangganView({
       </aside>
 
       <main className="ud-main">
-        <header className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-[#EADCC8]/80">
-          <div className="flex items-center gap-3 min-w-0">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-[#EADCC8]/80">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               type="button"
               onClick={() => setSidebarMobileBuka(true)}
-              className="lg:hidden w-11 h-11 rounded-2xl bg-[#FFFDF9] border border-[#D9B37C]/70 text-[#3D2B28] flex items-center justify-center shadow-xs cursor-pointer"
+              className="lg:hidden w-10 h-10 rounded-xl bg-[#FFFDF9] border border-[#D9B37C]/70 text-[#3D2B28] flex items-center justify-center shadow-xs shrink-0 cursor-pointer"
               aria-label="Buka navigasi"
             >
-              <i className="fa-solid fa-bars text-base"></i>
+              <i className="fa-solid fa-bars text-sm"></i>
             </button>
-            <div className="min-w-0">
-              <h1 className="font-serif text-3xl sm:text-4xl font-black text-[#3D2B28] tracking-tight leading-tight">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-serif text-2xl sm:text-3xl font-black text-[#3D2B28] tracking-tight leading-tight truncate">
                 <span className="ud-title-highlight">{infoHeader.judul}</span>
               </h1>
-              <p className="text-sm font-medium text-[#7A6158] mt-1 hidden sm:block truncate">
+              <p className="text-xs sm:text-sm font-medium text-[#7A6158] mt-0.5 hidden sm:block truncate">
                 {infoHeader.subjudul}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center justify-end gap-1.5 shrink-0 self-end sm:self-auto bg-[#FFFDF9]/95 border border-[#D9B37C]/65 rounded-full p-1 shadow-xs">
             <button
               type="button"
               onClick={handleSegarkanData}
               disabled={sedangSegarkan}
               title="Segarkan status pesanan & keranjang"
-              className="w-11 h-11 rounded-full bg-[#FFFDF9] border border-[#D9B37C]/70 hover:bg-[#F8EFE4] text-[#5A3B33] flex items-center justify-center shadow-xs transition cursor-pointer disabled:opacity-60"
+              className="w-9 h-9 rounded-full hover:bg-[#F5ECE2] text-[#5A3B33] flex items-center justify-center transition cursor-pointer disabled:opacity-60"
             >
-              <i className={`fa-solid fa-arrows-rotate text-sm ${sedangSegarkan ? "animate-spin text-[#9E3B42]" : ""}`}></i>
+              <i className={`fa-solid fa-arrows-rotate text-xs ${sedangSegarkan ? "animate-spin text-[#9E3B42]" : ""}`}></i>
             </button>
 
             <button
               type="button"
               onClick={() => gantiTab("keranjang")}
               title="Keranjang Belanja Saya"
-              className="h-11 px-4 rounded-full bg-[#FFFDF9] border border-[#D9B37C]/75 hover:bg-[#F8EFE4] text-[#3D2B28] text-sm font-bold inline-flex items-center gap-2 shadow-xs transition cursor-pointer"
+              className="h-9 px-3 rounded-full bg-[#FAF2E8] hover:bg-[#F1E4D5] text-[#3D2B28] text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
             >
               <i className="fa-solid fa-bag-shopping text-[#9E3B42]"></i>
               <span className="hidden md:inline">Keranjang</span>
-              <span className="px-2 py-0.5 rounded-full bg-[#9E3B42] text-white text-xs font-extrabold leading-none">
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#9E3B42] text-white text-[11px] font-extrabold inline-flex items-center justify-center leading-none">
                 {jumlahKuantitasKeranjang}
               </span>
             </button>
@@ -1735,11 +1735,11 @@ export default function DashboardPelangganView({
                 type="button"
                 onClick={handleBukaNotif}
                 title="Notifikasi Pesanan"
-                className="w-11 h-11 rounded-full bg-[#FFFDF9] border border-[#D9B37C]/75 hover:bg-[#F8EFE4] text-[#3D2B28] flex items-center justify-center relative shadow-xs transition cursor-pointer"
+                className="w-9 h-9 rounded-full hover:bg-[#F5ECE2] text-[#3D2B28] flex items-center justify-center relative transition cursor-pointer"
               >
-                <i className="fa-regular fa-bell text-base"></i>
+                <i className="fa-regular fa-bell text-sm"></i>
                 {notifBelumDibaca && (
-                  <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 rounded-full bg-[#9E3B42] text-white text-[11px] font-extrabold flex items-center justify-center border-2 border-[#FDF5E7]">
+                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-[#9E3B42] text-white text-[10px] font-extrabold flex items-center justify-center border border-[#FFFDF9]">
                     {totalNotifCount}
                   </span>
                 )}
@@ -1812,6 +1812,8 @@ export default function DashboardPelangganView({
               )}
             </div>
 
+            <div className="h-5 w-px bg-[#EADCC8] mx-0.5" />
+
             <div className="relative" ref={profilRef}>
               <button
                 type="button"
@@ -1819,18 +1821,18 @@ export default function DashboardPelangganView({
                   setProfilDropdownBuka(!profilDropdownBuka);
                   setNotifDropdownBuka(false);
                 }}
-                className="h-11 pl-1.5 pr-4 rounded-full bg-[#FFFDF9] border border-[#D9B37C]/85 hover:bg-[#F8EFE4] flex items-center gap-2.5 shadow-xs transition cursor-pointer"
+                className="h-9 pl-1 pr-3 rounded-full hover:bg-[#F5ECE2] flex items-center gap-2 transition cursor-pointer"
               >
-                <AvatarPelangganSvg className="w-9 h-9 rounded-full border border-[#C59B62] shrink-0" />
-                <div className="hidden sm:flex flex-col text-left leading-tight">
-                  <span className="text-sm font-extrabold text-[#3D2B28] max-w-[130px] truncate">
+                <AvatarPelangganSvg className="w-7 h-7 rounded-full border border-[#C59B62] shrink-0" />
+                <div className="hidden sm:flex flex-col text-left leading-none">
+                  <span className="text-xs font-extrabold text-[#3D2B28] max-w-[115px] truncate">
                     {profil.nama || "Pelanggan"}
                   </span>
-                  <span className="text-[11px] font-bold text-[#9E3B42]">
+                  <span className="text-[10px] font-bold text-[#9E3B42] mt-0.5">
                     Pelanggan
                   </span>
                 </div>
-                <i className="fa-solid fa-chevron-down text-xs text-[#B8925A]"></i>
+                <i className="fa-solid fa-chevron-down text-[10px] text-[#B8925A]"></i>
               </button>
 
               {profilDropdownBuka && (
@@ -1877,9 +1879,9 @@ export default function DashboardPelangganView({
         </header>
 
         {tabAktif === "beranda" && (
-          <div className="space-y-7">
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
-              <div className="xl:col-span-6 relative rounded-[28px] overflow-hidden border-2 border-[#C59B62]/65 shadow-[0_14px_34px_rgba(45,20,15,0.16)] min-h-[255px] flex items-center p-7 sm:p-9 bg-[#3E2721] text-[#FFFDF9]">
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
+              <div className="xl:col-span-6 relative rounded-2xl overflow-hidden border border-[#C59B62]/60 shadow-[0_10px_28px_rgba(45,20,15,0.14)] min-h-[195px] flex items-center p-5 sm:p-7 bg-[#3E2721] text-[#FFFDF9]">
                 <img
                   src="/images/patisserie/umkm_bakery_counter_1795398163126.jpg"
                   alt={namaToko}
@@ -1892,42 +1894,37 @@ export default function DashboardPelangganView({
                       "linear-gradient(115deg, rgba(45,30,27,0.92) 0%, rgba(62,39,33,0.78) 55%, rgba(158,59,66,0.52) 100%)",
                   }}
                 />
-                <span className="pointer-events-none absolute top-5 right-7 text-[#F3D59B] text-lg animate-twinkle">
+                <span className="pointer-events-none absolute top-4 right-6 text-[#F3D59B] text-base animate-twinkle">
                   ✦
                 </span>
-                <span className="pointer-events-none absolute bottom-6 right-16 text-[#F1DBD0] text-sm animate-float-soft">
+                <span className="pointer-events-none absolute bottom-5 right-14 text-[#F1DBD0] text-xs animate-float-soft">
                   ✿
                 </span>
 
-                <div className="relative z-10 max-w-xl space-y-3.5">
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FFFDF9]/15 backdrop-blur-xs border border-[#E5BF88]/45 text-xs font-extrabold uppercase tracking-widest text-[#F6E3BA]">
-                    <span className="w-2 h-2 rounded-full bg-[#E5BF88] animate-pulse" />
-                    <span>Member Patisserie • Terhubung Admin & Dapur</span>
-                  </div>
-
+                <div className="relative z-10 max-w-xl space-y-3">
                   <div>
-                    <p className="font-script text-3xl sm:text-4xl text-[#F1DBD0] leading-none">
+                    <p className="font-script text-2xl sm:text-3xl text-[#F1DBD0] leading-none">
                       Selamat Datang,
                     </p>
-                    <h2 className="font-serif text-3xl sm:text-5xl font-black text-[#FFFDF9] tracking-tight mt-1">
+                    <h2 className="font-serif text-2xl sm:text-4xl font-black text-[#FFFDF9] tracking-tight mt-0.5">
                       {profil.nama || "Sahabat Cravely"}!
                     </h2>
-                    <p className="text-sm text-[#EADCC8] mt-1.5 leading-relaxed max-w-lg">
+                    <p className="text-xs sm:text-sm text-[#EADCC8] mt-1 leading-relaxed max-w-lg">
                       {sloganToko}
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 pt-1.5">
+                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
                     <Link
                       href="/pesan"
-                      className="px-5 py-3 rounded-full bg-gradient-to-r from-[#9E3B42] to-[#B23A48] hover:brightness-110 text-white text-sm font-extrabold shadow-[0_6px_18px_rgba(158,59,66,0.4)] border border-[#F1DBD0]/35 inline-flex items-center gap-2 transition"
+                      className="px-4 py-2 rounded-full bg-gradient-to-r from-[#9E3B42] to-[#B23A48] hover:brightness-110 text-white text-xs sm:text-sm font-extrabold shadow-[0_6px_16px_rgba(158,59,66,0.35)] border border-[#F1DBD0]/35 inline-flex items-center gap-2 transition"
                     >
                       <i className="fa-solid fa-wand-magic-sparkles text-[#F1DBD0]"></i>
                       <span>Rancang Kue 3D</span>
                     </Link>
                     <Link
                       href="/menu"
-                      className="px-5 py-3 rounded-full bg-[#FFFDF9]/95 hover:bg-white text-[#3D2B28] text-sm font-extrabold border border-[#C59B62] inline-flex items-center gap-2 transition shadow-xs"
+                      className="px-4 py-2 rounded-full bg-[#FFFDF9]/95 hover:bg-white text-[#3D2B28] text-xs sm:text-sm font-extrabold border border-[#C59B62] inline-flex items-center gap-2 transition shadow-xs"
                     >
                       <i className="fa-solid fa-cake-candles text-[#9E3B42]"></i>
                       <span>Pilih Menu Katalog</span>
@@ -1936,20 +1933,20 @@ export default function DashboardPelangganView({
                 </div>
               </div>
 
-              <div className="xl:col-span-6 flex flex-col justify-between gap-3.5">
+              <div className="xl:col-span-6 flex flex-col justify-between gap-3">
                 <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2 text-sm font-extrabold text-[#3D2B28]">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-[#3D2B28]">
                     <i className="fa-solid fa-chart-pie text-[#9E3B42]"></i>
                     <span>Ringkasan Aktivitas Saya</span>
                   </div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFFDF9] border border-[#D9B37C]/75 text-sm shadow-xs">
-                    <i className="fa-regular fa-calendar text-[#B8925A] text-xs"></i>
-                    <span className="text-xs font-semibold text-[#7A6158] hidden sm:inline">Periode:</span>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FFFDF9] border border-[#D9B37C]/75 text-xs shadow-xs">
+                    <i className="fa-regular fa-calendar text-[#B8925A] text-[11px]"></i>
+                    <span className="font-semibold text-[#7A6158] hidden sm:inline">Periode:</span>
                     <select
                       value={periodeMetrik}
                       onChange={(e) => setPeriodeMetrik(e.target.value)}
                       aria-label="Pilih periode ringkasan"
-                      className="bg-transparent text-xs sm:text-sm font-extrabold text-[#3D2B28] outline-none cursor-pointer"
+                      className="bg-transparent text-xs font-extrabold text-[#3D2B28] outline-none cursor-pointer"
                     >
                       <option value="semua">Semua Waktu</option>
                       <option value="bulan_ini">Bulan Ini</option>
@@ -1959,30 +1956,30 @@ export default function DashboardPelangganView({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
                   <button
                     type="button"
                     onClick={() => {
                       setFilterStatusPesanan("Aktif");
                       gantiTab("pesanan");
                     }}
-                    className="ud-card ud-card-hover p-5 sm:p-6 text-left flex items-center gap-4 relative overflow-hidden cursor-pointer"
+                    className="ud-card ud-card-hover p-4 text-left flex items-center gap-3.5 relative overflow-hidden cursor-pointer"
                   >
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-[#FCE8EC] text-[#9E3B42] border border-[#EBC0C8] flex items-center justify-center text-xl shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-[#FCE8EC] text-[#9E3B42] border border-[#EBC0C8] flex items-center justify-center text-base shrink-0">
                       <i className="fa-solid fa-fire-burner"></i>
                     </div>
                     <div className="min-w-0 z-10">
-                      <span className="text-xs sm:text-sm font-bold text-[#7A6158] block">
+                      <span className="text-xs font-bold text-[#7A6158] block">
                         Pesanan Aktif
                       </span>
-                      <div className="font-serif text-3xl sm:text-4xl font-black text-[#3D2B28] leading-tight">
+                      <div className="font-serif text-2xl sm:text-3xl font-black text-[#3D2B28] leading-tight">
                         <AngkaAnimasi nilai={metrikAktif} />
                       </div>
-                      <span className="text-xs font-bold text-[#9E3B42] block truncate mt-0.5">
-                        Diproses Admin & Petugas
+                      <span className="text-[11px] font-bold text-[#9E3B42] block truncate">
+                        Diproses Admin &amp; Petugas
                       </span>
                     </div>
-                    <svg className="absolute right-0 bottom-0 w-20 h-11 opacity-45 pointer-events-none" viewBox="0 0 80 40" fill="none">
+                    <svg className="absolute right-0 bottom-0 w-16 h-9 opacity-40 pointer-events-none" viewBox="0 0 80 40" fill="none">
                       <path d="M0 32 Q25 14 50 26 T80 12 L80 40 L0 40 Z" fill="#F1DBD0" />
                     </svg>
                   </button>
@@ -1993,25 +1990,25 @@ export default function DashboardPelangganView({
                       setFilterStatusPesanan("Pending");
                       gantiTab("pesanan");
                     }}
-                    className="ud-card ud-card-hover p-5 sm:p-6 text-left flex items-center gap-4 relative overflow-hidden cursor-pointer"
+                    className="ud-card ud-card-hover p-4 text-left flex items-center gap-3.5 relative overflow-hidden cursor-pointer"
                   >
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-[#FFF3D6] text-[#875C1A] border border-[#EED39B] flex items-center justify-center text-xl shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-[#FFF3D6] text-[#875C1A] border border-[#EED39B] flex items-center justify-center text-base shrink-0">
                       <i className="fa-solid fa-clock"></i>
                     </div>
                     <div className="min-w-0 z-10">
-                      <span className="text-xs sm:text-sm font-bold text-[#7A6158] block">
+                      <span className="text-xs font-bold text-[#7A6158] block">
                         Menunggu Bayar
                       </span>
-                      <div className="font-serif text-3xl sm:text-4xl font-black text-[#875C1A] leading-tight">
+                      <div className="font-serif text-2xl sm:text-3xl font-black text-[#875C1A] leading-tight">
                         <AngkaAnimasi nilai={metrikMenungguBayar} />
                       </div>
-                      <span className="text-xs font-bold text-[#7A6158] block truncate mt-0.5">
+                      <span className="text-[11px] font-bold text-[#7A6158] block truncate">
                         {jumlahBuktiMenungguAdmin > 0
                           ? `${jumlahBuktiMenungguAdmin} bukti dicek Admin`
                           : `Tagihan aktif: ${formatRupiah(totalSisaTagihan)}`}
                       </span>
                     </div>
-                    <svg className="absolute right-0 bottom-0 w-20 h-11 opacity-45 pointer-events-none" viewBox="0 0 80 40" fill="none">
+                    <svg className="absolute right-0 bottom-0 w-16 h-9 opacity-40 pointer-events-none" viewBox="0 0 80 40" fill="none">
                       <path d="M0 32 Q25 14 50 26 T80 12 L80 40 L0 40 Z" fill="#F6E3BA" />
                     </svg>
                   </button>
@@ -2019,23 +2016,23 @@ export default function DashboardPelangganView({
                   <button
                     type="button"
                     onClick={() => gantiTab("riwayat")}
-                    className="ud-card ud-card-hover p-5 sm:p-6 text-left flex items-center gap-4 relative overflow-hidden cursor-pointer"
+                    className="ud-card ud-card-hover p-4 text-left flex items-center gap-3.5 relative overflow-hidden cursor-pointer"
                   >
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-[#E8F4EC] text-[#215934] border border-[#BFE0C9] flex items-center justify-center text-xl shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-[#E8F4EC] text-[#215934] border border-[#BFE0C9] flex items-center justify-center text-base shrink-0">
                       <i className="fa-solid fa-sack-dollar"></i>
                     </div>
                     <div className="min-w-0 z-10">
-                      <span className="text-xs sm:text-sm font-bold text-[#7A6158] block">
+                      <span className="text-xs font-bold text-[#7A6158] block">
                         Total Belanja
                       </span>
-                      <div className="font-serif text-2xl sm:text-3xl font-black text-[#3D2B28] leading-tight truncate">
+                      <div className="font-serif text-xl sm:text-2xl font-black text-[#3D2B28] leading-tight truncate">
                         <AngkaAnimasi nilai={metrikTotalBelanja} formatUang={true} />
                       </div>
-                      <span className="text-xs font-bold text-[#215934] block truncate mt-0.5">
+                      <span className="text-[11px] font-bold text-[#215934] block truncate">
                         Pembayaran terkonfirmasi
                       </span>
                     </div>
-                    <svg className="absolute right-0 bottom-0 w-20 h-11 opacity-45 pointer-events-none" viewBox="0 0 80 40" fill="none">
+                    <svg className="absolute right-0 bottom-0 w-16 h-9 opacity-40 pointer-events-none" viewBox="0 0 80 40" fill="none">
                       <path d="M0 32 Q25 14 50 26 T80 12 L80 40 L0 40 Z" fill="#D4EBDD" />
                     </svg>
                   </button>
@@ -2046,23 +2043,23 @@ export default function DashboardPelangganView({
                       setFilterStatusPesanan("Selesai");
                       gantiTab("pesanan");
                     }}
-                    className="ud-card ud-card-hover p-5 sm:p-6 text-left flex items-center gap-4 relative overflow-hidden cursor-pointer"
+                    className="ud-card ud-card-hover p-4 text-left flex items-center gap-3.5 relative overflow-hidden cursor-pointer"
                   >
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-[#FAF0E4] text-[#8C582C] border border-[#E5CFAF] flex items-center justify-center text-xl shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-[#FAF0E4] text-[#8C582C] border border-[#E5CFAF] flex items-center justify-center text-base shrink-0">
                       <i className="fa-solid fa-award"></i>
                     </div>
                     <div className="min-w-0 z-10">
-                      <span className="text-xs sm:text-sm font-bold text-[#7A6158] block">
+                      <span className="text-xs font-bold text-[#7A6158] block">
                         Pesanan Selesai
                       </span>
-                      <div className="font-serif text-3xl sm:text-4xl font-black text-[#3D2B28] leading-tight">
+                      <div className="font-serif text-2xl sm:text-3xl font-black text-[#3D2B28] leading-tight">
                         <AngkaAnimasi nilai={metrikSelesai} />
                       </div>
-                      <span className="text-xs font-bold text-[#8C582C] block truncate mt-0.5">
+                      <span className="text-[11px] font-bold text-[#8C582C] block truncate">
                         Siap dipesan ulang
                       </span>
                     </div>
-                    <svg className="absolute right-0 bottom-0 w-20 h-11 opacity-45 pointer-events-none" viewBox="0 0 80 40" fill="none">
+                    <svg className="absolute right-0 bottom-0 w-16 h-9 opacity-40 pointer-events-none" viewBox="0 0 80 40" fill="none">
                       <path d="M0 32 Q25 14 50 26 T80 12 L80 40 L0 40 Z" fill="#EADCC8" />
                     </svg>
                   </button>
@@ -2071,7 +2068,7 @@ export default function DashboardPelangganView({
             </div>
 
             {pesananUtamaDilacak && (
-              <div className="ud-card p-5 sm:p-6 space-y-5">
+              <div className="ud-card p-4 sm:p-5 space-y-4">
                 {kandidatDilacak.length > 1 && (
                   <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 border-b border-[#EADCC8]/70">
                     <span className="text-[11px] font-extrabold text-[#7A6158] shrink-0">
@@ -2101,13 +2098,13 @@ export default function DashboardPelangganView({
                 )}
 
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                  <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                    <div className="w-16 h-16 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
                       {pesananUtamaDilacak.fotoPreviewUrl ? (
                         <img
                           src={pesananUtamaDilacak.fotoPreviewUrl}
                           alt={pesananUtamaDilacak.kode_pesanan}
-                          className="w-full h-full object-contain rounded-xl"
+                          className="w-full h-full object-contain rounded-lg"
                         />
                       ) : (
                         <PreviewKue
@@ -2118,8 +2115,8 @@ export default function DashboardPelangganView({
                       )}
                     </div>
 
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#9E3B42] bg-[#FCE8EC] px-2.5 py-0.5 rounded-full border border-[#EBC0C8]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#9E3B42] animate-ping" />
                           Pelacakan Lintas Role
@@ -2132,23 +2129,23 @@ export default function DashboardPelangganView({
                         </span>
                       </div>
 
-                      <h3 className="font-serif text-xl sm:text-2xl font-black text-[#3D2B28] mt-1">
+                      <h3 className="font-serif text-lg sm:text-xl font-black text-[#3D2B28] mt-1 truncate">
                         {pesananUtamaDilacak.kode_pesanan} — {pesananUtamaDilacak.isi_singkat}
                       </h3>
-                      <p className="text-xs text-[#7A6158] font-semibold mt-0.5">
+                      <p className="text-xs text-[#7A6158] font-semibold mt-0.5 truncate">
                         Penerima: <strong className="text-[#3D2B28]">{pesananUtamaDilacak.nama_penerima}</strong> •{" "}
                         {formatTeksJadwal(pesananUtamaDilacak).teks} ({formatTeksJadwal(pesananUtamaDilacak).sub})
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 shrink-0">
                     {pesananUtamaDilacak.status_pesanan === "Menunggu Pembayaran" && (
-                      <div className="px-3.5 py-2 rounded-2xl bg-[#FFF8EB] border border-[#F0D9A8] text-xs">
+                      <div className="px-3 py-1.5 rounded-xl bg-[#FFF8EB] border border-[#F0D9A8] text-xs whitespace-nowrap">
                         <span className="text-[10px] font-bold uppercase text-[#875C1A] block">
                           Hitung Mundur Bayar
                         </span>
-                        <strong className="font-mono text-sm font-black text-[#9E3B42]">
+                        <strong className="font-mono text-xs font-black text-[#9E3B42]">
                           {formatHitungMundur(hitungSisaDetikBayar(pesananUtamaDilacak))}
                         </strong>
                       </div>
@@ -2165,7 +2162,7 @@ export default function DashboardPelangganView({
                             type="button"
                             disabled={sedangBayarKode === pesananUtamaDilacak.kode_pesanan}
                             onClick={() => handleBayarMidtransLangsung(pesananUtamaDilacak)}
-                            className="px-4 py-2.5 rounded-2xl bg-[#9E3B42] hover:bg-[#7D2330] text-white text-xs font-extrabold shadow-sm transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
+                            className="px-3.5 py-2 rounded-xl bg-[#9E3B42] hover:bg-[#7D2330] text-white text-xs font-extrabold shadow-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
                           >
                             <i className={`fa-solid ${sedangBayarKode === pesananUtamaDilacak.kode_pesanan ? "fa-circle-notch fa-spin" : "fa-credit-card"}`}></i>
                             <span>
@@ -2179,7 +2176,7 @@ export default function DashboardPelangganView({
                             type="button"
                             disabled={sedangCekBayarKode === pesananUtamaDilacak.kode_pesanan}
                             onClick={() => handleCekStatusMidtrans(pesananUtamaDilacak.kode_pesanan)}
-                            className="px-3.5 py-2.5 rounded-2xl bg-[#FAF4ED] hover:bg-[#F1DBD0]/50 border border-[#D9B37C]/80 text-[#3D2B28] text-xs font-bold transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                            className="px-3 py-2 rounded-xl bg-[#FAF4ED] hover:bg-[#F1DBD0]/50 border border-[#D9B37C]/80 text-[#3D2B28] text-xs font-bold transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
                           >
                             <i className={`fa-solid fa-arrows-rotate ${sedangCekBayarKode === pesananUtamaDilacak.kode_pesanan ? "animate-spin text-[#9E3B42]" : ""}`}></i>
                             <span>Cek Status</span>
@@ -2191,7 +2188,7 @@ export default function DashboardPelangganView({
                       <button
                         type="button"
                         onClick={() => setPesananTiketQr(pesananUtamaDilacak)}
-                        className="px-4 py-2.5 rounded-2xl bg-[#3E2721] hover:bg-[#2D1E1B] text-[#FFFDF9] text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-2"
+                        className="px-3.5 py-2 rounded-xl bg-[#3E2721] hover:bg-[#2D1E1B] text-[#FFFDF9] text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap"
                       >
                         <i className="fa-solid fa-qrcode text-[#E5BF88]"></i>
                         <span>Tiket QR Cepat</span>
@@ -2200,7 +2197,7 @@ export default function DashboardPelangganView({
 
                     <Link
                       href={`/pesanan-saya/${pesananUtamaDilacak.kode_pesanan}`}
-                      className="px-3.5 py-2.5 rounded-2xl border border-[#EADCC8] bg-white hover:bg-[#FAF4ED] text-[#3D2B28] text-xs font-bold transition inline-flex items-center gap-1.5"
+                      className="px-3.5 py-2 rounded-xl border border-[#EADCC8] bg-white hover:bg-[#FAF4ED] text-[#3D2B28] text-xs font-bold transition inline-flex items-center gap-1.5 whitespace-nowrap"
                     >
                       <span>Detail Tiket</span>
                       <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-[#9E3B42]"></i>
@@ -2209,15 +2206,17 @@ export default function DashboardPelangganView({
                 </div>
 
                 {pesananUtamaDilacak.status_pesanan === "Dibatalkan" ? (
-                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-3">
-                    <i className="fa-solid fa-circle-xmark text-lg text-rose-600"></i>
-                    <div>
-                      <p className="font-extrabold">
-                        Pesanan Dibatalkan ({pesananUtamaDilacak.dibatalkan_oleh || "Toko"})
-                      </p>
-                      <p className="mt-0.5">
-                        Alasan: {pesananUtamaDilacak.alasan_batal || "Tidak disebutkan"}
-                      </p>
+                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <i className="fa-solid fa-circle-xmark text-base text-rose-600 shrink-0"></i>
+                      <div className="min-w-0">
+                        <p className="font-extrabold">
+                          Pesanan Dibatalkan ({pesananUtamaDilacak.dibatalkan_oleh || "Toko"})
+                        </p>
+                        <p className="mt-0.5 text-rose-700">
+                          Alasan: {pesananUtamaDilacak.alasan_batal || "Tidak disebutkan"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -2299,7 +2298,7 @@ export default function DashboardPelangganView({
                   </div>
                 )}
 
-                {(() => {
+                {pesananUtamaDilacak.status_pesanan !== "Dibatalkan" && (() => {
                   const info = infoPenanggungJawab(pesananUtamaDilacak);
                   const logTerakhir =
                     pesananUtamaDilacak.riwayat_pesanan &&
@@ -2334,34 +2333,34 @@ export default function DashboardPelangganView({
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              <div className="lg:col-span-7 ud-card p-6 sm:p-7 space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <div className="lg:col-span-7 ud-card p-5 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <span className="text-xs font-extrabold uppercase tracking-widest text-[#9E3B42]">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#9E3B42]">
                       Etalase Patisserie
                     </span>
-                    <h2 className="font-serif text-2xl sm:text-3xl font-black text-[#3D2B28]">
+                    <h2 className="font-serif text-xl sm:text-2xl font-black text-[#3D2B28]">
                       Belanja Cepat Kue Pilihan Toko
                     </h2>
                   </div>
                   <Link
                     href="/menu"
-                    className="text-sm font-extrabold text-[#9E3B42] hover:underline inline-flex items-center gap-1.5"
+                    className="text-xs sm:text-sm font-extrabold text-[#9E3B42] hover:underline inline-flex items-center gap-1.5 whitespace-nowrap"
                   >
                     <span>Buka Katalog Lengkap</span>
-                    <i className="fa-solid fa-arrow-right text-xs"></i>
+                    <i className="fa-solid fa-arrow-right text-[11px]"></i>
                   </Link>
                 </div>
 
                 {daftarKategoriUnik.length > 2 && (
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
                     {daftarKategoriUnik.map((kat) => (
                       <button
                         key={kat}
                         type="button"
                         onClick={() => setFilterKategoriKatalog(kat)}
-                        className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold shrink-0 transition cursor-pointer ${
+                        className={`px-3.5 py-1 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${
                           filterKategoriKatalog === kat
                             ? "bg-[#3E2721] text-[#FFFDF9]"
                             : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
@@ -2374,7 +2373,7 @@ export default function DashboardPelangganView({
                 )}
 
                 {katalogTersaring.length === 0 ? (
-                  <div className="p-8 rounded-2xl bg-[#FAF4ED] border border-dashed border-[#D9B37C] text-center text-sm text-[#7A6158]">
+                  <div className="p-6 rounded-xl bg-[#FAF4ED] border border-dashed border-[#D9B37C] text-center text-xs sm:text-sm text-[#7A6158]">
                     Belum ada produk katalog aktif saat ini. Anda tetap dapat merancang kue di{" "}
                     <Link href="/pesan" className="font-extrabold text-[#9E3B42] underline">
                       Cake Studio 3D
@@ -2382,17 +2381,17 @@ export default function DashboardPelangganView({
                     .
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {katalogTersaring.slice(0, 4).map((item) => {
                       const sedangTambah = sedangTambahProdukId === item.id;
                       const baruDitambah = Boolean(berhasilTambahMap[item.id]);
                       return (
                         <div
                           key={item.id}
-                          className="group kartu-pita-coquette border border-[#EADCC8] p-4 sm:p-5 flex flex-col justify-between gap-3.5"
+                          className="group bg-[#FFFDF9] rounded-2xl border border-[#EADCC8] hover:border-[#C59B62] hover:shadow-md transition p-3.5 flex flex-col justify-between gap-3"
                         >
-                          <div className="flex items-start gap-3.5">
-                            <div className="w-20 h-20 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] overflow-hidden shrink-0 flex items-center justify-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-16 h-16 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] overflow-hidden shrink-0 flex items-center justify-center">
                               {item.foto_url && !gambarGagalMap[item.id] ? (
                                 <img
                                   src={item.foto_url}
@@ -2406,26 +2405,26 @@ export default function DashboardPelangganView({
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
-                                <i className="fa-solid fa-cake-candles text-2xl text-[#D3A29D]"></i>
+                                <i className="fa-solid fa-cake-candles text-xl text-[#D3A29D]"></i>
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#B8925A]">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#B8925A] block">
                                 {item.kategori}
                               </span>
-                              <h3 className="font-serif text-lg sm:text-xl font-bold text-[#3D2B28] leading-snug truncate">
+                              <h3 className="font-serif text-base sm:text-lg font-bold text-[#3D2B28] leading-snug truncate">
                                 {item.nama}
                               </h3>
-                              <p className="text-sm font-black text-[#9E3B42] mt-1">
+                              <p className="text-xs sm:text-sm font-black text-[#9E3B42] mt-0.5">
                                 {formatRupiah(item.harga)}
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#F3E8DA]">
+                          <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-[#F3E8DA]">
                             <Link
                               href={`/menu?id=${item.id}`}
-                              className="text-xs sm:text-sm font-bold text-[#7A6158] hover:text-[#3D2B28]"
+                              className="text-xs font-bold text-[#7A6158] hover:text-[#3D2B28] whitespace-nowrap"
                             >
                               Lihat Detail
                             </Link>
@@ -2433,7 +2432,7 @@ export default function DashboardPelangganView({
                               type="button"
                               disabled={sedangTambah}
                               onClick={() => handleTambahKeKeranjang(item.id, item.nama)}
-                              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 ${
+                              className={`px-3 py-1.5 rounded-full text-xs font-extrabold inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 whitespace-nowrap ${
                                 baruDitambah
                                   ? "bg-[#215934] text-white"
                                   : "bg-[#9E3B42] hover:bg-[#7D2330] text-white"
@@ -2446,7 +2445,7 @@ export default function DashboardPelangganView({
                                     : sedangTambah
                                       ? "fa-circle-notch fa-spin"
                                       : "fa-plus"
-                                } text-xs`}
+                                } text-[10px]`}
                               ></i>
                               <span>{baruDitambah ? "Masuk Keranjang" : "Keranjang"}</span>
                             </button>
@@ -2458,14 +2457,14 @@ export default function DashboardPelangganView({
                 )}
               </div>
 
-              <div className="lg:col-span-5 space-y-6">
-                <div className="ud-card p-6 sm:p-7 space-y-4">
+              <div className="lg:col-span-5 space-y-5">
+                <div className="ud-card p-5 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-extrabold uppercase tracking-widest text-[#B8925A]">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#B8925A]">
                         Meja Kasir Saya
                       </span>
-                      <h2 className="font-serif text-2xl sm:text-3xl font-black text-[#3D2B28]">
+                      <h2 className="font-serif text-xl sm:text-2xl font-black text-[#3D2B28]">
                         Keranjang Aktif ({jumlahKuantitasKeranjang})
                       </h2>
                     </div>
@@ -2473,7 +2472,7 @@ export default function DashboardPelangganView({
                       <button
                         type="button"
                         onClick={() => gantiTab("keranjang")}
-                        className="text-sm font-extrabold text-[#9E3B42] hover:underline cursor-pointer"
+                        className="text-xs sm:text-sm font-extrabold text-[#9E3B42] hover:underline cursor-pointer whitespace-nowrap"
                       >
                         Kelola &rarr;
                       </button>
@@ -2481,55 +2480,55 @@ export default function DashboardPelangganView({
                   </div>
 
                   {keranjangItems.length === 0 ? (
-                    <div className="p-7 rounded-2xl bg-[#FAF4ED] border border-dashed border-[#EADCC8] text-center space-y-2">
-                      <i className="fa-solid fa-bag-shopping text-3xl text-[#D3A29D]"></i>
-                      <p className="text-sm font-bold text-[#3D2B28]">
+                    <div className="p-5 rounded-xl bg-[#FAF4ED] border border-dashed border-[#EADCC8] text-center space-y-1.5">
+                      <i className="fa-solid fa-bag-shopping text-2xl text-[#D3A29D]"></i>
+                      <p className="text-xs sm:text-sm font-bold text-[#3D2B28]">
                         Keranjang Belanja Masih Kosong
                       </p>
                       <p className="text-xs text-[#7A6158]">
-                        Tambahkan kue dari panel Etalase di samping atau rancang kue ulang tahun di Studio 3D.
+                        Tambahkan kue dari panel Etalase di samping atau rancang kue di Studio 3D.
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1">
+                    <div className="space-y-3">
+                      <div className="max-h-52 overflow-y-auto space-y-2 pr-1">
                         {keranjangItems.map((it) => (
                           <div
                             key={it.id}
-                            className="p-3.5 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] flex items-center justify-between gap-3 text-sm"
+                            className="p-3 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] flex items-center justify-between gap-2.5 text-xs sm:text-sm"
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="font-extrabold text-[#3D2B28] truncate">
+                              <p className="font-extrabold text-[#3D2B28] truncate text-xs sm:text-sm">
                                 {it.nama || (it.jenis === "Custom" ? "Kue Custom 3D" : "Kue Katalog")}
                               </p>
-                              <p className="text-xs sm:text-sm text-[#9E3B42] font-bold">
+                              <p className="text-xs text-[#9E3B42] font-bold">
                                 {formatRupiah(it.subtotal || 0)}
                               </p>
                             </div>
                             {it.jenis !== "Custom" ? (
-                              <div className="inline-flex items-center gap-2 bg-white rounded-full px-2.5 py-1 border border-[#EADCC8]">
+                              <div className="inline-flex items-center gap-1.5 bg-white rounded-full px-2 py-0.5 border border-[#EADCC8]">
                                 <button
                                   type="button"
                                   disabled={sedangUbahKeranjangId === it.id || it.jumlah <= 1}
                                   onClick={() => handleUbahQtyKeranjang(it, Number(it.jumlah) - 1)}
-                                  className="w-6 h-6 rounded-full hover:bg-[#FAF4ED] text-[#3D2B28] font-black cursor-pointer disabled:opacity-40"
+                                  className="w-5 h-5 rounded-full hover:bg-[#FAF4ED] text-[#3D2B28] font-black cursor-pointer disabled:opacity-40 text-xs"
                                 >
                                   -
                                 </button>
-                                <span className="text-sm font-extrabold px-1">
+                                <span className="text-xs font-extrabold px-1">
                                   {it.jumlah}
                                 </span>
                                 <button
                                   type="button"
                                   disabled={sedangUbahKeranjangId === it.id}
                                   onClick={() => handleUbahQtyKeranjang(it, Number(it.jumlah) + 1)}
-                                  className="w-6 h-6 rounded-full hover:bg-[#FAF4ED] text-[#3D2B28] font-black cursor-pointer disabled:opacity-40"
+                                  className="w-5 h-5 rounded-full hover:bg-[#FAF4ED] text-[#3D2B28] font-black cursor-pointer disabled:opacity-40 text-xs"
                                 >
                                   +
                                 </button>
                               </div>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-full bg-[#F3E7D3] text-[#6B4B1C] text-xs font-bold">
+                              <span className="px-2 py-0.5 rounded-full bg-[#F3E7D3] text-[#6B4B1C] text-[11px] font-bold">
                                 Custom 3D
                               </span>
                             )}
@@ -2537,35 +2536,35 @@ export default function DashboardPelangganView({
                         ))}
                       </div>
 
-                      <div className="pt-3.5 border-t border-[#EADCC8] flex items-center justify-between gap-3">
+                      <div className="pt-3 border-t border-[#EADCC8] flex items-center justify-between gap-3">
                         <div>
-                          <span className="text-xs font-bold uppercase text-[#7A6158] block">
+                          <span className="text-[10px] font-bold uppercase text-[#7A6158] block">
                             Subtotal Kue
                           </span>
-                          <strong className="font-serif text-2xl font-black text-[#3D2B28]">
+                          <strong className="font-serif text-xl font-black text-[#3D2B28]">
                             {formatRupiah(ringkasanKeranjang.total_kue || 0)}
                           </strong>
                         </div>
                         <Link
                           href="/checkout"
-                          className="px-5 py-3 rounded-full bg-[#9E3B42] hover:bg-[#7D2330] text-white text-sm font-extrabold shadow-sm inline-flex items-center gap-2 transition"
+                          className="px-4 py-2 rounded-full bg-[#9E3B42] hover:bg-[#7D2330] text-white text-xs sm:text-sm font-extrabold shadow-xs inline-flex items-center gap-1.5 transition whitespace-nowrap"
                         >
                           <span>Checkout Sekarang</span>
-                          <i className="fa-solid fa-arrow-right text-xs"></i>
+                          <i className="fa-solid fa-arrow-right text-[11px]"></i>
                         </Link>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="ud-card p-6 space-y-3.5">
+                <div className="ud-card p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-serif text-xl sm:text-2xl font-black text-[#3D2B28] flex items-center gap-2">
-                      <i className="fa-regular fa-calendar-check text-[#9E3B42] text-base"></i>
+                    <h3 className="font-serif text-lg sm:text-xl font-black text-[#3D2B28] flex items-center gap-2">
+                      <i className="fa-regular fa-calendar-check text-[#9E3B42] text-sm"></i>
                       <span>Cek Cepat Kuota Tanggal Dapur</span>
                     </h3>
                     {sedangMuatKetersediaan && (
-                      <i className="fa-solid fa-circle-notch fa-spin text-sm text-[#9E3B42]"></i>
+                      <i className="fa-solid fa-circle-notch fa-spin text-xs text-[#9E3B42]"></i>
                     )}
                   </div>
                   <input
@@ -2573,14 +2572,14 @@ export default function DashboardPelangganView({
                     value={tanggalCekKuota}
                     min={hariIniIso}
                     onChange={(e) => setTanggalCekKuota(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] text-sm font-bold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-bold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
                   />
                   {hasilCekTanggal && (
-                    <div className={`p-4 rounded-2xl border text-sm flex items-start gap-3 ${hasilCekTanggal.warna}`}>
-                      <i className={`${hasilCekTanggal.ikon} mt-0.5 text-base`}></i>
+                    <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${hasilCekTanggal.warna}`}>
+                      <i className={`${hasilCekTanggal.ikon} mt-0.5 text-sm`}></i>
                       <div>
                         <p className="font-extrabold">{hasilCekTanggal.judul}</p>
-                        <p className="text-xs sm:text-sm mt-0.5 opacity-90">{hasilCekTanggal.pesan}</p>
+                        <p className="text-[11px] mt-0.5 opacity-90">{hasilCekTanggal.pesan}</p>
                       </div>
                     </div>
                   )}
@@ -2588,20 +2587,20 @@ export default function DashboardPelangganView({
               </div>
             </div>
 
-            <div className="ud-card p-6 sm:p-7">
-              <div className="flex items-center justify-between mb-5">
+            <div className="ud-card p-5">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="font-serif text-2xl sm:text-3xl font-black text-[#3D2B28]">
+                  <h2 className="font-serif text-xl sm:text-2xl font-black text-[#3D2B28]">
                     5 Pesanan Terbaru Saya
                   </h2>
-                  <p className="text-sm text-[#7A6158] mt-0.5">
-                    Sinkron otomatis dengan daftar pesanan Admin & Petugas Dapur
+                  <p className="text-xs text-[#7A6158] mt-0.5">
+                    Sinkron otomatis dengan daftar pesanan Admin &amp; Petugas Dapur
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => gantiTab("pesanan")}
-                  className="text-sm font-extrabold text-[#9E3B42] hover:underline cursor-pointer"
+                  className="text-xs sm:text-sm font-extrabold text-[#9E3B42] hover:underline cursor-pointer whitespace-nowrap"
                 >
                   Lihat Semua &rarr;
                 </button>
@@ -2707,8 +2706,8 @@ export default function DashboardPelangganView({
         )}
 
         {tabAktif === "pesanan" && (
-          <div className="space-y-5">
-            <div className="ud-card p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-4">
+            <div className="ud-card p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-1.5">
                 {[
                   { id: "Semua", label: "Semua" },
@@ -2723,7 +2722,7 @@ export default function DashboardPelangganView({
                     key={flt.id}
                     type="button"
                     onClick={() => setFilterStatusPesanan(flt.id)}
-                    className={`px-3.5 py-2 rounded-full text-xs font-extrabold transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap ${
                       filterStatusPesanan === flt.id
                         ? "bg-[#9E3B42] text-white shadow-xs"
                         : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
@@ -2734,14 +2733,14 @@ export default function DashboardPelangganView({
                 ))}
               </div>
 
-              <div className="relative w-full md:w-64">
+              <div className="relative w-full lg:w-64 shrink-0">
                 <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C6D62] text-xs"></i>
                 <input
                   type="text"
                   value={kataCariPesanan}
                   onChange={(e) => setKataCariPesanan(e.target.value)}
                   placeholder="Cari kode, kue, atau penerima..."
-                  className="w-full pl-9 pr-4 py-2.5 rounded-full bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:bg-white focus:border-[#9E3B42]"
+                  className="w-full pl-9 pr-4 py-2 rounded-full bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:bg-white focus:border-[#9E3B42]"
                 />
               </div>
             </div>
@@ -3324,15 +3323,15 @@ export default function DashboardPelangganView({
         )}
 
         {tabAktif === "riwayat" && (
-          <div className="space-y-6">
-            <div className="ud-card p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-5">
+            <div className="ud-card p-5 space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-serif text-xl font-black text-[#3D2B28]">
-                    Daftar Invoice & Struk Resmi Pesanan
+                  <h2 className="font-serif text-lg sm:text-xl font-black text-[#3D2B28]">
+                    Daftar Invoice &amp; Struk Resmi Pesanan
                   </h2>
                   <p className="text-xs text-[#7A6158]">
-                    Klik Lihat & Cetak Struk untuk mengunduh bukti transaksi yang selaras dengan pembukuan Admin
+                    Klik Lihat &amp; Cetak Struk untuk mengunduh bukti transaksi yang selaras dengan pembukuan Admin
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -3341,7 +3340,7 @@ export default function DashboardPelangganView({
                       key={flt}
                       type="button"
                       onClick={() => setFilterRiwayat(flt)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap ${
                         filterRiwayat === flt
                           ? "bg-[#9E3B42] text-white"
                           : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
@@ -3354,7 +3353,7 @@ export default function DashboardPelangganView({
               </div>
 
               {riwayatPesananTersaring.length === 0 ? (
-                <p className="text-xs text-[#7A6158] py-8 text-center">
+                <p className="text-xs text-[#7A6158] py-6 text-center">
                   Belum ada riwayat transaksi pada kategori ini.
                 </p>
               ) : (
@@ -3362,48 +3361,48 @@ export default function DashboardPelangganView({
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-[#FAF4ED] text-[#5A3B33] uppercase text-[11px] font-extrabold">
-                        <th className="py-3 px-4 rounded-l-xl">No. Invoice</th>
-                        <th className="py-3 px-4">Tanggal Pesan</th>
-                        <th className="py-3 px-4">Total Tagihan</th>
-                        <th className="py-3 px-4">Terbayar</th>
-                        <th className="py-3 px-4">Status Bayar</th>
-                        <th className="py-3 px-4">Status Pesanan</th>
-                        <th className="py-3 px-4 rounded-r-xl text-right">Struk / Invoice</th>
+                        <th className="py-2.5 px-3.5 rounded-l-xl whitespace-nowrap">No. Invoice</th>
+                        <th className="py-2.5 px-3.5 whitespace-nowrap">Tanggal Pesan</th>
+                        <th className="py-2.5 px-3.5 whitespace-nowrap">Total Tagihan</th>
+                        <th className="py-2.5 px-3.5 whitespace-nowrap">Terbayar</th>
+                        <th className="py-2.5 px-3.5 whitespace-nowrap">Status Bayar</th>
+                        <th className="py-2.5 px-3.5 whitespace-nowrap">Status Pesanan</th>
+                        <th className="py-2.5 px-3.5 rounded-r-xl text-right whitespace-nowrap">Struk / Invoice</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F3E8DA]">
                       {riwayatPesananTersaring.map((p) => (
                         <tr key={p.id} className="hover:bg-[#FAF6F0]">
-                          <td className="py-3.5 px-4 font-extrabold text-[#3D2B28]">
+                          <td className="py-3 px-3.5 font-extrabold text-[#3D2B28] whitespace-nowrap">
                             INV-{p.kode_pesanan}
                           </td>
-                          <td className="py-3.5 px-4 text-[#5A3B33]">
+                          <td className="py-3 px-3.5 text-[#5A3B33] whitespace-nowrap">
                             {formatTanggalSingkat(p.dibuat_pada)}
                           </td>
-                          <td className="py-3.5 px-4 font-bold text-[#3D2B28]">
+                          <td className="py-3 px-3.5 font-bold text-[#3D2B28] whitespace-nowrap">
                             {formatRupiah(p.total_bayar)}
                           </td>
-                          <td className="py-3.5 px-4 font-bold text-[#215934]">
+                          <td className="py-3 px-3.5 font-bold text-[#215934] whitespace-nowrap">
                             {formatRupiah(p.jumlah_terbayar || 0)}
                           </td>
-                          <td className="py-3.5 px-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeBayarWarna(p.status_bayar)}`}>
+                          <td className="py-3 px-3.5 whitespace-nowrap">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${badgeBayarWarna(p.status_bayar)}`}>
                               {p.status_bayar}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeStatusWarna(p.status_pesanan)}`}>
+                          <td className="py-3 px-3.5 whitespace-nowrap">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${badgeStatusWarna(p.status_pesanan)}`}>
                               {p.status_pesanan}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3 px-3.5 text-right whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => setPesananInvoice(p)}
-                              className="px-3.5 py-1.5 rounded-full bg-[#3E2721] hover:bg-[#2D1E1B] text-[#FFFDF9] font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer"
+                              className="px-3 py-1.5 rounded-full bg-[#3E2721] hover:bg-[#2D1E1B] text-[#FFFDF9] font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                             >
                               <i className="fa-solid fa-print text-[#E5BF88]"></i>
-                              <span>Lihat & Cetak Struk</span>
+                              <span>Lihat &amp; Cetak Struk</span>
                             </button>
                           </td>
                         </tr>
@@ -3414,9 +3413,9 @@ export default function DashboardPelangganView({
               )}
             </div>
 
-            <div className="ud-card p-6 space-y-4">
+            <div className="ud-card p-5 space-y-3">
               <div>
-                <h2 className="font-serif text-xl font-black text-[#3D2B28]">
+                <h2 className="font-serif text-lg sm:text-xl font-black text-[#3D2B28]">
                   Catatan Pembayaran Masuk
                 </h2>
                 <p className="text-xs text-[#7A6158]">
@@ -3425,7 +3424,7 @@ export default function DashboardPelangganView({
               </div>
 
               {semuaPembayaranList.length === 0 ? (
-                <p className="text-xs text-[#7A6158] py-8 text-center">
+                <p className="text-xs text-[#7A6158] py-5 text-center bg-[#FAF4ED]/60 rounded-xl border border-dashed border-[#EADCC8]">
                   Belum ada catatan pembayaran yang terekam.
                 </p>
               ) : (
@@ -3857,14 +3856,14 @@ export default function DashboardPelangganView({
         )}
 
         {tabAktif === "bantuan" && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="ud-card p-6 space-y-4">
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="ud-card p-5 space-y-3">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#9E3B42]">
                     Simulasi Interaktif
                   </span>
-                  <h2 className="font-serif text-xl font-black text-[#3D2B28]">
+                  <h2 className="font-serif text-lg sm:text-xl font-black text-[#3D2B28]">
                     Cek Ketersediaan Tanggal Dapur
                   </h2>
                   <p className="text-xs text-[#7A6158]">
@@ -3877,26 +3876,26 @@ export default function DashboardPelangganView({
                   value={tanggalCekKuota}
                   min={hariIniIso}
                   onChange={(e) => setTanggalCekKuota(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-bold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-bold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
                 />
 
                 {hasilCekTanggal && (
-                  <div className={`p-4 rounded-2xl border text-xs flex items-start gap-3 ${hasilCekTanggal.warna}`}>
-                    <i className={`${hasilCekTanggal.ikon} text-base mt-0.5`}></i>
+                  <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${hasilCekTanggal.warna}`}>
+                    <i className={`${hasilCekTanggal.ikon} text-sm mt-0.5`}></i>
                     <div>
                       <p className="font-extrabold">{hasilCekTanggal.judul}</p>
-                      <p className="mt-0.5 leading-relaxed">{hasilCekTanggal.pesan}</p>
+                      <p className="mt-0.5 leading-relaxed text-[11px]">{hasilCekTanggal.pesan}</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="ud-card p-6 space-y-4">
+              <div className="ud-card p-5 space-y-3">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#B8925A]">
                     Kalkulator Tarif Pengaturan Admin
                   </span>
-                  <h2 className="font-serif text-xl font-black text-[#3D2B28]">
+                  <h2 className="font-serif text-lg sm:text-xl font-black text-[#3D2B28]">
                     Simulasi Ongkir Berdasarkan Jarak
                   </h2>
                   <p className="text-xs text-[#7A6158]">
@@ -3905,16 +3904,16 @@ export default function DashboardPelangganView({
                 </div>
 
                 {tarifJarakList.length === 0 ? (
-                  <div className="p-4 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] text-xs text-[#7A6158]">
+                  <div className="p-3.5 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] text-xs text-[#7A6158]">
                     Admin toko belum mengatur tabel tarif jarak pengiriman. Saat ini Anda dapat memilih metode <strong>Ambil di Toko</strong>.
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-[#5A3B33]">
                         Perkiraan Jarak Jalan:
                       </span>
-                      <strong className="font-serif text-xl font-black text-[#9E3B42]">
+                      <strong className="font-serif text-lg font-black text-[#9E3B42]">
                         {jarakSimulasiKm} km
                       </strong>
                     </div>
@@ -3930,7 +3929,7 @@ export default function DashboardPelangganView({
                     />
 
                     <div
-                      className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between ${
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
                         hasilSimulasiOngkir.status === "ok"
                           ? "bg-[#DCF5E4] border-[#B5E5C6] text-[#1C6E3D]"
                           : "bg-rose-50 border-rose-200 text-rose-700"
@@ -3942,7 +3941,7 @@ export default function DashboardPelangganView({
                           : `Di luar jangkauan kirim${maksKmToko ? ` (maks. ${maksKmToko} km)` : ""}`}
                       </span>
                       {hasilSimulasiOngkir.status === "ok" && (
-                        <strong className="text-base font-black">
+                        <strong className="text-sm font-black">
                           {formatRupiah(hasilSimulasiOngkir.tarif)}
                         </strong>
                       )}
@@ -3952,11 +3951,11 @@ export default function DashboardPelangganView({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              <div className="lg:col-span-7 space-y-6">
-                <div className="ud-card p-6 sm:p-7">
-                  <div className="pb-4 mb-5 border-b border-[#EADCC8]">
-                    <h2 className="font-serif text-xl font-black text-[#3D2B28]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <div className="lg:col-span-7 space-y-5">
+                <div className="ud-card p-5">
+                  <div className="pb-3 mb-4 border-b border-[#EADCC8]">
+                    <h2 className="font-serif text-lg sm:text-xl font-black text-[#3D2B28]">
                       Hubungi Admin Toko via WhatsApp
                     </h2>
                     <p className="text-xs text-[#7A6158] mt-0.5">
@@ -3965,16 +3964,16 @@ export default function DashboardPelangganView({
                   </div>
 
                   {pesanSuksesTiket && (
-                    <div className="mb-5 p-4 rounded-2xl bg-[#DCF5E4] border border-[#B5E5C6] text-[#1C6E3D] text-xs font-bold flex items-center gap-2.5">
+                    <div className="mb-4 p-3 rounded-xl bg-[#DCF5E4] border border-[#B5E5C6] text-[#1C6E3D] text-xs font-bold flex items-center gap-2">
                       <i className="fa-solid fa-circle-check text-sm"></i>
                       <span>{pesanSuksesTiket}</span>
                     </div>
                   )}
 
-                  <form onSubmit={handleBuatTiketBantuan} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <form onSubmit={handleBuatTiketBantuan} className="space-y-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
-                        <label className="block text-xs font-bold text-[#5A3B33] mb-1.5">
+                        <label className="block text-xs font-bold text-[#5A3B33] mb-1">
                           Pilih Kode Pesanan
                         </label>
                         <select
@@ -3982,7 +3981,7 @@ export default function DashboardPelangganView({
                           onChange={(e) =>
                             setFormTiket({ ...formTiket, kode_pesanan: e.target.value })
                           }
-                          className="w-full px-4 py-3 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
                         >
                           <option value="Umum (Belum Pesan)">Pertanyaan Umum</option>
                           {daftarPesananState.map((p) => (
@@ -3994,7 +3993,7 @@ export default function DashboardPelangganView({
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#5A3B33] mb-1.5">
+                        <label className="block text-xs font-bold text-[#5A3B33] mb-1">
                           Kategori Bantuan
                         </label>
                         <select
@@ -4002,7 +4001,7 @@ export default function DashboardPelangganView({
                           onChange={(e) =>
                             setFormTiket({ ...formTiket, kategori: e.target.value })
                           }
-                          className="w-full px-4 py-3 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:border-[#9E3B42]"
                         >
                           <option value="Status pembuatan kue">Status pembuatan kue (Petugas)</option>
                           <option value="Pembayaran">Verifikasi Pembayaran (Admin)</option>
@@ -4013,7 +4012,7 @@ export default function DashboardPelangganView({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#5A3B33] mb-1.5">
+                      <label className="block text-xs font-bold text-[#5A3B33] mb-1">
                         Judul / Subjek Pertanyaan
                       </label>
                       <input
@@ -4024,23 +4023,23 @@ export default function DashboardPelangganView({
                           setFormTiket({ ...formTiket, subjek: e.target.value })
                         }
                         placeholder="Contoh: Konfirmasi jam ambil pesanan"
-                        className="w-full px-4 py-3 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:bg-white focus:border-[#9E3B42]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:bg-white focus:border-[#9E3B42]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-[#5A3B33] mb-1.5">
+                      <label className="block text-xs font-bold text-[#5A3B33] mb-1">
                         Detail Pesan
                       </label>
                       <textarea
-                        rows={4}
+                        rows={3}
                         required
                         value={formTiket.pesan}
                         onChange={(e) =>
                           setFormTiket({ ...formTiket, pesan: e.target.value })
                         }
                         placeholder="Tuliskan pertanyaan Anda untuk tim Admin toko..."
-                        className="w-full px-4 py-3 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:bg-white focus:border-[#9E3B42]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] text-xs font-semibold text-[#3D2B28] outline-none focus:bg-white focus:border-[#9E3B42]"
                       />
                     </div>
 

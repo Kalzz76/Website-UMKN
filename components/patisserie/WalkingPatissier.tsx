@@ -167,10 +167,11 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
         posXRef.current += diff * Math.min(1, dt * 8);
         speedRef.current = 0;
       } else {
-        // Gentle follow with small comfortable deadzone (~2.2% of width)
-        if (absDiff > 2.2) {
-          const maxStepSpeed = 24; // % width per second — pleasant unhurried stroll
-          const desiredVel = Math.sign(diff) * Math.min(maxStepSpeed, absDiff * 2.5);
+        // Gentle follow with comfortable companion distance (~13.5% of width) so she stands beside the cursor, not under it
+        if (absDiff > 13.5) {
+          const effectiveDiff = absDiff - 12.5;
+          const maxStepSpeed = 22; // % width per second — pleasant unhurried stroll
+          const desiredVel = Math.sign(diff) * Math.min(maxStepSpeed, effectiveDiff * 2.2);
           speedRef.current += (desiredVel - speedRef.current) * Math.min(1, dt * 9);
           posXRef.current += speedRef.current * dt;
 
@@ -195,6 +196,9 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
           speedRef.current *= Math.max(0, 1 - dt * 11);
           if (Math.abs(speedRef.current) < 0.25) {
             speedRef.current = 0;
+          }
+          if (absDiff > 1.5) {
+            facingRef.current = diff > 0 ? 1 : -1;
           }
           // Settle walk phase smoothly to neutral stance
           walkPhaseRef.current += (0 - Math.sin(walkPhaseRef.current)) * Math.min(1, dt * 8);
@@ -379,7 +383,7 @@ export const WalkingPatissier: React.FC<WalkingPatissierProps> = ({
         aria-label="Sapa Patissier Cravely"
         animate={{ y: isHopping ? -24 : 0 }}
         transition={{ type: 'spring', stiffness: 420, damping: 18 }}
-        className="pointer-events-auto relative w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-cherry rounded-full group"
+        className={`${activeZone ? 'pointer-events-none' : 'pointer-events-auto'} relative w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-cherry rounded-full group`}
       >
         <svg
           viewBox="0 0 220 385"
