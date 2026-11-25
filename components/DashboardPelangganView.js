@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { cariTarif } from "@/lib/ongkir";
+import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
 import PreviewKue from "@/components/PreviewKue";
 import PortalLedge from "@/components/PortalLedge";
 import ModalPesan from "@/components/ModalPesan";
@@ -2392,16 +2393,18 @@ export default function DashboardPelangganView({
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-16 h-16 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] overflow-hidden shrink-0 flex items-center justify-center">
-                              {item.foto_url && !gambarGagalMap[item.id] ? (
+                              {(gambarGagalMap[item.id] ? getFotoProdukFallback(item.nama) : item.foto_url) ? (
                                 <img
-                                  src={item.foto_url}
+                                  src={gambarGagalMap[item.id] ? getFotoProdukFallback(item.nama) : item.foto_url}
                                   alt={item.nama}
-                                  onError={() =>
-                                    setGambarGagalMap((prev) => ({
-                                      ...prev,
-                                      [item.id]: true,
-                                    }))
-                                  }
+                                  onError={() => {
+                                    if (!gambarGagalMap[item.id]) {
+                                      setGambarGagalMap((prev) => ({
+                                        ...prev,
+                                        [item.id]: true,
+                                      }));
+                                    }
+                                  }}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (

@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
+import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
 import {
   ShoppingBag,
   Search,
@@ -165,17 +166,19 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
         <div ref={previewRef} className="lg:col-span-4 xl:col-span-4 w-full lg:sticky lg:top-14 z-20 self-start">
           <div className="relative rounded-[26px] overflow-hidden shadow-xl border border-[#E8D9C8] flex flex-col justify-between h-[calc(100vh-4.5rem)] max-h-[580px] sm:max-h-[610px] min-h-[460px] bg-[#EDE0D1]">
             <AnimatePresence mode="wait">
-              {selectedCake && selectedCake.photo && !imgErrors[selectedCake.id] ? (
+              {selectedCake && (imgErrors[selectedCake.id] ? getFotoProdukFallback(selectedCake.nama) : selectedCake.photo) ? (
                 <motion.img
                   key={selectedCake.id}
-                  src={selectedCake.photo}
+                  src={(imgErrors[selectedCake.id] ? getFotoProdukFallback(selectedCake.nama) : selectedCake.photo) || ""}
                   alt={selectedCake.nama}
-                  onError={() =>
-                    setImgErrors((prev) => ({
-                      ...prev,
-                      [selectedCake.id]: true,
-                    }))
-                  }
+                  onError={() => {
+                    if (!imgErrors[selectedCake.id]) {
+                      setImgErrors((prev) => ({
+                        ...prev,
+                        [selectedCake.id]: true,
+                      }));
+                    }
+                  }}
                   initial={{ opacity: 0.3, scale: 1.04 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0.3, scale: 0.98 }}
@@ -520,16 +523,18 @@ export const DessertsMenuView: React.FC<DessertsMenuViewProps> = ({
                       >
                         <div className="flex items-start gap-3">
                           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-[#F5ECE3] border border-[#EFE2D6] relative">
-                            {item.photo && !imgErrors[item.id] ? (
+                            {(imgErrors[item.id] ? getFotoProdukFallback(item.nama) : item.photo) ? (
                               <img
-                                src={item.photo}
+                                src={(imgErrors[item.id] ? getFotoProdukFallback(item.nama) : item.photo) || ""}
                                 alt={item.nama}
-                                onError={() =>
-                                  setImgErrors((prev) => ({
-                                    ...prev,
-                                    [item.id]: true,
-                                  }))
-                                }
+                                onError={() => {
+                                  if (!imgErrors[item.id]) {
+                                    setImgErrors((prev) => ({
+                                      ...prev,
+                                      [item.id]: true,
+                                    }));
+                                  }
+                                }}
                                 className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-300"
                               />
                             ) : (
