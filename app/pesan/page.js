@@ -4641,49 +4641,74 @@ export default function PesanPage() {
       const intersects = raycasterRef.current.intersectObjects(cake.children, true);
       for (const x of intersects) {
         let o = x.object;
-        while (o && o.userData.itemId == null) o = o.parent;
-        if (o) return o.userData.itemId;
+        while (o && o.userData.itemId == null && o.userData.candleId == null) {
+          o = o.parent;
+        }
+        if (o && o.userData.candleId != null) {
+          return { kind: "candle", id: o.userData.candleId };
+        }
+        if (o && o.userData.itemId != null) {
+          return { kind: "item", id: o.userData.itemId };
+        }
       }
       return null;
     };
 
     const moveItem = (e) => {
       const ts = threeStateRef.current;
-      if (!cake || ts.dragItem == null) return;
+      if (!cake || (ts.dragItem == null && ts.dragCandle == null)) return;
       const currentS = stateRef.current;
-      const it = (currentS.items || []).find((i) => i.id === ts.dragItem);
-      if (!it) return;
+      const szData = VISUAL_SIZE[currentS.size] || { d: 14 };
+      const R = (szData.d || 14) / 12;
+      const planeY = ts.cakeTop ?? 1.1;
+
       ndc(e);
       cake.updateMatrixWorld(true);
       const inv = new THREE.Matrix4().copy(cake.matrixWorld).invert();
       const ray = raycasterRef.current.ray.clone().applyMatrix4(inv);
       const p = new THREE.Vector3();
-      if (!ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.1), p)) return;
-      const szData = VISUAL_SIZE[currentS.size] || { d: 14 };
-      const R = (szData.d || 14) / 12;
+      if (!ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY), p)) return;
+
       let x = p.x / R;
       let z = p.z / R;
       const m = Math.hypot(x, z);
-      if (m > 0.95) {
-        x *= 0.95 / m;
-        z *= 0.95 / m;
+      const maxR = ts.dragCandle != null ? 0.88 : 0.95;
+      if (m > maxR) {
+        x *= maxR / m;
+        z *= maxR / m;
       }
+
+      if (ts.dragCandle != null) {
+        const cand = (currentS.candles || []).find((c) => c.id === ts.dragCandle);
+        if (!cand) return;
+        cand.x = +x.toFixed(2);
+        cand.z = +z.toFixed(2);
+        cake.children.forEach((c) => {
+          if (c.userData.candleId === cand.id) c.position.set(cand.x * R, planeY, cand.z * R);
+        });
+        return;
+      }
+
+      const it = (currentS.items || []).find((i) => i.id === ts.dragItem);
+      if (!it) return;
       it.x = +x.toFixed(2);
       it.z = +z.toFixed(2);
       cake.children.forEach((c) => {
-        if (c.userData.itemId === it.id) c.position.set(it.x * R, 1.1, it.z * R);
-        if (c.userData.ringFor === it.id) c.position.set(it.x * R, 1.112, it.z * R);
+        if (c.userData.itemId === it.id) c.position.set(it.x * R, planeY, it.z * R);
+        if (c.userData.ringFor === it.id) c.position.set(it.x * R, planeY + 0.012, it.z * R);
       });
     };
 
     function onPointerDown(e) {
       cv.setPointerCapture(e.pointerId);
       const ts = threeStateRef.current;
-      if (!ts.pts.size && stepRef.current === 5) {
-        const id = pickItem(e);
-        if (id != null) {
-          ts.dragItem = id;
-          setS((prev) => ({ ...prev, sel: id }));
+      if (!ts.pts.size && (stepRef.current === 4 || stepRef.current === 5)) {
+        const hit = pickItem(e);
+        if (hit?.kind === "candle") {
+          ts.dragCandle = hit.id;
+        } else if (hit?.kind === "item" && stepRef.current === 5) {
+          ts.dragItem = hit.id;
+          setS((prev) => ({ ...prev, sel: hit.id }));
         }
       }
       ts.pts.set(e.pointerId, [e.clientX, e.clientY]);
@@ -4697,7 +4722,7 @@ export default function PesanPage() {
     function onPointerMove(e) {
       const ts = threeStateRef.current;
       if (!ts.pts.has(e.pointerId)) return;
-      if (ts.dragItem != null) {
+      if (ts.dragItem != null || ts.dragCandle != null) {
         moveItem(e);
         return;
       }
@@ -4723,8 +4748,9 @@ export default function PesanPage() {
       ts.pts.delete(e.pointerId);
       if (!ts.pts.size) {
         ts.dragging = false;
-        if (ts.dragItem != null) {
+        if (ts.dragItem != null || ts.dragCandle != null) {
           ts.dragItem = null;
+          ts.dragCandle = null;
           snap(stateRef.current);
           buildCake();
         }
@@ -5087,6 +5113,7 @@ export default function PesanPage() {
     }
 
     // Lilin (candles)
+    ts.cakeTop = top;
     const cs = S.candles || [];
     if (cs.length) {
       const pts = [],
@@ -5100,15 +5127,17 @@ export default function PesanPage() {
         }
       }
       cs.forEach((cand, i) => {
+        const hasCustomPos = cand.x != null && cand.z != null;
         const sl = slots[i];
-        if (!sl) return;
-        const x = sl[0],
-          z = sl[1];
+        if (!hasCustomPos && !sl) return;
+        const x = hasCustomPos ? cand.x * R : sl[0],
+          z = hasCustomPos ? cand.z * R : sl[1];
         if (inCut(x, z)) return;
         const g = new THREE.Group(),
           sc = 0.9 + R * 0.1;
         g.position.set(x, top, z);
         g.scale.setScalar(sc);
+        g.userData.candleId = cand.id;
         g.add(new THREE.Mesh(CUSH, cream));
         let wx = 0,
           wy = 0.44;
@@ -7252,7 +7281,7 @@ export default function PesanPage() {
                     {(S.candles || []).length > 0 && (
                       <div style={{ marginTop: "12px" }}>
                         <div style={{ fontSize: "12px", fontWeight: 700, color: "#7A5E60", marginBottom: "6px" }}>
-                          Lilin terpasang ({S.candles.length}/12):
+                          Lilin terpasang ({S.candles.length}/12) · Geser lilin di kue 3D untuk atur posisi:
                         </div>
                         <div className="sc">
                           {S.candles.map((cand) => (
