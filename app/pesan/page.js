@@ -6,6 +6,7 @@ import Link from "next/link";
 import * as THREE from "three";
 import PreviewKue from "@/components/PreviewKue";
 import PortalLedge from "@/components/PortalLedge";
+import { DynamicIslandNavbar } from "@/components/patisserie/DynamicIslandNavbar";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { hitungTotal } from "@/lib/hitungHarga";
 import { formatRupiah, formatTanggalIndonesia } from "@/lib/format";
@@ -6784,40 +6785,8 @@ export default function PesanPage() {
   const todayFormatted = formatTanggalIndonesia(new Date());
 
   return (
-    <div className="cakecraft-studio">
-      <div className="hd">
-        <div className="in">
-          <Link href="/" className="logo">
-            <img
-              src="/assets/images/Icon.png"
-              alt="Cravely"
-              style={{ width: 38, height: 38, objectFit: "contain", flexShrink: 0 }}
-            />
-            <div>
-              <b>{pengaturan?.nama_toko || "CRAVELY"}</b>
-              <small>PATISSERIE & CAKE ATELIER</small>
-            </div>
-          </Link>
-          <nav>
-            <Link href="/">Home</Link>
-            <Link href="/pesan" className="on">
-              Custom Cake
-            </Link>
-            <Link href="/user">Dashboard</Link>
-            {(profil?.role === "admin" || profil?.role === "staf") && (
-              <Link href="/dashboard">Dashboard</Link>
-            )}
-          </nav>
-          <div className="hr">
-            <Link href="/keranjang" className="cart" title="Lihat Keranjang">
-              🛒<i>{cartCount}</i>
-            </Link>
-            <div className="av">
-              {profil?.nama ? profil.nama.slice(0, 1).toUpperCase() : "A"}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="cakecraft-studio" style={{ paddingTop: "68px" }}>
+      <DynamicIslandNavbar showEntered={true} toko={pengaturan} />
 
       <div className="wrap">
         <div className="steps">
@@ -8449,14 +8418,6 @@ export default function PesanPage() {
           >
             ‹ {getActiveSteps(S.itemType).indexOf(step) > 1 ? "Kembali" : "Sebelumnya"}
           </button>
-
-          {step < 3 && (
-            <div className="trust">
-              <span>🛡️ Pembayaran Aman</span>
-              <span>🚚 Pengiriman Tepat Waktu</span>
-              <span>♡ Kualitas Terbaik</span>
-            </div>
-          )}
 
           <div className="fr">
             <div style={{ textAlign: "right" }}>
