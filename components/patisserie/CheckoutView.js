@@ -567,10 +567,12 @@ export function CheckoutView() {
 
   if (sedangMemuat) {
     return (
-      <div className="min-h-screen bg-[#FAF4EE] flex items-center justify-center pt-20">
-        <p className="text-sm font-serif text-[#4A2E2B] animate-pulse">
-          Memuat data pemesanan...
-        </p>
+      <div
+        className="min-h-screen bg-[#FAF4EE] flex items-center justify-center pt-20"
+        role="status"
+        aria-label="Memuat"
+      >
+        <div className="w-10 h-10 rounded-full border-[3px] border-[#EADCC8] border-t-[#9E3B42] animate-spin" />
       </div>
     );
   }

@@ -172,8 +172,12 @@ export default function MenuPage() {
       <main className="flex-1 w-full">
         <Suspense
           fallback={
-            <div className="max-w-7xl mx-auto px-4 py-16 text-center text-stone-400">
-              Memuat menu...
+            <div
+              className="max-w-7xl mx-auto px-4 py-24 flex items-center justify-center"
+              role="status"
+              aria-label="Memuat"
+            >
+              <div className="w-10 h-10 rounded-full border-[3px] border-[#EADCC8] border-t-[#9E3B42] animate-spin" />
             </div>
           }
         >

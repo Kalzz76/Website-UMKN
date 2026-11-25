@@ -297,9 +297,12 @@ export const KasirView: React.FC<KasirViewProps> = ({
       )}
 
       {sedangMemuat ? (
-        <div className="bg-[#FAF4ED] rounded-[28px] border border-[#ECDCCE] p-16 text-center text-[#7D5A50] space-y-3 shadow-xs">
-          <RefreshCcw className="w-8 h-8 animate-spin mx-auto text-[#7D2330]" />
-          <p className="text-sm font-semibold">Memuat keranjang Anda...</p>
+        <div
+          className="bg-[#FAF4ED] rounded-[28px] border border-[#ECDCCE] p-16 flex items-center justify-center shadow-xs"
+          role="status"
+          aria-label="Memuat"
+        >
+          <RefreshCcw className="w-8 h-8 animate-spin text-[#7D2330]" />
         </div>
       ) : pesanError ? (
         <div className="bg-[#FAF4ED] rounded-[28px] border border-rose-300 p-10 text-center text-rose-800 space-y-3 shadow-xs">
