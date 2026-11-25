@@ -305,8 +305,7 @@ export default function RootLoading() {
           color: var(--ui-text);
         }
         .cravely-batter-stage {
-          width: 100%;
-          max-width: 560px;
+          width: min(88%, 400px);
           aspect-ratio: 6 / 5;
           display: flex;
           align-items: center;
