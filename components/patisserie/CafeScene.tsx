@@ -1180,22 +1180,47 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
                   <ellipse cx="314" cy="500" rx="18" ry="26" fill="#FDF5E7" stroke="#D4B5AA" strokeWidth="1.8" />
                   <path d="M226 474 Q268 465 310 474 L318 532 H218 Z" fill="#FDF5E7" stroke="#D4B5AA" strokeWidth="1.8" />
 
-                  {/* Friendly Waving Right Hand when hovering Cashier */}
+                  {/* Right Arm & Hand (rests naturally by counter, waves gently on hover) */}
                   <g
                     style={{
-                      transformOrigin: '318px 496px',
-                      transform: tetehHappy ? 'rotate(-20deg) translateY(-6px)' : 'rotate(0deg)',
-                      transition: 'transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      transformOrigin: '314px 488px',
+                      transform: tetehHappy ? 'rotate(-110deg) translateY(-2px)' : 'rotate(0deg)',
+                      transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                   >
                     <path
-                      d="M316 498 Q332 484 334 466"
+                      d="M312 486 Q324 504 320 524"
                       fill="none"
-                      stroke="#FDF5E7"
-                      strokeWidth="12"
+                      stroke="#D4B5AA"
+                      strokeWidth="15"
                       strokeLinecap="round"
                     />
-                    <circle cx="334" cy="462" r="8" fill="#FDE2CE" stroke="#D8B098" strokeWidth="1.4" />
+                    <path
+                      d="M312 486 Q324 504 320 524"
+                      fill="none"
+                      stroke="#FDF5E7"
+                      strokeWidth="11.5"
+                      strokeLinecap="round"
+                    />
+                    <rect
+                      x="312"
+                      y="518"
+                      width="15"
+                      height="6"
+                      rx="3"
+                      fill="#F1DBD0"
+                      stroke="#D4B5AA"
+                      strokeWidth="1.2"
+                    />
+                    <ellipse
+                      cx="319"
+                      cy="527"
+                      rx="6.5"
+                      ry="5.5"
+                      fill="#FDE2CE"
+                      stroke="#D8B098"
+                      strokeWidth="1.4"
+                    />
                   </g>
 
                   {/* Burgundy Patisserie Apron + Cute Name Badge "TETEH" */}
