@@ -1116,24 +1116,6 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
               style={{ animationDelay: '4.3s' }}
             />
           </div>
-
-          {/* Bottom Entrance Prompt Pill */}
-          <div
-            className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col sm:flex-row items-center gap-2.5 bg-[#FFFDF9]/95 backdrop-blur-md border border-kuningan/75 shadow-xl rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold text-ink whitespace-nowrap transition-all duration-300"
-            style={{
-              opacity: p > 0.18 ? 0 : 1,
-              transform: `translateY(${p > 0.18 ? 20 : 0}px)`,
-            }}
-          >
-            <span>Gulir ke bawah atau ketuk pintu untuk masuk ke Cravely</span>
-            <button
-              type="button"
-              onClick={handleSmoothEnter}
-              className="px-4 py-1.5 rounded-full bg-cherry text-white text-xs font-bold hover:bg-burgundy transition whitespace-nowrap"
-            >
-              Masuk ke Cafe
-            </button>
-          </div>
         </section>
       )}
 
