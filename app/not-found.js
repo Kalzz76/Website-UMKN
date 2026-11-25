@@ -4,8 +4,12 @@ export default function NotFound() {
   return (
     <div className="min-h-screen bg-[#FFFDF9] text-[#3D2B28] flex flex-col justify-center items-center p-6">
       <div className="max-w-md w-full text-center bg-white rounded-3xl p-8 sm:p-10 border border-[#E8DFD8] shadow-sm space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#FAF2E8] border border-[#E8DFD8] text-[#9E3B42] flex items-center justify-center mx-auto text-3xl shadow-xs">
-          <i className="fa-solid fa-cake-candles" />
+        <div className="w-16 h-16 rounded-2xl bg-[#2F453E] border border-[#C59B62]/60 p-2.5 flex items-center justify-center mx-auto shadow-xs">
+          <img
+            src="/assets/images/Icon.png"
+            alt="Cravely"
+            className="w-full h-full object-contain"
+          />
         </div>
         <span className="inline-block text-xs font-bold uppercase tracking-widest text-[#9E3B42] bg-[#FAF2E8] px-3 py-1 rounded-full">
           Galat 404

@@ -325,13 +325,11 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
             <rect y="785" width="1600" height="115" fill="url(#pLantaiDalam)" />
             <rect y="782" width="1600" height="6" fill="#B59B84" />
 
-            {/* Oval Wall Plaque & Cupcake Medallions */}
+            {/* Oval Wall Plaque & Cravely Logo Medallions */}
             <g filter="url(#fBayangan)">
-              <circle cx="515" cy="222" r="46" fill="#FDF5E7" stroke="#A36361" strokeWidth="4" />
+              <circle cx="515" cy="222" r="46" fill="#2F453E" stroke="#A36361" strokeWidth="4" />
               <circle cx="515" cy="222" r="39" fill="none" stroke="#B8925A" strokeWidth="1.5" />
-              <path d="M498 228 L503 246 H527 L532 228 Z" fill="#D3A29D" />
-              <path d="M495 228 Q515 206 535 228 Z" fill="#A36361" />
-              <circle cx="515" cy="212" r="5" fill="#B23A48" />
+              <image href="/assets/images/Icon.png" x="488" y="195" width="54" height="54" preserveAspectRatio="xMidYMid meet" />
 
               <ellipse cx="800" cy="222" rx="195" ry="68" fill="#F1DBD0" stroke="#A36361" strokeWidth="5" />
               <ellipse cx="800" cy="222" rx="184" ry="59" fill="none" stroke="#B8925A" strokeWidth="2" />
@@ -359,11 +357,9 @@ export const CafeScene: React.FC<CafeSceneProps> = ({
                 PATISSERIE &amp; CAKE ATELIER
               </text>
 
-              <circle cx="1085" cy="222" r="46" fill="#FDF5E7" stroke="#A36361" strokeWidth="4" />
+              <circle cx="1085" cy="222" r="46" fill="#2F453E" stroke="#A36361" strokeWidth="4" />
               <circle cx="1085" cy="222" r="39" fill="none" stroke="#B8925A" strokeWidth="1.5" />
-              <path d="M1068 228 L1073 246 H1097 L1102 228 Z" fill="#CDBFAA" />
-              <path d="M1065 228 Q1085 206 1105 228 Z" fill="#6B4A3E" />
-              <circle cx="1085" cy="212" r="5" fill="#D3A29D" />
+              <image href="/assets/images/Icon.png" x="1058" y="195" width="54" height="54" preserveAspectRatio="xMidYMid meet" />
             </g>
 
             {/* ==================== GRAND CAFE WALL MENU BOARD (REPLACES COOKIE SHELF) ==================== */}

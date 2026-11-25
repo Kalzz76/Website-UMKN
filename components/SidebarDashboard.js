@@ -83,7 +83,11 @@ export default function SidebarDashboard({ profil, namaToko }) {
     <>
       <div className="md:hidden bg-stone-900 text-stone-300 p-4 flex items-center justify-between border-b border-stone-800 sticky top-0 z-40">
         <div className="flex items-center space-x-3">
-          <i className="fa-solid fa-cake-candles text-rose-500 text-xl"></i>
+          <img
+            src="/assets/images/Icon.png"
+            alt="Cravely"
+            className="w-7 h-7 object-contain shrink-0"
+          />
           <span className="font-bold text-white text-base">
             {namaToko || "Toko Kue"}
           </span>
@@ -107,8 +111,12 @@ export default function SidebarDashboard({ profil, namaToko }) {
         <div className="p-6 flex flex-col h-full justify-between">
           <div>
             <div className="hidden md:flex items-center space-x-3 mb-8">
-              <div className="w-10 h-10 rounded-2xl bg-rose-600/20 text-rose-500 flex items-center justify-center text-xl">
-                <i className="fa-solid fa-cake-candles"></i>
+              <div className="w-10 h-10 rounded-2xl bg-stone-800 p-1.5 flex items-center justify-center shrink-0">
+                <img
+                  src="/assets/images/Icon.png"
+                  alt="Cravely"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <h2 className="font-extrabold text-white text-base leading-tight">

@@ -105,15 +105,22 @@ export const PatisserieFooter: React.FC<PatisserieFooterProps> = ({ toko = null 
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
           <div className="lg:col-span-4 space-y-4">
-            <div>
-              <span className="font-script text-3xl sm:text-4xl text-[#EFA7B8] block leading-none">
-                Baked with Love
-              </span>
-              {namaToko && (
-                <h2 className="font-coquette text-2xl font-bold tracking-wider text-[#FFFDF9] mt-1.5">
-                  {namaToko}
-                </h2>
-              )}
+            <div className="flex items-center gap-3.5">
+              <img
+                src="/assets/images/Icon.png"
+                alt="Cravely"
+                className="w-12 h-12 object-contain shrink-0 drop-shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
+              />
+              <div>
+                <span className="font-script text-3xl sm:text-4xl text-[#EFA7B8] block leading-none">
+                  Baked with Love
+                </span>
+                {namaToko && (
+                  <h2 className="font-coquette text-2xl font-bold tracking-wider text-[#FFFDF9] mt-1.5">
+                    {namaToko}
+                  </h2>
+                )}
+              </div>
             </div>
             {tokoData?.deskripsi_footer && (
               <p className="text-xs sm:text-sm text-[#F3E8E2] leading-relaxed">

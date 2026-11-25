@@ -99,22 +99,14 @@ export const PromoWelcomeModal: React.FC<PromoWelcomeModalProps> = ({
               {/* Right: Welcome Brochure & Voucher */}
               <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between text-center md:text-left relative z-20 bg-gradient-to-b from-[#FFFDF9] to-ivory/75">
                 <div>
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                    <svg viewBox="0 0 64 28" className="w-9 h-4 shrink-0" aria-hidden="true">
-                      <path
-                        d="M32,13 C21,2 8,5 12,15 C15,22 26,17 32,13 Z"
-                        fill="#F1DBD0"
-                        stroke="#9E3B42"
-                        strokeWidth="1.8"
+                  <div className="flex items-center justify-center md:justify-start gap-2.5 mb-2">
+                    <span className="w-8 h-8 rounded-full bg-[#2F453E] inline-flex items-center justify-center p-1.5 shrink-0 shadow-xs">
+                      <img
+                        src="/assets/images/Icon.png"
+                        alt="Cravely"
+                        className="w-full h-full object-contain"
                       />
-                      <path
-                        d="M32,13 C43,2 56,5 52,15 C49,22 38,17 32,13 Z"
-                        fill="#F1DBD0"
-                        stroke="#9E3B42"
-                        strokeWidth="1.8"
-                      />
-                      <circle cx="32" cy="13" r="2.8" fill="#9E3B42" />
-                    </svg>
+                    </span>
                     <span className="font-script text-2xl sm:text-3xl text-cherry leading-none">
                       Cravely
                     </span>
