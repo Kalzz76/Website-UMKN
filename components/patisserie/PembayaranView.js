@@ -211,9 +211,9 @@ export function PembayaranView() {
 
   useEffect(() => {
     if (!berhasil) return;
-    const t = setTimeout(() => router.push(`/pesanan-saya/${kode}?bayar=1`), 3000);
+    const t = setTimeout(() => router.push("/user"), 3000);
     return () => clearTimeout(t);
-  }, [berhasil, kode, router]);
+  }, [berhasil, router]);
 
   if (memuat) return <RootLoading />;
 
@@ -272,14 +272,22 @@ export function PembayaranView() {
                   <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto" />
                   <h2 className="font-serif text-2xl font-bold text-[#4A2E2B]">Pembayaran Diterima!</h2>
                   <p className="text-sm text-[#7D5A50]">
-                    Terima kasih, pesananmu sudah masuk antrean dapur. Mengalihkan ke tiket pesanan...
+                    Terima kasih, pesananmu sudah masuk antrean dapur. Mengalihkan ke Dashboard User...
                   </p>
-                  <Link
-                    href={`/pesanan-saya/${kode}?bayar=1`}
-                    className="inline-block mt-2 px-6 py-2.5 rounded-full bg-[#7D2330] text-white text-xs font-bold"
-                  >
-                    Lihat Tiket Pesanan
-                  </Link>
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                    <Link
+                      href="/user"
+                      className="inline-block px-6 py-2.5 rounded-full bg-[#7D2330] text-white text-xs font-bold"
+                    >
+                      Buka Dashboard User
+                    </Link>
+                    <Link
+                      href={`/pesanan-saya/${kode}?bayar=1`}
+                      className="inline-block px-6 py-2.5 rounded-full border border-[#D9B37C] bg-white text-[#4A2E2B] text-xs font-bold"
+                    >
+                      Lihat Tiket Pesanan
+                    </Link>
+                  </div>
                 </div>
               ) : alasan ? (
                 <div className="bg-[#FAF4ED] rounded-[24px] border border-[#ECDCCE] p-8 text-center space-y-3">
@@ -459,21 +467,40 @@ export function PembayaranView() {
                       </div>
 
                       {IS_SANDBOX && (
-                        <div className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 space-y-1.5 leading-relaxed">
-                          <p>
-                            Mode sandbox: simulasikan pembayaran lewat{" "}
+                        <div className="text-[11px] text-amber-900 bg-amber-50 border border-amber-300 rounded-xl px-3.5 py-3 space-y-2 leading-relaxed">
+                          <div className="font-bold flex items-center justify-between gap-2">
+                            <span>🧪 Panduan Bayar Mode Sandbox (Simulasi)</span>
                             <a
                               href="https://simulator.sandbox.midtrans.com/"
                               target="_blank"
                               rel="noreferrer"
-                              className="font-bold underline"
+                              className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold transition no-underline shrink-0"
                             >
-                              Midtrans Simulator
+                              Buka Midtrans Simulator ↗
                             </a>
-                            {tagihan.metode === "qris"
-                              ? " (menu QRIS → Upload gambar dari tombol Simpan gambar QR, atau tempel QR String / URL QR)."
-                              : "."}
-                          </p>
+                          </div>
+                          {tagihan.metode === "qris" ? (
+                            <ol className="list-decimal list-inside space-y-0.5 text-amber-800">
+                              <li>Klik <b>Simpan gambar QR</b> atau <b>Salin QR String / URL QR</b> di bawah.</li>
+                              <li>Buka <b>Midtrans Simulator</b> → pilih menu <b>QRIS</b>.</li>
+                              <li>Upload gambar QR atau tempel QR String/URL, lalu klik <b>Scan / Pay</b>.</li>
+                              <li>Kembali ke halaman ini, lalu klik <b>Saya sudah bayar</b> (atau tunggu 5 detik).</li>
+                            </ol>
+                          ) : tagihan.metode === "mandiri" ? (
+                            <ol className="list-decimal list-inside space-y-0.5 text-amber-800">
+                              <li>Salin <b>Kode Perusahaan</b> dan <b>Kode Bayar</b> di atas.</li>
+                              <li>Buka <b>Midtrans Simulator</b> → pilih menu <b>Mandiri Bill Payment</b>.</li>
+                              <li>Masukkan kedua kode tersebut, klik <b>Inquire</b> lalu <b>Pay</b>.</li>
+                              <li>Kembali ke halaman ini, lalu klik <b>Saya sudah bayar</b>.</li>
+                            </ol>
+                          ) : (
+                            <ol className="list-decimal list-inside space-y-0.5 text-amber-800">
+                              <li>Klik <b>Salin</b> pada <b>Nomor Virtual Account</b> di atas.</li>
+                              <li>Buka <b>Midtrans Simulator</b> → pilih <b>Virtual Account</b> ({tagihan.bank ? tagihan.bank.toUpperCase() : "Bank terkait"}).</li>
+                              <li>Tempel nomor VA, klik <b>Inquire</b> lalu <b>Pay</b>.</li>
+                              <li>Kembali ke halaman ini, lalu klik <b>Saya sudah bayar</b>.</li>
+                            </ol>
+                          )}
                           {tagihan.metode === "qris" && (tagihan.qr_string || tagihan.qr_url) && (
                             <div className="flex flex-wrap gap-2 pt-0.5">
                               {tagihan.qr_string && (

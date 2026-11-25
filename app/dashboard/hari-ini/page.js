@@ -294,7 +294,20 @@ export default function HariIniDashboardPage() {
     }
   }
 
-  const pesananHariTerpilih = daftarPesanan.filter((p) => p.tanggal_ambil === tanggalTerpilih);
+  const isTabCustom = tanggalTerpilih === "custom";
+
+  const isAdaCustom = (p) => {
+    const its = itemsMap[p.id] || [];
+    return its.some((it) => it.jenis === "Custom") || Boolean(p.tulisan_kue || p.desain_json);
+  };
+
+  const semuaCustomAktif = daftarPesanan.filter(
+    (p) => p.tanggal_ambil >= tglHariIni && isAdaCustom(p)
+  );
+
+  const pesananHariTerpilih = isTabCustom
+    ? semuaCustomAktif
+    : daftarPesanan.filter((p) => p.tanggal_ambil === tanggalTerpilih);
 
   const daftarPerluDibuat = pesananHariTerpilih.filter((p) =>
     ["Diterima", "Sedang Dibuat"].includes(p.status_pesanan)
@@ -312,10 +325,10 @@ export default function HariIniDashboardPage() {
   );
 
   const countPerluDiprosesSemua = daftarPesanan.filter((p) => p.status_pesanan === "Diterima").length;
-  const countKueCustomHariTerpilih = daftarPerluDibuat.filter((p) => {
-    const its = itemsMap[p.id] || [];
-    return its.some((it) => it.jenis === "Custom") || Boolean(p.tulisan_kue || p.desain_json);
-  }).length;
+  const countKueCustomSemua = semuaCustomAktif.filter((p) =>
+    ["Diterima", "Sedang Dibuat"].includes(p.status_pesanan)
+  ).length;
+  const countKueCustomHariTerpilih = daftarPerluDibuat.filter(isAdaCustom).length;
   const countSiapHariTerpilih = daftarSiap.length;
   const countMenungguPelunasanHariTerpilih = daftarMenungguPelunasan.length;
   const countStokMenipis = bahanRendah.length;
@@ -363,6 +376,26 @@ export default function HariIniDashboardPage() {
                 }`}
               >
                 Besok
+              </button>
+              <button
+                type="button"
+                onClick={() => setTanggalTerpilih("custom")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5 ${
+                  isTabCustom
+                    ? "bg-[#9E3B42] text-white shadow-xs"
+                    : "text-[#1d3b2e] hover:text-[#9E3B42]"
+                }`}
+              >
+                <span>Kue Kustom</span>
+                {countKueCustomSemua > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black tabular-nums ${
+                      isTabCustom ? "bg-white text-[#9E3B42]" : "bg-[#9E3B42] text-white"
+                    }`}
+                  >
+                    {countKueCustomSemua}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -435,17 +468,19 @@ export default function HariIniDashboardPage() {
 
         <div className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">
-            Custom {tanggalTerpilih === tglHariIni ? "Hari Ini" : "Besok"}
+            {isTabCustom ? "Kustom Aktif" : `Custom ${tanggalTerpilih === tglHariIni ? "Hari Ini" : "Besok"}`}
           </span>
           <div className="text-xl font-black text-rose-700 mt-1 tabular-nums lining-nums">
-            {countKueCustomHariTerpilih}
+            {isTabCustom ? countKueCustomSemua : countKueCustomHariTerpilih}
           </div>
-          <span className="text-[10px] text-stone-500 block mt-0.5">target produksi</span>
+          <span className="text-[10px] text-stone-500 block mt-0.5">
+            {isTabCustom ? "semua jadwal" : `${countKueCustomSemua} total mendatang`}
+          </span>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">
-            Siap {tanggalTerpilih === tglHariIni ? "Hari Ini" : "Besok"}
+            {isTabCustom ? "Kustom Siap" : `Siap ${tanggalTerpilih === tglHariIni ? "Hari Ini" : "Besok"}`}
           </span>
           <div className="text-xl font-black text-emerald-700 mt-1 tabular-nums lining-nums">
             {countSiapHariTerpilih}
@@ -486,7 +521,7 @@ export default function HariIniDashboardPage() {
             </h2>
           </div>
           <span className="text-xs text-stone-500">
-            Jadwal: {formatTanggalSingkat(tanggalTerpilih)}
+            {isTabCustom ? "Semua Kue Kustom (Hari Ini & Mendatang)" : `Jadwal: ${formatTanggalSingkat(tanggalTerpilih)}`}
           </span>
         </div>
 
@@ -531,7 +566,16 @@ export default function HariIniDashboardPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-stone-600">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-stone-600">
+                      {isTabCustom && p.tanggal_ambil && (
+                        <>
+                          <span className="inline-flex items-center gap-1 font-bold text-[#9E3B42]">
+                            <i className="fa-regular fa-calendar" />
+                            {formatTanggalSingkat(p.tanggal_ambil)}
+                          </span>
+                          <span>•</span>
+                        </>
+                      )}
                       <span className="inline-flex items-center gap-1 font-semibold">
                         <i className="fa-regular fa-clock text-stone-400" />
                         {p.jam_ambil ? p.jam_ambil.slice(0, 5) : "Jadwal Fleksibel"}
@@ -543,27 +587,45 @@ export default function HariIniDashboardPage() {
                     </div>
 
                     {adaCustom ? (
-                      <div className="p-3 rounded-2xl bg-[#fbf6e9] border border-[#dfd4bd]/70 flex gap-3 items-center">
-                        <div className="w-16 h-16 rounded-xl bg-white border border-[#dfd4bd] overflow-hidden flex items-center justify-center shrink-0">
-                          <PreviewKue
-                            pilihan={pilihan}
-                            tulisanKue={p.tulisan_kue || ""}
-                            className="w-full h-full scale-90"
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-bold text-[#9E3B42] uppercase tracking-wider block">
-                            Kustom Studio
-                          </span>
-                          {p.tulisan_kue && (
-                            <p className="text-xs font-bold text-stone-800 italic truncate" title={p.tulisan_kue}>
-                              &ldquo;{p.tulisan_kue}&rdquo;
+                      <div className="space-y-2">
+                        <div className="p-3 rounded-2xl bg-[#fbf6e9] border border-[#dfd4bd]/70 flex gap-3 items-center">
+                          <div className="w-16 h-16 rounded-xl bg-white border border-[#dfd4bd] overflow-hidden flex items-center justify-center shrink-0">
+                            <PreviewKue
+                              pilihan={pilihan}
+                              tulisanKue={p.tulisan_kue || ""}
+                              className="w-full h-full scale-90"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] font-bold text-[#9E3B42] uppercase tracking-wider block">
+                              Kustom Studio
+                            </span>
+                            {p.tulisan_kue && (
+                              <p className="text-xs font-bold text-stone-800 italic truncate" title={p.tulisan_kue}>
+                                &ldquo;{p.tulisan_kue}&rdquo;
+                              </p>
+                            )}
+                            <p className="text-[11px] text-stone-600 line-clamp-2 mt-0.5">
+                              {items
+                                .filter((it) => it.jenis === "Custom")
+                                .map((it) => it.nama_item)
+                                .join(", ") || "Custom Cake"}
                             </p>
-                          )}
-                          <p className="text-[11px] text-stone-600 line-clamp-2 mt-0.5">
-                            {items.map((it) => it.nama_item).join(", ") || "Custom Cake"}
-                          </p>
+                          </div>
                         </div>
+                        {items.some((it) => it.jenis !== "Custom") && (
+                          <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-700">
+                            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
+                              + Produk Katalog
+                            </span>
+                            <p className="font-semibold text-stone-800 mt-0.5">
+                              {items
+                                .filter((it) => it.jenis !== "Custom")
+                                .map((it) => `${it.jumlah}x ${it.nama_item}`)
+                                .join(", ")}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-stone-700">
@@ -633,7 +695,7 @@ export default function HariIniDashboardPage() {
             </h2>
           </div>
           <span className="text-xs text-stone-500">
-            Jadwal: {formatTanggalSingkat(tanggalTerpilih)}
+            {isTabCustom ? "Semua Kue Kustom (Hari Ini & Mendatang)" : `Jadwal: ${formatTanggalSingkat(tanggalTerpilih)}`}
           </span>
         </div>
 
@@ -775,7 +837,7 @@ export default function HariIniDashboardPage() {
             </h2>
           </div>
           <span className="text-xs text-stone-500">
-            Jadwal: {formatTanggalSingkat(tanggalTerpilih)}
+            {isTabCustom ? "Semua Kue Kustom (Hari Ini & Mendatang)" : `Jadwal: ${formatTanggalSingkat(tanggalTerpilih)}`}
           </span>
         </div>
 

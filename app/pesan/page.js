@@ -5439,10 +5439,21 @@ export default function PesanPage() {
       document.body.style.overflow = "hidden";
     } else {
       if (vboxContainerRef.current && vboxRef.current) {
-        vboxContainerRef.current.appendChild(vboxRef.current);
+        vboxContainerRef.current.prepend(vboxRef.current);
       }
       document.body.style.overflow = "";
     }
+    requestAnimationFrame(() => {
+      const box = vboxRef.current;
+      const { renderer, camera } = threeStateRef.current;
+      if (box && renderer && camera) {
+        const w = box.clientWidth || 300;
+        const h = box.clientHeight || 300;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+    });
   }, [showShapeModal]);
 
   useEffect(() => {
@@ -6170,6 +6181,114 @@ export default function PesanPage() {
     });
   }
 
+  async function handleAddToCart() {
+    if (!user) {
+      showToast("Silakan masuk terlebih dahulu untuk menambahkan ke keranjang.");
+      setTimeout(() => {
+        router.push("/masuk?ke=/pesan");
+      }, 1000);
+      return;
+    }
+
+    if (S.shape === "custom" && !S.cpts) {
+      showToast("Silakan gambar bentuk kue kustom terlebih dahulu ya.");
+      return;
+    }
+
+    const imgItem = (S.items || []).find((i) => i.t === "img");
+    if (imgItem && !uploadedImageFileRef.current) {
+      showToast("Silakan unggah gambar desain kustom terlebih dahulu.");
+      return;
+    }
+
+    setSedangKirim(true);
+
+    const txtTulisan = (S.items || [])
+      .filter((i) => i.t === "text" && i.text)
+      .map((i) => i.text.trim())
+      .join(" / ");
+
+    const desainJson = {
+      nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
+      shape: S.shape,
+      size: S.size,
+      flavor: S.flavor,
+      fill: S.fill,
+      icing: S.icing,
+      deco: S.deco || {},
+      cpts: S.cpts || null,
+      items: (S.items || []).map((it) => ({
+        id: it.id,
+        t: it.t,
+        text: it.text || null,
+        font: it.font || null,
+        px: it.px || null,
+        color: it.color || null,
+        align: it.align || null,
+        fx: it.fx || null,
+        k: it.k || null,
+        kode_visual: it.kode_visual || null,
+        e: it.e || null,
+        x: it.x || 0,
+        z: it.z || 0,
+        sz: it.sz || 1,
+      })),
+    };
+
+    const formData = new FormData();
+    formData.append("jenis", "Custom");
+    formData.append("tulisan_kue", txtTulisan || "");
+    formData.append("catatan", (S.f.notes || "").trim());
+    formData.append("pilihan", JSON.stringify(getPilihanItemsList()));
+    formData.append("desain_json", JSON.stringify(desainJson));
+
+    try {
+      const snapBlob = await getCanvasSnapshot();
+      if (snapBlob) {
+        formData.append("foto_preview", snapBlob, "preview.jpg");
+      }
+    } catch {}
+
+    if (S.shape === "custom") {
+      try {
+        const shapeBlob = await getShapeCanvasBlob();
+        if (shapeBlob) {
+          formData.append("foto_bentuk_kustom", shapeBlob, "bentuk.png");
+        }
+      } catch {}
+    }
+
+    if (uploadedImageFileRef.current) {
+      formData.append("foto_gambar_kustom", uploadedImageFileRef.current);
+    }
+
+    try {
+      const res = await fetch("/api/keranjang", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setSedangKirim(false);
+
+      if (!res.ok) {
+        showToast(data.pesan || "Gagal menambahkan kue ke keranjang.");
+        return;
+      }
+
+      setCartCount((c) => c + 1);
+      window.dispatchEvent(new Event("cravely_cart_updated"));
+      sessionStorage.removeItem("cravely_custom_draft");
+      sessionStorage.removeItem("cravely_custom_maxstep");
+      showToast("Kue custom berhasil masuk keranjang! 🛒");
+      setTimeout(() => {
+        router.push("/keranjang");
+      }, 700);
+    } catch {
+      setSedangKirim(false);
+      showToast("Gagal terhubung ke server. Silakan coba kembali.");
+    }
+  }
+
   async function handleOrderSubmit() {
     const err = checkValidation();
     if (err) {
@@ -6700,9 +6819,9 @@ export default function PesanPage() {
             )}
           </nav>
           <div className="hr">
-            <span className="cart">
+            <Link href="/keranjang" className="cart" title="Lihat Keranjang">
               🛒<i>{cartCount}</i>
-            </span>
+            </Link>
             <div className="av">
               {profil?.nama ? profil.nama.slice(0, 1).toUpperCase() : "A"}
             </div>
@@ -7773,7 +7892,7 @@ export default function PesanPage() {
             )}
           </section>
 
-          <section id="V">
+          <section id="V" ref={vboxContainerRef}>
             <div
               className={`vbox ${isStudioView || isFullscreen ? "studio-mode" : ""}`}
               ref={vboxRef}
@@ -8367,6 +8486,21 @@ export default function PesanPage() {
                 </small>
               ) : null}
             </div>
+            {step >= 4 && step < 7 && (
+              <button
+                type="button"
+                className="btn prv"
+                disabled={sedangKirim}
+                onClick={handleAddToCart}
+                style={{
+                  borderColor: "#9E3B42",
+                  color: "#9E3B42",
+                  padding: "12px 18px",
+                }}
+              >
+                {sedangKirim ? "Menyimpan..." : "🛒 Masukkan Keranjang"}
+              </button>
+            )}
             <button
               className="btn nxt"
               disabled={sedangKirim}
