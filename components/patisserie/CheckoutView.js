@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
+import RootLoading from "@/app/loading";
 import {
   BotanicalTopLeft,
   BotanicalTopRight,
@@ -619,15 +620,7 @@ export function CheckoutView() {
   const kueKatalogList = keranjang.filter((it) => it.jenis === "Katalog" || it.jenis === "Siap");
 
   if (sedangMemuat) {
-    return (
-      <div
-        className="min-h-screen bg-[#FAF4EE] flex items-center justify-center pt-20"
-        role="status"
-        aria-label="Memuat"
-      >
-        <div className="w-10 h-10 rounded-full border-[3px] border-[#EADCC8] border-t-[#9E3B42] animate-spin" />
-      </div>
-    );
+    return <RootLoading />;
   }
 
   if (keranjang.length === 0) {

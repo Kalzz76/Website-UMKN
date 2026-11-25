@@ -6,6 +6,7 @@ import { DynamicIslandNavbar } from "@/components/patisserie/DynamicIslandNavbar
 import { DessertsMenuView } from "@/components/patisserie/DessertsMenuView";
 import { PipingBagCursor } from "@/components/patisserie/PipingBagCursor";
 import { PatisserieFooter } from "@/components/patisserie/PatisserieFooter";
+import RootLoading from "@/app/loading";
 import { AnimatePresence, motion } from "motion/react";
 
 function MenuContent() {
@@ -170,17 +171,7 @@ export default function MenuPage() {
       <DynamicIslandNavbar showEntered={true} />
 
       <main className="flex-1 w-full">
-        <Suspense
-          fallback={
-            <div
-              className="max-w-7xl mx-auto px-4 py-24 flex items-center justify-center"
-              role="status"
-              aria-label="Memuat"
-            >
-              <div className="w-10 h-10 rounded-full border-[3px] border-[#EADCC8] border-t-[#9E3B42] animate-spin" />
-            </div>
-          }
-        >
+        <Suspense fallback={<RootLoading />}>
           <MenuContent />
         </Suspense>
       </main>

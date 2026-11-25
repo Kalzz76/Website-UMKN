@@ -23,6 +23,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { formatRupiah, type CartItem, type ViewType } from "./patisserieData";
+import RootLoading from "@/app/loading";
 
 export interface KasirViewProps {
   keranjang?: any[];
@@ -297,13 +298,7 @@ export const KasirView: React.FC<KasirViewProps> = ({
       )}
 
       {sedangMemuat ? (
-        <div
-          className="bg-[#FAF4ED] rounded-[28px] border border-[#ECDCCE] p-16 flex items-center justify-center shadow-xs"
-          role="status"
-          aria-label="Memuat"
-        >
-          <RefreshCcw className="w-8 h-8 animate-spin text-[#7D2330]" />
-        </div>
+        <RootLoading />
       ) : pesanError ? (
         <div className="bg-[#FAF4ED] rounded-[28px] border border-rose-300 p-10 text-center text-rose-800 space-y-3 shadow-xs">
           <p className="text-sm font-bold">{pesanError}</p>
