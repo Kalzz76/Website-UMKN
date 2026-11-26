@@ -52,6 +52,11 @@ export default function HariIniDashboardPage() {
   const [modalTunaiBuka, setModalTunaiBuka] = useState(false);
   const [pesananTunai, setPesananTunai] = useState(null);
   const [sedangSimpanTunai, setSedangSimpanTunai] = useState(false);
+  const [konfirmasiStatus, setKonfirmasiStatus] = useState({
+    terbuka: false,
+    kodePesanan: "",
+    statusBaru: "",
+  });
 
   const [drawerBuka, setDrawerBuka] = useState(false);
   const [drawerKode, setDrawerKode] = useState(null);
@@ -161,11 +166,17 @@ export default function HariIniDashboardPage() {
     setDetailPesanan(null);
   }
 
-  async function ubahStatusPesanan(kodePesanan, statusBaru) {
-    const konfirmasi = window.confirm(
-      `Ubah status pesanan #${kodePesanan} menjadi "${statusBaru}"?`
-    );
-    if (!konfirmasi) return;
+  function ubahStatusPesanan(kodePesanan, statusBaru) {
+    setKonfirmasiStatus({
+      terbuka: true,
+      kodePesanan,
+      statusBaru,
+    });
+  }
+
+  async function eksekusiUbahStatus() {
+    const { kodePesanan, statusBaru } = konfirmasiStatus;
+    if (!kodePesanan || !statusBaru) return;
 
     setSedangProses(true);
     try {
@@ -177,6 +188,7 @@ export default function HariIniDashboardPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        setKonfirmasiStatus({ terbuka: false, kodePesanan: "", statusBaru: "" });
         setNotifikasi({
           terbuka: true,
           judul: "Gagal Mengubah Status",
@@ -184,6 +196,7 @@ export default function HariIniDashboardPage() {
           tipe: "error",
         });
       } else {
+        setKonfirmasiStatus({ terbuka: false, kodePesanan: "", statusBaru: "" });
         setNotifikasi({
           terbuka: true,
           judul: "Status Berhasil Diperbarui",
@@ -196,6 +209,7 @@ export default function HariIniDashboardPage() {
         }
       }
     } catch {
+      setKonfirmasiStatus({ terbuka: false, kodePesanan: "", statusBaru: "" });
       setNotifikasi({
         terbuka: true,
         judul: "Kesalahan Jaringan",
@@ -933,7 +947,7 @@ export default function HariIniDashboardPage() {
       </section>
 
       {modalTunaiBuka && pesananTunai && (
-        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 !mt-0 z-[9999] bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-[#FFFDF9] border border-[#dfd4bd] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#dfd4bd]">
               <div>
@@ -1010,7 +1024,7 @@ export default function HariIniDashboardPage() {
       )}
 
       {drawerBuka && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+        <div className="fixed inset-0 !mt-0 z-[9999] overflow-hidden">
           <div
             className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={tutupDrawer}
@@ -1188,6 +1202,79 @@ export default function HariIniDashboardPage() {
               </Link>
             </div>
           </aside>
+        </div>
+      )}
+
+      {konfirmasiStatus.terbuka && (
+        <div
+          className="fixed inset-0 !mt-0 z-[10000] bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !sedangProses) {
+              setKonfirmasiStatus({ terbuka: false, kodePesanan: "", statusBaru: "" });
+            }
+          }}
+        >
+          <div className="bg-[#FFFDF9] border border-[#dfd4bd] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#dfd4bd]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center">
+                  <i className="fa-solid fa-arrows-rotate text-sm" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-[#1d3b2e]">Konfirmasi Ubah Status</h3>
+                  <p className="text-xs text-stone-500 font-mono mt-0.5">#{konfirmasiStatus.kodePesanan}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={sedangProses}
+                onClick={() => setKonfirmasiStatus({ terbuka: false, kodePesanan: "", statusBaru: "" })}
+                className="w-7 h-7 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-400 cursor-pointer disabled:opacity-50"
+              >
+                <i className="fa-solid fa-xmark text-sm" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-white border border-[#dfd4bd] text-xs space-y-2">
+              <p className="text-stone-600 leading-relaxed">
+                Apakah Anda yakin ingin mengubah status pesanan{" "}
+                <span className="font-mono font-bold text-[#1d3b2e]">#{konfirmasiStatus.kodePesanan}</span>{" "}
+                menjadi:
+              </p>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-stone-500">Status Baru:</span>
+                <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-extrabold text-xs">
+                  {konfirmasiStatus.statusBaru}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#dfd4bd]">
+              <button
+                type="button"
+                disabled={sedangProses}
+                onClick={() => setKonfirmasiStatus({ terbuka: false, kodePesanan: "", statusBaru: "" })}
+                className="px-4 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold hover:bg-stone-50 text-xs cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={sedangProses}
+                onClick={eksekusiUbahStatus}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {sedangProses ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin" />
+                    <span>Memperbarui...</span>
+                  </>
+                ) : (
+                  <span>Ya, Ubah Status</span>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

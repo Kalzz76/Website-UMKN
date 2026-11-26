@@ -68,7 +68,7 @@ const CAT = [
 ];
 
 const STEPS = [
-  ["Bentuk Kue", "🧁"],
+  ["Jenis Kue", "🧁"],
   ["Ukuran", "⤢"],
   ["Bentuk", "⬡"],
   ["Rasa", "🎨"],
@@ -4751,8 +4751,11 @@ export default function PesanPage() {
         if (ts.dragItem != null || ts.dragCandle != null) {
           ts.dragItem = null;
           ts.dragCandle = null;
-          snap(stateRef.current);
-          buildCake();
+          setS((prev) => ({
+            ...prev,
+            items: [...(stateRef.current.items || [])],
+            candles: [...(stateRef.current.candles || [])],
+          }));
         }
       }
     }
@@ -6301,6 +6304,7 @@ export default function PesanPage() {
       .join(" / ");
 
     const desainJson = {
+      nama_kue: (S.customName || "").trim() || null,
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
       size: S.size,
@@ -6412,6 +6416,7 @@ export default function PesanPage() {
       .join(" / ");
 
     const desainJson = {
+      nama_kue: (S.customName || "").trim() || null,
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
       size: S.size,
@@ -6877,10 +6882,10 @@ export default function PesanPage() {
   const todayFormatted = formatTanggalIndonesia(new Date());
 
   return (
-    <div className="cakecraft-studio" style={{ paddingTop: "68px" }}>
+    <>
       <DynamicIslandNavbar showEntered={true} toko={pengaturan} />
-
-      <div className="wrap">
+      <div className="cakecraft-studio" style={{ paddingTop: "68px" }}>
+        <div className="wrap">
         <div className="steps">
           {getActiveSteps(S.itemType).map((idx) => {
             const item = STEPS[idx];
@@ -6930,12 +6935,34 @@ export default function PesanPage() {
                 <div className="ttl">
                   <span className="ti">🧁</span>
                   <div>
-                    <h1>Pilih Bentuk Dasar Kue</h1>
-                    <p>Pilih bentuk dan jenis dasar kue atau pastry polos yang ingin kamu kreasikan.</p>
+                    <h1>Pilih Jenis Kue</h1>
+                    <p>Pilih jenis dasar kue atau pastry yang ingin kamu kreasikan, dan beri nama spesial untuk kuemu.</p>
                   </div>
                 </div>
 
-                <div className="lb">Pilihan Bentuk & Jenis Pastry</div>
+                <div style={{ marginBottom: "16px" }}>
+                  <div className="lb">Beri Nama Kue Custom Kamu</div>
+                  <input
+                    type="text"
+                    value={S.customName || ""}
+                    onChange={(e) => handleSet("customName", e.target.value)}
+                    placeholder="Contoh: Kue Ultah Rina / Choco Kitty Dream..."
+                    maxLength={60}
+                    style={{
+                      width: "100%",
+                      padding: "11px 14px",
+                      borderRadius: "14px",
+                      border: "1.5px solid #D3A29D",
+                      background: "#FFFDF9",
+                      fontSize: "13.5px",
+                      fontWeight: 700,
+                      color: "#3B2326",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+
+                <div className="lb">Pilihan Jenis Kue &amp; Pastry</div>
                 <div className="grid">
                   {BASE_TYPES.map((item) => {
                     const isSelected = (S.itemType || "cake") === item.key;
@@ -7420,6 +7447,28 @@ export default function PesanPage() {
                   </div>
                 </div>
 
+                <div style={{ marginBottom: "16px" }}>
+                  <div className="lb">Nama Kue Custom Kamu</div>
+                  <input
+                    type="text"
+                    value={S.customName || ""}
+                    onChange={(e) => handleSet("customName", e.target.value)}
+                    placeholder="Contoh: Kue Ultah Rina / Choco Kitty Dream..."
+                    maxLength={60}
+                    style={{
+                      width: "100%",
+                      padding: "11px 14px",
+                      borderRadius: "14px",
+                      border: "1.5px solid #D3A29D",
+                      background: "#FFFDF9",
+                      fontSize: "13.5px",
+                      fontWeight: 700,
+                      color: "#3B2326",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+
                 <div className="rcpw">
                   <span
                     className="stk"
@@ -7451,6 +7500,11 @@ export default function PesanPage() {
                     </div>
                     <div className="ast">{"*".repeat(32)}</div>
                     <div className="dt">TANGGAL: {todayFormatted.toUpperCase()}</div>
+                    {(S.customName || "").trim() && (
+                      <div className="dt" style={{ fontWeight: 700, color: "#9E3B42" }}>
+                        NAMA KUE: {(S.customName || "").trim().toUpperCase()}
+                      </div>
+                    )}
                     <div className="ast">{"*".repeat(32)}</div>
 
                     {getLineItems().map((line, lIdx) => (
@@ -8404,15 +8458,16 @@ export default function PesanPage() {
                       : renderShapeSVG(S.shape)}
                     <div style={{ flex: 1 }}>
                       <h3>
-                        {S.itemType === "cupcake"
-                          ? "Custom Cupcake"
-                          : S.itemType === "tart"
-                          ? "Custom Kue Pie"
-                          : S.itemType === "donut"
-                          ? "Custom Donat"
-                          : S.itemType === "cookies"
-                          ? "Custom Cookies"
-                          : "Custom Cake"}
+                        {(S.customName || "").trim() ||
+                          (S.itemType === "cupcake"
+                            ? "Custom Cupcake"
+                            : S.itemType === "tart"
+                            ? "Custom Kue Pie"
+                            : S.itemType === "donut"
+                            ? "Custom Donat"
+                            : S.itemType === "cookies"
+                            ? "Custom Cookies"
+                            : "Custom Cake")}
                       </h3>
                       <p>
                         {S.itemType && S.itemType !== "cake"
@@ -8830,6 +8885,7 @@ export default function PesanPage() {
       )}
 
       <div className={`toast ${toastShow ? "show" : ""}`}>{toastMsg}</div>
-    </div>
+      </div>
+    </>
   );
 }
