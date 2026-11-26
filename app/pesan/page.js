@@ -6305,6 +6305,9 @@ export default function PesanPage() {
 
     const desainJson = {
       nama_kue: (S.customName || "").trim() || null,
+      itemType: S.itemType || "cake",
+      jenis_kue_label:
+        BASE_TYPES.find((b) => b.key === (S.itemType || "cake"))?.label || "Kue Ultah",
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
       size: S.size,
@@ -6417,6 +6420,9 @@ export default function PesanPage() {
 
     const desainJson = {
       nama_kue: (S.customName || "").trim() || null,
+      itemType: S.itemType || "cake",
+      jenis_kue_label:
+        BASE_TYPES.find((b) => b.key === (S.itemType || "cake"))?.label || "Kue Ultah",
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
       size: S.size,

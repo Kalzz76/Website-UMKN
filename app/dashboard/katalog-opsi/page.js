@@ -681,7 +681,32 @@ export default function KatalogOpsiPage() {
         ) : (
           <div className="space-y-4">
             {daftarGrup.map((grup) => {
-              const itemGrup = daftarItem.filter((it) => it.id_grup === grup.id);
+              const rawItemGrup = daftarItem.filter((it) => it.id_grup === grup.id);
+              const isGrupJenis =
+                grup.peran_dashboard === "jenis" ||
+                (grup.nama || "").toLowerCase() === "jenis kue";
+              const punyaLegacyJenis =
+                isGrupJenis &&
+                rawItemGrup.some(
+                  (it) =>
+                    it.kode_visual === "template" ||
+                    (it.nama || "").toLowerCase().includes("template")
+                );
+              const baseJenisItem = rawItemGrup[0] || {
+                id: 0,
+                id_grup: grup.id,
+                harga: 0,
+                aktif: true,
+              };
+              const itemGrup = punyaLegacyJenis
+                ? [
+                    { ...baseJenisItem, urutan: 1, nama: "Kue Ultah", kode_visual: "cake" },
+                    { ...baseJenisItem, urutan: 2, nama: "Cupcake", kode_visual: "cupcake" },
+                    { ...baseJenisItem, urutan: 3, nama: "Kue Pie", kode_visual: "tart" },
+                    { ...baseJenisItem, urutan: 4, nama: "Donat", kode_visual: "donut" },
+                    { ...baseJenisItem, urutan: 5, nama: "Cookies", kode_visual: "cookies" },
+                  ]
+                : rawItemGrup;
               const isBuka = grupTerbukaMap[grup.id] !== false;
 
               return (
@@ -762,7 +787,7 @@ export default function KatalogOpsiPage() {
                             const sedangSimpan = sedangSimpanId === item.id;
 
                             return (
-                              <tr key={item.id} className="hover:bg-[#fbf8f1] transition">
+                              <tr key={`${item.id}-${item.kode_visual || item.urutan}`} className="hover:bg-[#fbf8f1] transition">
                                 <td className="py-2.5 px-3 text-center font-mono text-stone-400">
                                   {item.urutan}
                                 </td>
