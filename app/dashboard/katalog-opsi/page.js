@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah } from "@/lib/format";
+import {
+  JENIS_KUE_STUDIO,
+  ambilKonfigurasiJenisKue,
+  ambilGrupUntukJenisKue,
+} from "@/lib/opsiStudio";
 import ModalPesan from "@/components/ModalPesan";
 import GambarProduk from "@/components/GambarProduk";
 
@@ -11,6 +16,8 @@ export default function KatalogOpsiPage() {
   const router = useRouter();
   const [profil, setProfil] = useState(null);
   const [tabAktif, setTabAktif] = useState("custom");
+  const [jenisKueDipilih, setJenisKueDipilih] = useState("cake");
+  const [langkahDipilih, setLangkahDipilih] = useState("semua");
 
   const [daftarGrup, setDaftarGrup] = useState([]);
   const [daftarItem, setDaftarItem] = useState([]);
@@ -25,6 +32,7 @@ export default function KatalogOpsiPage() {
   const [itemResepAktif, setItemResepAktif] = useState(null);
   const [daftarBahan, setDaftarBahan] = useState([]);
   const [barisResep, setBarisResep] = useState([]);
+  const [jumlahResepMap, setJumlahResepMap] = useState({});
   const [sedangMemuatResep, setSedangMemuatResep] = useState(false);
   const [sedangSimpanResep, setSedangSimpanResep] = useState(false);
 
@@ -98,11 +106,23 @@ export default function KatalogOpsiPage() {
       .select("*")
       .order("urutan", { ascending: true });
 
+    const { data: resepList } = await supabase
+      .from("resep_item")
+      .select("id_item");
+
     if (!errGrup && grupList) {
       setDaftarGrup(grupList);
     }
     if (!errItem && itemList) {
       setDaftarItem(itemList);
+    }
+    if (resepList) {
+      const hitungMap = {};
+      for (let i = 0; i < resepList.length; i++) {
+        const idIt = resepList[i].id_item;
+        hitungMap[idIt] = (hitungMap[idIt] || 0) + 1;
+      }
+      setJumlahResepMap(hitungMap);
     }
     setSedangMemuat(false);
   }
@@ -135,6 +155,13 @@ export default function KatalogOpsiPage() {
     muatKategori();
   }, []);
 
+  const konfigJenisAktif = ambilKonfigurasiJenisKue(jenisKueDipilih);
+  const grupTerpetakan = ambilGrupUntukJenisKue(daftarGrup, jenisKueDipilih);
+  const grupDitampilkan =
+    langkahDipilih === "semua"
+      ? grupTerpetakan
+      : grupTerpetakan.filter((entry) => entry.langkah.kunci === langkahDipilih);
+
   function toggleGrupBuka(grupId) {
     setGrupTerbukaMap((prev) => ({
       ...prev,
@@ -143,16 +170,39 @@ export default function KatalogOpsiPage() {
   }
 
   const apakahSemuaTutup =
-    daftarGrup.length > 0 &&
-    daftarGrup.every((g) => grupTerbukaMap[g.id] === false);
+    grupDitampilkan.length > 0 &&
+    grupDitampilkan.every((entry) => grupTerbukaMap[entry.grup.id] === false);
 
   function toggleSemuaGrup() {
     const nextVal = apakahSemuaTutup ? true : false;
-    const newMap = {};
-    for (let i = 0; i < daftarGrup.length; i++) {
-      newMap[daftarGrup[i].id] = nextVal;
+    const newMap = { ...grupTerbukaMap };
+    for (let i = 0; i < grupDitampilkan.length; i++) {
+      newMap[grupDitampilkan[i].grup.id] = nextVal;
     }
     setGrupTerbukaMap(newMap);
+  }
+
+  function pilihJenisKue(kode) {
+    setJenisKueDipilih(kode);
+    setLangkahDipilih("semua");
+    setEditItemId(null);
+    setInputHarga("");
+  }
+
+  function hitungJumlahItemLangkah(langkah) {
+    if (langkah.otomatis) return 0;
+    let total = 0;
+    for (let i = 0; i < grupTerpetakan.length; i++) {
+      if (grupTerpetakan[i].langkah.kunci === langkah.kunci) {
+        const gId = grupTerpetakan[i].grup.id;
+        for (let j = 0; j < daftarItem.length; j++) {
+          if (daftarItem[j].id_grup === gId && daftarItem[j].aktif !== false) {
+            total += 1;
+          }
+        }
+      }
+    }
+    return total;
   }
 
   function mulaiEditHarga(item) {
@@ -288,6 +338,11 @@ export default function KatalogOpsiPage() {
       return;
     }
 
+    const idItemTersimpan = itemResepAktif.id;
+    setJumlahResepMap((prev) => ({
+      ...prev,
+      [idItemTersimpan]: formatKirim.length,
+    }));
     setModalResepBuka(false);
     setItemResepAktif(null);
     setNotifikasi({
@@ -680,13 +735,146 @@ export default function KatalogOpsiPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {daftarGrup.map((grup) => {
-              const itemGrup = daftarItem.filter((it) => it.id_grup === grup.id);
+            <div className="content-card p-5 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#1d3b2e]">
+                    Progres Bar Opsi per Jenis Kue
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Pilih jenis kue untuk mengatur harga dan resep sesuai urutan tahap kustomisasi di halaman /pesan.
+                  </p>
+                </div>
+                {langkahDipilih !== "semua" && (
+                  <button
+                    type="button"
+                    onClick={() => setLangkahDipilih("semua")}
+                    className="h-8 px-3 rounded-xl border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] font-bold text-xs transition cursor-pointer inline-flex items-center space-x-1.5 self-start md:self-auto"
+                  >
+                    <i className="fa-solid fa-list-ul text-[11px]" />
+                    <span>Tampilkan Semua Tahap</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                {JENIS_KUE_STUDIO.map((jk) => {
+                  const aktif = jenisKueDipilih === jk.kode;
+                  return (
+                    <button
+                      key={jk.kode}
+                      type="button"
+                      onClick={() => pilihJenisKue(jk.kode)}
+                      className={`p-3 rounded-2xl border text-left transition cursor-pointer flex items-center gap-2.5 ${
+                        aktif
+                          ? "bg-[#17382d] text-white border-[#17382d] shadow-xs"
+                          : "bg-[#fbf8f1] text-[#1d3b2e] border-[#e4dac5] hover:border-[#17382d]/40 hover:bg-[#f6efe0]"
+                      }`}
+                    >
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 ${
+                          aktif
+                            ? "bg-white/15 text-amber-200"
+                            : "bg-[#ede2cd] text-[#1d3b2e]"
+                        }`}
+                      >
+                        <i className={jk.ikon} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold truncate">{jk.nama}</div>
+                        <div
+                          className={`text-[11px] font-medium ${
+                            aktif ? "text-emerald-100/90" : "text-stone-500"
+                          }`}
+                        >
+                          {jk.langkah.length} Tahap
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="pt-3 border-t border-[#e8dfc8]">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    Alur Langkah {konfigJenisAktif.nama}
+                  </span>
+                  <span className="text-[11px] font-semibold text-stone-500">
+                    Klik tahap untuk menyaring grup opsi
+                  </span>
+                </div>
+                <div className="overflow-x-auto pb-1">
+                  <div className="flex items-center min-w-max gap-1.5">
+                    {konfigJenisAktif.langkah.map((stepItem, idx) => {
+                      const sedangDipilih = langkahDipilih === stepItem.kunci;
+                      const jmlItem = hitungJumlahItemLangkah(stepItem);
+                      return (
+                        <div key={stepItem.kunci} className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLangkahDipilih(sedangDipilih ? "semua" : stepItem.kunci)
+                            }
+                            className={`px-3 py-2 rounded-xl border transition cursor-pointer flex items-center gap-2 ${
+                              sedangDipilih
+                                ? "bg-[#17382d] text-white border-[#17382d] shadow-xs"
+                                : stepItem.otomatis
+                                ? "bg-amber-50/80 text-amber-900 border-amber-200 hover:bg-amber-100/70"
+                                : "bg-white text-[#1d3b2e] border-[#dfd4bd] hover:bg-[#fbf8f1]"
+                            }`}
+                          >
+                            <span
+                              className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                                sedangDipilih
+                                  ? "bg-white text-[#17382d]"
+                                  : stepItem.otomatis
+                                  ? "bg-amber-200/80 text-amber-950"
+                                  : "bg-[#ede2cd] text-[#1d3b2e]"
+                              }`}
+                            >
+                              {stepItem.nomor}
+                            </span>
+                            <div className="text-left leading-tight">
+                              <div className="text-xs font-bold whitespace-nowrap">
+                                {stepItem.label}
+                              </div>
+                              <div
+                                className={`text-[10px] ${
+                                  sedangDipilih
+                                    ? "text-emerald-100/90"
+                                    : stepItem.otomatis
+                                    ? "text-amber-700"
+                                    : "text-stone-400"
+                                }`}
+                              >
+                                {stepItem.otomatis ? "Otomatis" : `${jmlItem} opsi`}
+                              </div>
+                            </div>
+                          </button>
+                          {idx < konfigJenisAktif.langkah.length - 1 && (
+                            <i className="fa-solid fa-chevron-right text-[10px] text-stone-400 mx-1.5" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {grupDitampilkan.map(({ grup, langkah }) => {
+              const itemGrup = daftarItem.filter(
+                (it) => it.id_grup === grup.id && it.aktif !== false
+              );
               const isBuka = grupTerbukaMap[grup.id] !== false;
+              const isGrupJenis =
+                grup.peran_dashboard === "jenis" ||
+                (grup.nama || "").trim().toLowerCase() === "jenis kue";
 
               return (
                 <div
-                  key={grup.id}
+                  key={`${jenisKueDipilih}-${grup.id}`}
                   className={`content-card transition-all duration-200 ${
                     isBuka ? "p-6 space-y-4" : "p-5"
                   }`}
@@ -700,11 +888,11 @@ export default function KatalogOpsiPage() {
                       onClick={() => toggleGrupBuka(grup.id)}
                       className="space-y-1.5 cursor-pointer select-none flex-1 group"
                     >
-                      <div className="flex items-center space-x-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-[#ede2cd] border border-[#dfd4bd] text-[#1d3b2e] flex items-center justify-center text-sm font-bold shadow-xs transition group-hover:scale-105">
-                          <i className="fa-solid fa-layer-group" />
+                      <div className="flex items-center space-x-2.5 flex-wrap gap-y-1">
+                        <div className="w-8 h-8 rounded-xl bg-[#17382d] text-white flex items-center justify-center text-xs font-bold shadow-xs transition group-hover:scale-105">
+                          {langkah.nomor}
                         </div>
-                        <h3 className="text-base font-bold text-[#1d3b2e] flex items-center gap-2">
+                        <h3 className="text-base font-bold text-[#1d3b2e] flex items-center gap-2 flex-wrap">
                           <span>{grup.nama}</span>
                           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#ede2cd] text-stone-700 border border-[#dfd4bd]">
                             {itemGrup.length} item
@@ -713,6 +901,9 @@ export default function KatalogOpsiPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="px-2.5 py-0.5 rounded-full font-bold bg-[#17382d]/10 text-[#17382d] border border-[#17382d]/20">
+                          Tahap {langkah.nomor}: {langkah.label}
+                        </span>
                         <span
                           className={`px-2.5 py-0.5 rounded-full font-bold border ${
                             grup.wajib
@@ -725,6 +916,15 @@ export default function KatalogOpsiPage() {
                         <span className="px-2.5 py-0.5 rounded-full font-bold bg-sky-100 text-sky-800 border border-sky-200">
                           {grup.jenis_pilihan === "satu" ? "Pilih Satu" : "Pilih Banyak"}
                         </span>
+                        {isGrupJenis ? (
+                          <span className="px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                            Harga Dasar Jenis Kue
+                          </span>
+                        ) : grup.peran_visual === "ukuran" ? (
+                          <span className="px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                            Tambahan Ukuran / Porsi (Rp 0 = Termasuk)
+                          </span>
+                        ) : null}
                       </div>
                     </div>
 
@@ -760,14 +960,30 @@ export default function KatalogOpsiPage() {
                           {itemGrup.map((item) => {
                             const sedangEdit = editItemId === item.id;
                             const sedangSimpan = sedangSimpanId === item.id;
+                            const cocokJenisAktif =
+                              isGrupJenis && item.kode_visual === jenisKueDipilih;
 
                             return (
-                              <tr key={item.id} className="hover:bg-[#fbf8f1] transition">
+                              <tr
+                                key={item.id}
+                                className={`transition ${
+                                  cocokJenisAktif
+                                    ? "bg-emerald-50/60 hover:bg-emerald-50"
+                                    : "hover:bg-[#fbf8f1]"
+                                }`}
+                              >
                                 <td className="py-2.5 px-3 text-center font-mono text-stone-400">
                                   {item.urutan}
                                 </td>
                                 <td className="py-2.5 px-3 font-bold text-stone-900">
-                                  {item.nama}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span>{item.nama}</span>
+                                    {cocokJenisAktif && (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#17382d] text-white">
+                                        Sedang Dilihat
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="py-2.5 px-3">
                                   {renderVisualItem(item, grup.peran_visual)}
@@ -813,6 +1029,16 @@ export default function KatalogOpsiPage() {
                                     </div>
                                   ) : (
                                     <div className="inline-flex items-center space-x-1">
+                                      {isGrupJenis && !cocokJenisAktif && item.kode_visual && (
+                                        <button
+                                          type="button"
+                                          onClick={() => pilihJenisKue(item.kode_visual)}
+                                          className="h-7 px-2.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[#17382d] font-bold text-[11px] transition cursor-pointer inline-flex items-center space-x-1"
+                                        >
+                                          <i className="fa-solid fa-sliders text-[10px]" />
+                                          <span>Atur Opsi</span>
+                                        </button>
+                                      )}
                                       <button
                                         type="button"
                                         onClick={() => mulaiEditHarga(item)}
@@ -827,7 +1053,12 @@ export default function KatalogOpsiPage() {
                                         className="h-7 px-2.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition cursor-pointer inline-flex items-center space-x-1"
                                       >
                                         <i className="fa-solid fa-wheat-awn text-[10px]" />
-                                        <span>Resep</span>
+                                        <span>
+                                          Resep
+                                          {jumlahResepMap[item.id] > 0
+                                            ? ` (${jumlahResepMap[item.id]})`
+                                            : ""}
+                                        </span>
                                       </button>
                                     </div>
                                   )}
@@ -842,6 +1073,27 @@ export default function KatalogOpsiPage() {
                 </div>
               );
             })}
+
+            {(langkahDipilih === "semua" || langkahDipilih === "rincian") && (
+              <div className="content-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#fbf8f1] border border-dashed border-[#d9ccb2]">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 flex items-center justify-center text-xs font-bold shrink-0">
+                    {konfigJenisAktif.langkah.length}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-[#1d3b2e]">Rincian Bahan</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                        Tahap {konfigJenisAktif.langkah.length} · Otomatis
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-600 mt-1">
+                      Tahap akhir di /pesan untuk {konfigJenisAktif.nama} otomatis merangkum seluruh pilihan pelanggan dan menghitung kebutuhan bahan dapur berdasarkan tombol Resep pada setiap opsi di atas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )
       ) : (

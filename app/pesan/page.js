@@ -10,6 +10,7 @@ import { DynamicIslandNavbar } from "@/components/patisserie/DynamicIslandNavbar
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { hitungTotal } from "@/lib/hitungHarga";
 import { formatRupiah, formatTanggalIndonesia } from "@/lib/format";
+import { cariGrupStep } from "@/lib/opsiStudio";
 import "./cakecraft.css";
 
 const VISUAL_SIZE = {
@@ -5848,41 +5849,18 @@ export default function PesanPage() {
     handleFieldChange("dt", val);
   }
 
-  const grupJenis = daftarGrup.find(
-    (g) => g.peran_dashboard === "jenis" || g.nama === "Jenis Kue"
-  );
-  const grupUkuran = daftarGrup.find(
-    (g) => g.peran_visual === "ukuran" || g.nama === "Ukuran"
-  );
-  const grupBentuk = daftarGrup.find(
-    (g) => g.peran_visual === "bentuk" || g.nama === "Bentuk"
-  );
-  const grupRasa = daftarGrup.find(
-    (g) =>
-      g.peran_dashboard === "terlaris" ||
-      g.nama === "Rasa" ||
-      g.peran_visual === "badan"
-  );
-  const grupIsian = daftarGrup.find((g) => g.nama === "Isian");
-  const grupWarnaKrim = daftarGrup.find(
-    (g) =>
-      g.peran_visual === "krim" ||
-      g.nama === "Warna Krim" ||
-      g.nama === "Krim"
-  );
-  const grupDekorasi = daftarGrup.find(
-    (g) => g.peran_visual === "topping" || g.nama === "Dekorasi"
-  );
-  const grupStiker = daftarGrup.find(
-    (g) =>
-      g.peran_visual === "stiker" ||
-      g.nama === "Elemen Hiasan" ||
-      g.nama === "Stiker & Topper"
-  );
-  const grupDesainKustom = daftarGrup.find(
-    (g) => g.nama === "Desain Kustom"
-  );
+  const jenisAktif = S.itemType || "cake";
+  const grupJenis = cariGrupStep(daftarGrup, jenisAktif, "jenis");
+  const grupUkuran = cariGrupStep(daftarGrup, jenisAktif, "ukuran");
+  const grupBentuk = cariGrupStep(daftarGrup, jenisAktif, "bentuk");
+  const grupRasa = cariGrupStep(daftarGrup, jenisAktif, "rasa");
+  const grupIsian = cariGrupStep(daftarGrup, jenisAktif, "isian");
+  const grupWarnaKrim = cariGrupStep(daftarGrup, jenisAktif, "krim");
+  const grupDekorasi = cariGrupStep(daftarGrup, jenisAktif, "dekorasi");
+  const grupStiker = cariGrupStep(daftarGrup, jenisAktif, "stiker");
+  const grupDesainKustom = cariGrupStep(daftarGrup, jenisAktif, "desain_kustom");
 
+  const itemsJenis = daftarItem.filter((it) => it.id_grup === grupJenis?.id);
   const itemsUkuran = daftarItem.filter((it) => it.id_grup === grupUkuran?.id);
   const itemsBentuk = daftarItem.filter((it) => it.id_grup === grupBentuk?.id);
   const itemsRasa = daftarItem.filter((it) => it.id_grup === grupRasa?.id);
@@ -5904,19 +5882,15 @@ export default function PesanPage() {
 
     if (grupJenis) {
       const it =
-        mode === "tpl"
-          ? daftarItem.find(
-              (x) =>
-                x.id_grup === grupJenis.id &&
-                (x.kode_visual === "template" ||
-                  x.nama.toLowerCase().includes("template"))
-            )
-          : daftarItem.find(
-              (x) =>
-                x.id_grup === grupJenis.id &&
-                (x.kode_visual === "custom" ||
-                  x.nama.toLowerCase().includes("custom"))
-            ) || daftarItem.find((x) => x.id_grup === grupJenis.id);
+        daftarItem.find(
+          (x) => x.id_grup === grupJenis.id && x.kode_visual === jenisAktif
+        ) ||
+        daftarItem.find(
+          (x) =>
+            x.id_grup === grupJenis.id &&
+            (x.kode_visual === "cake" || x.kode_visual === "custom")
+        ) ||
+        itemsJenis[0];
       if (it) res.push({ id_item: it.id, jumlah: 1 });
     }
 
@@ -5928,7 +5902,7 @@ export default function PesanPage() {
       if (it) res.push({ id_item: it.id, jumlah: 1 });
     }
 
-    if (grupBentuk) {
+    if (jenisAktif === "cake" && grupBentuk) {
       const it =
         daftarItem.find(
           (x) => x.id_grup === grupBentuk.id && x.kode_visual === S.shape
@@ -5944,7 +5918,7 @@ export default function PesanPage() {
       if (it) res.push({ id_item: it.id, jumlah: 1 });
     }
 
-    if (grupIsian) {
+    if (jenisAktif === "cake" && grupIsian) {
       const it =
         daftarItem.find(
           (x) => x.id_grup === grupIsian.id && x.kode_visual === S.fill
@@ -5952,7 +5926,7 @@ export default function PesanPage() {
       if (it) res.push({ id_item: it.id, jumlah: 1 });
     }
 
-    if (grupWarnaKrim) {
+    if (jenisAktif === "cake" && grupWarnaKrim) {
       const it =
         daftarItem.find(
           (x) =>
@@ -5972,7 +5946,7 @@ export default function PesanPage() {
       }
     }
 
-    if (grupStiker && S.items) {
+    if (jenisAktif === "cake" && grupStiker && S.items) {
       const hitungKategori = {};
       for (let i = 0; i < S.items.length; i++) {
         const el = S.items[i];
@@ -5992,7 +5966,7 @@ export default function PesanPage() {
       }
     }
 
-    if (grupDesainKustom && S.items) {
+    if (jenisAktif === "cake" && grupDesainKustom && S.items) {
       const imgCount = S.items.filter((x) => x.t === "img").length;
       if (imgCount > 0) {
         const it = itemsDesainKustom[0];
@@ -6082,10 +6056,14 @@ export default function PesanPage() {
 
       let labelName = "";
       if (gr?.peran_visual === "ukuran") {
-        const d =
-          VISUAL_SIZE[it.kode_visual]?.d ||
-          (it.nama.match(/\d+/) ? it.nama.match(/\d+/)[0] : 14);
-        labelName = `ukuran ${it.kode_visual || formatNamaItem(it.nama).toLowerCase()} (diameter ${d} cm)`;
+        if (jenisAktif === "cake") {
+          const d =
+            VISUAL_SIZE[it.kode_visual]?.d ||
+            (it.nama.match(/\d+/) ? it.nama.match(/\d+/)[0] : 14);
+          labelName = `ukuran ${it.kode_visual || formatNamaItem(it.nama).toLowerCase()} (diameter ${d} cm)`;
+        } else {
+          labelName = `${(gr?.nama || "ukuran").toLowerCase()} ${formatNamaItem(it.nama).toLowerCase()}`;
+        }
       } else if (gr?.peran_visual === "bentuk") {
         labelName = `bentuk ${it.nama.toLowerCase()}`;
       } else if (gr?.peran_visual === "badan") {
@@ -6304,6 +6282,7 @@ export default function PesanPage() {
       .join(" / ");
 
     const desainJson = {
+      itemType: S.itemType || "cake",
       nama_kue: (S.customName || "").trim() || null,
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
@@ -6416,6 +6395,7 @@ export default function PesanPage() {
       .join(" / ");
 
     const desainJson = {
+      itemType: S.itemType || "cake",
       nama_kue: (S.customName || "").trim() || null,
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
@@ -6966,6 +6946,10 @@ export default function PesanPage() {
                 <div className="grid">
                   {BASE_TYPES.map((item) => {
                     const isSelected = (S.itemType || "cake") === item.key;
+                    const dbJenisItem = itemsJenis.find(
+                      (x) => x.kode_visual === item.key
+                    );
+                    const hargaDasarJenis = dbJenisItem ? Number(dbJenisItem.harga || 0) : 0;
                     return (
                       <button
                         key={item.key}
@@ -6986,7 +6970,7 @@ export default function PesanPage() {
                             fill: item.key === "cake" ? (S.fill || "cream") : null,
                             icing: item.key === "cake" ? (S.icing || "#f6b4c2") : null,
                             flavor: "vanilla",
-                            size: S.size || "small",
+                            size: "mini",
                           };
                           setS(nextS);
                           setMaxStep(0);
@@ -7017,6 +7001,9 @@ export default function PesanPage() {
                         {renderBaseItemSVG(item.key)}
                         <b>{item.label}</b>
                         <small>{item.desc}</small>
+                        {hargaDasarJenis > 0 && (
+                          <em>{formatRupiah(hargaDasarJenis)}</em>
+                        )}
                       </button>
                     );
                   })}
@@ -7052,7 +7039,11 @@ export default function PesanPage() {
                         {renderSizeIcon(S.itemType, item.kode_visual)}
                         <b>{cfg.label}</b>
                         <small>{cfg.sub}</small>
-                        <em>{item.harga ? formatRupiah(item.harga) : "Termasuk"}</em>
+                        <em>
+                          {item.harga
+                            ? `+${formatRupiah(item.harga)}`
+                            : "Termasuk"}
+                        </em>
                       </button>
                     );
                   })}
@@ -8471,11 +8462,13 @@ export default function PesanPage() {
                       </h3>
                       <p>
                         {S.itemType && S.itemType !== "cake"
-                          ? `${BASE_TYPES.find((b) => b.key === S.itemType)?.label || "Pastry"} · ${S.size?.toUpperCase() || "MINI"}`
+                          ? `${BASE_TYPES.find((b) => b.key === S.itemType)?.label || "Pastry"} · ${(SIZE_CONFIG[S.itemType] && SIZE_CONFIG[S.itemType][S.size]?.label) || S.size?.toUpperCase() || "MINI"}`
                           : `${S.shape} · ${S.size?.toUpperCase() || "MINI"} (diameter ${VISUAL_SIZE[S.size]?.d || 14} cm)`}
                       </p>
                       <p>
-                        {`${S.flavor || "vanilla"} · ${S.fill || "cream"}`}
+                        {S.itemType && S.itemType !== "cake"
+                          ? `${S.flavor || "vanilla"}`
+                          : `${S.flavor || "vanilla"} · ${S.fill || "cream"}`}
                       </p>
                     </div>
                     <button

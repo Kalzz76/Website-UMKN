@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { hitungPesanan } from "@/lib/hitungHarga";
+import { deteksiJenisKueDariPilihan, ambilGrupUntukJenisKue } from "@/lib/opsiStudio";
 
 export async function GET() {
   const supabaseUser = await getSupabaseServer();
@@ -196,10 +197,39 @@ export async function POST(request) {
         .select("*")
         .eq("aktif", true);
 
+      const grupMap = new Map();
+      for (let i = 0; i < (semuaGrup || []).length; i++) {
+        grupMap.set(semuaGrup[i].id, semuaGrup[i]);
+      }
+
       const opsiMap = new Map();
       for (let i = 0; i < (semuaOpsi || []).length; i++) {
         opsiMap.set(Number(semuaOpsi[i].id), semuaOpsi[i]);
       }
+
+      let desainUntukDeteksi = null;
+      if (desainJsonRaw) {
+        if (typeof desainJsonRaw === "string") {
+          try {
+            desainUntukDeteksi = JSON.parse(desainJsonRaw);
+          } catch {
+            desainUntukDeteksi = null;
+          }
+        } else if (typeof desainJsonRaw === "object") {
+          desainUntukDeteksi = desainJsonRaw;
+        }
+      }
+
+      const jenisKueTerdeteksi = deteksiJenisKueDariPilihan(
+        daftarPilihan,
+        opsiMap,
+        grupMap,
+        desainUntukDeteksi
+      );
+      const daftarGrupWajibCek = ambilGrupUntukJenisKue(
+        semuaGrup || [],
+        jenisKueTerdeteksi
+      ).map((entry) => entry.grup);
 
       const grupTerisi = new Map();
       for (let i = 0; i < daftarPilihan.length; i++) {
@@ -219,8 +249,8 @@ export async function POST(request) {
         grupTerisi.set(optData.id_grup, count + optQty);
       }
 
-      for (let i = 0; i < (semuaGrup || []).length; i++) {
-        const g = semuaGrup[i];
+      for (let i = 0; i < daftarGrupWajibCek.length; i++) {
+        const g = daftarGrupWajibCek[i];
         const count = grupTerisi.get(g.id) || 0;
         if (g.wajib && count === 0) {
           return NextResponse.json(

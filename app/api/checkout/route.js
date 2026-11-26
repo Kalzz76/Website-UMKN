@@ -551,6 +551,8 @@ export async function POST(request) {
           await supabase.from("pesanan_pilihan").insert({
             id_pesanan: pesananBaru.id,
             id_pesanan_item: pesItemBaru.id,
+            id_item: Number(opt.id_item) || null,
+            id_grup: optFull?.id_grup || null,
             nama_grup: namaGrup,
             nama_item: opt.nama,
             harga: opt.harga,

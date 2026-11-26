@@ -3,6 +3,7 @@ import { getSupabaseServer, getSupabaseAdmin } from "@/lib/supabaseServer";
 import { getTanggalHariIniJakarta } from "@/lib/format";
 import { hitungTotal } from "@/lib/hitungHarga";
 import { batalkanKedaluwarsa } from "@/lib/kedaluwarsa";
+import { deteksiJenisKueDariPilihan, ambilGrupUntukJenisKue } from "@/lib/opsiStudio";
 
 export async function GET() {
   await batalkanKedaluwarsa();
@@ -227,7 +228,7 @@ export async function POST(request) {
 
   const { data: grupList } = await supabase
     .from("grup_opsi")
-    .select("id, nama, wajib, jenis_pilihan, peran_visual");
+    .select("id, nama, wajib, jenis_pilihan, peran_visual, peran_dashboard");
 
   const { data: allActiveItems } = await supabase
     .from("opsi_item")
@@ -300,8 +301,32 @@ export async function POST(request) {
     grupItemCount[itemData.id_grup] = (grupItemCount[itemData.id_grup] || 0) + 1;
   }
 
-  for (let i = 0; i < (grupList || []).length; i++) {
-    const grup = grupList[i];
+  let desainUntukDeteksi = null;
+  if (desainJsonRaw) {
+    if (typeof desainJsonRaw === "string") {
+      try {
+        desainUntukDeteksi = JSON.parse(desainJsonRaw);
+      } catch {
+        desainUntukDeteksi = null;
+      }
+    } else if (typeof desainJsonRaw === "object") {
+      desainUntukDeteksi = desainJsonRaw;
+    }
+  }
+
+  const jenisKueTerdeteksi = deteksiJenisKueDariPilihan(
+    itemTerpilihList.map((x) => ({ id_item: x.itemData.id, jumlah: x.jumlah })),
+    itemMap,
+    grupMap,
+    desainUntukDeteksi
+  );
+  const grupValidasi = ambilGrupUntukJenisKue(
+    grupList || [],
+    jenisKueTerdeteksi
+  ).map((entry) => entry.grup);
+
+  for (let i = 0; i < grupValidasi.length; i++) {
+    const grup = grupValidasi[i];
     const count = grupItemCount[grup.id] || 0;
     if (grup.wajib && count === 0) {
       return NextResponse.json(

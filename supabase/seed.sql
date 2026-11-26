@@ -51,7 +51,19 @@ values
   ('Warna Krim', 6, true, 'satu', 'krim', null),
   ('Dekorasi', 7, false, 'banyak', 'topping', null),
   ('Elemen Hiasan', 8, false, 'banyak', 'stiker', null),
-  ('Desain Kustom', 9, false, 'banyak', null, null)
+  ('Desain Kustom', 9, false, 'banyak', null, null),
+  ('Porsi Cupcake', 10, true, 'satu', 'ukuran', null),
+  ('Rasa Muffin', 11, true, 'satu', 'badan', null),
+  ('Topping & Krim', 12, false, 'banyak', 'topping', null),
+  ('Ukuran Tart', 13, true, 'satu', 'ukuran', null),
+  ('Rasa Custard', 14, true, 'satu', 'badan', null),
+  ('Topping Buah', 15, false, 'banyak', 'topping', null),
+  ('Jumlah Donat', 16, true, 'satu', 'ukuran', null),
+  ('Rasa Adonan', 17, true, 'satu', 'badan', null),
+  ('Glaze & Topping', 18, false, 'banyak', 'topping', null),
+  ('Jumlah Cookies', 19, true, 'satu', 'ukuran', null),
+  ('Varian Rasa', 20, true, 'satu', 'badan', null),
+  ('Topping & Extra', 21, false, 'banyak', 'topping', null)
 on conflict (id) do nothing;
 
 update public.grup_opsi set urutan = 1, wajib = true, jenis_pilihan = 'satu', peran_visual = null, peran_dashboard = 'jenis' where nama = 'Jenis Kue';
@@ -88,27 +100,39 @@ delete from public.opsi_item where nama in (
 ) and id not in (select coalesce(id_grup, 0) from public.pesanan_pilihan);
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Custom Cake', 0, true, 1, '#1e4b3c', 'custom'
+select id, 'Kue Ultah', 130000, true, 1, '#9E3B42', 'cake'
 from public.grup_opsi where nama = 'Jenis Kue';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Template Siap Pakai', 0, true, 2, '#608d7c', 'template'
+select id, 'Cupcake', 15000, true, 2, '#C88235', 'cupcake'
 from public.grup_opsi where nama = 'Jenis Kue';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Mini Ø10', 85000, true, 1, null, 'mini'
+select id, 'Kue Pie', 60000, true, 3, '#DCA052', 'tart'
+from public.grup_opsi where nama = 'Jenis Kue';
+
+insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
+select id, 'Donat', 15000, true, 4, '#CA7C30', 'donut'
+from public.grup_opsi where nama = 'Jenis Kue';
+
+insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
+select id, 'Cookies', 18000, true, 5, '#A26829', 'cookies'
+from public.grup_opsi where nama = 'Jenis Kue';
+
+insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
+select id, 'Mini Ø10', 0, true, 1, null, 'mini'
 from public.grup_opsi where nama = 'Ukuran';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Small Ø14', 125000, true, 2, null, 'small'
+select id, 'Small Ø14', 40000, true, 2, null, 'small'
 from public.grup_opsi where nama = 'Ukuran';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Medium Ø18', 165000, true, 3, null, 'medium'
+select id, 'Medium Ø18', 80000, true, 3, null, 'medium'
 from public.grup_opsi where nama = 'Ukuran';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
-select id, 'Large Ø22', 210000, true, 4, null, 'large'
+select id, 'Large Ø22', 125000, true, 4, null, 'large'
 from public.grup_opsi where nama = 'Ukuran';
 
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
@@ -238,6 +262,61 @@ from public.grup_opsi where nama = 'Elemen Hiasan';
 insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
 select id, 'Gambar Kustom', 20000, true, 1, null, 'gambar_kustom'
 from public.grup_opsi where nama = 'Desain Kustom';
+
+insert into public.opsi_item (id_grup, nama, harga, aktif, urutan, warna, kode_visual)
+select g.id, v.nama, v.harga, true, v.urutan, v.warna, v.kode_visual
+from (
+  values
+    ('Porsi Cupcake', 'Satuan (1 Pcs)', 0, 1, null, 'mini'),
+    ('Porsi Cupcake', 'Paket 2 Pcs', 13000, 2, null, 'small'),
+    ('Porsi Cupcake', 'Box 4 Pcs', 40000, 3, null, 'medium'),
+    ('Porsi Cupcake', 'Box 6 Pcs', 65000, 4, null, 'large'),
+    ('Rasa Muffin', 'Vanilla', 0, 1, '#fbefd5', 'vanilla'),
+    ('Rasa Muffin', 'Cokelat', 3000, 2, '#8a5a3c', 'choco'),
+    ('Rasa Muffin', 'Red Velvet', 5000, 3, '#c0404e', 'velvet'),
+    ('Rasa Muffin', 'Stroberi', 3000, 4, '#f9cdd6', 'straw'),
+    ('Topping & Krim', 'Lelehan Krim', 4000, 1, '#451a03', 'drip'),
+    ('Topping & Krim', 'Stroberi', 5000, 2, '#ef4444', 'straw'),
+    ('Topping & Krim', 'Mixed Berry', 7000, 3, '#4338ca', 'berry'),
+    ('Topping & Krim', 'Bunga Gula', 4000, 4, '#f472b6', 'flower'),
+    ('Topping & Krim', 'Taburan', 3000, 5, '#f59e0b', 'spr'),
+    ('Ukuran Tart', 'Mini Tart (Ø8 cm)', 0, 1, null, 'mini'),
+    ('Ukuran Tart', 'Medium Tart (Ø14 cm)', 35000, 2, null, 'small'),
+    ('Ukuran Tart', 'Large Tart (Ø18 cm)', 70000, 3, null, 'medium'),
+    ('Ukuran Tart', 'Party Tart (Ø22 cm)', 115000, 4, null, 'large'),
+    ('Rasa Custard', 'Vanilla', 0, 1, '#fbefd5', 'vanilla'),
+    ('Rasa Custard', 'Cokelat', 8000, 2, '#8a5a3c', 'choco'),
+    ('Rasa Custard', 'Red Velvet', 10000, 3, '#c0404e', 'velvet'),
+    ('Rasa Custard', 'Stroberi', 8000, 4, '#f9cdd6', 'straw'),
+    ('Topping Buah', 'Lelehan Cokelat', 8000, 1, '#451a03', 'drip'),
+    ('Topping Buah', 'Stroberi', 10000, 2, '#ef4444', 'straw'),
+    ('Topping Buah', 'Mixed Berry', 15000, 3, '#4338ca', 'berry'),
+    ('Topping Buah', 'Taburan', 5000, 4, '#f59e0b', 'spr'),
+    ('Jumlah Donat', 'Satuan (1 Pcs)', 0, 1, null, 'mini'),
+    ('Jumlah Donat', 'Paket 3 Pcs', 25000, 2, null, 'small'),
+    ('Jumlah Donat', 'Half Dozen (6 Pcs)', 60000, 3, null, 'medium'),
+    ('Jumlah Donat', 'One Dozen (12 Pcs)', 125000, 4, null, 'large'),
+    ('Rasa Adonan', 'Vanilla', 0, 1, '#fbefd5', 'vanilla'),
+    ('Rasa Adonan', 'Cokelat', 3000, 2, '#8a5a3c', 'choco'),
+    ('Rasa Adonan', 'Red Velvet', 5000, 3, '#c0404e', 'velvet'),
+    ('Rasa Adonan', 'Stroberi', 3000, 4, '#f9cdd6', 'straw'),
+    ('Glaze & Topping', 'Glaze Cokelat', 4000, 1, '#451a03', 'drip'),
+    ('Glaze & Topping', 'Glaze Stroberi', 4000, 2, '#ef4444', 'straw'),
+    ('Glaze & Topping', 'Glaze Berry', 5000, 3, '#4338ca', 'berry'),
+    ('Glaze & Topping', 'Glaze Vanilla', 3000, 4, '#f472b6', 'flower'),
+    ('Glaze & Topping', 'Taburan Sprinkles', 3000, 5, '#f59e0b', 'spr'),
+    ('Jumlah Cookies', '1 Giant Cookie', 0, 1, null, 'mini'),
+    ('Jumlah Cookies', 'Paket 3 Cookies', 32000, 2, null, 'small'),
+    ('Jumlah Cookies', 'Box 6 Cookies', 72000, 3, null, 'medium'),
+    ('Jumlah Cookies', 'Jar / Toples', 107000, 4, null, 'large'),
+    ('Varian Rasa', 'Vanilla', 0, 1, '#fbefd5', 'vanilla'),
+    ('Varian Rasa', 'Cokelat', 4000, 2, '#8a5a3c', 'choco'),
+    ('Varian Rasa', 'Red Velvet', 6000, 3, '#c0404e', 'velvet'),
+    ('Varian Rasa', 'Stroberi', 4000, 4, '#f9cdd6', 'straw'),
+    ('Topping & Extra', 'Lelehan Cokelat', 5000, 1, '#451a03', 'drip'),
+    ('Topping & Extra', 'Taburan Sprinkles', 4000, 2, '#f59e0b', 'spr')
+) as v(nama_grup, nama, harga, urutan, warna, kode_visual)
+join public.grup_opsi g on g.nama = v.nama_grup;
 
 insert into public.zona_ongkir (nama, tarif, aktif)
 values
