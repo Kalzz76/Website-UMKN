@@ -6941,7 +6941,7 @@ export default function PesanPage() {
                 </div>
 
                 <div style={{ marginBottom: "16px" }}>
-                  <div className="lb">✨ Beri Nama Kue Custom Kamu</div>
+                  <div className="lb">Beri Nama Kue Custom Kamu</div>
                   <input
                     type="text"
                     value={S.customName || ""}
@@ -7448,7 +7448,7 @@ export default function PesanPage() {
                 </div>
 
                 <div style={{ marginBottom: "16px" }}>
-                  <div className="lb">✨ Nama Kue Custom Kamu</div>
+                  <div className="lb">Nama Kue Custom Kamu</div>
                   <input
                     type="text"
                     value={S.customName || ""}
