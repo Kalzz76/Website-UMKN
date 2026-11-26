@@ -12,8 +12,8 @@ const PROTECTED_PREFIXES = [
 ];
 
 /**
- * Refreshes the Supabase auth session cookies on incoming requests and
- * redirects unauthenticated visitors away from protected routes.
+ * Refreshes expiring Supabase auth session cookies on page navigations
+ * without triggering concurrent refresh-token races on prefetches.
  */
 export async function proxy(request) {
   let response = NextResponse.next({
@@ -21,6 +21,15 @@ export async function proxy(request) {
       headers: request.headers,
     },
   });
+
+  // Skip Next.js Link prefetch requests so parallel prefetches never race
+  // against each other on Supabase refresh-token rotation.
+  if (
+    request.headers.get("next-router-prefetch") ||
+    request.headers.get("purpose") === "prefetch"
+  ) {
+    return response;
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -48,15 +57,37 @@ export async function proxy(request) {
     },
   });
 
+  const path = request.nextUrl.pathname;
+  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+    path.startsWith(prefix)
+  );
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    if (isProtected) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/masuk";
+      redirectUrl.searchParams.set("ke", path);
+      return NextResponse.redirect(redirectUrl);
+    }
+    return response;
+  }
+
+  const expiresAtMs = (session.expires_at || 0) * 1000;
+  const isExpiringSoon = expiresAtMs - Date.now() <= 60_000;
+
+  if (!isExpiringSoon) {
+    return response;
+  }
+
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    path.startsWith(prefix)
-  );
   const isTransientServerError =
     Boolean(error) && (error.status === undefined || error.status >= 500);
 
