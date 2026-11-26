@@ -102,6 +102,40 @@ export default function KatalogOpsiPage() {
       setDaftarGrup(grupList);
     }
     if (!errItem && itemList) {
+      const grupJenis = (grupList || []).find(
+        (g) => g.peran_dashboard === "jenis" || (g.nama || "").toLowerCase() === "jenis kue"
+      );
+      if (grupJenis) {
+        const itemJenis = itemList.filter((it) => it.id_grup === grupJenis.id);
+        const perluSinkron =
+          itemJenis.length < 5 ||
+          itemJenis.some(
+            (it) =>
+              it.kode_visual === "template" ||
+              it.kode_visual === "custom" ||
+              (it.nama || "").toLowerCase().includes("template")
+          );
+        if (perluSinkron) {
+          try {
+            const resSync = await fetch("/api/opsi", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ aksi: "sinkron_jenis_kue", id_grup: grupJenis.id }),
+            });
+            if (resSync.ok) {
+              const { data: refreshedItems } = await supabase
+                .from("opsi_item")
+                .select("*")
+                .order("urutan", { ascending: true });
+              if (refreshedItems) {
+                setDaftarItem(refreshedItems);
+                setSedangMemuat(false);
+                return;
+              }
+            }
+          } catch {}
+        }
+      }
       setDaftarItem(itemList);
     }
     setSedangMemuat(false);
@@ -681,32 +715,7 @@ export default function KatalogOpsiPage() {
         ) : (
           <div className="space-y-4">
             {daftarGrup.map((grup) => {
-              const rawItemGrup = daftarItem.filter((it) => it.id_grup === grup.id);
-              const isGrupJenis =
-                grup.peran_dashboard === "jenis" ||
-                (grup.nama || "").toLowerCase() === "jenis kue";
-              const punyaLegacyJenis =
-                isGrupJenis &&
-                rawItemGrup.some(
-                  (it) =>
-                    it.kode_visual === "template" ||
-                    (it.nama || "").toLowerCase().includes("template")
-                );
-              const baseJenisItem = rawItemGrup[0] || {
-                id: 0,
-                id_grup: grup.id,
-                harga: 0,
-                aktif: true,
-              };
-              const itemGrup = punyaLegacyJenis
-                ? [
-                    { ...baseJenisItem, urutan: 1, nama: "Kue Ultah", kode_visual: "cake" },
-                    { ...baseJenisItem, urutan: 2, nama: "Cupcake", kode_visual: "cupcake" },
-                    { ...baseJenisItem, urutan: 3, nama: "Kue Pie", kode_visual: "tart" },
-                    { ...baseJenisItem, urutan: 4, nama: "Donat", kode_visual: "donut" },
-                    { ...baseJenisItem, urutan: 5, nama: "Cookies", kode_visual: "cookies" },
-                  ]
-                : rawItemGrup;
+              const itemGrup = daftarItem.filter((it) => it.id_grup === grup.id);
               const isBuka = grupTerbukaMap[grup.id] !== false;
 
               return (

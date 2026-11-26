@@ -192,11 +192,16 @@ export default function AkunDashboardPage() {
       return;
     }
 
-    const yakin = window.confirm(
-      `Apakah Anda yakin ingin menghapus akun "${akun.nama}" (${akun.email})? Tindakan ini tidak dapat dibatalkan.`
-    );
-    if (!yakin) return;
+    setNotifikasi({
+      terbuka: true,
+      judul: "Hapus Akun?",
+      pesan: `Apakah Anda yakin ingin menghapus akun "${akun.nama}" (${akun.email})? Tindakan ini tidak dapat dibatalkan.`,
+      tipe: "konfirmasi",
+      onKonfirmasi: () => prosesHapusAkun(akun),
+    });
+  }
 
+  async function prosesHapusAkun(akun) {
     setSedangProses(true);
     const res = await fetch("/api/akun", {
       method: "POST",
@@ -783,7 +788,8 @@ export default function AkunDashboardPage() {
         judul={notifikasi.judul}
         pesan={notifikasi.pesan}
         tipe={notifikasi.tipe}
-        onTutup={() => setNotifikasi({ ...notifikasi, terbuka: false })}
+        onKonfirmasi={notifikasi.onKonfirmasi}
+        onTutup={() => setNotifikasi({ ...notifikasi, terbuka: false, onKonfirmasi: null })}
       />
     </div>
   );

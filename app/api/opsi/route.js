@@ -350,6 +350,60 @@ export async function POST(request) {
     return NextResponse.json({ pesan: "Status aktif item berhasil diubah." });
   }
 
+  if (aksi === "sinkron_jenis_kue") {
+    const { id_grup } = body;
+    if (!id_grup) {
+      return NextResponse.json({ pesan: "ID grup tidak valid." }, { status: 400 });
+    }
+
+    const { data: existing } = await supabase
+      .from("opsi_item")
+      .select("*")
+      .eq("id_grup", id_grup)
+      .order("urutan", { ascending: true });
+
+    const targetList = [
+      { urutan: 1, nama: "Kue Ultah", kode_visual: "cake", warna: "#1e4b3c" },
+      { urutan: 2, nama: "Cupcake", kode_visual: "cupcake", warna: "#608d7c" },
+      { urutan: 3, nama: "Kue Pie", kode_visual: "tart", warna: "#b2cfbe" },
+      { urutan: 4, nama: "Donat", kode_visual: "donut", warna: "#8fa58f" },
+      { urutan: 5, nama: "Cookies", kode_visual: "cookies", warna: "#d97706" },
+    ];
+
+    const listAda = existing || [];
+    for (let i = 0; i < targetList.length; i++) {
+      const tgt = targetList[i];
+      const byKode = listAda.find((x) => x.kode_visual === tgt.kode_visual);
+      const legacyRow = !byKode && i < listAda.length ? listAda[i] : null;
+      const rowToUpdate = byKode || legacyRow;
+
+      if (rowToUpdate) {
+        await supabase
+          .from("opsi_item")
+          .update({
+            nama: tgt.nama,
+            kode_visual: tgt.kode_visual,
+            urutan: tgt.urutan,
+            warna: rowToUpdate.warna || tgt.warna,
+            aktif: true,
+          })
+          .eq("id", rowToUpdate.id);
+      } else {
+        await supabase.from("opsi_item").insert({
+          id_grup,
+          nama: tgt.nama,
+          kode_visual: tgt.kode_visual,
+          harga: 0,
+          urutan: tgt.urutan,
+          warna: tgt.warna,
+          aktif: true,
+        });
+      }
+    }
+
+    return NextResponse.json({ pesan: "Opsi Jenis Kue berhasil disinkronkan." });
+  }
+
   return NextResponse.json(
     { pesan: "Aksi tidak dikenal." },
     { status: 400 }

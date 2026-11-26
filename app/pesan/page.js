@@ -5903,20 +5903,20 @@ export default function PesanPage() {
     if (!daftarItem.length) return res;
 
     if (grupJenis) {
+      const targetJenisKode = S.itemType || "cake";
       const it =
-        mode === "tpl"
-          ? daftarItem.find(
-              (x) =>
-                x.id_grup === grupJenis.id &&
-                (x.kode_visual === "template" ||
-                  x.nama.toLowerCase().includes("template"))
-            )
-          : daftarItem.find(
-              (x) =>
-                x.id_grup === grupJenis.id &&
-                (x.kode_visual === "custom" ||
-                  x.nama.toLowerCase().includes("custom"))
-            ) || daftarItem.find((x) => x.id_grup === grupJenis.id);
+        daftarItem.find(
+          (x) =>
+            x.id_grup === grupJenis.id &&
+            x.kode_visual === targetJenisKode
+        ) ||
+        daftarItem.find(
+          (x) =>
+            x.id_grup === grupJenis.id &&
+            (x.kode_visual === "custom" ||
+              x.nama.toLowerCase().includes("custom"))
+        ) ||
+        daftarItem.find((x) => x.id_grup === grupJenis.id);
       if (it) res.push({ id_item: it.id, jumlah: 1 });
     }
 

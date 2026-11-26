@@ -1283,7 +1283,8 @@ export default function HariIniDashboardPage() {
         judul={notifikasi.judul}
         pesan={notifikasi.pesan}
         tipe={notifikasi.tipe}
-        padaTutup={() => setNotifikasi({ ...notifikasi, terbuka: false })}
+        onKonfirmasi={notifikasi.onKonfirmasi}
+        padaTutup={() => setNotifikasi({ ...notifikasi, terbuka: false, onKonfirmasi: null })}
       />
     </div>
   );
