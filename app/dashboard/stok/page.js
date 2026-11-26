@@ -245,12 +245,17 @@ export default function StokDashboardPage() {
     muatData();
   }
 
-  async function handleHapusBahan(bahan) {
-    const yakin = window.confirm(
-      `Apakah Anda yakin ingin menghapus data bahan "${bahan.nama}"?`
-    );
-    if (!yakin) return;
+  function handleHapusBahan(bahan) {
+    setNotifikasi({
+      terbuka: true,
+      judul: "Hapus Bahan?",
+      pesan: `Apakah Anda yakin ingin menghapus data bahan "${bahan.nama}"?`,
+      tipe: "konfirmasi",
+      onKonfirmasi: () => prosesHapusBahan(bahan),
+    });
+  }
 
+  async function prosesHapusBahan(bahan) {
     setSedangProses(true);
     const res = await fetch("/api/stok", {
       method: "POST",
@@ -984,7 +989,8 @@ export default function StokDashboardPage() {
         judul={notifikasi.judul}
         pesan={notifikasi.pesan}
         tipe={notifikasi.tipe}
-        onTutup={() => setNotifikasi({ ...notifikasi, terbuka: false })}
+        onKonfirmasi={notifikasi.onKonfirmasi}
+        onTutup={() => setNotifikasi({ ...notifikasi, terbuka: false, onKonfirmasi: null })}
       />
     </div>
   );

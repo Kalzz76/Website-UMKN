@@ -114,6 +114,40 @@ export default function KatalogOpsiPage() {
       setDaftarGrup(grupList);
     }
     if (!errItem && itemList) {
+      const grupJenis = (grupList || []).find(
+        (g) => g.peran_dashboard === "jenis" || (g.nama || "").toLowerCase() === "jenis kue"
+      );
+      if (grupJenis) {
+        const itemJenis = itemList.filter((it) => it.id_grup === grupJenis.id);
+        const perluSinkron =
+          itemJenis.length < 5 ||
+          itemJenis.some(
+            (it) =>
+              it.kode_visual === "template" ||
+              it.kode_visual === "custom" ||
+              (it.nama || "").toLowerCase().includes("template")
+          );
+        if (perluSinkron) {
+          try {
+            const resSync = await fetch("/api/opsi", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ aksi: "sinkron_jenis_kue", id_grup: grupJenis.id }),
+            });
+            if (resSync.ok) {
+              const { data: refreshedItems } = await supabase
+                .from("opsi_item")
+                .select("*")
+                .order("urutan", { ascending: true });
+              if (refreshedItems) {
+                setDaftarItem(refreshedItems);
+                setSedangMemuat(false);
+                return;
+              }
+            }
+          } catch {}
+        }
+      }
       setDaftarItem(itemList);
     }
     if (resepList) {
@@ -205,9 +239,20 @@ export default function KatalogOpsiPage() {
     return total;
   }
 
+  function formatInputRibuan(val) {
+    const digits = String(val ?? "").replace(/\D/g, "");
+    if (!digits) return "";
+    return Number(digits).toLocaleString("id-ID");
+  }
+
+  function parseInputRibuan(val) {
+    const digits = String(val ?? "").replace(/\D/g, "");
+    return digits ? Number(digits) : 0;
+  }
+
   function mulaiEditHarga(item) {
     setEditItemId(item.id);
-    setInputHarga(String(item.harga ?? 0));
+    setInputHarga(formatInputRibuan(item.harga ?? 0));
   }
 
   function batalEditHarga() {
@@ -216,7 +261,7 @@ export default function KatalogOpsiPage() {
   }
 
   async function simpanHarga(itemId) {
-    const hargaAngka = Number(inputHarga);
+    const hargaAngka = parseInputRibuan(inputHarga);
     if (isNaN(hargaAngka) || hargaAngka < 0) {
       setNotifikasi({
         terbuka: true,
@@ -404,7 +449,7 @@ export default function KatalogOpsiPage() {
       id_kategori: prod.id_kategori ? String(prod.id_kategori) : "",
       deskripsi: prod.deskripsi || "",
       label_teks: prod.label_teks || "",
-      harga: prod.harga !== undefined && prod.harga !== null ? String(prod.harga) : "",
+      harga: prod.harga !== undefined && prod.harga !== null ? formatInputRibuan(prod.harga) : "",
       aktif: prod.aktif !== false,
       unggulan: Boolean(prod.unggulan),
     });
@@ -472,7 +517,7 @@ export default function KatalogOpsiPage() {
     }
     fd.append("nama", formProduk.nama);
     fd.append("deskripsi", formProduk.deskripsi);
-    fd.append("harga", formProduk.harga);
+    fd.append("harga", String(parseInputRibuan(formProduk.harga)));
     fd.append("aktif", formProduk.aktif ? "true" : "false");
     fd.append("id_kategori", formProduk.id_kategori || "");
     fd.append("label_teks", formProduk.label_teks || "");
@@ -965,7 +1010,7 @@ export default function KatalogOpsiPage() {
 
                             return (
                               <tr
-                                key={item.id}
+                                key={`${item.id}-${item.kode_visual || item.urutan}`}
                                 className={`transition ${
                                   cocokJenisAktif
                                     ? "bg-emerald-50/60 hover:bg-emerald-50"
@@ -993,11 +1038,12 @@ export default function KatalogOpsiPage() {
                                     <div className="flex items-center space-x-1.5">
                                       <span className="text-stone-400 font-bold">Rp</span>
                                       <input
-                                        type="number"
-                                        min="0"
+                                        type="text"
+                                        inputMode="numeric"
                                         value={inputHarga}
-                                        onChange={(e) => setInputHarga(e.target.value)}
-                                        className="w-24 h-7 px-2 border border-stone-300 rounded-lg text-xs font-bold text-stone-800 outline-none focus:border-[#ba2b2b]"
+                                        onChange={(e) => setInputHarga(formatInputRibuan(e.target.value))}
+                                        placeholder="0"
+                                        className="w-28 h-7 px-2 border border-stone-300 rounded-lg text-xs font-bold text-stone-800 outline-none focus:border-[#ba2b2b]"
                                         autoFocus
                                       />
                                     </div>
@@ -1303,12 +1349,12 @@ export default function KatalogOpsiPage() {
                     Harga (Rp) <span className="text-rose-600">*</span>
                   </label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    placeholder="Contoh: 150000"
+                    placeholder="Contoh: 150.000"
                     value={formProduk.harga}
-                    onChange={(e) => setFormProduk({ ...formProduk, harga: e.target.value })}
+                    onChange={(e) => setFormProduk({ ...formProduk, harga: formatInputRibuan(e.target.value) })}
                     className="w-full h-10 px-3.5 rounded-xl border border-[#dfd4bd] bg-white text-xs text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#17382d] focus:ring-1 focus:ring-[#17382d] transition lining-nums"
                   />
                 </div>

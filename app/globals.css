@@ -16,6 +16,12 @@
   display: none;
 }
 
+html:has(.fixed.inset-0[class*="z-"]),
+body:has(.fixed.inset-0[class*="z-"]) {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 /* Hanging Wooden Menu Bar */
 .rantai-kuningan {
   width: 4px;

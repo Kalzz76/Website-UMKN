@@ -3,7 +3,17 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTutup, padaTutup }) {
+export default function ModalPesan({
+  terbuka,
+  judul,
+  pesan,
+  tipe = "info",
+  onTutup,
+  padaTutup,
+  onKonfirmasi,
+  labelKonfirmasi = "Ya, Lanjutkan",
+  labelBatal = "Batal",
+}) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -28,6 +38,8 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
     ikonWarna = "text-emerald-500 fa-circle-check";
   } else if (tipe === "error") {
     ikonWarna = "text-rose-500 fa-circle-exclamation";
+  } else if (tipe === "konfirmasi" || onKonfirmasi) {
+    ikonWarna = "text-amber-500 fa-triangle-exclamation";
   }
 
   const tutup = onTutup || padaTutup;
@@ -49,7 +61,7 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
       }}
-      className="flex items-center justify-center p-4 bg-black/75"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/75"
     >
       <div className="bg-[#fbf6e9] border-2 border-[#e8dfc8] rounded-[24px] p-7 max-w-sm w-full text-center shadow-2xl">
         <div className="mb-4">
@@ -57,13 +69,36 @@ export default function ModalPesan({ terbuka, judul, pesan, tipe = "info", onTut
         </div>
         <h3 className="text-lg font-bold text-[#1d3b2e]">{judul}</h3>
         <p className="mt-2 text-sm text-stone-600 whitespace-pre-line">{pesan}</p>
-        <button
-          type="button"
-          onClick={tutup}
-          className="mt-6 w-full h-[40px] rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white transition text-xs shadow-sm cursor-pointer"
-        >
-          Mengerti
-        </button>
+        {onKonfirmasi ? (
+          <div className="mt-6 flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={tutup}
+              className="flex-1 h-[40px] rounded-xl font-bold border border-[#dcd1be] bg-white hover:bg-stone-50 text-[#1d3b2e] transition text-xs shadow-2xs cursor-pointer"
+            >
+              {labelBatal}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const fn = onKonfirmasi;
+                if (tutup) tutup();
+                fn();
+              }}
+              className="flex-1 h-[40px] rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white transition text-xs shadow-sm cursor-pointer"
+            >
+              {labelKonfirmasi}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={tutup}
+            className="mt-6 w-full h-[40px] rounded-xl font-bold bg-[#ba2b2b] hover:bg-[#a62525] text-white transition text-xs shadow-sm cursor-pointer"
+          >
+            Mengerti
+          </button>
+        )}
       </div>
     </div>,
     document.body

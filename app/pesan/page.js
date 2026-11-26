@@ -6284,6 +6284,9 @@ export default function PesanPage() {
     const desainJson = {
       itemType: S.itemType || "cake",
       nama_kue: (S.customName || "").trim() || null,
+      itemType: S.itemType || "cake",
+      jenis_kue_label:
+        BASE_TYPES.find((b) => b.key === (S.itemType || "cake"))?.label || "Kue Ultah",
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
       size: S.size,
@@ -6397,6 +6400,9 @@ export default function PesanPage() {
     const desainJson = {
       itemType: S.itemType || "cake",
       nama_kue: (S.customName || "").trim() || null,
+      itemType: S.itemType || "cake",
+      jenis_kue_label:
+        BASE_TYPES.find((b) => b.key === (S.itemType || "cake"))?.label || "Kue Ultah",
       nama_template: mode === "tpl" && tplI !== null ? TPL[tplI]?.n : null,
       shape: S.shape,
       size: S.size,
@@ -7001,9 +7007,15 @@ export default function PesanPage() {
                         {renderBaseItemSVG(item.key)}
                         <b>{item.label}</b>
                         <small>{item.desc}</small>
-                        {hargaDasarJenis > 0 && (
-                          <em>{formatRupiah(hargaDasarJenis)}</em>
-                        )}
+                        <small
+                          style={{
+                            marginTop: "4px",
+                            fontWeight: 800,
+                            color: hargaDasarJenis > 0 ? "#9E3B42" : "#7A5E60",
+                          }}
+                        >
+                          {hargaDasarJenis > 0 ? formatRupiah(hargaDasarJenis) : "Termasuk"}
+                        </small>
                       </button>
                     );
                   })}
@@ -8485,6 +8497,34 @@ export default function PesanPage() {
                       Ubah ✎
                     </button>
                   </div>
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      paddingTop: "10px",
+                      borderTop: "1px dashed #EBD5C8",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      fontSize: "12px",
+                      color: "#6E5255",
+                    }}
+                  >
+                    {getLineItems()
+                      .filter((line) => line[1] > 0)
+                      .map((line, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          <span>{line[0]}</span>
+                          <b style={{ color: "#3B2326" }}>{formatRupiah(line[1])}</b>
+                        </div>
+                      ))}
+                  </div>
                   <div className="tot">
                     <span>Total Harga</span>
                     <span>{formatRupiah(totalBiayaPesanan)}</span>
@@ -8689,21 +8729,6 @@ export default function PesanPage() {
                 </small>
               ) : null}
             </div>
-            {step >= 4 && step < 6 && (
-              <button
-                type="button"
-                className="btn prv"
-                disabled={sedangKirim}
-                onClick={handleAddToCart}
-                style={{
-                  borderColor: "#9E3B42",
-                  color: "#9E3B42",
-                  padding: "12px 18px",
-                }}
-              >
-                {sedangKirim ? "Menyimpan..." : "🛒 Masukkan Keranjang"}
-              </button>
-            )}
             <button
               className="btn nxt"
               disabled={sedangKirim}

@@ -641,12 +641,17 @@ export default function PengaturanPage() {
     muatData();
   }
 
-  async function hapusTarifJarak(item) {
-    const yakin = window.confirm(
-      `Apakah Anda yakin ingin menghapus tier jarak sampai ${item.jarak_maks_km} km?`
-    );
-    if (!yakin) return;
+  function hapusTarifJarak(item) {
+    setNotifikasi({
+      terbuka: true,
+      judul: "Hapus Tier Jarak?",
+      pesan: `Apakah Anda yakin ingin menghapus tier jarak sampai ${item.jarak_maks_km} km?`,
+      tipe: "konfirmasi",
+      onKonfirmasi: () => prosesHapusTarifJarak(item),
+    });
+  }
 
+  async function prosesHapusTarifJarak(item) {
     setSedangProsesTarifJarak(true);
     const res = await fetch("/api/pengaturan", {
       method: "POST",
@@ -812,12 +817,17 @@ export default function PengaturanPage() {
     muatData();
   }
 
-  async function hapusZona(zona) {
-    const yakin = window.confirm(
-      `Apakah Anda yakin ingin menghapus zona ${zona.nama}?`
-    );
-    if (!yakin) return;
+  function hapusZona(zona) {
+    setNotifikasi({
+      terbuka: true,
+      judul: "Hapus Zona Ongkir?",
+      pesan: `Apakah Anda yakin ingin menghapus zona ${zona.nama}?`,
+      tipe: "konfirmasi",
+      onKonfirmasi: () => prosesHapusZona(zona),
+    });
+  }
 
+  async function prosesHapusZona(zona) {
     setSedangProsesZona(true);
     const res = await fetch("/api/pengaturan", {
       method: "POST",
@@ -897,12 +907,17 @@ export default function PengaturanPage() {
     muatData();
   }
 
-  async function hapusTanggalTutup(item) {
-    const yakin = window.confirm(
-      `Buka kembali toko untuk tanggal ${formatTanggalIndonesia(item.tanggal)}?`
-    );
-    if (!yakin) return;
+  function hapusTanggalTutup(item) {
+    setNotifikasi({
+      terbuka: true,
+      judul: "Buka Kembali Toko?",
+      pesan: `Buka kembali toko untuk tanggal ${formatTanggalIndonesia(item.tanggal)}?`,
+      tipe: "konfirmasi",
+      onKonfirmasi: () => prosesHapusTanggalTutup(item),
+    });
+  }
 
+  async function prosesHapusTanggalTutup(item) {
     setSedangProsesTanggal(true);
     const res = await fetch("/api/pengaturan", {
       method: "POST",
@@ -2469,8 +2484,9 @@ export default function PengaturanPage() {
           judul={notifikasi.judul}
           pesan={notifikasi.pesan}
           tipe={notifikasi.tipe}
+          onKonfirmasi={notifikasi.onKonfirmasi}
           onTutup={() =>
-            setNotifikasi((prev) => ({ ...prev, terbuka: false }))
+            setNotifikasi((prev) => ({ ...prev, terbuka: false, onKonfirmasi: null }))
           }
         />
       )}

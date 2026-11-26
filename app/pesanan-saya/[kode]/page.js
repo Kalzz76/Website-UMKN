@@ -337,8 +337,9 @@ export default async function DetailTiketPage(props) {
             <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-[#F2E6D8]">
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4">
                 {steps.map((st, idx) => {
-                  const selesai = idx < stepAktif;
-                  const aktif = idx === stepAktif;
+                  const isPesananSelesai = pesanan.status_pesanan === "Selesai";
+                  const selesai = idx < stepAktif || (isPesananSelesai && idx === stepAktif);
+                  const aktif = idx === stepAktif && !isPesananSelesai;
                   return (
                     <div
                       key={st.label}

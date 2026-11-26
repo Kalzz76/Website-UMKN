@@ -21,6 +21,7 @@ export default function DashboardShell({
   const [notifDibaca, setNotifDibaca] = useState(false);
   const [modalKeluarBuka, setModalKeluarBuka] = useState(false);
   const [sedangKeluar, setSedangKeluar] = useState(false);
+  const [sedangRefresh, setSedangRefresh] = useState(false);
   const [mounted, setMounted] = useState(false);
   const notifRef = useRef(null);
   const profilRef = useRef(null);
@@ -438,6 +439,20 @@ export default function DashboardShell({
           </div>
 
           <div className="topbar-user-area">
+            <button
+              type="button"
+              className="btn-bell-notif"
+              title="Refresh Halaman"
+              aria-label="Refresh Halaman"
+              disabled={sedangRefresh}
+              onClick={() => {
+                setSedangRefresh(true);
+                window.location.reload();
+              }}
+            >
+              <i className={`fa-solid fa-arrows-rotate ${sedangRefresh ? "fa-spin" : ""}`}></i>
+            </button>
+
             <div className="notif-dropdown-wrapper" ref={notifRef}>
               <button
                 type="button"

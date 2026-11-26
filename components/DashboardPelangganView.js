@@ -2243,8 +2243,9 @@ export default function DashboardPelangganView({
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                       {dapatkanTahapStepper(pesananUtamaDilacak).map((thp, idx) => {
                         const idxSekarang = indeksTahapStepper(pesananUtamaDilacak.status_pesanan);
-                        const selesai = idxSekarang > idx;
-                        const aktif = idxSekarang === idx;
+                        const isPesananSelesai = pesananUtamaDilacak.status_pesanan === "Selesai";
+                        const selesai = idxSekarang > idx || (isPesananSelesai && idxSekarang === idx);
+                        const aktif = idxSekarang === idx && !isPesananSelesai;
                         const dipilih = tahapStepperDipilih === idx;
 
                         return (

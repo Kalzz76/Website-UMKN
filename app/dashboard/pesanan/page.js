@@ -492,14 +492,19 @@ export default function PesananDashboardPage() {
     muatPesanan();
   }
 
-  async function handleAksiPembayaran(idBayar, aksi) {
-    const konfirm = window.confirm(
-      `Apakah Anda yakin ingin ${
+  function handleAksiPembayaran(idBayar, aksi) {
+    setNotifikasi({
+      terbuka: true,
+      judul: aksi === "konfirmasi" ? "Konfirmasi Pembayaran?" : "Tolak Pembayaran?",
+      pesan: `Apakah Anda yakin ingin ${
         aksi === "konfirmasi" ? "mengonfirmasi" : "menolak"
-      } pembayaran ini?`
-    );
-    if (!konfirm) return;
+      } pembayaran ini?`,
+      tipe: "konfirmasi",
+      onKonfirmasi: () => prosesAksiPembayaran(idBayar, aksi),
+    });
+  }
 
+  async function prosesAksiPembayaran(idBayar, aksi) {
     setSedangProses(true);
     const res = await fetch(`/api/pembayaran/${idBayar}`, {
       method: "POST",
@@ -532,16 +537,21 @@ export default function PesananDashboardPage() {
     muatPesanan();
   }
 
-  async function handlePelunasanTunai() {
+  function handlePelunasanTunai() {
     if (!detailPesanan) return;
     const sisa = Math.max(0, detailPesanan.total_bayar - detailPesanan.jumlah_terbayar);
     if (sisa <= 0) return;
 
-    const konfirm = window.confirm(
-      `Catat pelunasan tunai sebesar ${formatRupiah(sisa)} untuk pesanan ${detailPesanan.kode_pesanan}?`
-    );
-    if (!konfirm) return;
+    setNotifikasi({
+      terbuka: true,
+      judul: "Catat Pelunasan Tunai?",
+      pesan: `Catat pelunasan tunai sebesar ${formatRupiah(sisa)} untuk pesanan ${detailPesanan.kode_pesanan}?`,
+      tipe: "konfirmasi",
+      onKonfirmasi: () => prosesPelunasanTunai(sisa),
+    });
+  }
 
+  async function prosesPelunasanTunai(sisa) {
     setSedangProses(true);
     const formData = new FormData();
     formData.append("id_pesanan", detailPesanan.id);
@@ -2120,7 +2130,8 @@ export default function PesananDashboardPage() {
         judul={notifikasi.judul}
         pesan={notifikasi.pesan}
         tipe={notifikasi.tipe}
-        padaTutup={() => setNotifikasi({ ...notifikasi, terbuka: false })}
+        onKonfirmasi={notifikasi.onKonfirmasi}
+        padaTutup={() => setNotifikasi({ ...notifikasi, terbuka: false, onKonfirmasi: null })}
       />
     </div>
   );
