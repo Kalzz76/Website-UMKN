@@ -4299,6 +4299,11 @@ export default function PesanPage() {
       const {
         data: { user: u },
       } = await supabase.auth.getUser();
+      if (!u) {
+        allowLeaveRef.current = true;
+        router.replace("/masuk?ke=/pesan");
+        return;
+      }
       if (u) {
         setUser(u);
         const { data: p } = await supabase
