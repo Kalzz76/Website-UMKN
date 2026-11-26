@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
+import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
 
 export async function GET() {
   const supabase = getSupabaseAdmin();
@@ -19,12 +20,20 @@ export async function GET() {
   const daftar = (data || []).map((p) => {
     let fotoUrl = null;
     if (p.foto) {
-      if (p.foto.startsWith("http://") || p.foto.startsWith("https://")) {
+      if (
+        p.foto.startsWith("http://") ||
+        p.foto.startsWith("https://") ||
+        p.foto.startsWith("/images/") ||
+        p.foto.startsWith("/assets/")
+      ) {
         fotoUrl = p.foto;
       } else {
         const cleanPath = p.foto.replace(/^\/+/, "");
         fotoUrl = `${baseUrl}/${cleanPath}`;
       }
+    }
+    if (!fotoUrl) {
+      fotoUrl = getFotoProdukFallback(p.nama);
     }
     return {
       id: p.id,

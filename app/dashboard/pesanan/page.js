@@ -117,7 +117,7 @@ export default function PesananDashboardPage() {
             .in("id_pesanan", ids),
           supabase
             .from("pesanan_item")
-            .select("id_pesanan, jenis, nama_item, jumlah, foto_preview, produk(foto)")
+            .select("id_pesanan, jenis, nama_item, jumlah, foto_preview, foto_bentuk_kustom, produk(foto)")
             .in("id_pesanan", ids)
             .order("urutan", { ascending: true }),
         ]);
@@ -180,24 +180,32 @@ export default function PesananDashboardPage() {
           isiMap[p.id] = ringkas;
 
           if (orderItems.length > 0) {
-            const first = orderItems[0];
-            if (first.jenis === "Custom" && first.foto_preview) {
-              pathsToSign.push(first.foto_preview);
-              pathToOrderMap[first.foto_preview] = p.id;
-            } else if ((first.jenis === "Katalog" || first.jenis === "Siap") && first.produk?.foto) {
-              const f = first.produk.foto;
-              if (f.startsWith("http://") || f.startsWith("https://")) {
+            const customWithPhoto = orderItems.find(
+              (it) => it.jenis === "Custom" && (it.foto_preview || it.foto_bentuk_kustom)
+            );
+            const katalogWithPhoto = orderItems.find(
+              (it) => (it.jenis === "Katalog" || it.jenis === "Siap") && it.produk?.foto
+            );
+            if (customWithPhoto) {
+              const pPath = customWithPhoto.foto_preview || customWithPhoto.foto_bentuk_kustom;
+              pathsToSign.push(pPath);
+              pathToOrderMap[pPath] = p.id;
+            } else if (katalogWithPhoto) {
+              const f = katalogWithPhoto.produk.foto;
+              if (f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/images/")) {
                 thumbObj[p.id] = f;
               } else {
                 thumbObj[p.id] = `${basePublikUrl}/${f.replace(/^\/+/, "")}`;
               }
-            } else if (p.foto_preview) {
-              pathsToSign.push(p.foto_preview);
-              pathToOrderMap[p.foto_preview] = p.id;
+            } else if (p.foto_preview || p.foto_bentuk_kustom) {
+              const pPath = p.foto_preview || p.foto_bentuk_kustom;
+              pathsToSign.push(pPath);
+              pathToOrderMap[pPath] = p.id;
             }
-          } else if (p.foto_preview) {
-            pathsToSign.push(p.foto_preview);
-            pathToOrderMap[p.foto_preview] = p.id;
+          } else if (p.foto_preview || p.foto_bentuk_kustom) {
+            const pPath = p.foto_preview || p.foto_bentuk_kustom;
+            pathsToSign.push(pPath);
+            pathToOrderMap[pPath] = p.id;
           }
         }
 
@@ -891,9 +899,11 @@ export default function PesananDashboardPage() {
                       )}
                     </div>
 
-                    {(it.fotoBentukUrl || it.fotoGambarUrl) && (
+                    {(it.fotoBentukUrl ||
+                      it.fotoGambarUrl ||
+                      (itDesain?.shape === "custom" && Array.isArray(itDesain?.cpts))) && (
                       <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-                        {it.fotoBentukUrl && (
+                        {it.fotoBentukUrl ? (
                           <div className="space-y-0.5">
                             <span className="text-[9px] font-bold text-stone-400 block uppercase">
                               Bentuk Kustom
@@ -907,11 +917,27 @@ export default function PesananDashboardPage() {
                               <img
                                 src={it.fotoBentukUrl}
                                 alt="Bentuk"
-                                className="w-full h-12 object-contain rounded-lg border border-[#e0d5b8] bg-white p-0.5"
+                                className="w-full h-16 object-contain rounded-lg border border-[#e0d5b8] bg-white p-0.5"
                               />
                             </a>
                           </div>
-                        )}
+                        ) : itDesain?.shape === "custom" && Array.isArray(itDesain?.cpts) ? (
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] font-bold text-stone-400 block uppercase">
+                              Sketsa Bentuk Kustom
+                            </span>
+                            <div className="w-full h-16 rounded-lg border border-[#e0d5b8] bg-white p-1 flex items-center justify-center">
+                              <svg viewBox="-1.2 -1.2 2.4 2.4" className="w-full h-full">
+                                <polygon
+                                  points={itDesain.cpts.map((pt) => `${pt[0]},${pt[1]}`).join(" ")}
+                                  fill={itDesain.icing || "#F1DBD0"}
+                                  stroke="#A36361"
+                                  strokeWidth="0.08"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        ) : null}
                         {it.fotoGambarUrl && (
                           <div className="space-y-0.5">
                             <span className="text-[9px] font-bold text-stone-400 block uppercase">

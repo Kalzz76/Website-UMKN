@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { formatRupiah } from "@/lib/format";
 import ModalPesan from "@/components/ModalPesan";
+import GambarProduk from "@/components/GambarProduk";
 
 export default function KatalogOpsiPage() {
   const router = useRouter();
@@ -902,21 +903,11 @@ export default function KatalogOpsiPage() {
                     <tr key={p.id} className="hover:bg-[#fbf8f1] transition">
                       <td className="py-2.5 px-3">
                         <div className="w-12 h-12 rounded-xl bg-stone-100 border border-[#dfd4bd] overflow-hidden flex items-center justify-center flex-shrink-0">
-                          {p.fotoUrl && !brokenImgMap[p.id] ? (
-                            <img
-                              src={p.fotoUrl}
-                              alt={p.nama}
-                              onError={() =>
-                                setBrokenImgMap((prev) => ({
-                                  ...prev,
-                                  [p.id]: true,
-                                }))
-                              }
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <i className="fa-solid fa-cake-candles text-stone-300 text-lg" />
-                          )}
+                          <GambarProduk
+                            src={p.fotoUrl}
+                            nama={p.nama}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       </td>
                       <td className="py-2.5 px-3">

@@ -458,6 +458,11 @@ export async function POST(request) {
   }
 
   const filesDipindahkan = [];
+  let firstCustomPreview = null;
+  let firstCustomBentuk = null;
+  let firstCustomGambar = null;
+  let firstCustomTulisan = null;
+  let firstCustomDesain = null;
 
   try {
     for (let i = 0; i < hasilHitung.rincian.length; i++) {
@@ -492,6 +497,22 @@ export async function POST(request) {
         }
         if (rawItem.foto_gambar_kustom) {
           pathGambarBaru = await pindahkanFile(rawItem.foto_gambar_kustom, "gambar");
+        }
+
+        if (!firstCustomPreview && (pathPreviewBaru || rawItem.foto_preview)) {
+          firstCustomPreview = pathPreviewBaru || rawItem.foto_preview;
+        }
+        if (!firstCustomBentuk && (pathBentukBaru || rawItem.foto_bentuk_kustom)) {
+          firstCustomBentuk = pathBentukBaru || rawItem.foto_bentuk_kustom;
+        }
+        if (!firstCustomGambar && (pathGambarBaru || rawItem.foto_gambar_kustom)) {
+          firstCustomGambar = pathGambarBaru || rawItem.foto_gambar_kustom;
+        }
+        if (!firstCustomTulisan && rawItem.tulisan_kue) {
+          firstCustomTulisan = rawItem.tulisan_kue;
+        }
+        if (!firstCustomDesain && rawItem.desain_json) {
+          firstCustomDesain = rawItem.desain_json;
         }
       }
 
@@ -540,6 +561,25 @@ export async function POST(request) {
           });
         }
       }
+    }
+
+    if (
+      firstCustomPreview ||
+      firstCustomBentuk ||
+      firstCustomGambar ||
+      firstCustomTulisan ||
+      firstCustomDesain
+    ) {
+      await supabase
+        .from("pesanan")
+        .update({
+          foto_preview: firstCustomPreview,
+          foto_bentuk_kustom: firstCustomBentuk,
+          foto_gambar_kustom: firstCustomGambar,
+          tulisan_kue: firstCustomTulisan,
+          desain_json: firstCustomDesain,
+        })
+        .eq("id", pesananBaru.id);
     }
 
     await supabase.from("riwayat_pesanan").insert({
