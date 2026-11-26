@@ -345,8 +345,7 @@ export default function KatalogOpsiPage() {
   }
 
   function tambahBarisResep() {
-    const bahanTersedia = daftarBahan[0]?.id || "";
-    setBarisResep((prev) => [...prev, { id_bahan: bahanTersedia, jumlah: 1 }]);
+    setBarisResep((prev) => [...prev, { id_bahan: "", jumlah: "" }]);
   }
 
   function ubahBarisResep(idx, field, val) {
