@@ -6972,6 +6972,14 @@ export default function PesanPage() {
                 <div className="grid">
                   {BASE_TYPES.map((item) => {
                     const isSelected = (S.itemType || "cake") === item.key;
+                    const optJenis = grupJenis
+                      ? daftarItem.find(
+                          (x) =>
+                            x.id_grup === grupJenis.id &&
+                            x.kode_visual === item.key
+                        )
+                      : null;
+                    const hargaJenis = Number(optJenis?.harga || 0);
                     return (
                       <button
                         key={item.key}
@@ -7023,6 +7031,15 @@ export default function PesanPage() {
                         {renderBaseItemSVG(item.key)}
                         <b>{item.label}</b>
                         <small>{item.desc}</small>
+                        <small
+                          style={{
+                            marginTop: "4px",
+                            fontWeight: 800,
+                            color: hargaJenis > 0 ? "#9E3B42" : "#7A5E60",
+                          }}
+                        >
+                          {hargaJenis > 0 ? `+${formatRupiah(hargaJenis)}` : "Termasuk"}
+                        </small>
                       </button>
                     );
                   })}
@@ -8497,6 +8514,34 @@ export default function PesanPage() {
                     >
                       Ubah ✎
                     </button>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      paddingTop: "10px",
+                      borderTop: "1px dashed #EBD5C8",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      fontSize: "12px",
+                      color: "#6E5255",
+                    }}
+                  >
+                    {getLineItems()
+                      .filter((line) => line[1] > 0)
+                      .map((line, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          <span>{line[0]}</span>
+                          <b style={{ color: "#3B2326" }}>{formatRupiah(line[1])}</b>
+                        </div>
+                      ))}
                   </div>
                   <div className="tot">
                     <span>Total Harga</span>
