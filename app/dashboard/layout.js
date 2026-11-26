@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseServer } from "@/lib/supabaseServer";
+import { hitungKebutuhanBahan } from "@/lib/resepKalkulator";
 import DashboardShell from "@/components/DashboardShell";
 import "./dashboard.css";
 
@@ -62,14 +63,22 @@ export default async function DashboardLayout({ children }) {
     .in("status_pesanan", ["Diterima", "Sedang Dibuat", "Siap"])
     .is("stok_dipotong_pada", null);
 
-  const kebutuhanMap = {};
+  let kebutuhanMap = {};
   if (pesananAktif && pesananAktif.length > 0) {
     const idList = pesananAktif.map((p) => p.id);
-    const { data: pilihanList } = await supabase
-      .from("pesanan_pilihan")
-      .select("id_item, jumlah")
-      .in("id_pesanan", idList)
-      .not("id_item", "is", null);
+    const [{ data: itemsList }, { data: pilihanList }] = await Promise.all([
+      supabase
+        .from("pesanan_item")
+        .select("id, id_pesanan, jenis, jumlah")
+        .in("id_pesanan", idList),
+      supabase
+        .from("pesanan_pilihan")
+        .select(
+          "id_pesanan, id_pesanan_item, id_item, nama_grup, nama_item, kode_visual, peran_visual, jumlah"
+        )
+        .in("id_pesanan", idList)
+        .not("id_item", "is", null),
+    ]);
 
     const validPilihan = pilihanList || [];
     const itemIds = Array.from(new Set(validPilihan.map((p) => p.id_item)));
@@ -82,19 +91,19 @@ export default async function DashboardLayout({ children }) {
       const resepPerItem = new Map();
       for (let i = 0; i < (resepList || []).length; i++) {
         const r = resepList[i];
-        if (!resepPerItem.has(r.id_item)) resepPerItem.set(r.id_item, []);
-        resepPerItem.get(r.id_item).push(r);
+        if (!resepPerItem.has(Number(r.id_item))) resepPerItem.set(Number(r.id_item), []);
+        resepPerItem.get(Number(r.id_item)).push(r);
       }
 
-      for (let i = 0; i < validPilihan.length; i++) {
-        const p = validPilihan[i];
-        const rItems = resepPerItem.get(p.id_item) || [];
-        const qty = Number(p.jumlah) || 1;
-        for (let j = 0; j < rItems.length; j++) {
-          const r = rItems[j];
-          kebutuhanMap[r.id_bahan] = (kebutuhanMap[r.id_bahan] || 0) + Number(r.jumlah) * qty;
-        }
-      }
+      const pesananItemMap = new Map(
+        (itemsList || []).map((it) => [Number(it.id), it])
+      );
+      const { kebutuhanPerBahan } = hitungKebutuhanBahan({
+        pilihanList: validPilihan,
+        pesananItemMap,
+        resepPerItemMap: resepPerItem,
+      });
+      kebutuhanMap = kebutuhanPerBahan;
     }
   }
 

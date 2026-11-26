@@ -9,6 +9,11 @@ import {
   ambilKonfigurasiJenisKue,
   ambilGrupUntukJenisKue,
 } from "@/lib/opsiStudio";
+import {
+  isGrupPengaliUkuran,
+  getFaktorPengaliUkuran,
+  formatFaktorPengali,
+} from "@/lib/resepKalkulator";
 import ModalPesan from "@/components/ModalPesan";
 import GambarProduk from "@/components/GambarProduk";
 
@@ -312,8 +317,12 @@ export default function KatalogOpsiPage() {
     });
   }
 
-  async function bukaModalResep(item) {
-    setItemResepAktif(item);
+  async function bukaModalResep(item, grup) {
+    setItemResepAktif({
+      ...item,
+      _grupNama: grup?.nama || "",
+      _peranVisual: grup?.peran_visual || "",
+    });
     setModalResepBuka(true);
     setSedangMemuatResep(true);
 
@@ -1007,6 +1016,10 @@ export default function KatalogOpsiPage() {
                             const sedangSimpan = sedangSimpanId === item.id;
                             const cocokJenisAktif =
                               isGrupJenis && item.kode_visual === jenisKueDipilih;
+                            const isPengali = isGrupPengaliUkuran(grup.nama, grup.peran_visual);
+                            const faktorPengali = isPengali
+                              ? getFaktorPengaliUkuran(grup.nama, item.kode_visual, item.nama)
+                              : 1;
 
                             return (
                               <tr
@@ -1026,6 +1039,14 @@ export default function KatalogOpsiPage() {
                                     {cocokJenisAktif && (
                                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#17382d] text-white">
                                         Sedang Dilihat
+                                      </span>
+                                    )}
+                                    {isPengali && (
+                                      <span
+                                        className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200"
+                                        title="Otomatis mengalikan resep adonan, rasa, & topping saat dipesan"
+                                      >
+                                        Pengali Resep {formatFaktorPengali(faktorPengali)}
                                       </span>
                                     )}
                                   </div>
@@ -1075,16 +1096,6 @@ export default function KatalogOpsiPage() {
                                     </div>
                                   ) : (
                                     <div className="inline-flex items-center space-x-1">
-                                      {isGrupJenis && !cocokJenisAktif && item.kode_visual && (
-                                        <button
-                                          type="button"
-                                          onClick={() => pilihJenisKue(item.kode_visual)}
-                                          className="h-7 px-2.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[#17382d] font-bold text-[11px] transition cursor-pointer inline-flex items-center space-x-1"
-                                        >
-                                          <i className="fa-solid fa-sliders text-[10px]" />
-                                          <span>Atur Opsi</span>
-                                        </button>
-                                      )}
                                       <button
                                         type="button"
                                         onClick={() => mulaiEditHarga(item)}
@@ -1095,12 +1106,17 @@ export default function KatalogOpsiPage() {
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => bukaModalResep(item)}
+                                        onClick={() => bukaModalResep(item, grup)}
                                         className="h-7 px-2.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition cursor-pointer inline-flex items-center space-x-1"
+                                        title={
+                                          isPengali
+                                            ? "Opsional: tambahkan bahan kemasan (box/toples) untuk paket ini"
+                                            : "Atur takaran bahan baku per 1 satuan/ukuran dasar"
+                                        }
                                       >
-                                        <i className="fa-solid fa-wheat-awn text-[10px]" />
+                                        <i className={`fa-solid ${isPengali ? "fa-box-open" : "fa-wheat-awn"} text-[10px]`} />
                                         <span>
-                                          Resep
+                                          {isPengali ? "Kemasan" : "Resep"}
                                           {jumlahResepMap[item.id] > 0
                                             ? ` (${jumlahResepMap[item.id]})`
                                             : ""}
@@ -1732,10 +1748,30 @@ export default function KatalogOpsiPage() {
             <div className="flex items-center justify-between pb-3.5 border-b border-[#dfd4bd]">
               <div>
                 <h3 className="text-base font-bold text-[#1d3b2e]">
-                  Resep Bahan: {itemResepAktif?.nama}
+                  {isGrupPengaliUkuran(itemResepAktif?._grupNama, itemResepAktif?._peranVisual)
+                    ? `Kemasan / Bahan Tambahan: ${itemResepAktif?.nama}`
+                    : `Resep Bahan: ${itemResepAktif?.nama}`}
                 </h3>
-                <p className="text-[11px] text-stone-500">
-                  Tentukan bahan dan takaran yang dibutuhkan untuk 1 porsi opsi ini.
+                <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                  {isGrupPengaliUkuran(itemResepAktif?._grupNama, itemResepAktif?._peranVisual) ? (
+                    <>
+                      Opsi ini otomatis mengalikan bahan <b>Jenis Kue, Rasa, &amp; Topping</b> sebesar{" "}
+                      <span className="font-bold text-amber-800">
+                        {formatFaktorPengali(
+                          getFaktorPengaliUkuran(
+                            itemResepAktif?._grupNama,
+                            itemResepAktif?.kode_visual,
+                            itemResepAktif?.nama
+                          )
+                        )}
+                      </span>
+                      . Di sini cukup isi bahan kemasan (mis. box/toples) jika diperlukan.
+                    </>
+                  ) : (
+                    <>
+                      Isi takaran bahan untuk <b>1 satuan / ukuran dasar</b>. Sistem otomatis mengalikan dengan pilihan Ukuran / Porsi / Jumlah saat dipesan.
+                    </>
+                  )}
                 </p>
               </div>
               <button

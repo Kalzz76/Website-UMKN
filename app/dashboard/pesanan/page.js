@@ -1264,6 +1264,21 @@ export default function PesananDashboardPage() {
                   </div>
                 )}
 
+                {infoStokPesanan?.ringkasanPengali?.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-stone-500">Pengali Resep:</span>
+                    {infoStokPesanan.ringkasanPengali.map((pg, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200"
+                      >
+                        {pg.nama_item} (×{pg.faktor}
+                        {pg.qty_item > 1 ? ` × ${pg.qty_item} item` : ""})
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {infoStokPesanan?.daftarKebutuhan?.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full text-[10px] text-left">

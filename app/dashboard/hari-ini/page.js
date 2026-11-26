@@ -61,6 +61,7 @@ export default function HariIniDashboardPage() {
   const [drawerBuka, setDrawerBuka] = useState(false);
   const [drawerKode, setDrawerKode] = useState(null);
   const [detailPesanan, setDetailPesanan] = useState(null);
+  const [detailStok, setDetailStok] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const [notifikasi, setNotifikasi] = useState({
@@ -145,16 +146,25 @@ export default function HariIniDashboardPage() {
     setDrawerKode(kode);
     setDrawerBuka(true);
     setDetailLoading(true);
+    setDetailStok(null);
     try {
-      const res = await fetch(`/api/pesanan/${kode}`);
+      const [res, resStok] = await Promise.all([
+        fetch(`/api/pesanan/${kode}`),
+        fetch(`/api/pesanan/${kode}/stok`),
+      ]);
       const json = await res.json();
       if (res.ok && json.sukses) {
         setDetailPesanan(json);
       } else {
         setDetailPesanan(null);
       }
+      if (resStok.ok) {
+        const jsonStok = await resStok.json();
+        setDetailStok(jsonStok);
+      }
     } catch {
       setDetailPesanan(null);
+      setDetailStok(null);
     } finally {
       setDetailLoading(false);
     }
@@ -164,6 +174,7 @@ export default function HariIniDashboardPage() {
     setDrawerBuka(false);
     setDrawerKode(null);
     setDetailPesanan(null);
+    setDetailStok(null);
   }
 
   function ubahStatusPesanan(kodePesanan, statusBaru) {
@@ -1146,6 +1157,95 @@ export default function HariIniDashboardPage() {
                       </div>
                     )}
                   </div>
+
+                  {detailStok && detailStok.adaCustom !== false && (
+                    <div className="bg-white rounded-2xl border border-[#dfd4bd] p-4 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                          Kebutuhan Bahan Baku
+                        </span>
+                        {detailStok.pesanan?.stok_dipotong_pada ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Stok Sudah Dipotong
+                          </span>
+                        ) : (detailStok.daftarKebutuhan || []).some((b) => b.kurang > 0) ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            Ada Bahan Kurang
+                          </span>
+                        ) : (detailStok.daftarKebutuhan?.length || 0) > 0 ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Stok Cukup
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {detailStok.ringkasanPengali?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {detailStok.ringkasanPengali.map((pg, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200"
+                            >
+                              <i className="fa-solid fa-xmark text-[8px] opacity-70" />
+                              <span>
+                                {pg.nama_item} (×{pg.faktor}
+                                {pg.qty_item > 1 ? ` × ${pg.qty_item} item` : ""})
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {detailStok.daftarKebutuhan?.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-[11px] text-left">
+                            <thead className="bg-[#ede2cd] text-[#1d3b2e] uppercase text-[10px] font-bold border-y border-[#dfd4bd]">
+                              <tr>
+                                <th className="py-1.5 px-2">Bahan</th>
+                                <th className="py-1.5 px-2 text-center">Butuh</th>
+                                <th className="py-1.5 px-2 text-center">Stok</th>
+                                <th className="py-1.5 px-2 text-right">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#ede2cd]">
+                              {detailStok.daftarKebutuhan.map((b) => (
+                                <tr key={b.id_bahan}>
+                                  <td className="py-1.5 px-2 font-bold text-stone-800">{b.nama}</td>
+                                  <td className="py-1.5 px-2 text-center font-semibold text-stone-700 tabular-nums">
+                                    {formatAngka(b.dibutuhkan)} {b.satuan}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-center font-semibold text-stone-500 tabular-nums">
+                                    {formatAngka(b.stok_sekarang)} {b.satuan}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-right">
+                                    {b.kurang > 0 ? (
+                                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                                        Kurang {formatAngka(b.kurang)}
+                                      </span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                        Cukup
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-stone-400 italic">
+                          Belum ada resep bahan yang diatur untuk opsi pesanan ini.
+                        </p>
+                      )}
+
+                      {detailStok.pilihanTanpaResep > 0 && (
+                        <p className="text-[10px] text-amber-800 bg-[#fbf6e9] border border-[#e0d5b8] rounded-xl px-2.5 py-1.5">
+                          {detailStok.pilihanTanpaResep} opsi bahan belum memiliki resep di Katalog &amp; Opsi.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="bg-white rounded-2xl border border-[#dfd4bd] p-4 space-y-2 text-xs">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-1">

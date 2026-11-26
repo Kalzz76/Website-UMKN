@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cekRole } from "@/lib/cekRole";
 import { getSupabaseAdmin } from "@/lib/supabaseServer";
+import { hitungKebutuhanBahan } from "@/lib/resepKalkulator";
 
 export async function GET() {
   const { profil, diizinkan } = await cekRole(["admin", "staf"]);
@@ -16,24 +17,27 @@ export async function GET() {
     .in("status_pesanan", ["Diterima", "Sedang Dibuat", "Siap"])
     .is("stok_dipotong_pada", null);
 
-  const kebutuhanAktifMap = {};
+  let kebutuhanAktifMap = {};
 
   if (pesananAktif && pesananAktif.length > 0) {
     const rawIds = pesananAktif.map((p) => p.id);
     const { data: allItems } = await supabase
       .from("pesanan_item")
-      .select("id_pesanan, jenis")
+      .select("id, id_pesanan, jenis, jumlah")
       .in("id_pesanan", rawIds);
 
     const nonCustomOrderIds = new Set();
+    const pesananItemMap = new Map();
     if (allItems && allItems.length > 0) {
-      const pesananItemMap = {};
+      const pesananItemByOrder = {};
       for (let i = 0; i < allItems.length; i++) {
-        const pid = allItems[i].id_pesanan;
-        if (!pesananItemMap[pid]) pesananItemMap[pid] = [];
-        pesananItemMap[pid].push(allItems[i]);
+        const it = allItems[i];
+        pesananItemMap.set(Number(it.id), it);
+        const pid = it.id_pesanan;
+        if (!pesananItemByOrder[pid]) pesananItemByOrder[pid] = [];
+        pesananItemByOrder[pid].push(it);
       }
-      for (const [pid, its] of Object.entries(pesananItemMap)) {
+      for (const [pid, its] of Object.entries(pesananItemByOrder)) {
         const hasCustom = its.some((it) => it.jenis === "Custom" || it.jenis === "custom");
         if (!hasCustom) {
           nonCustomOrderIds.add(Number(pid));
@@ -45,7 +49,7 @@ export async function GET() {
 
     const { data: pilihanList } = idPesananList.length > 0 ? await supabase
       .from("pesanan_pilihan")
-      .select("id, id_item, nama_item, nama_grup, kode_visual, jumlah")
+      .select("id, id_pesanan, id_pesanan_item, id_item, nama_item, nama_grup, kode_visual, peran_visual, jumlah")
       .in("id_pesanan", idPesananList) : { data: [] };
 
     const validPilihan = pilihanList || [];
@@ -53,17 +57,22 @@ export async function GET() {
     if (butuhLookupItem) {
       const [{ data: allOpsi }, { data: allGrup }] = await Promise.all([
         supabase.from("opsi_item").select("id, nama, kode_visual, id_grup"),
-        supabase.from("grup_opsi").select("id, nama"),
+        supabase.from("grup_opsi").select("id, nama, peran_visual"),
       ]);
 
-      const grupMap = new Map((allGrup || []).map((g) => [g.id, g.nama?.trim().toLowerCase()]));
+      const grupMap = new Map(
+        (allGrup || []).map((g) => [
+          g.id,
+          { nama: g.nama?.trim().toLowerCase(), peran_visual: g.peran_visual },
+        ])
+      );
 
       for (let i = 0; i < validPilihan.length; i++) {
         const p = validPilihan[i];
         if (!p.id_item) {
           const match = (allOpsi || []).find((o) => {
-            const gNama = grupMap.get(o.id_grup);
-            if (gNama !== p.nama_grup?.trim().toLowerCase()) return false;
+            const gInfo = grupMap.get(o.id_grup);
+            if (gInfo?.nama !== p.nama_grup?.trim().toLowerCase()) return false;
             if (p.kode_visual && o.kode_visual && p.kode_visual.trim().toLowerCase() === o.kode_visual.trim().toLowerCase()) {
               return true;
             }
@@ -71,6 +80,9 @@ export async function GET() {
           });
           if (match) {
             p.id_item = match.id;
+            if (!p.peran_visual) {
+              p.peran_visual = grupMap.get(match.id_grup)?.peran_visual || null;
+            }
           }
         }
       }
@@ -87,23 +99,18 @@ export async function GET() {
       const resepPerItem = new Map();
       for (let i = 0; i < (resepList || []).length; i++) {
         const r = resepList[i];
-        if (!resepPerItem.has(r.id_item)) {
-          resepPerItem.set(r.id_item, []);
+        if (!resepPerItem.has(Number(r.id_item))) {
+          resepPerItem.set(Number(r.id_item), []);
         }
-        resepPerItem.get(r.id_item).push(r);
+        resepPerItem.get(Number(r.id_item)).push(r);
       }
 
-      for (let i = 0; i < validPilihan.length; i++) {
-        const p = validPilihan[i];
-        const rItems = resepPerItem.get(p.id_item) || [];
-        const qtyPilihan = Number(p.jumlah) || 1;
-
-        for (let j = 0; j < rItems.length; j++) {
-          const r = rItems[j];
-          const totalKebutuhan = Number(r.jumlah) * qtyPilihan;
-          kebutuhanAktifMap[r.id_bahan] = Math.round(((kebutuhanAktifMap[r.id_bahan] || 0) + totalKebutuhan) * 1000) / 1000;
-        }
-      }
+      const { kebutuhanPerBahan } = hitungKebutuhanBahan({
+        pilihanList: validPilihan,
+        pesananItemMap,
+        resepPerItemMap: resepPerItem,
+      });
+      kebutuhanAktifMap = kebutuhanPerBahan;
     }
   }
 
