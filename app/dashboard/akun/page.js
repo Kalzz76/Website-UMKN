@@ -507,7 +507,7 @@ export default function AkunDashboardPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalTambahBuka(false);
           }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-stone-900/60 backdrop-blur-xs overflow-hidden"
+          className="fixed inset-0 !mt-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-stone-900/60 backdrop-blur-xs overflow-hidden"
         >
           <div className="relative bg-[#fbf6e9] border border-[#dcd3c1] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
@@ -647,7 +647,7 @@ export default function AkunDashboardPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalEditBuka(false);
           }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-stone-900/60 backdrop-blur-xs overflow-hidden"
+          className="fixed inset-0 !mt-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-stone-900/60 backdrop-blur-xs overflow-hidden"
         >
           <div className="relative bg-[#fbf6e9] border border-[#dcd3c1] rounded-[24px] max-w-md w-full shadow-2xl flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-[#e8dfc8] bg-[#fbf6e9]">
