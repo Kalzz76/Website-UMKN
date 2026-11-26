@@ -4300,9 +4300,7 @@ export default function PesanPage() {
         data: { user: u },
       } = await supabase.auth.getUser();
       if (!u) {
-        allowLeaveRef.current = true;
-        router.replace("/masuk?ke=/pesan");
-        return;
+        setButuhLoginModal(true);
       }
       if (u) {
         setUser(u);
@@ -4374,6 +4372,7 @@ export default function PesanPage() {
   }, []);
 
   const [pendingLeaveHref, setPendingLeaveHref] = useState(null);
+  const [butuhLoginModal, setButuhLoginModal] = useState(false);
   const allowLeaveRef = useRef(false);
 
   useEffect(() => {
@@ -8829,6 +8828,93 @@ export default function PesanPage() {
       )}
 
       <PortalLedge />
+
+      {butuhLoginModal && (
+        <div
+          className="fixed inset-0 z-[10000]"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(42, 22, 18, 0.62)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              background: "#FFFDF9",
+              border: "2px solid #D3A29D",
+              borderRadius: "24px",
+              padding: "26px 24px",
+              boxShadow: "0 20px 50px rgba(42, 22, 18, 0.28)",
+              color: "#3B2326",
+              textAlign: "center",
+            }}
+          >
+            <img
+              src="/assets/images/Icon.png"
+              alt="Cravely"
+              style={{
+                width: "52px",
+                height: "52px",
+                objectFit: "contain",
+                margin: "0 auto 10px",
+                display: "block",
+              }}
+            />
+            <h3
+              style={{
+                fontFamily: "'Baloo 2', sans-serif",
+                fontSize: "21px",
+                fontWeight: 800,
+                marginBottom: "8px",
+                color: "#3B2326",
+              }}
+            >
+              Masuk Terlebih Dahulu
+            </h3>
+            <p
+              style={{
+                fontSize: "13.5px",
+                lineHeight: 1.55,
+                color: "#6E5255",
+                marginBottom: "22px",
+              }}
+            >
+              Silakan masuk atau buat akun terlebih dahulu untuk mulai
+              mengkreasikan kue custom impianmu di Cravely Cake Studio.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn sec"
+                onClick={() => {
+                  allowLeaveRef.current = true;
+                  router.push("/");
+                }}
+              >
+                Kembali ke Home
+              </button>
+              <button
+                type="button"
+                className="btn pri"
+                onClick={() => {
+                  allowLeaveRef.current = true;
+                  router.push("/masuk?ke=/pesan");
+                }}
+              >
+                Masuk / Daftar Sekarang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pendingLeaveHref && (
         <div
