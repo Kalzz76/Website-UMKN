@@ -1,82 +1,121 @@
 import Link from "next/link";
+import { ambilTokoPublik } from "@/lib/tokoPublik";
+import { DynamicIslandNavbar } from "@/components/patisserie/DynamicIslandNavbar";
+import { PatisserieFooter } from "@/components/patisserie/PatisserieFooter";
+import {
+  BotanicalTopLeft,
+  BotanicalTopRight,
+} from "@/components/patisserie/BotanicalBranchDecor";
 
-export const metadata = {
-  title: "Kebijakan Pembatalan & Refund",
-  description: "Kebijakan pembatalan pesanan kue dan pengembalian dana Cravely Bakery.",
-};
+export const revalidate = 60;
 
-export default function KebijakanPembatalanPage() {
+export async function generateMetadata() {
+  const toko = await ambilTokoPublik();
+  const nama = toko.nama_toko || "Cravely Patisserie";
+  return {
+    title: `Kebijakan Pembatalan & Refund - ${nama}`,
+    description: `Kebijakan pembatalan pesanan kue dan pengembalian dana di ${nama}.`,
+  };
+}
+
+export default async function KebijakanPembatalanPage() {
+  const toko = await ambilTokoPublik();
+  const namaToko = toko.nama_toko || "toko kami";
+  const batasBayarJam = toko.batas_bayar_jam !== null ? `${toko.batas_bayar_jam} jam` : "batas waktu yang berlaku";
+
   return (
-    <div className="min-h-screen bg-[#FFFDF9] text-[#3D2B28] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-8 bg-white rounded-3xl p-6 sm:p-10 border border-[#E8DFD8] shadow-xs">
-        <div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-bold text-stone-500 hover:text-[#9E3B42] transition mb-4"
-          >
-            <i className="fa-solid fa-arrow-left" />
-            <span>Kembali ke Beranda</span>
-          </Link>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E3B42] block">
-            Kebijakan Toko
-          </span>
-          <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-[#3D2B28] mt-1">
-            Kebijakan Pembatalan &amp; Pengembalian Dana
-          </h1>
-          <p className="text-xs text-stone-400 mt-1">Terakhir diperbarui: 24 November 2026</p>
-        </div>
+    <div className="min-h-screen bg-[#FAF4EE] text-[#4A2E2B] pt-16 sm:pt-20 flex flex-col relative overflow-x-clip">
+      <DynamicIslandNavbar showEntered={true} toko={toko} />
 
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed">
-          <div className="flex items-start gap-2.5">
-            <i className="fa-solid fa-circle-info text-amber-700 text-sm mt-0.5 shrink-0" />
-            <div>
-              <strong className="block font-bold">Catatan Pratinjau Kesiapan Deploy:</strong>
-              Ketentuan operasional di bawah ini telah diselaraskan dengan mekanisme sistem Cravely Bakery dan perlu ditinjau ulang oleh pemilik toko.
-            </div>
+      <div className="absolute top-0 left-0 pointer-events-none select-none z-0">
+        <BotanicalTopLeft className="w-40 sm:w-56 lg:w-64 h-auto" color="#8A675C" opacity={0.45} />
+      </div>
+      <div className="absolute top-0 right-0 pointer-events-none select-none z-0">
+        <BotanicalTopRight className="w-40 sm:w-56 lg:w-64 h-auto" color="#8A675C" opacity={0.45} />
+      </div>
+
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 pb-16 relative z-10">
+        <div className="bg-[#FFFDF9] rounded-[28px] p-6 sm:p-10 border border-[#ECDCCE] shadow-[0_14px_40px_rgba(61,43,40,0.06)] space-y-8">
+          <div className="border-b border-[#EEDBCE] pb-6">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-xs font-bold text-[#7D5A50] hover:text-[#9E3B42] transition mb-5"
+            >
+              <span className="w-7 h-7 rounded-full bg-[#FAF4ED] border border-[#EADCC8] flex items-center justify-center text-[#9E3B42]">
+                <i className="fa-solid fa-arrow-left text-[11px]" />
+              </span>
+              <span>Kembali ke Beranda</span>
+            </Link>
+
+            <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-[#9E3B42] bg-[#FCE8EC] px-3 py-1 rounded-full border border-[#EBC0C8] mb-2">
+              Kebijakan Toko
+            </span>
+            <h1 className="font-serif text-3xl sm:text-4xl font-black text-[#3D2B28]">
+              Kebijakan Pembatalan &amp; Pengembalian Dana
+            </h1>
+            <p className="text-xs text-[#7A6158] mt-1.5">
+              Aturan pembatalan pesanan dan proses refund resmi di {namaToko}.
+            </p>
+          </div>
+
+          <div className="space-y-6 text-xs sm:text-sm text-[#5C3D32] leading-relaxed">
+            <section className="space-y-2">
+              <h2 className="font-serif text-lg font-bold text-[#3D2B28]">1. Pembatalan oleh Pelanggan</h2>
+              <p>
+                Pelanggan dapat membatalkan pesanan secara mandiri melalui dashboard atau halaman tiket selama pesanan masih berstatus <strong>Menunggu Pembayaran</strong>. Jika pembayaran tidak diselesaikan dalam waktu {batasBayarJam} sejak pesanan dibuat, sistem akan membatalkan pesanan secara otomatis untuk membuka kembali slot kuota dapur.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="font-serif text-lg font-bold text-[#3D2B28]">2. Ketentuan Khusus Kue Custom</h2>
+              <p>
+                Pesanan yang telah masuk ke tahap <strong>Diterima</strong>, <strong>Sedang Dibuat</strong>, atau <strong>Siap</strong> tidak dapat dibatalkan sepihak oleh pelanggan karena bahan baku segar serta jadwal kerja tim dapur telah dialokasikan secara khusus.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="font-serif text-lg font-bold text-[#3D2B28]">3. Ketentuan Uang Muka (DP)</h2>
+              <p>
+                {toko.mode_pembayaran === "DP" && toko.persen_dp
+                  ? `Opsi uang muka (DP) sebesar ${toko.persen_dp}% berlaku khusus untuk item kue kustom, sedangkan produk kue katalog dan ongkos kirim dibayarkan penuh di awal checkout.`
+                  : "Pembayaran pesanan dilakukan penuh di awal checkout."}
+                {" "}Jika pesanan dibatalkan setelah produksi dimulai atas kesepakatan khusus, biaya bahan baku yang sudah terpakai tidak dapat dikembalikan.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="font-serif text-lg font-bold text-[#3D2B28]">4. Mekanisme Pengembalian Dana (Refund)</h2>
+              <p>
+                Pengembalian dana berlaku apabila pesanan dibatalkan oleh pihak {namaToko} atau terdapat pembayaran yang masuk setelah pesanan melewati batas waktu kedaluwarsa:
+              </p>
+              <ul className="list-disc pl-5 space-y-1.5 text-[#5C3D32]">
+                <li>
+                  <strong>Pembayaran Digital (Midtrans):</strong> Sistem menandai pesanan dengan status <em>Perlu Refund</em> dan administrator {namaToko} akan memproses pengembalian dana.
+                </li>
+                <li>
+                  <strong>Transfer Bank Manual:</strong> Administrator toko akan menghubungi Anda melalui WhatsApp untuk memproses transfer balik ke rekening pelanggan.
+                </li>
+              </ul>
+              {toko.wa_link && (
+                <p className="pt-1">
+                  Untuk konfirmasi pengembalian dana, hubungi kami melalui{" "}
+                  <a
+                    href={toko.wa_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#9E3B42] font-bold underline"
+                  >
+                    WhatsApp resmi {namaToko}
+                  </a>
+                  .
+                </p>
+              )}
+            </section>
           </div>
         </div>
+      </main>
 
-        <div className="space-y-6 text-xs sm:text-sm text-stone-700 leading-relaxed">
-          <section className="space-y-2">
-            <h2 className="font-serif text-base font-bold text-[#3D2B28]">1. Pembatalan oleh Pelanggan</h2>
-            <p>
-              Pelanggan hanya dapat membatalkan pesanan secara mandiri selama pesanan berstatus <strong>Menunggu Pembayaran</strong> (sebelum pembayaran uang muka atau pembayaran penuh diselesaikan). Jika pembayaran tidak diselesaikan hingga batas waktu bayar berakhir, sistem akan membatalkan pesanan secara otomatis demi membuka kembali alokasi kuota produksi.
-            </p>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="font-serif text-base font-bold text-[#3D2B28]">2. Ketentuan Khusus Kue Custom</h2>
-            <p>
-              Kue custom yang telah masuk ke tahap <strong>Sedang Dibuat</strong> atau <strong>Siap</strong> tidak dapat dibatalkan atau diubah spesifikasinya. Hal ini dikarenakan bahan baku segar dan waktu dekorasi spesifik telah dialokasikan khusus untuk pesanan Anda.
-            </p>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="font-serif text-base font-bold text-[#3D2B28]">3. Ketentuan Uang Muka (DP)</h2>
-            <p>
-              Opsi pembayaran Uang Muka (DP) hanya berlaku khusus untuk item <em>Custom Cake</em>. Produk kue katalog dan biaya ongkos kirim wajib dibayar penuh di awal transaksi checkout. Jika pesanan custom dibatalkan secara sepihak oleh pelanggan setelah dapur memulai tahap produksi, uang muka yang telah dibayarkan tidak dapat dikembalikan.
-            </p>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="font-serif text-base font-bold text-[#3D2B28]">4. Mekanisme Pengembalian Dana (Refund)</h2>
-            <p>
-              Pengembalian dana hanya berlaku jika pesanan dibatalkan oleh pihak Cravely Bakery (misalnya akibat kendala operasional tak terduga atau kuota darurat toko ditutup). Mekanisme refund dilakukan sebagai berikut:
-            </p>
-            <ul className="list-disc pl-5 space-y-1 text-stone-600">
-              <li>
-                <strong>Pembayaran Midtrans:</strong> Pengembalian dana diproses secara manual oleh administrator melalui dasbor merchant Midtrans sesuai metode pembayaran awal pemesan.
-              </li>
-              <li>
-                <strong>Transfer Bank Manual:</strong> Administrator toko akan menghubungi pemesan via WhatsApp untuk memproses transfer balik ke rekening pelanggan.
-              </li>
-              <li>
-                Sistem menandai pesanan dengan label <em>Perlu Refund</em> pada dasbor manajemen hingga bukti pengembalian dana selesai dicatat.
-              </li>
-            </ul>
-          </section>
-        </div>
-      </div>
+      <PatisserieFooter toko={toko} />
     </div>
   );
 }

@@ -235,6 +235,7 @@ export default function DashboardPelangganView({
     pesan: "",
   });
   const [sedangSimpanProfil, setSedangSimpanProfil] = useState(false);
+  const [sedangCariAlamatProfil, setSedangCariAlamatProfil] = useState(false);
   const [pesanSuksesProfil, setPesanSuksesProfil] = useState("");
   const [pesanErrorProfil, setPesanErrorProfil] = useState("");
 
@@ -275,6 +276,9 @@ export default function DashboardPelangganView({
   const notifRef = useRef(null);
   const profilRef = useRef(null);
   const debounceOngkirRef = useRef(null);
+  const debounceAlamatProfilRef = useRef(null);
+  const reqAlamatProfilIdRef = useRef(0);
+  const autoIsiAlamatRef = useRef(false);
 
   const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
   const isProduction =
@@ -296,9 +300,14 @@ export default function DashboardPelangganView({
       if (simpanSidebar === "1") {
         setSidebarBuka(true);
       }
-    } catch {}
+    } catch { }
 
-    return () => clearInterval(timerDetik);
+    return () => {
+      clearInterval(timerDetik);
+      if (debounceAlamatProfilRef.current) {
+        clearTimeout(debounceAlamatProfilRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -367,7 +376,7 @@ export default function DashboardPelangganView({
       if (rawTiket) {
         setDaftarTiketBantuan(JSON.parse(rawTiket));
       }
-    } catch {}
+    } catch { }
   }, [profilAwal, pesananList]);
 
   useEffect(() => {
@@ -382,7 +391,7 @@ export default function DashboardPelangganView({
           setTanggalCekKuota(json.tanggal_minimal);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (aktif) setSedangMuatKetersediaan(false);
       });
@@ -447,7 +456,7 @@ export default function DashboardPelangganView({
     setSidebarBuka(statusBaru);
     try {
       localStorage.setItem("cravely_user_sidebar_open", statusBaru ? "1" : "0");
-    } catch {}
+    } catch { }
   }
 
   function gantiTab(kodeTab) {
@@ -457,7 +466,7 @@ export default function DashboardPelangganView({
     setProfilDropdownBuka(false);
     try {
       window.history.replaceState(null, "", `/user?tab=${kodeTab}`);
-    } catch {}
+    } catch { }
   }
 
   async function muatUlangKeranjang() {
@@ -470,7 +479,63 @@ export default function DashboardPelangganView({
           setRingkasanKeranjang(data.ringkasan);
         }
       }
-    } catch {}
+    } catch { }
+  }
+
+  async function isiAlamatProfilDariKoordinat(lat, lng) {
+    const reqId = reqAlamatProfilIdRef.current + 1;
+    reqAlamatProfilIdRef.current = reqId;
+    setSedangCariAlamatProfil(true);
+    try {
+      const res = await fetch(
+        `/api/cari-alamat?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
+        { cache: "no-store" }
+      );
+      if (res.ok && reqAlamatProfilIdRef.current === reqId) {
+        const data = await res.json();
+        if (data && data.alamat) {
+          setAlamatTersimpan((prev) => ({
+            ...prev,
+            alamat_lengkap: data.alamat,
+          }));
+        }
+      }
+    } catch {
+    } finally {
+      if (reqAlamatProfilIdRef.current === reqId) {
+        setSedangCariAlamatProfil(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (
+      !autoIsiAlamatRef.current &&
+      alamatTersimpan.lat_alamat &&
+      alamatTersimpan.lng_alamat &&
+      !String(alamatTersimpan.alamat_lengkap || "").trim()
+    ) {
+      autoIsiAlamatRef.current = true;
+      isiAlamatProfilDariKoordinat(
+        Number(alamatTersimpan.lat_alamat),
+        Number(alamatTersimpan.lng_alamat)
+      );
+    }
+  }, [alamatTersimpan.lat_alamat, alamatTersimpan.lng_alamat, alamatTersimpan.alamat_lengkap]);
+
+  function handleUbahPinProfil(lat, lng) {
+    autoIsiAlamatRef.current = true;
+    setAlamatTersimpan((prev) => ({
+      ...prev,
+      lat_alamat: lat,
+      lng_alamat: lng,
+    }));
+    if (debounceAlamatProfilRef.current) {
+      clearTimeout(debounceAlamatProfilRef.current);
+    }
+    debounceAlamatProfilRef.current = setTimeout(() => {
+      isiAlamatProfilDariKoordinat(lat, lng);
+    }, 250);
   }
 
   async function handleSegarkanData() {
@@ -575,7 +640,7 @@ export default function DashboardPelangganView({
         window.dispatchEvent(new Event("cravely_cart_updated"));
         await muatUlangKeranjang();
       }
-    } catch {}
+    } catch { }
     setSedangUbahKeranjangId(null);
   }
 
@@ -603,11 +668,11 @@ export default function DashboardPelangganView({
           prev.map((p) =>
             p.kode_pesanan === kodePesanan
               ? {
-                  ...p,
-                  status_pesanan: data.pesanan.status_pesanan,
-                  status_bayar: data.pesanan.status_bayar,
-                  jumlah_terbayar: data.pesanan.jumlah_terbayar,
-                }
+                ...p,
+                status_pesanan: data.pesanan.status_pesanan,
+                status_bayar: data.pesanan.status_bayar,
+                jumlah_terbayar: data.pesanan.jumlah_terbayar,
+              }
               : p
           )
         );
@@ -662,10 +727,10 @@ export default function DashboardPelangganView({
         prev.map((p) =>
           p.kode_pesanan === kodeBatal
             ? {
-                ...p,
-                status_pesanan: "Dibatalkan",
-                alasan_batal: alasanBatalInput.trim() || "Dibatalkan oleh pelanggan",
-              }
+              ...p,
+              status_pesanan: "Dibatalkan",
+              alasan_batal: alasanBatalInput.trim() || "Dibatalkan oleh pelanggan",
+            }
             : p
         )
       );
@@ -863,7 +928,7 @@ export default function DashboardPelangganView({
     try {
       const dibaca = sessionStorage.getItem(`cravely_user_notif_${totalNotifCount}`);
       setNotifDibaca(dibaca === "1");
-    } catch {}
+    } catch { }
   }, [totalNotifCount]);
 
   function handleBukaNotif() {
@@ -874,7 +939,7 @@ export default function DashboardPelangganView({
       setNotifDibaca(true);
       try {
         sessionStorage.setItem(`cravely_user_notif_${totalNotifCount}`, "1");
-      } catch {}
+      } catch { }
     }
   }
 
@@ -1282,7 +1347,7 @@ export default function DashboardPelangganView({
             `cravely_alamat_user_${userId}`,
             JSON.stringify(alamatTersimpan)
           );
-        } catch {}
+        } catch { }
         setPesanSuksesProfil(
           data.lokasiTersimpan === false
             ? data.pesan || "Profil diperbarui (lokasi tersimpan di perangkat ini)."
@@ -1376,7 +1441,7 @@ export default function DashboardPelangganView({
     const userId = (profilAwal && profilAwal.id) || "guest";
     try {
       localStorage.setItem(`cravely_tiket_bantuan_${userId}`, JSON.stringify(daftarBaru));
-    } catch {}
+    } catch { }
 
     const linkWa = buatLinkWaTiket(tiketBaru);
     if (linkWa) {
@@ -1526,9 +1591,8 @@ export default function DashboardPelangganView({
       )}
 
       <aside
-        className={`ud-sidebar ${sidebarBuka ? "open" : ""} ${
-          sidebarMobileBuka ? "mobile-open" : ""
-        }`}
+        className={`ud-sidebar ${sidebarBuka ? "open" : ""} ${sidebarMobileBuka ? "mobile-open" : ""
+          }`}
       >
         <div className="ud-side-bg">
           <div className="r t">
@@ -1721,7 +1785,7 @@ export default function DashboardPelangganView({
                           setNotifDibaca(true);
                           try {
                             sessionStorage.setItem(`cravely_user_notif_${totalNotifCount}`, "1");
-                          } catch {}
+                          } catch { }
                         }}
                         className="text-[11px] font-bold text-[#9E3B42] hover:underline cursor-pointer"
                       >
@@ -2040,11 +2104,10 @@ export default function DashboardPelangganView({
                             setIdPesananDilacak(ord.id);
                             setTahapStepperDipilih(null);
                           }}
-                          className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold shrink-0 transition cursor-pointer ${
-                            dipilih
-                              ? "bg-[#9E3B42] text-white shadow-xs"
-                              : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/60 border border-[#EADCC8]"
-                          }`}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold shrink-0 transition cursor-pointer ${dipilih
+                            ? "bg-[#9E3B42] text-white shadow-xs"
+                            : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/60 border border-[#EADCC8]"
+                            }`}
                         >
                           {ord.kode_pesanan} • {ord.status_pesanan}
                         </button>
@@ -2111,7 +2174,7 @@ export default function DashboardPelangganView({
                       Math.max(
                         0,
                         Number(pesananUtamaDilacak.total_bayar || 0) -
-                          Number(pesananUtamaDilacak.jumlah_terbayar || 0)
+                        Number(pesananUtamaDilacak.jumlah_terbayar || 0)
                       ) > 0 && (
                         <>
                           <button
@@ -2191,23 +2254,21 @@ export default function DashboardPelangganView({
                             onClick={() =>
                               setTahapStepperDipilih(dipilih ? null : idx)
                             }
-                            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                              aktif
-                                ? "bg-[#FCE8EC]/75 border-[#9E3B42] shadow-[0_6px_16px_rgba(158,59,66,0.14)] -translate-y-0.5"
-                                : selesai
-                                  ? "bg-[#F4FAF6] border-[#B5E5C6] hover:border-[#215934]"
-                                  : "bg-[#FAF6F0] border-[#EADCC8] opacity-75 hover:opacity-100"
-                            } ${dipilih ? "ring-2 ring-[#C59B62]" : ""}`}
+                            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${aktif
+                              ? "bg-[#FCE8EC]/75 border-[#9E3B42] shadow-[0_6px_16px_rgba(158,59,66,0.14)] -translate-y-0.5"
+                              : selesai
+                                ? "bg-[#F4FAF6] border-[#B5E5C6] hover:border-[#215934]"
+                                : "bg-[#FAF6F0] border-[#EADCC8] opacity-75 hover:opacity-100"
+                              } ${dipilih ? "ring-2 ring-[#C59B62]" : ""}`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <span
-                                className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
-                                  selesai
-                                    ? "bg-[#215934] text-white"
-                                    : aktif
-                                      ? "bg-[#9E3B42] text-white animate-pulse"
-                                      : "bg-[#EADCC8] text-[#7A6158]"
-                                }`}
+                                className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${selesai
+                                  ? "bg-[#215934] text-white"
+                                  : aktif
+                                    ? "bg-[#9E3B42] text-white animate-pulse"
+                                    : "bg-[#EADCC8] text-[#7A6158]"
+                                  }`}
                               >
                                 <i className={selesai ? "fa-solid fa-check" : thp.ikon}></i>
                               </span>
@@ -2258,7 +2319,7 @@ export default function DashboardPelangganView({
                   const info = infoPenanggungJawab(pesananUtamaDilacak);
                   const logTerakhir =
                     pesananUtamaDilacak.riwayat_pesanan &&
-                    pesananUtamaDilacak.riwayat_pesanan.length > 0
+                      pesananUtamaDilacak.riwayat_pesanan.length > 0
                       ? pesananUtamaDilacak.riwayat_pesanan[0]
                       : null;
                   return (
@@ -2316,11 +2377,10 @@ export default function DashboardPelangganView({
                         key={kat}
                         type="button"
                         onClick={() => setFilterKategoriKatalog(kat)}
-                        className={`px-3.5 py-1 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${
-                          filterKategoriKatalog === kat
-                            ? "bg-[#3E2721] text-[#FFFDF9]"
-                            : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
-                        }`}
+                        className={`px-3.5 py-1 rounded-full text-xs font-bold shrink-0 transition cursor-pointer ${filterKategoriKatalog === kat
+                          ? "bg-[#3E2721] text-[#FFFDF9]"
+                          : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
+                          }`}
                       >
                         {kat}
                       </button>
@@ -2390,20 +2450,18 @@ export default function DashboardPelangganView({
                               type="button"
                               disabled={sedangTambah}
                               onClick={() => handleTambahKeKeranjang(item.id, item.nama)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-extrabold inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 whitespace-nowrap ${
-                                baruDitambah
-                                  ? "bg-[#215934] text-white"
-                                  : "bg-[#9E3B42] hover:bg-[#7D2330] text-white"
-                              }`}
+                              className={`px-3 py-1.5 rounded-full text-xs font-extrabold inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 whitespace-nowrap ${baruDitambah
+                                ? "bg-[#215934] text-white"
+                                : "bg-[#9E3B42] hover:bg-[#7D2330] text-white"
+                                }`}
                             >
                               <i
-                                className={`fa-solid ${
-                                  baruDitambah
-                                    ? "fa-check"
-                                    : sedangTambah
-                                      ? "fa-circle-notch fa-spin"
-                                      : "fa-plus"
-                                } text-[10px]`}
+                                className={`fa-solid ${baruDitambah
+                                  ? "fa-check"
+                                  : sedangTambah
+                                    ? "fa-circle-notch fa-spin"
+                                    : "fa-plus"
+                                  } text-[10px]`}
                               ></i>
                               <span>{baruDitambah ? "Masuk Keranjang" : "Keranjang"}</span>
                             </button>
@@ -2680,11 +2738,10 @@ export default function DashboardPelangganView({
                     key={flt.id}
                     type="button"
                     onClick={() => setFilterStatusPesanan(flt.id)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap ${
-                      filterStatusPesanan === flt.id
-                        ? "bg-[#9E3B42] text-white shadow-xs"
-                        : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
-                    }`}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap ${filterStatusPesanan === flt.id
+                      ? "bg-[#9E3B42] text-white shadow-xs"
+                      : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
+                      }`}
                   >
                     {flt.label}
                   </button>
@@ -2899,24 +2956,23 @@ export default function DashboardPelangganView({
                               className="px-3 py-1.5 rounded-full border border-[#EADCC8] bg-[#FAF4ED] hover:bg-[#F1DBD0]/45 text-[11px] font-bold text-[#3D2B28] transition cursor-pointer whitespace-nowrap"
                             >
                               <i
-                                className={`fa-solid ${
-                                  terbuka ? "fa-chevron-up" : "fa-clock-rotate-left"
-                                } mr-1.5 text-[#9E3B42]`}
+                                className={`fa-solid ${terbuka ? "fa-chevron-up" : "fa-clock-rotate-left"
+                                  } mr-1.5 text-[#9E3B42]`}
                               ></i>
                               {terbuka ? "Tutup Detail" : "Rincian & Log"}
                             </button>
 
                             {((p.pembayaran || []).some((b) => b.status === "Dikonfirmasi" || b.status === "settlement" || b.status === "capture") ||
                               (Number(p.jumlah_terbayar) || 0) > 0) && (
-                              <button
-                                type="button"
-                                onClick={() => setPesananInvoice(p)}
-                                className="px-3.5 py-2 rounded-full border border-[#D9B37C] bg-white hover:bg-[#FAF4ED] text-xs font-bold text-[#5A3B33] transition cursor-pointer"
-                              >
-                                <i className="fa-solid fa-receipt mr-1.5 text-[#B8925A]"></i>
-                                Struk
-                              </button>
-                            )}
+                                <button
+                                  type="button"
+                                  onClick={() => setPesananInvoice(p)}
+                                  className="px-3.5 py-2 rounded-full border border-[#D9B37C] bg-white hover:bg-[#FAF4ED] text-xs font-bold text-[#5A3B33] transition cursor-pointer"
+                                >
+                                  <i className="fa-solid fa-receipt mr-1.5 text-[#B8925A]"></i>
+                                  Struk
+                                </button>
+                              )}
                           </div>
                         </div>
                       </div>
@@ -3096,11 +3152,10 @@ export default function DashboardPelangganView({
                             </div>
                             <div>
                               <span
-                                className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold mb-1 ${
-                                  it.jenis === "Custom"
-                                    ? "bg-[#FCE8EC] text-[#9E3B42]"
-                                    : "bg-[#E8F4EC] text-[#215934]"
-                                }`}
+                                className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold mb-1 ${it.jenis === "Custom"
+                                  ? "bg-[#FCE8EC] text-[#9E3B42]"
+                                  : "bg-[#E8F4EC] text-[#215934]"
+                                  }`}
                               >
                                 {it.jenis === "Custom" ? "Kue Custom 3D" : "Kue Katalog"}
                               </span>
@@ -3263,11 +3318,10 @@ export default function DashboardPelangganView({
                           type="button"
                           disabled={sedangTambah}
                           onClick={() => handleTambahKeKeranjang(item.id, item.nama)}
-                          className={`w-full py-2 rounded-full text-xs font-extrabold transition cursor-pointer disabled:opacity-50 ${
-                            baruDitambah
-                              ? "bg-[#215934] text-white"
-                              : "bg-[#9E3B42] hover:bg-[#7D2330] text-white"
-                          }`}
+                          className={`w-full py-2 rounded-full text-xs font-extrabold transition cursor-pointer disabled:opacity-50 ${baruDitambah
+                            ? "bg-[#215934] text-white"
+                            : "bg-[#9E3B42] hover:bg-[#7D2330] text-white"
+                            }`}
                         >
                           {baruDitambah ? "✓ Ditambahkan" : sedangTambah ? "Menambahkan..." : "+ Tambah ke Keranjang"}
                         </button>
@@ -3298,11 +3352,10 @@ export default function DashboardPelangganView({
                       key={flt}
                       type="button"
                       onClick={() => setFilterRiwayat(flt)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap ${
-                        filterRiwayat === flt
-                          ? "bg-[#9E3B42] text-white"
-                          : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
-                      }`}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap ${filterRiwayat === flt
+                        ? "bg-[#9E3B42] text-white"
+                        : "bg-[#FAF4ED] text-[#5A3B33] hover:bg-[#F1DBD0]/55 border border-[#EADCC8]"
+                        }`}
                     >
                       {flt}
                     </button>
@@ -3419,15 +3472,14 @@ export default function DashboardPelangganView({
                           </td>
                           <td className="py-3 px-4">
                             <span
-                              className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                                b.status === "Dikonfirmasi" || b.status === "settlement" || b.status === "capture"
-                                  ? "bg-[#DCF5E4] text-[#1C6E3D]"
-                                  : b.status === "Ditolak" || b.status === "deny" || b.status === "cancel"
-                                    ? "bg-rose-100 text-rose-800"
-                                    : b.status === "expire"
-                                      ? "bg-stone-100 text-stone-700"
-                                      : "bg-[#FFF3D6] text-[#875C1A]"
-                              }`}
+                              className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${b.status === "Dikonfirmasi" || b.status === "settlement" || b.status === "capture"
+                                ? "bg-[#DCF5E4] text-[#1C6E3D]"
+                                : b.status === "Ditolak" || b.status === "deny" || b.status === "cancel"
+                                  ? "bg-rose-100 text-rose-800"
+                                  : b.status === "expire"
+                                    ? "bg-stone-100 text-stone-700"
+                                    : "bg-[#FFF3D6] text-[#875C1A]"
+                                }`}
                             >
                               {b.status === "settlement" || b.status === "capture"
                                 ? "Dikonfirmasi"
@@ -3491,11 +3543,10 @@ export default function DashboardPelangganView({
                 <button
                   type="button"
                   onClick={() => setSubTabProfil("datadiri")}
-                  className={`w-full px-4 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-between transition cursor-pointer ${
-                    subTabProfil === "datadiri"
-                      ? "bg-[#9E3B42] text-white"
-                      : "text-[#5A3B33] hover:bg-[#FAF4ED]"
-                  }`}
+                  className={`w-full px-4 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-between transition cursor-pointer ${subTabProfil === "datadiri"
+                    ? "bg-[#9E3B42] text-white"
+                    : "text-[#5A3B33] hover:bg-[#FAF4ED]"
+                    }`}
                 >
                   <span className="flex items-center gap-2.5">
                     <i className="fa-regular fa-id-card"></i>
@@ -3507,11 +3558,10 @@ export default function DashboardPelangganView({
                 <button
                   type="button"
                   onClick={() => setSubTabProfil("keamanan")}
-                  className={`w-full px-4 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-between transition cursor-pointer ${
-                    subTabProfil === "keamanan"
-                      ? "bg-[#9E3B42] text-white"
-                      : "text-[#5A3B33] hover:bg-[#FAF4ED]"
-                  }`}
+                  className={`w-full px-4 py-3 rounded-2xl text-xs font-extrabold flex items-center justify-between transition cursor-pointer ${subTabProfil === "keamanan"
+                    ? "bg-[#9E3B42] text-white"
+                    : "text-[#5A3B33] hover:bg-[#FAF4ED]"
+                    }`}
                 >
                   <span className="flex items-center gap-2.5">
                     <i className="fa-solid fa-shield-halved"></i>
@@ -3632,18 +3682,22 @@ export default function DashboardPelangganView({
                             : null
                         }
                         onUbahTujuan={(lat, lng) => {
-                          setAlamatTersimpan((prev) => ({
-                            ...prev,
-                            lat_alamat: lat,
-                            lng_alamat: lng,
-                          }));
+                          handleUbahPinProfil(lat, lng);
                         }}
                       />
 
                       <div>
-                        <label className="block text-xs font-bold text-[#5A3B33] mb-1.5">
-                          Alamat Pengiriman Lengkap
-                        </label>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <label className="block text-xs font-bold text-[#5A3B33]">
+                            Alamat Pengiriman Lengkap
+                          </label>
+                          {sedangCariAlamatProfil && (
+                            <span className="text-[11px] font-bold text-[#9E3B42] inline-flex items-center gap-1.5">
+                              <i className="fa-solid fa-circle-notch fa-spin"></i>
+                              Mengambil alamat dari peta...
+                            </span>
+                          )}
+                        </div>
                         <textarea
                           rows={3}
                           value={alamatTersimpan.alamat_lengkap}
@@ -3887,11 +3941,10 @@ export default function DashboardPelangganView({
                     />
 
                     <div
-                      className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-                        hasilSimulasiOngkir.status === "ok"
-                          ? "bg-[#DCF5E4] border-[#B5E5C6] text-[#1C6E3D]"
-                          : "bg-rose-50 border-rose-200 text-rose-700"
-                      }`}
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between ${hasilSimulasiOngkir.status === "ok"
+                        ? "bg-[#DCF5E4] border-[#B5E5C6] text-[#1C6E3D]"
+                        : "bg-rose-50 border-rose-200 text-rose-700"
+                        }`}
                     >
                       <span className="font-bold">
                         {hasilSimulasiOngkir.status === "ok"
@@ -4294,7 +4347,7 @@ export default function DashboardPelangganView({
                     Math.max(
                       0,
                       (Number(pesananInvoice.total_bayar) || 0) -
-                        (Number(pesananInvoice.jumlah_terbayar) || 0)
+                      (Number(pesananInvoice.jumlah_terbayar) || 0)
                     )
                   )}
                 </span>

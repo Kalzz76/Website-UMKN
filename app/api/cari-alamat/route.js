@@ -32,29 +32,80 @@ export async function GET(request) {
     }
 
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&accept-language=id`;
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "CravelyBakery/1.0 (halo@cravely.id)",
-          Accept: "application/json",
-        },
-      });
+      let alamat = "";
 
-      if (!res.ok) {
-        return NextResponse.json({ alamat: "", hasil: [] });
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1&accept-language=id`;
+        const res = await fetch(url, {
+          headers: {
+            "User-Agent": "CravelyBakery/1.0 (halo@cravely.id)",
+            Accept: "application/json",
+          },
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alamat = data?.display_name || "";
+        }
+      } catch {}
+
+      if (!alamat) {
+        try {
+          const urlPhoton = `https://photon.komoot.io/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
+          const resPhoton = await fetch(urlPhoton, {
+            headers: { Accept: "application/json" },
+            signal: AbortSignal.timeout(5000),
+          });
+          if (resPhoton.ok) {
+            const ph = await resPhoton.json();
+            const prop = ph?.features?.[0]?.properties;
+            if (prop) {
+              const bagian = [];
+              if (prop.name) bagian.push(prop.name);
+              if (prop.street && !bagian.includes(prop.street)) bagian.push(prop.street);
+              if (prop.district && !bagian.includes(prop.district)) bagian.push(prop.district);
+              if (prop.city && !bagian.includes(prop.city)) bagian.push(prop.city);
+              if (prop.state && !bagian.includes(prop.state)) bagian.push(prop.state);
+              if (prop.postcode) bagian.push(prop.postcode);
+              if (prop.country && !bagian.includes(prop.country)) bagian.push(prop.country);
+              alamat = bagian.join(", ");
+            }
+          }
+        } catch {}
       }
 
-      const data = await res.json();
-      const alamat = data?.display_name || "";
+      if (!alamat) {
+        try {
+          const urlBdc = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&localityLanguage=id`;
+          const resBdc = await fetch(urlBdc, {
+            headers: { Accept: "application/json" },
+            signal: AbortSignal.timeout(5000),
+          });
+          if (resBdc.ok) {
+            const fb = await resBdc.json();
+            const bagian = [];
+            if (fb.locality && !bagian.includes(fb.locality)) bagian.push(fb.locality);
+            if (fb.city && !bagian.includes(fb.city)) bagian.push(fb.city);
+            if (fb.principalSubdivision && !bagian.includes(fb.principalSubdivision)) bagian.push(fb.principalSubdivision);
+            if (fb.postcode) bagian.push(fb.postcode);
+            if (fb.countryName && !bagian.includes(fb.countryName)) bagian.push(fb.countryName);
+            alamat = bagian.join(", ");
+          }
+        } catch {}
+      }
+
       const payload = {
         alamat,
         hasil: alamat ? [{ display_name: alamat, lat, lon: lng }] : [],
       };
 
-      cachePencarian.set(cacheKey, {
-        waktu: Date.now(),
-        data: payload,
-      });
+      if (alamat) {
+        cachePencarian.set(cacheKey, {
+          waktu: Date.now(),
+          data: payload,
+        });
+      }
 
       return NextResponse.json(payload);
     } catch {
