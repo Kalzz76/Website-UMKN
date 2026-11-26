@@ -8696,21 +8696,6 @@ export default function PesanPage() {
                 </small>
               ) : null}
             </div>
-            {step >= 4 && step < 6 && (
-              <button
-                type="button"
-                className="btn prv"
-                disabled={sedangKirim}
-                onClick={handleAddToCart}
-                style={{
-                  borderColor: "#9E3B42",
-                  color: "#9E3B42",
-                  padding: "12px 18px",
-                }}
-              >
-                {sedangKirim ? "Menyimpan..." : "🛒 Masukkan Keranjang"}
-              </button>
-            )}
             <button
               className="btn nxt"
               disabled={sedangKirim}
