@@ -1816,7 +1816,7 @@ export default function PesananDashboardPage() {
       </div>
 
       {drawerBuka && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+        <div className="fixed inset-0 z-[9999] overflow-hidden">
           <div
             className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs transition-opacity cursor-pointer"
             onClick={tutupDrawer}
@@ -1863,7 +1863,7 @@ export default function PesananDashboardPage() {
       )}
 
       {modalBatalBuka && (
-        <div className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#fbf6e9] border border-[#dfd4bd] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#e0d5b8]">
               <h3 className="font-bold text-[#1d3b2e] text-sm">Batalkan Pesanan</h3>
@@ -1913,7 +1913,7 @@ export default function PesananDashboardPage() {
       )}
 
       {modalKurangiStokBuka && (
-        <div className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#fbf6e9] border border-[#dfd4bd] rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#e0d5b8]">
               <div>
@@ -1994,7 +1994,7 @@ export default function PesananDashboardPage() {
       )}
 
       {modalKembalikanStokBuka && (
-        <div className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#fbf6e9] border border-[#dfd4bd] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#e0d5b8]">
               <h3 className="font-bold text-[#1d3b2e] text-sm">Kembalikan Stok</h3>
@@ -2042,7 +2042,7 @@ export default function PesananDashboardPage() {
       )}
 
       {modalKonfirmasiBatalStokBuka && (
-        <div className="fixed inset-0 z-[60] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#fbf6e9] border border-[#dfd4bd] rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#e0d5b8]">
               <h3 className="font-bold text-[#1d3b2e] text-sm">Kembalikan Stok Pesanan?</h3>
