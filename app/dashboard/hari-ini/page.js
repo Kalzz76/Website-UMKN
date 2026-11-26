@@ -538,14 +538,14 @@ export default function HariIniDashboardPage() {
       </div>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between bg-[#FFFDF9] border border-[#dfd4bd] rounded-2xl px-4 py-2.5 shadow-2xs">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-            <h2 className="text-sm font-black text-stone-900 uppercase tracking-wide">
+            <h2 className="text-sm font-black text-[#1d3b2e] uppercase tracking-wide">
               1. Perlu Dibuat ({daftarPerluDibuat.length})
             </h2>
           </div>
-          <span className="text-xs text-stone-500">
+          <span className="text-xs font-semibold text-stone-600">
             {isTabCustom ? "Semua Kue Kustom (Hari Ini & Mendatang)" : `Jadwal: ${formatTanggalSingkat(tanggalTerpilih)}`}
           </span>
         </div>
@@ -712,14 +712,14 @@ export default function HariIniDashboardPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between bg-[#FFFDF9] border border-[#dfd4bd] rounded-2xl px-4 py-2.5 shadow-2xs">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            <h2 className="text-sm font-black text-stone-900 uppercase tracking-wide">
+            <h2 className="text-sm font-black text-[#1d3b2e] uppercase tracking-wide">
               2. Siap Diambil atau Diantar ({daftarSiap.length})
             </h2>
           </div>
-          <span className="text-xs text-stone-500">
+          <span className="text-xs font-semibold text-stone-600">
             {isTabCustom ? "Semua Kue Kustom (Hari Ini & Mendatang)" : `Jadwal: ${formatTanggalSingkat(tanggalTerpilih)}`}
           </span>
         </div>
@@ -854,14 +854,14 @@ export default function HariIniDashboardPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between bg-[#FFFDF9] border border-[#dfd4bd] rounded-2xl px-4 py-2.5 shadow-2xs">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-            <h2 className="text-sm font-black text-stone-900 uppercase tracking-wide">
+            <h2 className="text-sm font-black text-[#1d3b2e] uppercase tracking-wide">
               3. Menunggu Pelunasan ({daftarMenungguPelunasan.length})
             </h2>
           </div>
-          <span className="text-xs text-stone-500">
+          <span className="text-xs font-semibold text-stone-600">
             {isTabCustom ? "Semua Kue Kustom (Hari Ini & Mendatang)" : `Jadwal: ${formatTanggalSingkat(tanggalTerpilih)}`}
           </span>
         </div>
