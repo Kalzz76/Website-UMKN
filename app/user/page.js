@@ -85,7 +85,12 @@ export default async function UserDashboardPage() {
 
   function buatUrlPublik(pathFoto) {
     if (!pathFoto) return null;
-    if (pathFoto.startsWith("http://") || pathFoto.startsWith("https://")) {
+    if (
+      pathFoto.startsWith("http://") ||
+      pathFoto.startsWith("https://") ||
+      pathFoto.startsWith("/images/") ||
+      pathFoto.startsWith("/assets/")
+    ) {
       return pathFoto;
     }
     return `${basePublikUrl}/${pathFoto.replace(/^\/+/, "")}`;

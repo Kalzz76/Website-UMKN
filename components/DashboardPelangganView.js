@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { cariTarif } from "@/lib/ongkir";
-import { getFotoProdukFallback } from "@/lib/fotoProdukFallback";
 import PreviewKue from "@/components/PreviewKue";
 import GambarProduk from "@/components/GambarProduk";
 import PortalLedge from "@/components/PortalLedge";
@@ -201,7 +200,6 @@ export default function DashboardPelangganView({
   const [sedangUbahKeranjangId, setSedangUbahKeranjangId] = useState(null);
   const [sedangTambahProdukId, setSedangTambahProdukId] = useState(null);
   const [berhasilTambahMap, setBerhasilTambahMap] = useState({});
-  const [gambarGagalMap, setGambarGagalMap] = useState({});
   const [filterKategoriKatalog, setFilterKategoriKatalog] = useState("Semua");
 
   const [filterStatusPesanan, setFilterStatusPesanan] = useState("Semua");
@@ -2409,23 +2407,11 @@ export default function DashboardPelangganView({
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-16 h-16 rounded-xl bg-[#FAF4ED] border border-[#EADCC8] overflow-hidden shrink-0 flex items-center justify-center">
-                              {(gambarGagalMap[item.id] ? getFotoProdukFallback(item.nama) : item.foto_url) ? (
-                                <img
-                                  src={gambarGagalMap[item.id] ? getFotoProdukFallback(item.nama) : item.foto_url}
-                                  alt={item.nama}
-                                  onError={() => {
-                                    if (!gambarGagalMap[item.id]) {
-                                      setGambarGagalMap((prev) => ({
-                                        ...prev,
-                                        [item.id]: true,
-                                      }));
-                                    }
-                                  }}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <i className="fa-solid fa-cake-candles text-xl text-[#D3A29D]"></i>
-                              )}
+                              <GambarProduk
+                                src={item.foto_url}
+                                nama={item.nama}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
                             </div>
                             <div className="min-w-0 flex-1">
                               <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#B8925A] block">
@@ -3145,11 +3131,11 @@ export default function DashboardPelangganView({
                         >
                           <div className="flex items-center gap-3.5">
                             <div className="w-16 h-16 rounded-2xl bg-white border border-[#EADCC8] overflow-hidden flex items-center justify-center shrink-0">
-                              {gambar ? (
-                                <img src={gambar} alt={it.nama || "Kue"} className="w-full h-full object-cover" />
-                              ) : (
-                                <i className="fa-solid fa-cake-candles text-xl text-[#D3A29D]"></i>
-                              )}
+                              <GambarProduk
+                                src={gambar}
+                                nama={it.nama}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
                             <div>
                               <span
@@ -3288,21 +3274,11 @@ export default function DashboardPelangganView({
                       >
                         <div>
                           <div className="w-full h-32 rounded-2xl bg-[#FAF4ED] border border-[#EADCC8] overflow-hidden mb-3 flex items-center justify-center">
-                            {item.foto_url && !gambarGagalMap[item.id] ? (
-                              <img
-                                src={item.foto_url}
-                                alt={item.nama}
-                                onError={() =>
-                                  setGambarGagalMap((prev) => ({
-                                    ...prev,
-                                    [item.id]: true,
-                                  }))
-                                }
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <i className="fa-solid fa-cake-candles text-2xl text-[#D3A29D]"></i>
-                            )}
+                            <GambarProduk
+                              src={item.foto_url}
+                              nama={item.nama}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#B8925A]">
                             {item.kategori}
