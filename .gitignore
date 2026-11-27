@@ -7,5 +7,12 @@ build
 .env.development.local
 .env.test.local
 .env.production.local
-referensi-desain/Discere/
+/AGENTS.md
+/ALUR-SISTEM.md
+/AUDIT-HALAMAN.md
+/AUDIT-PROYEK.md
+/CLAUDE.md
+/DEPLOY.md
+/KONTRAK-PESAN.md
+/referensi-desain/
 scratch/
